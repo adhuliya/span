@@ -1,0 +1,23 @@
+#!/bin/bash
+# "./" prefix is needed since files
+# "-.plist" and "<stdin>.spanir" are generated
+# when span tests for clang with spanir support
+
+# rm -Rf ./*.spanir
+
+rm -Rf ./*.plist ./*.dot ./*.spanreport ./*.o ./*.s\
+  ./*.spanir.processed
+
+rm ./\<stdin\>.spanir 
+
+# cleanup `coverage run ../../span.py test all` output
+# Don't remove .coveragerc file. It contains settings.
+rm .coverage
+
+# cleanup: `coverage html` output
+rm -Rf htmlcov
+
+# cleanup profile
+rm span.profile
+
+rm a.out

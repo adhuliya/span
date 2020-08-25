@@ -1,0 +1,1 @@
+# a shell script meant to be executed before the commit operation

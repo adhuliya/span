@@ -1,0 +1,254 @@
+syntax = "proto3";
+package span.ir;
+
+// Generate Python Module: protoc --python_out=span/ir spanir.proto 
+
+//----------------------------------------------------------------------------//
+// BOUND START: Misc
+//----------------------------------------------------------------------------//
+
+// location
+message Loc {
+  uint32 lineNum  = 1;
+  uint32 colNum   = 2;
+}
+
+// more information
+message Info {
+  Loc loc       = 1;
+  uint64 data   = 2;
+}
+
+//----------------------------------------------------------------------------//
+// BOUND END  : Misc
+//----------------------------------------------------------------------------//
+
+//----------------------------------------------------------------------------//
+// BOUND START: Types
+//----------------------------------------------------------------------------//
+
+enum TypeKinds {
+  TY_VOID       = 0;
+
+  TY_INT1       = 1;
+  TY_INT8       = 2;
+  TY_INT16      = 3;
+  TY_INT32      = 4;
+  TY_INT64      = 5;
+  TY_INT128     = 6;
+
+  TY_UINT1      = 7;
+  TY_UINT8      = 8;
+  TY_UINT16     = 9;
+  TY_UINT32     = 10;
+  TY_UINT64     = 11;
+  TY_UINT128    = 12;
+
+  TY_FLOAT16    = 13;
+  TY_FLOAT32    = 14;
+  TY_FLOAT64    = 15;
+  TY_FLOAT80    = 16;
+  TY_FLOAT128   = 17;
+
+  TY_PTR        = 18;
+  TY_ARR        = 19;
+  TY_CONST_ARR  = 20;
+  TY_VAR_ARR    = 21;
+  TY_INCPL_ARR  = 22;
+
+  TY_FUNC       = 23;
+  TY_FUNC_SIG   = 24;
+  TY_RECORD     = 25; // struct/union
+}
+
+message Type {
+  TypeKinds typeKind  = 1;
+  uint64 typeId       = 2;  // default = 0
+}
+
+message PtrType {
+  uint32 typeId   = 1;
+  Type to         = 2;
+  uint32 indlev   = 3;
+}
+
+// BOUND START: RecordType
+message DataMember  {
+  string name     = 1;
+  Type type       = 2;
+}
+
+message RecordType {
+  uint32 typeId               = 1;
+  enum RecordKind {
+    STRUCT    = 0;
+    UNION     = 1;
+  }
+  RecordKind  recordKind      = 2;
+  string name                 = 3;
+  repeated DataMember members = 4;
+}
+// BOUND END  : RecordType
+
+message FuncSigType {
+  uint32 typeId               = 1;
+  Type returnType             = 2;
+  repeated Type paramTypes    = 3;
+  bool variadic               = 4;
+}
+
+message ArrayType {
+  uint32 typeId       = 1;
+  enum ArrayKind {
+    CONST_SIZE      = 0;
+    VAR_SIZE        = 1;
+    INCOMPLETE_SIZE = 2;
+  }
+  ArrayKind arrayKind = 2;
+  Type of             = 3;  // array.of
+  uint64 size         = 4;
+}
+
+//----------------------------------------------------------------------------//
+// BOUND END  : Types
+//----------------------------------------------------------------------------//
+
+
+//----------------------------------------------------------------------------//
+// BOUND START: Operators
+//----------------------------------------------------------------------------//
+
+// TODO
+
+//----------------------------------------------------------------------------//
+// BOUND END  : Operators
+//----------------------------------------------------------------------------//
+
+
+//----------------------------------------------------------------------------//
+// BOUND START: Expressions
+//----------------------------------------------------------------------------//
+
+message LitExpr {
+  Type type           = 1;
+  oneof val {
+    // use the `type` variable above to do
+    // appropriate conversion from the broad value types here.
+    int64 intVal      = 2;
+    uint64 uIntVal    = 3;
+    double doubleVal  = 4;
+    string strVal     = 5;
+  }
+}
+
+message VarExpr {
+  Type type   = 1; // TheTypeName
+  string name = 2; // of form "v:foo:x" or "g:z" (local/global)
+}
+
+message Expression {
+  Type type             = 1;
+  oneof expr {
+    LitExpr litExpr     = 2;
+    VarExpr varExpr     = 3;
+  }
+}
+
+
+//----------------------------------------------------------------------------//
+// BOUND END  : Expressions
+//----------------------------------------------------------------------------//
+
+//----------------------------------------------------------------------------//
+// BOUND START: Instructions
+//----------------------------------------------------------------------------//
+
+message AssignI {
+  Type type         = 1;
+  Expression lhs    = 2;
+  Expression rhs    = 3;
+}
+
+message ReturnI {
+  Type type         = 1;
+  Expression arg    = 2;
+}
+
+message NopI {
+  int32 dummy   = 1;
+}
+
+message Instruction {
+  oneof insn {
+    AssignI assignInsn = 1;
+    ReturnI returnInsn = 5;
+    NopI    nopInsn    = 10;
+  }
+}
+
+
+//----------------------------------------------------------------------------//
+// BOUND END  : Instructions
+//----------------------------------------------------------------------------//
+
+//----------------------------------------------------------------------------//
+// BOUND START: ControlFlowGraph
+//----------------------------------------------------------------------------//
+
+message BBEdge {
+  int32 start       = 1;
+  int32 end         = 2;
+  enum EdgeKind {
+    FALSE_EDGE  = 0;
+    TRUE_EDGE   = 1;
+    UNCOND_EDGE = 2;
+  }
+  EdgeKind edgeKind = 3;
+}
+
+message BB {
+  int32 id                      = 1;
+  repeated Instruction insns    = 2;
+}
+
+message CFG {
+  repeated BB basicBlocks = 1;
+  repeated BBEdge bbEdges = 2;
+}
+
+//----------------------------------------------------------------------------//
+// BOUND END  : ControlFlowGraph
+//----------------------------------------------------------------------------//
+
+//----------------------------------------------------------------------------//
+// BOUND START: TheTranslationUnit
+//----------------------------------------------------------------------------//
+
+message Function {
+  string name                 = 1;
+  FuncSigType funcSig         = 2;
+  repeated string paramNames  = 3;
+  CFG cfg                     = 4;
+}
+
+message Var {
+  string name     = 1;
+  Type type       = 2;
+}
+
+message TranslationUnit {
+  string name                       = 1; // generally the file name
+  string description                = 2; // a short description
+  repeated Var vars                 = 3;
+  repeated Function functions       = 4;
+  repeated PtrType ptrTypes         = 5;
+  repeated RecordType recordTypes   = 6;
+  repeated ArrayType arrayTypes     = 7;
+  repeated FuncSigType funcSigTypes = 8;
+}
+
+//----------------------------------------------------------------------------//
+// BOUND END  : TheTranslationUnit
+//----------------------------------------------------------------------------//
+
+
