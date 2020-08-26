@@ -379,7 +379,7 @@ class IntervalA(analysis.AnalysisAT):
   ################################################
 
   def Nop_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
     """An identity forward transfer function."""
@@ -388,7 +388,7 @@ class IntervalA(analysis.AnalysisAT):
 
 
   def Filter_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.FilterI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -408,7 +408,7 @@ class IntervalA(analysis.AnalysisAT):
 
 
   def UnDefVal_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.UnDefValI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -432,7 +432,7 @@ class IntervalA(analysis.AnalysisAT):
   ################################################
 
   def Num_Assign_Var_Lit_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -440,7 +440,7 @@ class IntervalA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -448,7 +448,7 @@ class IntervalA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_Deref_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -456,7 +456,7 @@ class IntervalA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_CastVar_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -464,7 +464,7 @@ class IntervalA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_SizeOf_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -472,7 +472,7 @@ class IntervalA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_UnaryArith_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -480,7 +480,7 @@ class IntervalA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_BinArith_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -488,7 +488,7 @@ class IntervalA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_Select_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -496,7 +496,7 @@ class IntervalA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_Array_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -504,7 +504,7 @@ class IntervalA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_Member_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -512,7 +512,7 @@ class IntervalA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_Call_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -520,7 +520,7 @@ class IntervalA(analysis.AnalysisAT):
 
 
   def Ptr_Assign_Var_Call_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -529,7 +529,7 @@ class IntervalA(analysis.AnalysisAT):
 
 
   def Record_Assign_Var_Call_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -538,7 +538,7 @@ class IntervalA(analysis.AnalysisAT):
 
 
   def Num_Assign_Deref_Lit_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -546,7 +546,7 @@ class IntervalA(analysis.AnalysisAT):
 
 
   def Num_Assign_Deref_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -554,7 +554,7 @@ class IntervalA(analysis.AnalysisAT):
 
 
   def Num_Assign_Array_Lit_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -562,7 +562,7 @@ class IntervalA(analysis.AnalysisAT):
 
 
   def Num_Assign_Array_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -570,7 +570,7 @@ class IntervalA(analysis.AnalysisAT):
 
 
   def Num_Assign_Member_Lit_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -578,7 +578,7 @@ class IntervalA(analysis.AnalysisAT):
 
 
   def Num_Assign_Member_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -586,7 +586,7 @@ class IntervalA(analysis.AnalysisAT):
 
 
   def Conditional_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.CondI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -601,7 +601,7 @@ class IntervalA(analysis.AnalysisAT):
 
 
   def Call_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.CallI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:

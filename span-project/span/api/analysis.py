@@ -752,7 +752,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Default_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.InstrIT,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -767,7 +767,7 @@ class AnalysisAT(ev.SimAT):
   # BOUND START: special_instructions_seven
 
   def Nop_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
     """Instr_Form: void: NopI().
@@ -792,7 +792,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Use_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.UseI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -802,7 +802,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def ExRead_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.ExReadI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -813,7 +813,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def CondRead_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.CondReadI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -823,7 +823,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def UnDefVal_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.UnDefValI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -833,7 +833,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Filter_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.FilterI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -848,7 +848,7 @@ class AnalysisAT(ev.SimAT):
   # BOUND START: regular_insn__when_lhs_is_var
 
   def Num_Assign_Var_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -860,7 +860,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Ptr_Assign_Var_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -872,7 +872,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Ptr_Assign_Var_FuncName_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -885,7 +885,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Record_Assign_Var_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -897,7 +897,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Num_Assign_Var_Lit_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -910,7 +910,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Ptr_Assign_Var_Lit_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -923,7 +923,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Num_Assign_Var_SizeOf_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -936,7 +936,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Num_Assign_Var_UnaryArith_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -948,7 +948,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Num_Assign_Var_BinArith_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -961,7 +961,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Ptr_Assign_Var_BinArith_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -974,7 +974,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Num_Assign_Var_Deref_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -986,7 +986,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Ptr_Assign_Var_Deref_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -998,7 +998,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Record_Assign_Var_Deref_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -1010,7 +1010,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Num_Assign_Var_Array_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -1023,7 +1023,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Ptr_Assign_Var_Array_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -1036,7 +1036,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Record_Assign_Var_Array_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -1049,7 +1049,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Num_Assign_Var_Member_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -1062,7 +1062,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Ptr_Assign_Var_Member_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -1075,7 +1075,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Record_Assign_Var_Member_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -1088,7 +1088,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Num_Assign_Var_Select_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -1101,7 +1101,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Ptr_Assign_Var_Select_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -1114,7 +1114,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Record_Assign_Var_Select_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -1126,7 +1126,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Num_Assign_Var_Call_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -1140,7 +1140,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Ptr_Assign_Var_Call_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -1149,7 +1149,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Record_Assign_Var_Call_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -1158,7 +1158,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Num_Assign_Var_CastVar_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -1170,7 +1170,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Ptr_Assign_Var_CastVar_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -1182,7 +1182,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Ptr_Assign_Var_CastArr_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -1206,7 +1206,7 @@ class AnalysisAT(ev.SimAT):
   # its broken into: t1 = x.y; b = (int*) t1;
 
   def Ptr_Assign_Var_AddrOfVar_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -1218,7 +1218,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Ptr_Assign_Var_AddrOfArray_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -1231,7 +1231,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Ptr_Assign_Var_AddrOfMember_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -1244,7 +1244,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Ptr_Assign_Var_AddrOfDeref_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -1257,7 +1257,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Ptr_Assign_Var_AddrOfFunc_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -1273,7 +1273,7 @@ class AnalysisAT(ev.SimAT):
   # BOUND START: regular_insn__when_lhs_is_deref
 
   def Num_Assign_Deref_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -1285,7 +1285,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Num_Assign_Deref_Lit_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -1298,7 +1298,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Ptr_Assign_Deref_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -1310,7 +1310,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Ptr_Assign_Deref_Lit_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -1323,7 +1323,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Record_Assign_Deref_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -1338,7 +1338,7 @@ class AnalysisAT(ev.SimAT):
   # BOUND START: regular_insn__when_lhs_is_array
 
   def Num_Assign_Array_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -1351,7 +1351,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Num_Assign_Array_Lit_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -1365,7 +1365,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Ptr_Assign_Array_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -1378,7 +1378,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Ptr_Assign_Array_Lit_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -1392,7 +1392,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Record_Assign_Array_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -1408,7 +1408,7 @@ class AnalysisAT(ev.SimAT):
   # BOUND START: regular_insn__when_lhs_is_member_expr
 
   def Num_Assign_Member_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -1422,7 +1422,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Num_Assign_Member_Lit_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -1436,7 +1436,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Ptr_Assign_Member_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -1450,7 +1450,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Ptr_Assign_Member_Lit_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -1464,7 +1464,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Record_Assign_Member_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -1480,7 +1480,7 @@ class AnalysisAT(ev.SimAT):
   # BOUND START: regular_insn__other
 
   def Call_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.CallI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -1492,7 +1492,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Return_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.ReturnI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -1504,7 +1504,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Return_Lit_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.ReturnI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -1516,7 +1516,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Return_Void_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.ReturnI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -1526,7 +1526,7 @@ class AnalysisAT(ev.SimAT):
 
 
   def Conditional_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.CondI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:

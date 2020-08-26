@@ -103,7 +103,7 @@ class DiagnosisRT(types.AnyT):
 
   def handleResults(self,
       results: Dict[analysis.AnalysisNameT,
-                          Dict[types.Nid, dfv.NodeDfvL]],
+                          Dict[types.NodeIdT, dfv.NodeDfvL]],
       func: obj.Func,
   ) -> Opt[List[Report]]:
     """

@@ -43,7 +43,7 @@ class ComponentL(DataLT):
 
   def __init__(self,
       func: constructs.Func,
-      val: Optional[Set[types.Nid]] = None,
+      val: Optional[Set[types.NodeIdT]] = None,
       top: bool = False,
       bot: bool = False
   ) -> None:
@@ -78,13 +78,13 @@ class ComponentL(DataLT):
     return len(self.val)
 
 
-  def __contains__(self, nid: types.Nid):
+  def __contains__(self, nid: types.NodeIdT):
     if self.top: return False
     if self.bot: return True
     return nid in self.val
 
 
-  def addNodeId(self, nid: types.Nid) -> None:
+  def addNodeId(self, nid: types.NodeIdT) -> None:
     if self.top:
       self.val = set()
       self.top = False
@@ -92,7 +92,7 @@ class ComponentL(DataLT):
     self.val.add(nid)
 
 
-  def removeNodeId(self, nid: types.Nid) -> None:
+  def removeNodeId(self, nid: types.NodeIdT) -> None:
     if self.top:
       return None
 
@@ -348,7 +348,7 @@ class ReachingDefA(analysis.AnalysisAT):
   ################################################
 
   def Nop_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
     """An identity forward transfer function."""
@@ -357,7 +357,7 @@ class ReachingDefA(analysis.AnalysisAT):
 
 
   def Filter_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.FilterI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -377,7 +377,7 @@ class ReachingDefA(analysis.AnalysisAT):
 
 
   def UnDefVal_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.UnDefValI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -401,7 +401,7 @@ class ReachingDefA(analysis.AnalysisAT):
   ################################################
 
   def Num_Assign_Var_Lit_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -409,7 +409,7 @@ class ReachingDefA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -417,7 +417,7 @@ class ReachingDefA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_Deref_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -425,7 +425,7 @@ class ReachingDefA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_CastVar_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -433,7 +433,7 @@ class ReachingDefA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_SizeOf_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -441,7 +441,7 @@ class ReachingDefA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_UnaryArith_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -449,7 +449,7 @@ class ReachingDefA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_BinArith_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -457,7 +457,7 @@ class ReachingDefA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_Select_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -465,7 +465,7 @@ class ReachingDefA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_Array_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -473,7 +473,7 @@ class ReachingDefA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_Member_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -481,7 +481,7 @@ class ReachingDefA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_Call_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -489,7 +489,7 @@ class ReachingDefA(analysis.AnalysisAT):
 
 
   def Ptr_Assign_Var_Call_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -497,7 +497,7 @@ class ReachingDefA(analysis.AnalysisAT):
 
 
   def Record_Assign_Var_Call_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -505,7 +505,7 @@ class ReachingDefA(analysis.AnalysisAT):
 
 
   def Num_Assign_Deref_Lit_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -513,7 +513,7 @@ class ReachingDefA(analysis.AnalysisAT):
 
 
   def Num_Assign_Deref_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -521,7 +521,7 @@ class ReachingDefA(analysis.AnalysisAT):
 
 
   def Num_Assign_Array_Lit_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -529,7 +529,7 @@ class ReachingDefA(analysis.AnalysisAT):
 
 
   def Num_Assign_Array_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -537,7 +537,7 @@ class ReachingDefA(analysis.AnalysisAT):
 
 
   def Num_Assign_Member_Lit_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -545,7 +545,7 @@ class ReachingDefA(analysis.AnalysisAT):
 
 
   def Num_Assign_Member_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -553,7 +553,7 @@ class ReachingDefA(analysis.AnalysisAT):
 
 
   def Conditional_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.CondI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -568,7 +568,7 @@ class ReachingDefA(analysis.AnalysisAT):
 
 
   def Call_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.CallI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:

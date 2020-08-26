@@ -148,11 +148,13 @@ class TranslationUnit:
     self._globalsAndAddrTakenSetMap:\
       Dict[types.Type, Set[types.VarNameT]] = dict()
 
+    # function id list: id is the index in the list
+    self._funcIdToFuncList: List[constructs.Func] = []
+
     if preProcess:
       self.preProcess()
 
 
-  # mainentry point for processing translation unit
   def preProcess(self):
     """Canonicalizes the translation unit before it can be used for analysis.
     ALL changes to SPAN IR before analysis are initiated from here.
@@ -185,10 +187,20 @@ class TranslationUnit:
     self.addDummyObjects()  # MUST (after extractAllVarNames())
     self.genCfgs()  # MUST
 
+    self.assignFunctionIds()
     self.logStats() # must be the last call (OPTIONAL)
 
     self.initialized = True
     if LS: LOG.info(f"PreProcessing_TUnit({self.name}): END/DONE.")
+
+
+  def assignFunctionIds(self):
+    """Assigns a unique id to each function."""
+    funcId: types.FuncIdT = 0
+    for func in self.yieldFunctions():
+      func.id = funcId
+      self._funcIdToFuncList.append(func)
+      funcId += 1
 
 
   def collectAddrTakenVars(self):  # MUST
@@ -1912,10 +1924,20 @@ class TranslationUnit:
                   rhs.opr = op.getFlippedRelOp(rhs.opr)
 
 
-  def getFunctionObj(self, funcName: types.FuncNameT) -> constructs.Func:
-    if funcName in self.allFunctions:
-      return self.allFunctions[funcName]
-    raise ValueError(f"{funcName}")
+  def getFunctionObj(self,
+      funcName: Opt[types.FuncNameT] = None,
+      funcId: Opt[types.FuncIdT] = None
+  ) -> constructs.Func:
+    """Returns the function object either using the name or id."""
+    assert funcName or funcId is not None, f"{funcName}, {funcId}"
+    assert self._funcIdToFuncList, f"{self._funcIdToFuncList}"
+
+    if funcName:
+      if funcName in self.allFunctions:
+        return self.allFunctions[funcName]
+    elif funcId < len(self._funcIdToFuncList):
+      return self._funcIdToFuncList[funcId]
+    raise ValueError(f"{funcName}, {funcId}")
 
 
   def filterAwayCalleesWithNoBody(self,

@@ -598,7 +598,7 @@ class SimAT(types.AnyT):
   __slots__ : List[str] = []
 
   def Node__to__Nil(self,
-      node: types.Nid,
+      node: types.NodeIdT,
       nodeDfv: Opt[dfv.NodeDfvL] = None,
   ) -> SimToNilL:
     """Node is simplified to Nil if its basically unreachable."""

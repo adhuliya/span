@@ -49,25 +49,21 @@ OpNameT = str  # operator name
 NumericT = TypingUnion[int, float]
 LitT = TypingUnion[int, float, str]
 
-Nid = int  # Node id (CFG)
+NodeIdT = int  # Node id (CFG) (32 bit)
+FuncIdT = int  # Function id (32 bit)
+FuncNodeIdT = int # FuncId || NodeId
 BasicBlockIdT = int
 
 LineNumT = int
 ColumnNumT = int
 
 EdgeLabelT = str  # edge labels
-FalseEdge: EdgeLabelT = "FalseEdge"
-TrueEdge: EdgeLabelT = "TrueEdge"
-UnCondEdge: EdgeLabelT = "UnCondEdge"
 
 OpCodeT = int  # operator codes type
 ExprCodeT = int  # expression codes type
 InstrCodeT = int  # instruction codes type
 
 DirectionT = str
-Forward: DirectionT = "Forward"
-Backward: DirectionT = "Backward"
-ForwBack: DirectionT = "ForwBack"
 
 ################################################
 # BOUND END  : useful_types
@@ -124,56 +120,11 @@ POINTER_TC: TypeCodeT = 520
 # BOUND END  : type_codes
 ################################################
 
-class AnyT(object):
-  """Base class for all static types in the system.
-
-  This class and all sub-classes suffixed with `T`,
-  should not be instantiated.
-  All classes suffixed with 'T' are only
-  used for static and dynamic type checking,
-  or to make the code readable.
-  """
-
-  __slots__ : List[str] = []
-
-  def __init__(self) -> None:
-    if self.__class__.__name__.endswith("T"):
-      raise TypeError("Classes suffixed with 'T' shouldn't be instantiated."
-                      "\nThese classes are exclusively used for static and "
-                      "dynamic type checking or to make code readable.")
-
-
-  def __eq__(self, other) -> bool:
-    raise NotImplementedError()
-
-
-  def isEqual(self, other) -> bool:
-    """Use this method only during testing.
-    It logs information in case objects are not equal
-    """
-    raise NotImplementedError()
-
-
-  def __hash__(self):
-    return hash(self.__class__.__name__)
-
-
-  def __str__(self):
-    return f"AnyT{self.__class__.__name__}"
-
-
-  def __repr__(self):
-    return self.__str__()
-
-
-class ConstructT(AnyT):
-  """Represents IR constructs like functions, structs and unions"""
-
-  __slots__ : List[str] = []
-
-  def __init__(self):
-    super().__init__()
-
+################################################
+# BOUND START: properties_associated_with_an_entity
+################################################
+# These properties donot logically belong to 'types'
+# module, but are needed for dependence purposes.
 
 class Loc:
   """Location type : line, col."""
@@ -286,55 +237,107 @@ class Info:
 
   def __repr__(self):
     """It expects eval()uator to import this class as follows:
-      from span.ir.types import Loc, Info
+      from span.ir.types import Info
     """
     return f"Info({repr(self.loc)},{self.misc})"
 
 
-class Site:
-  """Represents a 'site' in the CFG of a function.
-  If the site has a function call, then it is generally
-  referred to as a CallSite."""
+class VarNameInfo:
+  """Holds the information of all names,
+  including compound names
+  like x.y.z, x[].y.z etc. (which don't have any pointer dereference)
+  Note name of an object is absolute, i.e. it cannot contain
+  a pointer dereference.
+  """
 
-  __slots__ : List[str] = ["funcName", "nodeId"]
+  __slots__ : List[str] = ["name", "type", "hasArray"]
 
   def __init__(self,
-      funcName: FuncNameT,
-      nodeId: Nid,
-  ):
-    self.funcName = funcName
-    self.nodeId = nodeId
+      name: types.VarNameT,
+      t: types.Type,
+      hasArray: bool = False,
+  ) -> None:
+    self.name: types.VarNameT = name
+    self.type: types.Type = t
+    self.hasArray: bool = hasArray
+
+
+  def mayUpdate(self) -> bool:
+    """Should this name be `may` updated?
+    Write logic to return a boolean value.
+    Currently arrays and heap locations (represented as arrays)
+    are the only possibilities."""
+    return self.hasArray
+
+
+  def __hash__(self) -> int:
+    return hash(self.name)
 
 
   def __eq__(self, other) -> bool:
     if self is other:
       return True
-    if not isinstance(other, Site):
+    if not isinstance(other, VarNameInfo):
       return NotImplemented
     equal = True
-    if not self.funcName == other.funcName:
+    if not self.name == other.name:
       equal = False
-    elif not self.nodeId == other.nodeId:
+    elif not self.type == other.type:
+      equal = False
+    elif not self.hasArray == other.hasArray:
       equal = False
     return equal
 
 
-  def __hash__(self):
-    return hash((self.funcName, self.nodeId))
+  def isEqual(self, other: 'VarNameInfo') -> bool:
+    equal = True
+    if not isinstance(other, VarNameInfo):
+      if LS: LOG.error("ObjectsIncomparable: %s, %s", self, other)
+      return False
+    if not self.name == other.name:
+      if LS: LOG.error("NamesDiffer: %s, %s", self.name, other.name)
+      equal = False
+    if not self.type.isEqual(other.type):
+      equal = False
+    if not self.hasArray == other.hasArray:
+      if LS: LOG.error("HasArrayDiffers: %s, %s", self.hasArray, other.hasArray)
+      equal = False
+
+    if not equal and LS:
+      LOG.debug("ObjectsDiffer: %s, %s", self, other)
+
+    return equal
 
 
   def __str__(self):
-    return f"Site({self.funcName}, {self.nodeId})"
+    hasArray = "HasArray" if self.hasArray else "NoArray"
+    return f"({self.name} : ({hasArray}, {self.type}))"
 
 
   def __repr__(self):
     """It expects eval()uator to import this class as follows:
-      from span.ir.types import Loc, Info, Site
+      from span.ir.types import VarNameInfo
     """
-    return f"Site({self.funcName}, {self.nodeId})"
+    return f"VarNameInfo({repr(self.name)}, {repr(self.type)}, " \
+           f"{repr(self.hasArray)})"
 
 
-class Type(AnyT):
+################################################
+# BOUND END  : properties_associated_with_an_entity
+################################################
+
+
+
+class ConstructT:
+  """Represents IR constructs like functions, structs and unions"""
+
+  __slots__ : List[str] = []
+
+  def __init__(self):
+    super().__init__()
+
+
+class Type:
   """Class to represent types and super class for all compound types.
   It is directly used to represent the basic types.
   """
@@ -740,91 +743,6 @@ Double = Float64
 
 ################################################
 # BOUND END  : basic_type_objects
-################################################
-
-
-################################################
-# BOUND START: properties_of_a_name__nametypeinfo
-################################################
-
-class VarNameInfo:
-  """Holds the information of all names,
-  including compound names
-  like x.y.z, x[].y.z etc. (without any pointer dereference)
-  Note name of an object cannot contain a pointer dereference.
-  """
-
-  __slots__ : List[str] = ["name", "type", "hasArray"]
-
-  def __init__(self,
-      name: VarNameT,
-      t: Type,
-      hasArray: bool = False,
-  ) -> None:
-    self.name: VarNameT = name
-    self.type: Type = t
-    self.hasArray: bool = hasArray
-
-
-  def mayUpdate(self) -> bool:
-    """Should this name be `may` updated?
-    Write logic to return a boolean value.
-    Currently arrays and heap locations (represented as arrays)
-    are the only possibilities."""
-    return self.hasArray
-
-
-  def __hash__(self) -> int:
-    return hash(self.name)
-
-
-  def __eq__(self, other) -> bool:
-    if self is other:
-      return True
-    if not isinstance(other, VarNameInfo):
-      return NotImplemented
-    equal = True
-    if not self.name == other.name:
-      equal = False
-    elif not self.type == other.type:
-      equal = False
-    elif not self.hasArray == other.hasArray:
-      equal = False
-    return equal
-
-
-  def isEqual(self, other: 'VarNameInfo') -> bool:
-    equal = True
-    if not isinstance(other, VarNameInfo):
-      if LS: LOG.error("ObjectsIncomparable: %s, %s", self, other)
-      return False
-    if not self.name == other.name:
-      if LS: LOG.error("NamesDiffer: %s, %s", self.name, other.name)
-      equal = False
-    if not self.type.isEqual(other.type):
-      equal = False
-    if not self.hasArray == other.hasArray:
-      if LS: LOG.error("HasArrayDiffers: %s, %s", self.hasArray, other.hasArray)
-      equal = False
-
-    if not equal and LS:
-      LOG.debug("ObjectsDiffer: %s, %s", self, other)
-
-    return equal
-
-
-  def __str__(self):
-    hasArray = "HasArray" if self.hasArray else "NoArray"
-    return f"({self.name} : ({hasArray}, {self.type}))"
-
-
-  def __repr__(self):
-    return f"types.varNameInfo({repr(self.name)}, {repr(self.type)}, " \
-           f"{repr(self.hasArray)})"
-
-
-################################################
-# BOUND END  : properties_of_a_name__nametypeinfo
 ################################################
 
 
@@ -1263,19 +1181,19 @@ class RecordT(Type, ConstructT):
   """A record type (base class to Struct and Union types)
   Anonymous records are also given a unique name."""
 
-  __slots__ : List[str] = ["name", "members", "loc",
+  __slots__ : List[str] = ["name", "members", "info",
                            "_typeToMemberMap", "_nameCache"]
 
   def __init__(self,
       name: RecordNameT,
       members: Opt[List[Tuple[MemberNameT, Type]]],
-      loc: Opt[Loc],
+      info: Opt[Info],
       typeCode: TypeCodeT,
   ) -> None:
     super().__init__(typeCode)
     self.name = name
     self.members = members
-    self.loc = loc
+    self.info = info
     self._typeToMemberMap: Dict[Opt[Type], Set[VarNameInfo]] = {}
     self._nameCache: Dict[Tuple[Opt[Type], str], Set[VarNameInfo]] = {}
 
@@ -1541,7 +1459,7 @@ class Union(RecordT):
        from span.ir.types import Loc
     """
     return f"types.Union({repr(self.name)}, " \
-           f"{repr(self.members)}, {repr(self.loc)})"
+           f"{repr(self.members)}, {repr(self.info)})"
 
 
 class FuncSig(Type):

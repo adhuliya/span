@@ -12,10 +12,64 @@ Hence, except `span.ir.types` module all other modules can import this module.
 import logging
 LOG = logging.getLogger("span")
 
-from typing import Optional as Opt, Set
+from typing import Optional as Opt, Set, List
+from span.util.util import LS
 import re
 
 from . import types
+
+
+FalseEdge: types.EdgeLabelT = "FalseEdge"
+TrueEdge: types.EdgeLabelT = "TrueEdge"
+UnCondEdge: types.EdgeLabelT = "UnCondEdge"
+
+Forward: types.DirectionT = "Forward"
+Backward: types.DirectionT = "Backward"
+ForwBack: types.DirectionT = "ForwBack"
+
+
+class Site:
+  """Represents a 'site' in the CFG of a function.
+  If the site has a function call, then it is generally
+  referred to as a CallSite."""
+
+  __slots__ : List[str] = ["funcName", "nodeId"]
+
+  def __init__(self,
+      funcName: types.FuncNameT,
+      nodeId: types.NodeIdT,
+  ):
+    self.funcName = funcName
+    self.nodeId = nodeId
+
+
+  def __eq__(self, other) -> bool:
+    if self is other:
+      return True
+    if not isinstance(other, Site):
+      return NotImplemented
+    equal = True
+    if not self.funcName == other.funcName:
+      equal = False
+    elif not self.nodeId == other.nodeId:
+      equal = False
+    return equal
+
+
+  def __hash__(self):
+    return hash((self.funcName, self.nodeId))
+
+
+  def __str__(self):
+    return f"Site({self.funcName}, {self.nodeId})"
+
+
+  def __repr__(self):
+    """It expects eval()uator to import this class as follows:
+      from span.ir.conv import Site
+    """
+    return f"Site({self.funcName}, {self.nodeId})"
+
 
 ################################################
 # BOUND START: special_vars_values_and_types_of_spanir
@@ -280,6 +334,20 @@ def constructGlobalName(varName: str):
     return varName
   return f"g:{varName}"
 
+
+def extractFunctionId(funcNodeId: types.FuncNodeIdT):
+  return funcNodeId >> 32
+
+
+def createFuncNodeId(
+    funcId: types.FuncIdT,
+    nid: types.NodeIdT,
+) -> types.FuncNodeIdT:
+  return (funcId << 32) | nid
+
 ################################################
 # BOUND END  : system_wide_assumption_based_utilities
 ################################################
+
+
+

@@ -333,7 +333,7 @@ class DdMethod:
     # demand1 ---> {demand2,...}  ({demand2...} depends on demand1)
     self.demandDep: Dict[AtomicDemand, Set[AtomicDemand]] = dict()
     # demands dependent on infeasible nodes
-    self.infNodeDep: Dict[types.Nid, Set[AtomicDemand]] = dict()
+    self.infNodeDep: Dict[types.NodeIdT, Set[AtomicDemand]] = dict()
 
     # changed demands: records changed demands
     self.changedDemands: Set[AtomicDemand] = set()
@@ -460,7 +460,7 @@ class DdMethod:
     return slice
 
 
-  def addInfNodesDependence(self, nid: types.Nid, demand: AtomicDemand):
+  def addInfNodesDependence(self, nid: types.NodeIdT, demand: AtomicDemand):
     if nid not in self.infNodeDep:
       self.infNodeDep[nid] = depDemands = set()  # type: ignore
     else:

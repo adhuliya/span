@@ -442,7 +442,7 @@ class Host:
            Dict[Tuple[Opt[expr.ExprET], simApi.SimNameT], Opt[SimRecord]]] = dict()
     # sim instruction cache: cache the instruction computed for a sim
     self.instrSimCache: \
-      Dict[Tuple[types.Nid, simApi.SimNameT],
+      Dict[Tuple[types.NodeIdT, simApi.SimNameT],
            Dict[Tuple[instr.InstrIT, Opt[expr.ExprET]], instr.InstrIT]] = dict()
 
     self.stats: stats.HostStat = stats.HostStat(self, len(self.funcCfg.nodeMap))
@@ -451,7 +451,7 @@ class Host:
     self.simSrcs: Dict[simApi.SimNameT, Set[an.AnalysisNameT]] = dict()
     # cache filtered sim sources
     self.filteredSimSrcs: \
-      Dict[Tuple[simApi.SimNameT, expr.ExprET, types.Nid],
+      Dict[Tuple[simApi.SimNameT, expr.ExprET, types.NodeIdT],
            Set[an.AnalysisNameT]] = dict()
 
     # counts the net useful simplifications by a (supporting) analysis
@@ -1393,7 +1393,7 @@ class Host:
 
   #@functools.lru_cache(500)
   def addExprSimNeed(self,
-      nid: types.Nid,
+      nid: types.NodeIdT,
       simName: simApi.SimNameT,
       e: Opt[expr.ExprET] = None,
       demand: Opt[ddm.AtomicDemand] = None,  #DDM exclusive argument
@@ -2654,7 +2654,7 @@ class Host:
   #@functools.lru_cache(1000)
   def fetchAndFilterSimAnalyses(self,
       simName: simApi.SimNameT,
-      nid: types.Nid,
+      nid: types.NodeIdT,
       e: Opt[expr.ExprET] = None,
   ) -> Set[an.AnalysisNameT]:
     """
@@ -2862,7 +2862,7 @@ class Host:
 
 
   def setCallSiteDfv(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       results: Dict[an.AnalysisNameT, NodeDfvL]
   ) -> bool:
     """
@@ -2993,7 +2993,7 @@ class Host:
 
 
   def getCachedInstrSim(self,
-      nid: types.Nid,
+      nid: types.NodeIdT,
       simName: simApi.SimNameT,
       insn: instr.InstrIT,
       e: expr.ExprET,
@@ -3011,7 +3011,7 @@ class Host:
 
 
   def setCachedInstrSim(self,
-      nid: types.Nid,
+      nid: types.NodeIdT,
       simName: simApi.SimNameT,
       insn: instr.InstrIT,
       e: expr.ExprET,
@@ -3035,7 +3035,7 @@ class Host:
 
 
   def removeCachedInstrSim(self,
-      nid: types.Nid,
+      nid: types.NodeIdT,
       simName: simApi.SimNameT,
       insn: Opt[instr.InstrIT] = None,
       e: Opt[expr.ExprET] = None,

@@ -17,8 +17,8 @@ from span.ir.types import (StructNameT, UnionNameT, MemberNameT, FuncNameT, VarN
                            Type, FuncSig, Info, Loc, LabelNameT, )
 import span.ir.instr as instr
 from span.ir.instr import InstrIT, LabelI, GotoI, CondI, NopI, ReturnI
-from span.ir.types import (BasicBlockIdT, FalseEdge, TrueEdge,
-                           UnCondEdge, TUnitNameT, InstrIndexT)
+from span.ir.conv import FalseEdge, TrueEdge, UnCondEdge
+from span.ir.types import BasicBlockIdT, InstrIndexT, FuncNodeIdT
 import span.ir.expr as expr
 import span.ir.graph as graph
 
@@ -31,7 +31,7 @@ class Func(ConstructT):
   """
 
   __slots__ : List[str] = ["name", "paramNames", "basicBlocks", "bbEdges",
-               "instrSeq", "info", "cfg", "tUnit", "sig"]
+               "instrSeq", "info", "cfg", "tUnit", "sig", "id"]
 
 
   def __init__(self,
@@ -59,6 +59,7 @@ class Func(ConstructT):
     self.info = info
     self.cfg: Opt[graph.Cfg] = None  # initialized in TUnit class
     self.tUnit = None  # initialized to TranslationUnit object in span.ir.tunit
+    self.id: FuncNodeIdT = -1 # it is assigned a unique id
 
     if self.instrSeq:
       self.basicBlocks, self.bbEdges = self.genBasicBlocks(self.instrSeq)

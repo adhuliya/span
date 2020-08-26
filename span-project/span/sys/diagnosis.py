@@ -78,7 +78,7 @@ def runDiagnosis(diName: diagnosis.DiagnosisNameT,
   # AD syn1.printResult() # print the result of each analysis
 
   results: Dict[analysis.AnalysisNameT,
-                Dict[types.Nid, dfv.NodeDfvL]] = {}
+                Dict[types.NodeIdT, dfv.NodeDfvL]] = {}
 
   anResults = syn1.getAnalysisResults(anName)
   assert anResults, f"{anName}"

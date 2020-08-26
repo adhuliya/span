@@ -53,7 +53,7 @@ class ConstantsCountR(diagnosis.DiagnosisRT):
 
   def handleResults(self,
       results: Opt[Dict[analysis.AnalysisNameT,
-                             Dict[types.Nid, dfv.NodeDfvL]]],
+                             Dict[types.NodeIdT, dfv.NodeDfvL]]],
       func: obj.Func,
   ) -> Opt[List[Report]]:
     reports: List[Report] = []

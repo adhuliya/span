@@ -88,7 +88,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Nop_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
     """An identity backward transfer function."""
@@ -101,7 +101,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_Lit_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -109,7 +109,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -117,7 +117,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_UnaryArith_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ):
@@ -125,7 +125,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_BinArith_Instr(self,
-      hello: types.Nid,
+      hello: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -133,7 +133,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_Deref_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -141,7 +141,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_Call_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -149,7 +149,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_Array_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -157,7 +157,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_CastVar_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -165,7 +165,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_Member_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -173,7 +173,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_Select_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -181,7 +181,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Num_Assign_Var_SizeOf_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -189,7 +189,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Num_Assign_Deref_Lit_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -197,7 +197,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Num_Assign_Deref_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -205,7 +205,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Num_Assign_Member_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -213,7 +213,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Num_Assign_Member_Lit_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -221,7 +221,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Num_Assign_Array_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -229,7 +229,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Num_Assign_Array_Lit_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -237,7 +237,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Ptr_Assign_Var_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -245,7 +245,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Ptr_Assign_Deref_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -253,7 +253,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Ptr_Assign_Var_Deref_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -261,7 +261,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Ptr_Assign_Var_AddrOfVar_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -269,7 +269,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Ptr_Assign_Array_Lit_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ):
@@ -277,7 +277,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Ptr_Assign_Array_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ):
@@ -285,7 +285,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Ptr_Assign_Deref_Lit_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ):
@@ -293,7 +293,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Ptr_Assign_Member_Lit_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ):
@@ -301,7 +301,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Ptr_Assign_Member_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ):
@@ -309,7 +309,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Ptr_Assign_Var_AddrOfArray_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ):
@@ -317,7 +317,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Ptr_Assign_Var_AddrOfFunc_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ):
@@ -325,7 +325,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Ptr_Assign_Var_AddrOfMember_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ):
@@ -333,7 +333,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Ptr_Assign_Var_Array_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ):
@@ -341,7 +341,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Ptr_Assign_Var_BinArith_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ):
@@ -349,7 +349,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Ptr_Assign_Var_Call_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ):
@@ -357,7 +357,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Ptr_Assign_Var_CastArr_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ):
@@ -365,7 +365,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Ptr_Assign_Var_CastVar_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ):
@@ -373,7 +373,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Ptr_Assign_Var_FuncName_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ):
@@ -381,7 +381,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Ptr_Assign_Var_Lit_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ):
@@ -389,7 +389,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Ptr_Assign_Var_Member_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ):
@@ -397,7 +397,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Ptr_Assign_Var_Select_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
   ):
@@ -405,7 +405,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Call_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.CallI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -421,7 +421,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Conditional_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.CondI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -435,7 +435,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def ExRead_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.ExReadI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -446,7 +446,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def UnDefVal_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.UnDefValI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -454,7 +454,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Use_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.UseI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -462,7 +462,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def Return_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.ReturnI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -471,7 +471,7 @@ class LiveVarsA(analysis.AnalysisAT):
 
 
   def CondRead_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.CondReadI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:

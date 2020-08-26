@@ -120,7 +120,7 @@ class ReachA(analysis.AnalysisAT):
 
 
   def Nop_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
     dfvIn = nodeDfv.dfvIn
@@ -128,7 +128,7 @@ class ReachA(analysis.AnalysisAT):
 
 
   def Return_Var_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.ReturnI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -136,7 +136,7 @@ class ReachA(analysis.AnalysisAT):
 
 
   def Return_Lit_Instr(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       insn: instr.ReturnI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -144,7 +144,7 @@ class ReachA(analysis.AnalysisAT):
 
 
   def Node__to__Nil(self,
-      nodeId: types.Nid,
+      nodeId: types.NodeIdT,
       nodeDfv: NodeDfvL,
   ) -> sim.SimToNilL:
     # sim.SimToNilPending is never returned
