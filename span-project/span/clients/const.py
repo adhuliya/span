@@ -63,11 +63,9 @@ class ComponentL(dfv.ComponentL):
       other: 'ComponentL'
   ) -> Tuple['ComponentL', ChangeL]:
     """For documentation see: `span.api.lattice.LatticeLT.meet`"""
-    if self is other: return self, NoChange
-    if self.bot: return self, NoChange
-    if other.top: return self, NoChange
-    if other.bot: return other, Changed
-    if self.top: return other, Changed
+    tup = lattice.basicMeetOp(self, other)
+    if tup is not None:
+      return tup
 
     if other.val == self.val:
       return self, NoChange
@@ -77,27 +75,20 @@ class ComponentL(dfv.ComponentL):
 
   def __lt__(self, other: 'ComponentL') -> bool:
     """For documentation see: span.api.lattice.LatticeLT.__lt__.__doc__"""
-    if self.bot: return True
-    if other.top: return True
-    if other.bot: return False
-    if self.top: return False
-
-    if self.val == other.val: return True
-    return False
+    lt = lattice.basicLessThanTest(self, other)
+    if lt is not None:
+      return lt
+    return self.val == other.val
 
 
   def __eq__(self, other) -> bool:
     """For documentation see: `span.api.lattice.LatticeLT.__eq__`"""
-    if self is other:
-      return True
     if not isinstance(other, ComponentL):
       return NotImplemented
 
-    sTop, sBot, oTop, oBot = self.top, self.bot, other.top, other.bot
-    if sTop and oTop: return True
-    if sBot and oBot: return True
-    if sTop or sBot or oTop or oBot: return False
-
+    equal = lattice.basicEqualTest(self, other)
+    if equal is not None:
+      return equal
     return self.val == other.val
 
 
@@ -112,9 +103,8 @@ class ComponentL(dfv.ComponentL):
 
 
   def __str__(self):
-    if self.bot: return "Bot"
-    if self.top: return "Top"
-    return f"{self.val}"
+    s = lattice.getBasicString(self)
+    return s if s else f"{self.val}"
 
 
   def __repr__(self):

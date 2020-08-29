@@ -8,7 +8,7 @@
 import logging
 
 LOG = logging.getLogger("span")
-from typing import List, Tuple, Set, Dict, Any, Type, Callable
+from typing import List, Tuple, Set, Dict, Any, Type, Callable, cast
 from typing import Optional as Opt
 import io
 
@@ -16,7 +16,9 @@ from span.util.util import LS, US, AS
 import span.ir.types as types
 import span.ir.graph as graph
 import span.ir.instr as instr
+import span.ir.expr as expr
 import span.ir.constructs as constructs
+import span.ir.ir as ir
 import span.api.sim as ev
 from span.api.dfv import OLD_INOUT, NEW_IN, NEW_OUT, NodeDfvL, NewOldL
 import span.api.dfv as dfv
@@ -847,6 +849,42 @@ class AnalysisAT(ev.SimAT):
   # BOUND START: regular_instructions
   # BOUND START: regular_insn__when_lhs_is_var
 
+  def Num_Assign_Instr(self,
+      nodeId: types.NodeIdT,
+      insn: instr.AssignI,
+      nodeDfv: NodeDfvL
+  ) -> NodeDfvL:
+    """Instr_Form: numeric: lhs = rhs.
+    Convention:
+      Type of lhs and rhs is numeric.
+    """
+    raise NotImplementedError()
+
+
+  def Ptr_Assign_Instr(self,
+      nodeId: types.NodeIdT,
+      insn: instr.AssignI,
+      nodeDfv: NodeDfvL
+  ) -> NodeDfvL:
+    """Instr_Form: pointer: lhs = rhs.
+    Convention:
+      Type of lhs and rhs is a record.
+    """
+    raise NotImplementedError()
+
+
+  def Record_Assign_Instr(self,
+      nodeId: types.NodeIdT,
+      insn: instr.AssignI,
+      nodeDfv: NodeDfvL
+  ) -> NodeDfvL:
+    """Instr_Form: record: lhs = rhs.
+    Convention:
+      Type of lhs and rhs is a record.
+    """
+    raise NotImplementedError()
+
+
   def Num_Assign_Var_Var_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
@@ -1548,7 +1586,7 @@ class AnalysisAT(ev.SimAT):
 # BOUND START: Value_analysis
 ################################################
 
-class ValueAnalysisA(AnalysisAT):
+class ValueAnalysisAT(AnalysisAT):
   """A specialized value analysis with code common
   to most value analyses."""
   __slots__ : List[str] = ["componentTop", "componentBot"]
@@ -1566,12 +1604,14 @@ class ValueAnalysisA(AnalysisAT):
 
   def __init__(self,
       func: constructs.Func,
+      componentL: Type[dfv.ComponentL],
+      overallL: Type[dfv.OverallL],
   ) -> None:
     super().__init__(func)
-    self.componentTop: ComponentL = ComponentL(self.func, top=True)
-    self.componentBot: ComponentL = ComponentL(self.func, bot=True)
-    self.overallTop: OverallL = OverallL(self.func, top=True)
-    self.overallBot: OverallL = OverallL(self.func, bot=True)
+    self.componentTop: dfv.ComponentL = componentL(self.func, top=True)
+    self.componentBot: dfv.ComponentL = componentL(self.func, bot=True)
+    self.overallTop: dfv.OverallL = overallL(self.func, top=True)
+    self.overallBot: dfv.OverallL = overallL(self.func, bot=True)
 
 
   def getIpaBoundaryInfo(self,
@@ -1582,7 +1622,13 @@ class ValueAnalysisA(AnalysisAT):
 
 
   def getAllVars(self) -> Set[types.VarNameT]:
-    return ir.getNamesEnv(self.func, numeric=True)
+    return NotImplemented
+    # return ir.getNamesEnv(self.func, numeric=True)
+
+  def insnTypeTest(self, insn: instr.InstrIT) -> bool:
+    """Returns True if the type of the instruction is
+    of interest to the analysis."""
+    return NotImplemented
 
   ################################################
   # BOUND START: Special_Instructions
@@ -1601,12 +1647,12 @@ class ValueAnalysisA(AnalysisAT):
       insn: instr.UnDefValI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
-    if not insn.type.isNumeric():
+    if not self.insnTypeTest(insn.type):
       return self.Nop_Instr(nodeId, nodeDfv)
-
-    oldIn = nodeDfv.dfvIn
-    newOut = cast(OverallL, oldIn.getCopy())
-    newOut.setVal(insn.lhs, self.componentBot)
+    newOut = oldIn = cast(dfv.OverallL, nodeDfv.dfvIn)
+    if oldIn.getVal(insn.lhs) != self.componentBot:
+      newOut = oldIn.getCopy()
+      newOut.setVal(insn.lhs, self.componentBot)
     return NodeDfvL(oldIn, newOut)
 
 
@@ -1618,7 +1664,7 @@ class ValueAnalysisA(AnalysisAT):
   # BOUND START: Normal_Instructions
   ################################################
 
-  def Num_Assign_Var_Lit_Instr(self,
+  def Num_Assign_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
@@ -1626,7 +1672,7 @@ class ValueAnalysisA(AnalysisAT):
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
 
 
-  def Num_Assign_Var_Var_Instr(self,
+  def Ptr_Assign_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
@@ -1634,204 +1680,12 @@ class ValueAnalysisA(AnalysisAT):
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
 
 
-  def Num_Assign_Var_Deref_Instr(self,
+  def Record_Assign_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
-
-
-  def Num_Assign_Var_CastVar_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
-
-
-  def Num_Assign_Var_SizeOf_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
-
-
-  def Num_Assign_Var_UnaryArith_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
-
-
-  def Num_Assign_Var_BinArith_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
-
-
-  def Num_Assign_Var_Select_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
-
-
-  def Num_Assign_Var_Array_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
-
-
-  def Num_Assign_Var_Member_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
-
-
-  def Num_Assign_Var_Call_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
-
-
-  def Ptr_Assign_Var_Call_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processCallE(insn.rhs, nodeDfv.dfvIn)
-
-
-  def Record_Assign_Var_Call_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processCallE(insn.rhs, nodeDfv.dfvIn)
-
-
-  def Num_Assign_Deref_Lit_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
-
-
-  def Num_Assign_Deref_Var_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
-
-
-  def Num_Assign_Array_Lit_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
-
-
-  def Num_Assign_Array_Var_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
-
-
-  def Num_Assign_Member_Lit_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
-
-
-  def Num_Assign_Member_Var_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
-
-
-  def Record_Assign_Array_Var_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    raise NotImplementedError()
-
-
-  def Record_Assign_Deref_Var_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    raise NotImplementedError()
-
-
-  def Record_Assign_Member_Var_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    raise NotImplementedError()
-
-
-  def Record_Assign_Var_Array_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    raise NotImplementedError()
-
-
-  def Record_Assign_Var_Deref_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    raise NotImplementedError()
-
-
-  def Record_Assign_Var_Member_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    raise NotImplementedError()
-
-
-  def Record_Assign_Var_Select_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    raise NotImplementedError()
-
-
-  def Record_Assign_Var_Var_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    raise NotImplementedError()
 
 
   def Conditional_Instr(self,
@@ -1839,8 +1693,8 @@ class ValueAnalysisA(AnalysisAT):
       insn: instr.CondI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
-    oldIn = cast(OverallL, nodeDfv.dfvIn)
-    if isinstance(insn.arg.type, types.Ptr): # special case
+    oldIn = cast(dfv.OverallL, nodeDfv.dfvIn)
+    if not self.insnTypeTest(insn.arg.type):  # special case
       return NodeDfvL(oldIn, oldIn)
     dfvFalse, dfvTrue = self.calcTrueFalseDfv(insn.arg, oldIn)
     return NodeDfvL(oldIn, None, dfvTrue, dfvFalse)
@@ -1859,138 +1713,6 @@ class ValueAnalysisA(AnalysisAT):
   ################################################
 
   ################################################
-  # BOUND START: Simplifiers
-  ################################################
-
-  def Num_Var__to__Num_Lit(self,
-      e: expr.VarE,
-      nodeDfv: Opt[NodeDfvL] = None,
-  ) -> sim.SimToNumL:
-    # STEP 1: check if the expression can be evaluated
-    varType = e.type
-    if not varType.isNumeric():
-      return sim.SimToNumFailed
-
-    # STEP 2: If here, eval may be possible, hence attempt eval
-    if nodeDfv is None:
-      return sim.SimToNumPending
-
-    val = cast(OverallL, nodeDfv.dfvIn).getVal(e.name)
-    if val.bot: return sim.SimToNumFailed  # cannot be evaluated
-    if val.top: return sim.SimToNumPending  # can be evaluated, needs more info
-    return sim.SimToNumL(val.val)
-
-
-  def Num_Bin__to__Num_Lit(self,
-      e: expr.BinaryE,
-      nodeDfv: Opt[NodeDfvL] = None,
-  ) -> sim.SimToNumL:
-    # STEP 1: check if the expression can be evaluated
-    exprType = e.type
-    arg1Type = e.arg1.type
-    arg2Type = e.arg2.type
-
-    if not exprType.isNumeric():
-      return sim.SimToNumFailed
-    if not arg1Type.isNumeric() or not arg2Type.isNumeric():
-      return sim.SimToNumFailed
-
-    # STEP 2: If here, eval may be possible, hence attempt eval
-    if nodeDfv is None:
-      return sim.SimToNumPending
-
-    if isinstance(e.arg1, expr.VarE):
-      val1 = cast(OverallL, nodeDfv.dfvIn).getVal(e.arg1.name)
-    else: # a literal
-      assert isinstance(e.arg1, expr.LitE), f"{e}"
-      assert isinstance(e.arg1.val, (int, float)), f"{e.arg1}"
-      val1 = ComponentL(self.func, val=e.arg1.val)
-
-    if val1.bot: return sim.SimToNumFailed
-    if val1.top: return sim.SimToNumPending
-
-    if isinstance(e.arg2, expr.VarE):
-      val2 = cast(OverallL, nodeDfv.dfvIn).getVal(e.arg2.name)
-    else:  # a literal
-      assert isinstance(e.arg2, expr.LitE), f"{e}"
-      assert isinstance(e.arg2.val, (int, float)), f"{e.arg1}"
-      val2 = ComponentL(self.func, val=e.arg2.val)
-
-    if val2.bot: return sim.SimToNumFailed
-    if val2.top: return sim.SimToNumPending
-
-    assert val1.val and val2.val, f"{val1}, {val2}"
-    opCode = e.opr.opCode
-    if opCode == op.BO_ADD_OC:
-      return sim.SimToNumL(val1.val + val2.val)
-    elif opCode == op.BO_SUB_OC:
-      return sim.SimToNumL(val1.val - val2.val)
-    elif opCode == op.BO_MUL_OC:
-      return sim.SimToNumL(val1.val * val2.val)
-    elif opCode == op.BO_DIV_OC:
-      if val2.val == 0:
-        if LS: LOG.critical("DivideByZero: expr: %s, dfv: %s",
-                            e, nodeDfv.dfvIn)
-        return sim.SimToNumFailed
-      else:
-        return sim.SimToNumL(val1.val / val2.val)
-    elif opCode == op.BO_MOD_OC:
-      return sim.SimToNumL(val1.val % val2.val)
-    elif opCode == op.BO_GT_OC:
-      val = 1 if val1.val > val2.val else 0
-      return sim.SimToNumL(val)
-    elif opCode == op.BO_GE_OC:
-      val = 1 if val1.val >= val2.val else 0
-      return sim.SimToNumL(val)
-    elif opCode == op.BO_LT_OC:
-      val = 1 if val1.val < val2.val else 0
-      return sim.SimToNumL(val)
-    elif opCode == op.BO_LE_OC:
-      val = 1 if val1.val <= val2.val else 0
-      return sim.SimToNumL(val)
-    elif opCode == op.BO_EQ_OC:
-      val = 1 if val1.val == val2.val else 0
-      return sim.SimToNumL(val)
-    elif opCode == op.BO_NE_OC:
-      val = 1 if val1.val != val2.val else 0
-      return sim.SimToNumL(val)
-
-    return sim.SimToNumFailed
-
-
-  def Cond__to__UnCond(self,
-      e: expr.VarE,
-      nodeDfv: Opt[NodeDfvL] = None
-  ) -> sim.SimToBoolL:
-    # STEP 1: check if the expression can be evaluated
-    exprType = e.type
-    if not exprType.isNumeric():
-      return sim.SimToBoolFailed
-
-    # STEP 2: If here, eval may be possible
-    if nodeDfv is None:
-      return sim.SimToBoolPending
-
-    # STEP 3: attempt evaluation
-    val = cast(OverallL, nodeDfv.dfvIn).getVal(e.name)
-    if val.bot: return sim.SimToBoolFailed  # cannot be evaluated
-    if val.top:
-      nameType = ir.inferTypeOfVal(self.func, e.name)
-      if isinstance(nameType, types.Ptr):
-        return sim.SimToBoolFailed
-      else:
-        return sim.SimToBoolPending  # can be evaluated but needs more info
-    if val.val != 0:
-      return sim.SimToBoolL(True)
-    else:
-      return sim.SimToBoolL(False)
-
-
-  ################################################
-  # BOUND END  : Simplifiers
-  ################################################
-
-  ################################################
   # BOUND START: Helper_Functions
   ################################################
 
@@ -2000,7 +1722,7 @@ class ValueAnalysisA(AnalysisAT):
       dfvIn: DataLT,
   ) -> NodeDfvL:
     """A common function to handle various assignment instructions."""
-    assert isinstance(dfvIn, OverallL), f"{type(dfvIn)}"
+    assert isinstance(dfvIn, dfv.OverallL), f"{type(dfvIn)}"
 
     if isinstance(lhs.type, types.RecordT):
       return self.processLhsRhsRecordType(lhs, rhs, dfvIn)
@@ -2016,13 +1738,13 @@ class ValueAnalysisA(AnalysisAT):
       for name in lhsVarNames:  # this loop is entered once only
         newVal = rhsDfv
         if ir.nameHasArray(self.func, name):  # may update arrays
-          oldVal = cast(ComponentL, dfvInGetVal(name))
+          oldVal = cast(dfv.ComponentL, dfvInGetVal(name))
           newVal, _ = oldVal.meet(rhsDfv)
         if dfvInGetVal(name) != newVal:
           outDfvValues[name] = newVal
     else:
       for name in lhsVarNames:  # do may updates (take meet)
-        oldDfv = cast(ComponentL, dfvIn.getVal(name))
+        oldDfv = cast(dfv.ComponentL, dfvIn.getVal(name))
         updatedDfv, changed = oldDfv.meet(rhsDfv)
         if dfvInGetVal(name) != updatedDfv:
           outDfvValues[name] = updatedDfv

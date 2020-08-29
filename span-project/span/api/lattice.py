@@ -264,7 +264,7 @@ def mergeAll(values: Iterable[BoundLatticeLT]) -> BoundLatticeLT:
   return result  # type: ignore
 
 
-def basicMeetOp(first: LatticeLT, second: LatticeLT) -> Opt[Tuple[LatticeLT, ChangeL]]:
+def basicMeetOp(first: types.T, second: types.T) -> Opt[Tuple[types.T, ChangeL]]:
   """A basic meet operation common to all lattices.
   If this fails the lattices can do more complicated operations.
   """
@@ -298,6 +298,10 @@ def basicEqualTest(first: LatticeLT, second: LatticeLT) -> Opt[bool]:
   if sTop and oTop: return True
   if sBot and oBot: return True
   if sTop or sBot or oTop or oBot: return False
-
   return None  # i.e. can't decide
 
+
+def getBasicString(obj: LatticeLT) -> Opt[str]:
+  if obj.bot: return "Bot"
+  if obj.top: return "Top"
+  return None

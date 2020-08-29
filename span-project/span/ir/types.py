@@ -29,6 +29,8 @@ import span.util.messages as msg
 # BOUND START: useful_types
 ################################################
 
+T = TypeVar("T")
+
 FileNameT = str
 
 VarNameT = str  # names like x, x.y.z etc.
