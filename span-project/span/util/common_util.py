@@ -5,29 +5,29 @@
 
 """
 Common utility functions module which can be used in any project.
+Note(AD): This file is hard-linked to the `snippets` repo that
+contains various common utility modules.
 """
 
 import os
 import os.path as osp
 import sys
 import subprocess as subp
-import pickle
-from typing import Optional as Opt, Set, Generator, List
+import shutil
+from typing import Optional as Opt, Set, Generator, List, Callable
 import time
 
 import logging
 
 LOG = logging.getLogger("span")
 
+LS = True  # never comment this line
+"""Logging Switch: to disable set it to false."""
+
 globalCounter: int = 0
 RelFilePathT = str  # a relative file path (could be absolute too)
 AbsFilePathT = str  # an absolute file path
 TEXT_CHARS = bytearray({7, 8, 9, 10, 12, 13, 27} | set(range(0x20, 0x100)) - {0x7f})
-
-# used in calculation of line number
-lastStr = ""
-lastPos = 0
-lastLineCount = 0
 
 
 ################################################
@@ -44,25 +44,29 @@ def createDir(dirPath, existOk=True):
     str: absolute path of the directory or None.
   """
   absPath = getAbolutePath(dirPath)
-  LOG.debug("Creating directory %s", absPath)
+  if LS: LOG.debug("Creating directory %s", absPath)
 
   try:
     os.makedirs(absPath, exist_ok=existOk)
   except Exception as e:
-    LOG.error("Error creating directory {},\n{}".format(absPath, e))
+    if LS: LOG.error("Error creating directory {},\n{}".format(absPath, e))
     return None
 
   return absPath
 
 
+def removeFileIfExists(filePath: str) -> None:
+  """Removes the file if it exists."""
+  if osp.exists(filePath):
+    if not osp.isdir(filePath):
+      os.remove(filePath)
+    else:
+      if LS: LOG.error(f"The given file is a directory.: {filePath}")
+
+
 def getAbolutePath(filePath: str):
-  """Returns absolute path of the given file."""
-  if osp.isabs(filePath):
-    absPath = filePath
-  else:
-    cwd = os.getcwd()
-    absPath = osp.join(cwd, filePath)
-  return absPath
+  """Returns absolute version of the given file path."""
+  return osp.abspath(filePath)
 
 
 def readFromFile(fileName: str) -> str:
@@ -103,7 +107,9 @@ def isEmptyDir(directory: str) -> bool:
 
 
 def isBinaryFile(filePath: RelFilePathT) -> bool:
-  isBinaryString = lambda bytes: bool(bytes.translate(None, TEXT_CHARS))
+  """A rough check to know if the file has non-textual content."""
+  isBinaryString = \
+    lambda bytes: bool(bytes.translate(table=None, delete=TEXT_CHARS))
   return isBinaryString(open(filePath, "rb").read(1024))
 
 
@@ -132,7 +138,11 @@ def copyDirectoryContents(srcDir: RelFilePathT, destDir: RelFilePathT) -> None:
 
 
 def copyFile(filePath: RelFilePathT, destDir: RelFilePathT) -> None:
-  subp.run(f"cp -r {filePath} {destDir}", shell=True)
+  shutil.copy(filePath, destDir)
+
+
+def renameFile(currName: str, newName: str):  # TODO: return False on failure
+  os.rename(currName, newName)
 
 
 def prepareDestinationDirectory(
@@ -262,41 +272,26 @@ def randomString(length: int = 10,
   return "".join(collect[:length])
 
 
-def calcLineNum(s: str, pos: int) -> int:
-  """Calculates the line number of the given pos in
+def getLineNumFunc() -> Callable[[str, int], int]:
+  """Returns a function that calculates
+  the line number of the given pos in
   the string s. It optimizes by caching the last
   calculated result."""
-  global lastStr, lastPos, lastLineCount
-  if s != lastStr:
-    lastStr = s
-    lastPos = 0
-    lastLineCount = 1
-  for i in range(lastPos, pos):
-    if s[i] == os.linesep:
-      lastLineCount += 1
-  return lastLineCount
+  # used in calculation of line number
+  lastStr, lastPos, lastLineCount = "", 0, 0
 
+  def calcLineNum(s: str, pos: int) -> int:
+    nonlocal lastStr, lastPos, lastLineCount
+    if s != lastStr:
+      lastStr = s
+      lastPos = 0
+      lastLineCount = 1
+    for i in range(lastPos, pos):
+      if s[i] == os.linesep:
+        lastLineCount += 1
+    return lastLineCount
 
-def memoize(func):
-  """
-  Adds memoization to an arbitrary python function.
-  Its a decorator.
-  """
-  cache = {}  # a dictionary storing results
-
-
-  def wrapper(*args, **kwargs):
-    key = (pickle.dumps(args), pickle.dumps(kwargs))
-
-    if key in cache:
-      return cache[key]
-
-    value = func(*args, **kwargs)
-    cache[key] = value
-    return value
-
-
-  return wrapper
+  return calcLineNum
 
 
 def getSize(obj, seen: Opt[Set[int]] = None) -> int:
@@ -309,7 +304,7 @@ def getSize(obj, seen: Opt[Set[int]] = None) -> int:
   size = sys.getsizeof(obj, 0)  # pypy3 always returns default (necessary)
   if isinstance(obj, dict):
     size += sum(getSize(v, seen) + getSize(k, seen) for k, v in obj.items())
-  elif hasattr(obj, '__dict__'):
+  elif hasattr(obj, '__dict__'):  # not true if '__slots__' are used
     size += getSize(obj.__dict__, seen)
   elif hasattr(obj, '__slots__'):  # in case slots are in use
     slotList = [getattr(C, "__slots__", []) for C in obj.__class__.__mro__]
@@ -321,9 +316,23 @@ def getSize(obj, seen: Opt[Set[int]] = None) -> int:
 
 
 class Timer:
-  __slots__ : List[str] = ["name", "_start", "cumulativeTime", "startCounts",
-               "stopCounts", "counter"]
+  """
+  A timer class used to measure time of an activity in a large project.
+  It also works if functions are recursive.
 
+  Usage:
+  1. Create Timer object as: `timer = Timer()`
+  2. To start use: timer.start()
+  3. To stop  use: timer.stop()
+
+  The timer truly stops if starts and stops are balanced.
+  For example,
+  timer.start(); timer.start();  # the second start is like a NOP
+  timer.stop();  timer.stop();   # the first stop is like a NOP
+  stop() calls should balance start() calls.
+  """
+  __slots__: List[str] = ["name", "_start", "cumulativeTime", "startCounts",
+                          "stopCounts", "counter"]
 
   def __init__(self, name=None, start=True):
     self.name = name if name else f"Timer{getUniqueId()}"
@@ -335,13 +344,11 @@ class Timer:
     if start:
       self.start()
 
-
   def start(self):
     if self.counter == 0:
       self._start = time.time()
     self.counter += 1
     self.startCounts += 1
-
 
   def stop(self) -> 'Timer':
     self.counter -= 1
@@ -350,20 +357,16 @@ class Timer:
       self.stopCounts += 1
     return self
 
-
   def stopAndPrint(self) -> None:
     print(self.stop())
 
-
   def getDurationInMillisec(self) -> float:
     return self.cumulativeTime * 1000
-
 
   def __str__(self):
     return f"TimeElapsed({self.name}):" \
            f" {self.getDurationInMillisec()} ms" \
            f" (Starts: {self.startCounts}, Stops: {self.stopCounts})"
-
 
   def __repr__(self):
     return str(self)
@@ -374,30 +377,36 @@ class CacheHits:
   Keeps track of the hits of the cache.
   """
 
-  __slots__ : List[str] = ["name", "hits", "misses"]
-
+  __slots__: List[str] = ["name", "hits", "misses"]
 
   def __init__(self, name=""):
     self.name = name if name else f"Cache{getUniqueId()}"
     self.hits, self.misses = 0, 0
 
-
   def hit(self):
     self.hits += 1
-
 
   def miss(self):
     self.misses += 1
 
-
   def hitRatio(self) -> int:
     total = self.hits + self.misses
-    return int(100 * self.hits / total if total != 0 else 0)
-
+    return int((100 * self.hits / total) if total != 0 else 0)
 
   def __str__(self):
     return f"HitRatio({self.name}): {self.hitRatio()} % (hits={self.hits}, misses={self.misses})"
 
-
   def __repr__(self):
     return str(self)
+
+
+def isIterable(obj) -> bool:
+  """A safe check to confirm if an item is iterable."""
+  try:
+    iter(obj)
+  except Exception:
+    return False
+  else:
+    return True
+
+

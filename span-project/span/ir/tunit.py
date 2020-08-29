@@ -1628,7 +1628,12 @@ class TranslationUnit:
       e: expr.ExprET
   ) -> List[types.VarNameT]:
     """Returns the locations that may be modified,
-    if this expression was on the LHS of an assignment."""
+    if this expression was on the LHS of an assignment.
+
+    Note: If the LValue(s) is a RecordT type, then the analysis
+    should handle it specially since a record assignment
+    can be viewed as a sequence of member wise assignments.
+    """
     names = []
 
     if isinstance(e, expr.VarE):

@@ -2,30 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="33a5c68d-3b8a-4f86-8470-06eab99970cb" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/misc/reach.py" beforeDir="false" afterPath="$PROJECT_DIR$/misc/reach.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/misc/reachingdef.py" beforeDir="false" afterPath="$PROJECT_DIR$/misc/reachingdef.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/misc/sign.py" beforeDir="false" afterPath="$PROJECT_DIR$/misc/sign.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/span/api/analysis.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/api/analysis.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/span/api/diagnosis.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/api/diagnosis.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/span/api/sim.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/api/sim.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/span/clients/const.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/clients/const.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/span/clients/evenodd.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/clients/evenodd.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/span/clients/interval.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/clients/interval.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/span/clients/pointsto.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/clients/pointsto.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/span/clients/simplelive.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/clients/simplelive.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/span/clients/stronglive.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/clients/stronglive.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/span/diagnoses/constants.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/diagnoses/constants.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/span/diagnoses/deadstore.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/diagnoses/deadstore.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/span/diagnoses/nullderef.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/diagnoses/nullderef.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/span/ir/constructs.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/ir/constructs.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/span/ir/conv.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/ir/conv.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/span/ir/tunit.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/ir/tunit.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/span/ir/types.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/ir/types.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/span/sys/ddm.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/sys/ddm.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/span/sys/diagnosis.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/sys/diagnosis.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/span/sys/host.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/sys/host.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/util/common_util.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/util/common_util.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -79,7 +59,7 @@
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="com.intellij.ide.scratch.LRUPopupBuilder$1/New Scratch File" value="Markdown" />
     <property name="full.screen.before.presentation.mode" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../../../ws/ws-misc-git/snippets" />
     <property name="node.js.detected.package.eslint" value="true" />
     <property name="node.js.detected.package.tslint" value="true" />
     <property name="node.js.path.for.package.eslint" value="project" />
@@ -370,7 +350,10 @@
       <workItem from="1598366655626" duration="105000" />
       <workItem from="1598366771510" duration="665000" />
       <workItem from="1598408614718" duration="1776000" />
-      <workItem from="1598452495661" duration="2688000" />
+      <workItem from="1598452495661" duration="3332000" />
+      <workItem from="1598589209744" duration="1717000" />
+      <workItem from="1598624087289" duration="2336000" />
+      <workItem from="1598672816687" duration="2513000" />
     </task>
     <servers />
   </component>
@@ -415,10 +398,10 @@
       <screen x="0" y="0" width="1366" height="744" />
     </state>
     <state x="212" y="0" width="930" height="744" key="#com.intellij.refactoring.rename.AutomaticRenamingDialog/0.0.1366.744@0.0.1366.744" timestamp="1591555866261" />
-    <state x="461" y="130" width="426" height="484" key="FileChooserDialogImpl" timestamp="1597593211822">
+    <state x="461" y="130" width="426" height="484" key="FileChooserDialogImpl" timestamp="1598589265664">
       <screen x="0" y="0" width="1366" height="744" />
     </state>
-    <state x="461" y="130" width="426" height="484" key="FileChooserDialogImpl/0.0.1366.744@0.0.1366.744" timestamp="1597593211822" />
+    <state x="461" y="130" width="426" height="484" key="FileChooserDialogImpl/0.0.1366.744@0.0.1366.744" timestamp="1598589265664" />
     <state x="0" y="0" width="1366" height="744" key="SettingsEditor" timestamp="1598366834659">
       <screen x="0" y="0" width="1366" height="744" />
     </state>
@@ -427,10 +410,10 @@
       <screen x="0" y="0" width="1366" height="744" />
     </state>
     <state x="417" y="106" width="639" height="524" key="StructurePopup/0.0.1366.744@0.0.1366.744" timestamp="1598409395185" />
-    <state x="339" y="199" key="com.intellij.ide.util.TipDialog" timestamp="1598452509095">
+    <state x="339" y="199" key="com.intellij.ide.util.TipDialog" timestamp="1598672827889">
       <screen x="0" y="0" width="1366" height="744" />
     </state>
-    <state x="339" y="199" key="com.intellij.ide.util.TipDialog/0.0.1366.744@0.0.1366.744" timestamp="1598452509095" />
+    <state x="339" y="199" key="com.intellij.ide.util.TipDialog/0.0.1366.744@0.0.1366.744" timestamp="1598672827889" />
     <state x="0" y="0" width="866" height="744" key="find.popup" timestamp="1597916625815">
       <screen x="0" y="0" width="1366" height="744" />
     </state>

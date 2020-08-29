@@ -605,108 +605,94 @@ class ConstA(analysis.AnalysisAT):
       rhs: expr.ExprET,
       dfvIn: DataLT,
   ) -> NodeDfvL:
-    """A common function to handle various IR instructions."""
+    """A common function to handle various assignment instructions."""
     assert isinstance(dfvIn, OverallL), f"{type(dfvIn)}"
 
     if isinstance(lhs.type, types.RecordT):
       return self.processLhsRhsRecordType(lhs, rhs, dfvIn)
 
-    # Very Special Case
-    if dfvIn.bot and not isinstance(rhs, expr.LitE):
-      return NodeDfvL(dfvIn, dfvIn)
-
     lhsVarNames = ir.getExprLValuesWhenInLhs(self.func, lhs)
-    assert len(lhsVarNames) >= 1, msg.INVARIANT_VIOLATED
-
-    # Yet another Very Special Case
-    if dfvIn.bot and len(lhsVarNames) > 1:
-      return NodeDfvL(dfvIn, dfvIn)
+    assert len(lhsVarNames) >= 1, f"{lhs}: {lhsVarNames}"
 
     rhsDfv = self.getExprDfv(rhs, dfvIn)
 
+    dfvInGetVal = dfvIn.getVal
     outDfvValues = {}  # a temporary store of out dfvs
-    updatedNameList = []
     if len(lhsVarNames) == 1:  # a must update
-      for name in lhsVarNames:  # this loop only runs once
-        updatedNameList.append(name)
+      for name in lhsVarNames:  # this loop is entered once only
+        newVal = rhsDfv
         if ir.nameHasArray(self.func, name):  # may update arrays
-          oldVal = cast(ComponentL, dfvIn.getVal(name))
+          oldVal = cast(ComponentL, dfvInGetVal(name))
           newVal, _ = oldVal.meet(rhsDfv)
+        if dfvInGetVal(name) != newVal:
           outDfvValues[name] = newVal
-        else:
-          outDfvValues[name] = rhsDfv
     else:
       for name in lhsVarNames:  # do may updates (take meet)
-        updatedNameList.append(name)
         oldDfv = cast(ComponentL, dfvIn.getVal(name))
         updatedDfv, changed = oldDfv.meet(rhsDfv)
-        outDfvValues[name] = updatedDfv
+        if dfvInGetVal(name) != updatedDfv:
+          outDfvValues[name] = updatedDfv
 
-    if isinstance(rhs, expr.CallE):
+    if isinstance(rhs, expr.CallE):  # over-approximate
       names = ir.getNamesUsedInExprNonSyntactically(self.func, rhs)
       names = ir.filterNamesInteger(self.func, names)
       for name in names:
-        outDfvValues[name] = self.componentBot
-
-    # decide whether to create a new Out Dfv object
-    newValue = False
-    for name, value in outDfvValues.items():
-      if dfvIn.getVal(name) != value:
-        newValue = True
-        break
+        if dfvInGetVal(name) != self.componentBot:
+          outDfvValues[name] = self.componentBot
 
     newOut = dfvIn
-    if newValue:
+    if outDfvValues:
       newOut = cast(OverallL, dfvIn.getCopy())
       for name, value in outDfvValues.items():
-        if dfvIn.getVal(name) != value:
-          newOut.setVal(name, value)
+        newOut.setVal(name, value)
     return NodeDfvL(dfvIn, newOut)
 
 
   def getExprDfv(self,
-      rhs: expr.ExprET,
+      e: expr.ExprET,
       dfvIn: OverallL
   ) -> ComponentL:
     """Returns the effective component dfv of the rhs.
-    It expects that the rhs is numeric."""
+    It expects that the rhs is non-record type.
+    (Record type expressions are handled separately.)
+    """
     value = self.componentTop
 
-    if isinstance(rhs, expr.LitE):
-      assert isinstance(rhs.val, (int, float))
-      return ComponentL(self.func, val=rhs.val)
+    if isinstance(e, expr.LitE):
+      assert isinstance(e.val, (int, float)), f"{e}"
+      return ComponentL(self.func, val=e.val)
 
-    elif isinstance(rhs, expr.VarE):  # handles ObjectE, PseudoVarE
-      return cast(ComponentL, dfvIn.getVal(rhs.name))
+    elif isinstance(e, expr.VarE):  # handles PseudoVarE too
+      return cast(ComponentL, dfvIn.getVal(e.name))
 
-    elif isinstance(rhs, expr.DerefE):
-      names = ir.getNamesUsedInExprNonSyntactically(self.func, rhs)
+    elif isinstance(e, expr.DerefE):
+      names = ir.getNamesUsedInExprNonSyntactically(self.func, e)
       for name in names:
         value, _ = value.meet(cast(ComponentL, dfvIn.getVal(name)))
       return value
 
-    elif isinstance(rhs, expr.CastE):
-      if rhs.arg.type.isNumeric():
-        value, _ = value.meet(self.getExprDfv(rhs.arg, dfvIn))
+    elif isinstance(e, expr.CastE):
+      if e.arg.type.isNumeric():
+        value, _ = value.meet(self.getExprDfv(e.arg, dfvIn))
         assert isinstance(value, ComponentL)
         if value.top or value.bot:
           return value
         else:
-          assert rhs.to.isNumeric() and value.val
-          value.val = rhs.to.castValue(value.val)
+          assert e.to.isNumeric() and value.val
+          value.val = e.to.castValue(value.val)
           return value
       else:
         return self.componentBot
 
-    elif isinstance(rhs, expr.SizeOfE):
+    elif isinstance(e, expr.SizeOfE):
       return self.componentBot
 
-    elif isinstance(rhs, expr.UnaryE):
-      value, _ = value.meet(self.getExprDfv(rhs.arg, dfvIn))
+    elif isinstance(e, expr.UnaryE):
+      value, _ = value.meet(self.getExprDfv(e.arg, dfvIn))
       if value.top or value.bot:
         return value
       elif value.val is not None:
-        rhsOpCode = rhs.opr.opCode
+        rhsOpCode = e.opr.opCode
         if rhsOpCode == op.UO_MINUS_OC:
           value.val = -value.val  # not NoneType... pylint: disable=E
         elif rhsOpCode == op.UO_BIT_NOT_OC:
@@ -718,16 +704,16 @@ class ConstA(analysis.AnalysisAT):
       else:
         assert False, f"{type(value)}: {value}"
 
-    elif isinstance(rhs, expr.BinaryE):
-      val1 = self.getExprDfv(rhs.arg1, dfvIn)
-      val2 = self.getExprDfv(rhs.arg2, dfvIn)
+    elif isinstance(e, expr.BinaryE):
+      val1 = self.getExprDfv(e.arg1, dfvIn)
+      val2 = self.getExprDfv(e.arg2, dfvIn)
       if val1.top or val2.top:
         return self.componentTop
       elif val1.bot or val2.bot:
         return self.componentBot
       else:
         assert val1.val and val2.val, f"{val1}, {val2}"
-        rhsOpCode = rhs.opr.opCode
+        rhsOpCode = e.opr.opCode
         if rhsOpCode == op.BO_ADD_OC:
           val: Opt[float] = val1.val + val2.val
         elif rhsOpCode == op.BO_SUB_OC:
@@ -748,22 +734,22 @@ class ConstA(analysis.AnalysisAT):
         else:
           return self.componentBot
 
-    elif isinstance(rhs, expr.SelectE):
-      val1 = self.getExprDfv(rhs.arg1, dfvIn)
-      val2 = self.getExprDfv(rhs.arg2, dfvIn)
+    elif isinstance(e, expr.SelectE):
+      val1 = self.getExprDfv(e.arg1, dfvIn)
+      val2 = self.getExprDfv(e.arg2, dfvIn)
       value, _ = val1.meet(val2)
       return value
 
-    elif isinstance(rhs, (expr.ArrayE, expr.MemberE)):
-      varNames = ir.getExprLValuesWhenInLhs(self.func, rhs)
+    elif isinstance(e, (expr.ArrayE, expr.MemberE)):
+      varNames = ir.getExprLValuesWhenInLhs(self.func, e)
       for name in varNames:
         value, _ = value.meet(cast(ComponentL, dfvIn.getVal(name)))
       return value
 
-    elif isinstance(rhs, expr.CallE):
+    elif isinstance(e, expr.CallE):
       return self.componentBot
 
-    raise ValueError(f"{rhs}")
+    raise ValueError(f"{e}")
 
 
   def processLhsRhsRecordType(self,
