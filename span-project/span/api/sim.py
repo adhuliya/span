@@ -579,7 +579,7 @@ SimToBoolFailed = SimToBoolL.getBot()
 # BOUND START: Simplification_base_class.
 ################################################
 
-class SimAT(types.AnyT):
+class SimAT:
   """Simplification functions to be (optionally) overridden.
 
   For convenience, analysis.AnalysisAT inherits this class.

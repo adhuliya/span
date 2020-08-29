@@ -111,11 +111,10 @@ Changed: ChangeL = ChangeL.getBot()
 BoundLatticeLT = TypeVar('BoundLatticeLT', bound='LatticeLT')
 
 
-class LatticeLT(types.AnyT):
+class LatticeLT:
   """Base class for all Lattice except for lattice.ChangeL."""
 
-  # __slots__ : List[str] = ["top", "bot"]
-  __slots__ : List[str] = ["topBot"]
+  __slots__ : List[str] = ["top", "bot"]
 
 
   def __init__(self,
@@ -123,33 +122,9 @@ class LatticeLT(types.AnyT):
       bot: bool = False
   ) -> None:
     if bot and top:
-      LOG.error(TOP_BOT_BOTH)
-      raise ValueError(TOP_BOT_BOTH)
-    self.topBot = 0
-    if top: self.topBot = 1 # bit 0 represents top
-    if bot: self.topBot = 2 # bit 1 represents bot
-    # self.top = top
-    # self.bot = bot
-
-
-  @property
-  def top(self):
-    return self.topBot == 1
-
-
-  @top.setter
-  def top(self, value):
-    self.topBot = 1 if value else (self.topBot & 2)
-
-
-  @property
-  def bot(self):
-    return self.topBot == 2
-
-
-  @bot.setter
-  def bot(self, value):
-    self.topBot = 2 if value else (self.topBot & 1)
+      raise ValueError(f"{top}, {bot}")
+    self.top = top
+    self.bot = bot
 
 
   def meet(self, other) -> Tuple['LatticeLT', ChangeL]:
@@ -163,10 +138,7 @@ class LatticeLT(types.AnyT):
     Returns:
       (Lattice, Changed): glb of self and dfv, and True if glb != self
     """
-    if self is other: return self, NoChange
-    if self.bot: return self, NoChange
-    if other.bot: return other, Changed
-    return self, NoChange
+    return NotImplemented
 
 
   def getCopy(self) -> 'LatticeLT':
@@ -291,4 +263,41 @@ def mergeAll(values: Iterable[BoundLatticeLT]) -> BoundLatticeLT:
     if result.bot: break  # an optimization
   return result  # type: ignore
 
+
+def basicMeetOp(first: LatticeLT, second: LatticeLT) -> Opt[Tuple[LatticeLT, ChangeL]]:
+  """A basic meet operation common to all lattices.
+  If this fails the lattices can do more complicated operations.
+  """
+  if first is second: return first, NoChange
+  if first.bot: return first, NoChange
+  if second.top: return first, NoChange
+  if second.bot: return second, Changed
+  if first.top: return second, Changed
+  return None  # i.e. can't compute
+
+
+def basicLessThanTest(first: LatticeLT, second: LatticeLT) -> Opt[bool]:
+  """A basic less than test common to all lattices.
+  If this fails the lattices can do more complicated tests.
+  """
+  if first.bot: return True
+  if second.top: return True
+  if second.bot: return False
+  if first.top: return False
+  return None  # i.e. can't decide
+
+
+def basicEqualTest(first: LatticeLT, second: LatticeLT) -> Opt[bool]:
+  """A basic equality test common to all lattices.
+  If this fails the lattices can do more complicated tests.
+  """
+  if first is second:
+    return True
+
+  sTop, sBot, oTop, oBot = first.top, first.bot, second.top, second.bot
+  if sTop and oTop: return True
+  if sBot and oBot: return True
+  if sTop or sBot or oTop or oBot: return False
+
+  return None  # i.e. can't decide
 
