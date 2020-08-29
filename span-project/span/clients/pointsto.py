@@ -840,7 +840,7 @@ class PointsToA(analysis.AnalysisAT):
     """Returns the locations that may be modified,
     if this expression was on the LHS of an assignment."""
     if dfvIn is None:  # become conservative
-      return set(ir.getExprLValuesWhenInLhs(func, e))
+      return set(ir.getExprLValueNames(func, e))
 
     names = set()
 

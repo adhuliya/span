@@ -573,7 +573,7 @@ class DdMethod:
     if rhs.exprCode == expr.CALL_EXPR_EC:
       demandRhsNames = True
 
-    lhsNames = set(ir.getExprLValuesWhenInLhs(self.func, lhs))
+    lhsNames = set(ir.getExprLValueNames(self.func, lhs))
     assert lhsNames, f"{lhs}"
     if LS: LOG.debug(f"{demandVar} in {lhsNames}: {demandVar in lhsNames}")
     if demandVar in lhsNames:

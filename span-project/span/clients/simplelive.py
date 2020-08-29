@@ -522,7 +522,7 @@ class LiveVarsA(analysis.AnalysisAT):
     dfvOut = cast(OverallL, nodeDfv.dfvOut)  # dfv at OUT of a node
     rhsNamesAreLive: bool = True  # its simple liveness
 
-    lhsNames = ir.getExprLValuesWhenInLhs(self.func, lhs)
+    lhsNames = ir.getExprLValueNames(self.func, lhs)
     assert len(lhsNames) >= 1, f"{msg.INVARIANT_VIOLATED}: {lhs}"
 
     rhsNames = ir.getNamesUsedInExprSyntactically(rhs) | \

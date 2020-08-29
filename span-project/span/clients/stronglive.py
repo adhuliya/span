@@ -765,7 +765,7 @@ class StrongLiveVarsA(analysis.AnalysisAT):
     if dfvOut.bot or isinstance(rhs, expr.CallE):
       rhsNamesAreLive = True
 
-    lhsNames = set(ir.getExprLValuesWhenInLhs(self.func, lhs))
+    lhsNames = set(ir.getExprLValueNames(self.func, lhs))
     assert len(lhsNames) >= 1, f"{msg.INVARIANT_VIOLATED}: {lhs}"
     if dfvOut.val and set(lhsNames) & dfvOut.val:
       rhsNamesAreLive = True

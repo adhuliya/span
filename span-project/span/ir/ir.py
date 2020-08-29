@@ -191,18 +191,25 @@ def dumpIr(tUnit: tunit.TranslationUnit) -> str:
   return tUnit.dumpIr()
 
 
-def getExprLValuesWhenInLhs(func: constructs.Func,
+def getExprRValueNames(func: constructs.Func,
     e: expr.ExprET
 ) -> List[types.VarNameT]:
   assert func.tUnit is not None, f"{func}"
-  return func.tUnit.getExprLValuesWhenInLhs(func, e)
+  return func.tUnit.getExprRValueNames(func, e)
 
 
-def getExprLValuesForCallExpr(func: constructs.Func,
+def getExprLValueNames(func: constructs.Func,
+    e: expr.ExprET
+) -> List[types.VarNameT]:
+  assert func.tUnit is not None, f"{func}"
+  return func.tUnit.getExprLValueNames(func, e)
+
+
+def getNamesPossiblyModifiedInCallExpr(func: constructs.Func,
     e: expr.CallE
 ) -> Set[types.VarNameT]:
   assert func.tUnit is not None, f"{func}"
-  return func.tUnit.getExprLValuesForCallExpr(func, e)
+  return func.tUnit.getNamesPossiblyModifiedInCallExpr(func, e)
 
 
 @functools.lru_cache(200)

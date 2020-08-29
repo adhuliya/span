@@ -611,7 +611,7 @@ class ConstA(analysis.AnalysisAT):
     if isinstance(lhs.type, types.RecordT):
       return self.processLhsRhsRecordType(lhs, rhs, dfvIn)
 
-    lhsVarNames = ir.getExprLValuesWhenInLhs(self.func, lhs)
+    lhsVarNames = ir.getExprLValueNames(self.func, lhs)
     assert len(lhsVarNames) >= 1, f"{lhs}: {lhsVarNames}"
 
     rhsDfv = self.getExprDfv(rhs, dfvIn)
@@ -634,8 +634,8 @@ class ConstA(analysis.AnalysisAT):
           outDfvValues[name] = updatedDfv
 
     if isinstance(rhs, expr.CallE):  # over-approximate
-      names = ir.getNamesUsedInExprNonSyntactically(self.func, rhs)
-      names = ir.filterNamesInteger(self.func, names)
+      names = ir.getNamesPossiblyModifiedInCallExpr(self.func, rhs)
+      names = ir.filterNamesNumeric(self.func, names)
       for name in names:
         if dfvInGetVal(name) != self.componentBot:
           outDfvValues[name] = self.componentBot
@@ -657,19 +657,18 @@ class ConstA(analysis.AnalysisAT):
     (Record type expressions are handled separately.)
     """
     value = self.componentTop
+    dfvInGetVal = cast(Callable[[types.VarNameT], ComponentL], dfvIn.getVal)
 
     if isinstance(e, expr.LitE):
       assert isinstance(e.val, (int, float)), f"{e}"
       return ComponentL(self.func, val=e.val)
 
     elif isinstance(e, expr.VarE):  # handles PseudoVarE too
-      return cast(ComponentL, dfvIn.getVal(e.name))
+      return dfvInGetVal(e.name)
 
     elif isinstance(e, expr.DerefE):
-      names = ir.getNamesUsedInExprNonSyntactically(self.func, e)
-      for name in names:
-        value, _ = value.meet(cast(ComponentL, dfvIn.getVal(name)))
-      return value
+      varNames = ir.getExprRValueNames(self.func, e)
+      return lattice.mergeAll(map(dfvInGetVal, varNames))
 
     elif isinstance(e, expr.CastE):
       if e.arg.type.isNumeric():
@@ -721,10 +720,12 @@ class ConstA(analysis.AnalysisAT):
         elif rhsOpCode == op.BO_MUL_OC:
           val = val1.val * val2.val
         elif rhsOpCode == op.BO_DIV_OC:
-          if val2.val == 0: return self.componentBot
+          if val2.val == 0:
+            return self.componentBot
           val = val1.val / val2.val
         elif rhsOpCode == op.BO_MOD_OC:
-          if val2.val == 0: return self.componentBot
+          if val2.val == 0:
+            return self.componentBot
           val = val1.val % val2.val
         else:
           val = None
@@ -741,10 +742,8 @@ class ConstA(analysis.AnalysisAT):
       return value
 
     elif isinstance(e, (expr.ArrayE, expr.MemberE)):
-      varNames = ir.getExprLValuesWhenInLhs(self.func, e)
-      for name in varNames:
-        value, _ = value.meet(cast(ComponentL, dfvIn.getVal(name)))
-      return value
+      varNames = ir.getExprRValueNames(self.func, e)
+      return lattice.mergeAll(map(dfvInGetVal, varNames))
 
     elif isinstance(e, expr.CallE):
       return self.componentBot
@@ -762,11 +761,11 @@ class ConstA(analysis.AnalysisAT):
     assert isinstance(instrType, types.RecordT), f"{lhs}, {rhs}: {instrType}"
     assert isinstance(dfvIn, OverallL), f"{type(dfvIn)}"
 
-    lhsVarNames = ir.getExprLValuesWhenInLhs(self.func, lhs)
+    lhsVarNames = ir.getExprLValueNames(self.func, lhs)
     assert len(lhsVarNames) >= 1, f"{lhs}: {lhsVarNames}"
     strongUpdate: bool = len(lhsVarNames) == 1
 
-    rhsVarNames = ir.getExprLValuesWhenInLhs(self.func, rhs)
+    rhsVarNames = ir.getExprRValueNames(self.func, rhs)
     assert len(rhsVarNames) >= 1, f"{lhs}: {rhsVarNames}"
 
     allMemberInfo = instrType.getNamesOfType(None)
@@ -784,6 +783,13 @@ class ConstA(analysis.AnalysisAT):
             rhsDfv, _ = oldLhsDfv.meet(rhsDfv)
           if oldLhsDfv != rhsDfv:
             tmpDfv[fullLhsVarName] = rhsDfv
+
+    if isinstance(rhs, expr.CallE):  # over-approximate
+      names = ir.getNamesPossiblyModifiedInCallExpr(self.func, rhs)
+      names = ir.filterNamesNumeric(self.func, names)
+      for name in names:
+        if dfvIn.getVal(name) != self.componentBot:
+          tmpDfv[name] = self.componentBot
 
     newOut = dfvIn
     if tmpDfv:

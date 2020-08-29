@@ -711,7 +711,7 @@ class EvenOddA(analysis.AnalysisAT):
     if dfvIn.bot and not isinstance(rhs, expr.LitE):
       return NodeDfvL(dfvIn, dfvIn)
 
-    lhsvarNames = ir.getExprLValuesWhenInLhs(self.func, lhs)
+    lhsvarNames = ir.getExprLValueNames(self.func, lhs)
     assert len(lhsvarNames) >= 1, msg.INVARIANT_VIOLATED
 
     # Yet another Very Special Case
@@ -825,7 +825,7 @@ class EvenOddA(analysis.AnalysisAT):
       return value
 
     elif isinstance(rhs, (expr.ArrayE, expr.MemberE)):
-      names = ir.getExprLValuesWhenInLhs(self.func, rhs)
+      names = ir.getExprLValueNames(self.func, rhs)
       for name in names:
         value, _ = value.meet(dfvIn.getVal(name))
       return value

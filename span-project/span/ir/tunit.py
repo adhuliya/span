@@ -1594,7 +1594,6 @@ class TranslationUnit:
 
       return isEqual
 
-
     if not checkDictEquality(self.allRecords, other.allRecords, "Record"):
       equal = False
 
@@ -1623,45 +1622,68 @@ class TranslationUnit:
     return funcList
 
 
-  def getExprLValuesWhenInLhs(self,
+  def getExprRValueNames(self,
       func: constructs.Func,
       e: expr.ExprET
-  ) -> List[types.VarNameT]:
+  ) -> Set[types.VarNameT]:
+    """Returns the locations that may be read,
+    if this expression was on the RHS of an assignment.
+    (excluding the call expression)
+
+    Note: If the RValue(s) is a RecordT type, then the analysis
+    should handle the names specially since a record assignment
+    can be viewed as a sequence of member wise assignments.
+    """
+    assert not isinstance(e, expr.CallE), f"{func}, {e}"
+
+    if isinstance(e, expr.SelectE):
+      names = self.getExprLValueNames(func, e.arg1) \
+                | self.getExprLValueNames(func, e.arg2)
+    else:
+      names = self.getExprLValueNames(func, e)
+
+    return names
+
+
+  def getExprLValueNames(self,
+      func: constructs.Func,
+      e: expr.ExprET
+  ) -> Set[types.VarNameT]:
     """Returns the locations that may be modified,
     if this expression was on the LHS of an assignment.
 
     Note: If the LValue(s) is a RecordT type, then the analysis
-    should handle it specially since a record assignment
+    should handle the names specially since a record assignment
     can be viewed as a sequence of member wise assignments.
     """
-    names = []
+    names = set()
 
     if isinstance(e, expr.VarE):
-      names.append(e.name)
+      names.add(e.name)
       return names
 
     elif isinstance(e, expr.DerefE):
-      names.extend(self.getNamesEnv(func, e.type))
+      names.update(self.getNamesEnv(func, e.type))
       return names
 
     elif isinstance(e, expr.ArrayE):
       if e.hasDereference():
-        names.extend(self.getNamesEnv(func, e.type))
+        names.update(self.getNamesEnv(func, e.type))
       else:
-        names.append(e.getFullName())
+        names.add(e.getFullName())
       return names
 
     elif isinstance(e, expr.MemberE):
       of = e.of.type
       assert isinstance(of, types.Ptr), f"{e}: {of}"
       for name in self.getNamesEnv(func, of.getPointeeType()):
-        names.append(f"{name}.{e.name}")
+        names.add(f"{name}.{e.name}")
       return names
 
     raise ValueError(f"{e}")
 
 
-  def getExprLValuesForCallExpr(self,
+  def getNamesPossiblyModifiedInCallExpr(self,
       func: constructs.Func,  # the caller
       e: expr.CallE
   ) -> Set[types.VarNameT]:
@@ -1675,12 +1697,11 @@ class TranslationUnit:
     # visible in the caller can be modified.
     """
     # names = set()
-
     # for arg in e.args:
     #   names |= self.getExprLValuesForCallArgument(func, arg)
-
     # names.update(self.getNamesGlobal())
     # return names
+    # TODO: add convenient exceptions for known library functions.
     return self.getNamesGlobal()
 
 
@@ -1810,7 +1831,7 @@ class TranslationUnit:
       forLiveness = True,
   ) -> Set[types.VarNameT]:
     """Returns the names syntactically present in the expression.
-    Note if forLiveness if false,
+    Note if forLiveness is false,
       It will also return the function name in a call.
       The name of variable whose address is taken.
     """
@@ -1861,12 +1882,12 @@ class TranslationUnit:
       if forLiveness and e.callee.hasFunctionName():
         varNames = set()  # i.e. in 'f(a,b)' don't include 'f'
       else:
-        varNames = thisFunction(e.callee, forLiveness)  # i.e. in 'f(a,b)' include 'f'
+        varNames = thisFunction(e.callee, forLiveness)  # i.e. in 'p(a,b)' include 'p'
       for arg in e.args:
         varNames |= thisFunction(arg, forLiveness)
       return varNames
 
-    assert False, msg.CONTROL_HERE_ERROR
+    raise ValueError(f"{e}, {forLiveness}")
 
 
   def getNamesUsedInExprNonSyntactically(self,
@@ -1878,19 +1899,18 @@ class TranslationUnit:
     may be used for their value indirectly (due to dereference)
     by the use of the given expression.
     """
-    varNames = set()
-
     if isinstance(e, (expr.DerefE, expr.ArrayE, expr.MemberE)):
-      varNames.update(self.getExprLValuesWhenInLhs(func, e))
-      return varNames
+      if isinstance(e, expr.AddrOfE) and not e.hasDereference():
+        return set() # since only non-syntactic names are needed
+      return self.getExprLValueNames(func, e)
 
     elif isinstance(e, expr.CallE):
-      return self.getExprLValuesForCallExpr(func, e)
+      return self.getNamesPossiblyModifiedInCallExpr(func, e)
 
     else:
       # Returns an emptyset here, since all other expressions
       # only have syntactic reference.
-      return varNames  # empty set
+      return set()  # empty set
 
 
   def canonicalizeExpressions(self):
