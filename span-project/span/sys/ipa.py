@@ -326,7 +326,7 @@ class IpaHost:
     for anName, nDfv in bi.items():
       AnalysisClass = clients.analyses[anName]
       analysisObj = AnalysisClass(func)
-      newBi[anName] = analysisObj.getIpaBoundaryInfo(nDfv)
+      newBi[anName] = analysisObj.getBoundaryInfoIpa(nDfv)
 
     if LS: LOG.debug("IpaBI: (%s): %s", funcName, newBi)
     return newBi

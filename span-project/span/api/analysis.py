@@ -14,6 +14,7 @@ import io
 
 from span.util.util import LS, US, AS
 import span.ir.types as types
+import span.ir.conv as conv
 import span.ir.graph as graph
 import span.ir.op as op
 import span.ir.expr as expr
@@ -365,7 +366,7 @@ class NodeWorkList(object):
 # BOUND START: direction_related
 ################################################
 
-class DirectionDT(types.AnyT):
+class DirectionDT:
   """For the direction of data flow of the analysis."""
 
 
@@ -560,9 +561,9 @@ class ForwardDT(DirectionDT):
       if LS: LOG.debug("Edge: %s, Feasible: %s", predEdge, f)
       if f:
         predNodeDfv = self.nidNdfvMap.get(predEdge.src.id, self.topNdfv)
-        if predEdge.label == types.TrueEdge and predNodeDfv.dfvOutTrue is not None:
+        if predEdge.label == conv.TrueEdge and predNodeDfv.dfvOutTrue is not None:
           predOut = predNodeDfv.dfvOutTrue
-        elif predEdge.label == types.FalseEdge and predNodeDfv.dfvOutFalse is not None:
+        elif predEdge.label == conv.FalseEdge and predNodeDfv.dfvOutFalse is not None:
           predOut = predNodeDfv.dfvOutFalse
         else:
           if predNodeDfv.dfvOut is None:
@@ -1615,21 +1616,34 @@ class ValueAnalysisAT(AnalysisAT):
     self.overallBot: dfv.OverallL = overallL(self.func, bot=True)
 
 
-  def getIpaBoundaryInfo(self,
-      nodeDfv: NodeDfvL,
+  def getBoundaryInfo(self,
+      nodeDfv: Opt[NodeDfvL] = None,
+      ipa: bool = False,
   ) -> NodeDfvL:
-    return dfv.getIpaBoundaryInfo(self.func, nodeDfv,
-                                  self.componentBot, self.getAllVars)
+    if ipa and not nodeDfv:
+      raise ValueError(f"{ipa}, {nodeDfv}")
 
+    inBi, outBi = self.overallBot, self.overallBot
+    if ipa:
+      return dfv.getBoundaryInfoIpa(self.func, nodeDfv,
+                                    self.componentBot, self.getAllVars)
+    if nodeDfv:
+      inBi, outBi = nodeDfv.dfvIn, nodeDfv.dfvOut
+    return NodeDfvL(inBi, outBi)
 
-  def getAllVars(self) -> Set[types.VarNameT]:
-    raise NotImplementedError()
-    # return ir.getNamesEnv(self.func, numeric=True)
 
   def isAcceptedType(self, t: types.Type) -> bool:
     """Returns True if the type of the instruction is
-    of interest to the analysis."""
-    raise NotImplementedError()
+    of interest to the analysis.
+    By default it selects only Numeric types.
+    """
+    return t.isNumeric()
+
+
+  def getAllVars(self) -> Set[types.VarNameT]:
+    """Gets all the variables of the accepted type."""
+    names = ir.getNamesEnv(self.func)
+    return ir.filterNames(self.func, names, self.isAcceptedType)
 
   ################################################
   # BOUND START: Special_Instructions
@@ -1697,7 +1711,7 @@ class ValueAnalysisAT(AnalysisAT):
     oldIn = cast(dfv.OverallL, nodeDfv.dfvIn)
     if not self.isAcceptedType(insn.arg.type):  # special case
       return NodeDfvL(oldIn, oldIn)
-    dfvFalse, dfvTrue = self.calcTrueFalseDfv(insn.arg, oldIn)
+    dfvFalse, dfvTrue = self.calcFalseTrueDfv(insn.arg, oldIn)
     return NodeDfvL(oldIn, None, dfvTrue, dfvFalse)
 
 
@@ -1733,7 +1747,7 @@ class ValueAnalysisAT(AnalysisAT):
     outDfvValues: Dict[types.VarNameT, dfv.ComponentL] = {}
 
     if isinstance(lhsType, types.RecordT):
-      outDfvValues = self.processLhsRhsRecordType(lhs, rhs, dfvIn)
+      outDfvValues = self.processLhsRhsRecordType(lhs, rhs, dfvInGetVal)
 
     elif self.isAcceptedType(lhsType):
       lhsVarNames = ir.getExprLValueNames(self.func, lhs)
@@ -1773,12 +1787,11 @@ class ValueAnalysisAT(AnalysisAT):
   def processLhsRhsRecordType(self,
       lhs: expr.ExprET,
       rhs: expr.ExprET,
-      dfvIn: DataLT,
+      dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
   ) -> Dict[types.VarNameT, dfv.ComponentL]:
     """Processes assignment instruction with RecordT"""
     instrType = lhs.type
     assert isinstance(instrType, types.RecordT), f"{lhs}, {rhs}: {instrType}"
-    assert isinstance(dfvIn, dfv.OverallL), f"{type(dfvIn)}"
 
     allMemberInfo = instrType.getNamesOfType(None)
 
@@ -1793,7 +1806,6 @@ class ValueAnalysisAT(AnalysisAT):
       assert len(rhsVarNames) >= 1, f"{lhs}: {rhsVarNames}"
 
     outDfvValues: Dict[types.VarNameT, dfv.ComponentL] = {}
-    dfvInGetVal = dfvIn.getVal
     isAcceptedType = self.isAcceptedType
     for memberInfo in allMemberInfo:
       if isAcceptedType(memberInfo.type):
@@ -1811,7 +1823,6 @@ class ValueAnalysisAT(AnalysisAT):
             rhsDfv, _ = oldLhsDfv.meet(rhsDfv)
           if oldLhsDfv != rhsDfv:
             outDfvValues[fullLhsVarName] = rhsDfv
-
     return outDfvValues
 
 
@@ -1832,7 +1843,7 @@ class ValueAnalysisAT(AnalysisAT):
     return outDfvValues
 
 
-  def calcTrueFalseDfv(self,
+  def calcFalseTrueDfv(self,
       arg: expr.SimpleET,
       dfvIn: dfv.OverallL,
   ) -> Tuple[dfv.OverallL, dfv.OverallL]:  # dfvFalse, dfvTrue

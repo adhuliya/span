@@ -6,7 +6,6 @@
 """The Host that manages SPAN."""
 
 import logging
-
 LOG = logging.getLogger("span")
 
 from typing import Dict, Tuple, Set, List, Callable,\

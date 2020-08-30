@@ -241,7 +241,7 @@ class PointsToA(analysis.AnalysisAT):
   def getIpaBoundaryInfo(self,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
-    return dfv.getIpaBoundaryInfo(self.func, nodeDfv,
+    return dfv.getBoundaryInfoIpa(self.func, nodeDfv,
                                   self.componentBot, self.getAllVars)
 
 

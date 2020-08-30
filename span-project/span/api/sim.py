@@ -20,6 +20,8 @@ import span.util.messages as msg
 
 # simplification function names (that contain '__to__' in their name)
 SimNameT = str
+SimFailed = None  # None represents a simplification failure
+SimPending = []   # an empty list represents sim is pending
 
 
 ################################################

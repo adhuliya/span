@@ -538,7 +538,7 @@ class OverallL(DataLT):
 # BOUND START: Convenience_Functions
 ################################################
 
-def getIpaBoundaryInfo(
+def getBoundaryInfoIpa(
     func: constructs.Func,
     nodeDfv: NodeDfvL,
     componentBot: ComponentL,
@@ -583,6 +583,21 @@ def Filter_Vars(
   newDfvOut.filterVals(ir.filterNamesNumeric(func, varNames))
   return NodeDfvL(dfvIn, newDfvOut)
 
+
+def updateDfv(
+    dfvDict: Dict[types.VarNameT, ComponentL],
+    dfvIn: OverallL,
+) -> OverallL:
+  """Creates a new dfv from `dfvIn` using `newDfv` dict if needed."""
+  newDfv = dfvIn
+  newDfvGetVal = newDfv.getVal
+  for name, val in dfvDict.items():
+    if val != newDfvGetVal(name):
+      if newDfv is dfvIn:
+        newDfv = dfvIn.getCopy()  # creating a copy only when necessary
+        newDfvGetVal = newDfv.getVal  # important (since object changed)
+      newDfv.setVal(name, val)
+  return newDfv
 
 ################################################
 # BOUND END  : Convenience_Functions
