@@ -1799,7 +1799,7 @@ class ValueAnalysisAT(AnalysisAT):
       if isAcceptedType(memberInfo.type):
         memName = memberInfo.name
         for lhsName in lhsVarNames:
-          if rhsVarNames:
+          if rhsVarNames is not None:  # None only if rhs is CallE
             rhsDfv = mergeAll(  # merge all rhs dfvs of the same member
               dfvInGetVal(f"{rhsName}.{memName}")
               for rhsName in rhsVarNames)
