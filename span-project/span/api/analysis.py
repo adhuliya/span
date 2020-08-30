@@ -15,8 +15,9 @@ import io
 from span.util.util import LS, US, AS
 import span.ir.types as types
 import span.ir.graph as graph
-import span.ir.instr as instr
+import span.ir.op as op
 import span.ir.expr as expr
+import span.ir.instr as instr
 import span.ir.constructs as constructs
 import span.ir.ir as ir
 import span.api.sim as ev
@@ -1705,7 +1706,8 @@ class ValueAnalysisAT(AnalysisAT):
       insn: instr.CallI,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
-    return self.processCallE(insn.arg, nodeDfv.dfvIn)
+    dfvIn = cast(dfv.OverallL, nodeDfv.dfvIn)
+    return self.genNodeDfvL(self.processCallE(insn.arg, dfvIn), dfvIn)
 
 
   ################################################
@@ -1721,12 +1723,13 @@ class ValueAnalysisAT(AnalysisAT):
       rhs: expr.ExprET,
       dfvIn: DataLT,
   ) -> NodeDfvL:
-    """A common function to handle various assignment instructions."""
+    """A common function to handle various assignment instructions.
+    This is a common function to all the value analyses.
+    """
     assert isinstance(dfvIn, dfv.OverallL), f"{type(dfvIn)}"
 
     lhsType = lhs.type
-    dfvInGetVal = dfvIn.getVal
-    # a temporary store of out dfvs
+    dfvInGetVal = cast(Callable[[types.VarNameT], dfv.ComponentL], dfvIn.getVal)
     outDfvValues: Dict[types.VarNameT, dfv.ComponentL] = {}
 
     if isinstance(lhsType, types.RecordT):
@@ -1735,26 +1738,29 @@ class ValueAnalysisAT(AnalysisAT):
     elif self.isAcceptedType(lhsType):
       lhsVarNames = ir.getExprLValueNames(self.func, lhs)
       assert len(lhsVarNames) >= 1, f"{lhs}: {lhsVarNames}"
+      mustUpdate = len(lhsVarNames) == 1
 
       rhsDfv = self.getExprDfv(rhs, dfvIn)
 
-      if len(lhsVarNames) == 1:  # a must update
-        for name in lhsVarNames:  # this loop is entered once only
-          newVal = rhsDfv
-          if ir.nameHasArray(self.func, name):  # may update arrays
-            oldVal = cast(dfv.ComponentL, dfvInGetVal(name))
-            newVal, _ = oldVal.meet(rhsDfv)
-          if dfvInGetVal(name) != newVal:
-            outDfvValues[name] = newVal
-      else:
-        for name in lhsVarNames:  # do may updates (take meet)
-          oldDfv = cast(dfv.ComponentL, dfvIn.getVal(name))
-          updatedDfv, changed = oldDfv.meet(rhsDfv)
-          if dfvInGetVal(name) != updatedDfv:
-            outDfvValues[name] = updatedDfv
+      for name in lhsVarNames:
+        # this loop enters only once if mustUpdate == True
+        newVal = rhsDfv
+        if not mustUpdate or ir.nameHasArray(self.func, name):
+          # do may updates
+          oldVal = dfvInGetVal(name)
+          newVal, _ = oldVal.meet(newVal)
+        if dfvInGetVal(name) != newVal:
+          outDfvValues[name] = newVal
 
     outDfvValues.update(self.processCallE(rhs, dfvIn))
+    return self.genNodeDfvL(outDfvValues, dfvIn)
 
+
+  def genNodeDfvL(self,
+      outDfvValues: Dict[types.VarNameT, dfv.ComponentL],
+      dfvIn: dfv.OverallL,
+  ) -> NodeDfvL:
+    """A convenience function to create and return the NodeDfvL."""
     newOut = dfvIn
     if outDfvValues:
       newOut = cast(dfv.OverallL, dfvIn.getCopy())
@@ -1762,109 +1768,6 @@ class ValueAnalysisAT(AnalysisAT):
       for name, value in outDfvValues.items():
         newOutSetVal(name, value)
     return NodeDfvL(dfvIn, newOut)
-
-
-  def getExprDfv(self,
-      e: expr.ExprET,
-      dfvIn: dfv.OverallL
-  ) -> dfv.ComponentL:
-    """Returns the effective component dfv of the rhs.
-    It expects that the rhs is non-record type.
-    (Record type expressions are handled separately.)
-    """
-    value = self.componentTop
-    dfvInGetVal = cast(Callable[[types.VarNameT], ComponentL], dfvIn.getVal)
-
-    if isinstance(e, expr.LitE):
-      assert isinstance(e.val, (int, float)), f"{e}"
-      return dfv.ComponentL(self.func, val=e.val)
-
-    elif isinstance(e, expr.VarE):  # handles PseudoVarE too
-      return dfvInGetVal(e.name)
-
-    elif isinstance(e, expr.DerefE):
-      varNames = ir.getExprRValueNames(self.func, e)
-      return mergeAll(map(dfvInGetVal, varNames))
-
-    elif isinstance(e, expr.CastE):
-      if e.arg.type.isNumeric():
-        value, _ = value.meet(self.getExprDfv(e.arg, dfvIn))
-        assert isinstance(value, dfv.ComponentL)
-        if value.top or value.bot:
-          return value
-        else:
-          assert e.to.isNumeric() and value.val
-          value.val = e.to.castValue(value.val)
-          return value
-      else:
-        return self.componentBot
-
-    elif isinstance(e, expr.SizeOfE):
-      return self.componentBot
-
-    elif isinstance(e, expr.UnaryE):
-      value, _ = value.meet(self.getExprDfv(e.arg, dfvIn))
-      if value.top or value.bot:
-        return value
-      elif value.val is not None:
-        rhsOpCode = e.opr.opCode
-        if rhsOpCode == op.UO_MINUS_OC:
-          value.val = -value.val  # not NoneType... pylint: disable=E
-        elif rhsOpCode == op.UO_BIT_NOT_OC:
-          assert isinstance(value.val, int), f"{value}"
-          value.val = ~value.val  # not NoneType... pylint: disable=E
-        elif rhsOpCode == op.UO_LNOT_OC:
-          value.val = int(not bool(value.val))
-        return value
-      else:
-        assert False, f"{type(value)}: {value}"
-
-    elif isinstance(e, expr.BinaryE):
-      val1 = self.getExprDfv(e.arg1, dfvIn)
-      val2 = self.getExprDfv(e.arg2, dfvIn)
-      if val1.top or val2.top:
-        return self.componentTop
-      elif val1.bot or val2.bot:
-        return self.componentBot
-      else:
-        assert val1.val and val2.val, f"{val1}, {val2}"
-        rhsOpCode = e.opr.opCode
-        if rhsOpCode == op.BO_ADD_OC:
-          val: Opt[float] = val1.val + val2.val
-        elif rhsOpCode == op.BO_SUB_OC:
-          val = val1.val - val2.val
-        elif rhsOpCode == op.BO_MUL_OC:
-          val = val1.val * val2.val
-        elif rhsOpCode == op.BO_DIV_OC:
-          if val2.val == 0:
-            return self.componentBot
-          val = val1.val / val2.val
-        elif rhsOpCode == op.BO_MOD_OC:
-          if val2.val == 0:
-            return self.componentBot
-          val = val1.val % val2.val
-        else:
-          val = None
-
-        if val is not None:
-          return dfv.ComponentL(self.func, val=val)
-        else:
-          return self.componentBot
-
-    elif isinstance(e, expr.SelectE):
-      val1 = self.getExprDfv(e.arg1, dfvIn)
-      val2 = self.getExprDfv(e.arg2, dfvIn)
-      value, _ = val1.meet(val2)
-      return value
-
-    elif isinstance(e, (expr.ArrayE, expr.MemberE)):
-      varNames = ir.getExprRValueNames(self.func, e)
-      return mergeAll(map(dfvInGetVal, varNames))
-
-    elif isinstance(e, expr.CallE):
-      return self.componentBot
-
-    raise ValueError(f"{e}")
 
 
   def processLhsRhsRecordType(self,
@@ -1889,7 +1792,7 @@ class ValueAnalysisAT(AnalysisAT):
       rhsVarNames = ir.getExprRValueNames(self.func, rhs)
       assert len(rhsVarNames) >= 1, f"{lhs}: {rhsVarNames}"
 
-    outDfvValues: Dict[types.VarNameT, dfv.ComponentL] = dict()
+    outDfvValues: Dict[types.VarNameT, dfv.ComponentL] = {}
     dfvInGetVal = dfvIn.getVal
     isAcceptedType = self.isAcceptedType
     for memberInfo in allMemberInfo:
@@ -1969,6 +1872,206 @@ class ValueAnalysisAT(AnalysisAT):
       dfvTrue = dfvIn
 
     return dfvFalse, dfvTrue
+
+
+  def getExprDfv(self,
+      e: expr.ExprET,
+      dfvIn: dfv.OverallL
+  ) -> dfv.ComponentL:
+    """Returns the effective component dfv of the rhs.
+    It expects that the rhs is a non-record type.
+    (Record type expressions are handled separately.)
+    """
+    assert not isinstance(e.type, types.RecordT), f"{e}, {e.type}"
+    dfvInGetVal = cast(Callable[[types.VarNameT], dfv.ComponentL], dfvIn.getVal)
+
+    if isinstance(e, expr.LitE):
+      return self.getExprDfvLitE(e, dfvInGetVal)
+
+    elif isinstance(e, expr.VarE):  # handles PseudoVarE too
+      return self.getExprDfvVarE(e, dfvInGetVal)
+
+    elif isinstance(e, expr.DerefE):
+      return self.getExprDfvDerefE(e, dfvInGetVal)
+
+    elif isinstance(e, expr.CastE):
+      return self.getExprDfvCastE(e, dfvInGetVal)
+
+    elif isinstance(e, expr.SizeOfE):
+      return self.getExprDfvSizeOfE(e, dfvInGetVal)
+
+    elif isinstance(e, expr.UnaryE):
+      return self.getExprDfvUnaryE(e, dfvInGetVal)
+
+    elif isinstance(e, expr.BinaryE):
+      return self.getExprDfvBinaryE(e, dfvIn)
+
+    elif isinstance(e, expr.SelectE):
+      return self.getExprDfvSelectE(e, dfvIn)
+
+    elif isinstance(e, expr.ArrayE):
+      return self.getExprDfvArrayE(e, dfvInGetVal)
+
+    elif isinstance(e, expr.MemberE):
+      return self.getExprDfvMemberE(e, dfvInGetVal)
+
+    elif isinstance(e, expr.CallE):
+      return self.getExprDfvCallE(e, dfvInGetVal)
+
+    raise ValueError(f"{e}, {self.__class__}")
+
+
+  def getExprDfvLitE(self,
+      e: expr.LitE,
+      dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
+  ) -> dfv.ComponentL:
+    """A default implementation for Constant Propagation."""
+    assert isinstance(e.val, (int, float)), f"{e}"
+    return dfv.ComponentL(self.func, val=e.val)
+
+
+  def getExprDfvVarE(self,
+      e: expr.VarE,
+      dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
+  ) -> dfv.ComponentL:
+    """A default implementation (assuming Constant Propagation)."""
+    return dfvInGetVal(e.name)
+
+
+  def getExprDfvDerefE(self,
+      e: expr.DerefE,
+      dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
+  ) -> dfv.ComponentL:
+    """A default implementation (assuming Constant Propagation)."""
+    varNames = ir.getExprRValueNames(self.func, e)
+    assert varNames, f"{e}, {varNames}"
+    return mergeAll(map(dfvInGetVal, varNames))
+
+
+  def getExprDfvCastE(self,
+      e: expr.CastE,
+      dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
+  ) -> dfv.ComponentL:
+    """A default implementation (assuming Constant Propagation)."""
+    assert isinstance(e.arg, expr.VarE), f"{e}"
+    if self.isAcceptedType(e.arg.type):
+      value = dfvInGetVal(e.arg.name)
+      if value.top or value.bot:
+        return value
+      else:
+        assert self.isAcceptedType(e.to) and value.val, f"{e}, {value}"
+        value.val = e.to.castValue(value.val)
+        return value
+    else:
+      return self.componentBot
+
+
+  def getExprDfvSizeOfE(self,
+      e: expr.SizeOfE,
+      dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
+  ) -> dfv.ComponentL:
+    """A default implementation (assuming Constant Propagation)."""
+    return self.componentBot
+
+
+  def getExprDfvUnaryE(self,
+      e: expr.UnaryE,
+      dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
+  ) -> dfv.ComponentL:
+    """A default implementation (assuming Constant Propagation)."""
+    assert isinstance(e.arg, expr.VarE), f"{e}"
+    value = dfvInGetVal(e.arg.name)
+    if value.top or value.bot:
+      return value
+    elif value.val is not None:
+      rhsOpCode = e.opr.opCode
+      if rhsOpCode == op.UO_MINUS_OC:
+        value.val = -value.val  # not NoneType... pylint: disable=E
+      elif rhsOpCode == op.UO_BIT_NOT_OC:
+        assert isinstance(value.val, int), f"{value}"
+        value.val = ~value.val  # not NoneType... pylint: disable=E
+      elif rhsOpCode == op.UO_LNOT_OC:
+        value.val = int(not bool(value.val))
+      else:
+        raise ValueError(f"{e}")
+      return value
+    raise TypeError(f"{type(value)}: {value}")
+
+
+  def getExprDfvBinaryE(self,
+      e: expr.BinaryE,
+      dfvIn: dfv.OverallL,
+  ) -> dfv.ComponentL:
+    """A default implementation (assuming Constant Propagation)."""
+    val1 = self.getExprDfv(e.arg1, dfvIn)
+    val2 = self.getExprDfv(e.arg2, dfvIn)
+    if val1.top or val2.top:
+      return self.componentTop
+    elif val1.bot or val2.bot:
+      return self.componentBot
+    else:
+      assert val1.val and val2.val, f"{val1}, {val2}"
+      rhsOpCode = e.opr.opCode
+      if rhsOpCode == op.BO_ADD_OC:
+        val: Opt[float] = val1.val + val2.val
+      elif rhsOpCode == op.BO_SUB_OC:
+        val = val1.val - val2.val
+      elif rhsOpCode == op.BO_MUL_OC:
+        val = val1.val * val2.val
+      elif rhsOpCode == op.BO_DIV_OC:
+        if val2.val == 0:
+          return self.componentBot
+        val = val1.val / val2.val
+      elif rhsOpCode == op.BO_MOD_OC:
+        if val2.val == 0:
+          return self.componentBot
+        val = val1.val % val2.val
+      else:
+        val = None
+
+      if val is not None:
+        return dfv.ComponentL(self.func, val=val)
+      else:
+        return self.componentBot
+
+
+  def getExprDfvSelectE(self,
+      e: expr.SelectE,
+      dfvIn: dfv.OverallL,
+  ) -> dfv.ComponentL:
+    """A default implementation (assuming Constant Propagation)."""
+    val1 = self.getExprDfv(e.arg1, dfvIn)
+    val2 = self.getExprDfv(e.arg2, dfvIn)
+    value, _ = val1.meet(val2)
+    return value
+
+
+  def getExprDfvArrayE(self,
+      e: expr.ArrayE,
+      dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
+  ) -> dfv.ComponentL:
+    """A default implementation (assuming Constant Propagation)."""
+    varNames = ir.getExprRValueNames(self.func, e)
+    assert varNames, f"{e}, {varNames}"
+    return mergeAll(map(dfvInGetVal, varNames))
+
+
+  def getExprDfvMemberE(self,
+      e: expr.MemberE,
+      dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
+  ) -> dfv.ComponentL:
+    """A default implementation (assuming Constant Propagation)."""
+    varNames = ir.getExprRValueNames(self.func, e)
+    assert varNames, f"{e}, {varNames}"
+    return mergeAll(map(dfvInGetVal, varNames))
+
+
+  def getExprDfvCallE(self,
+      e: expr.CallE,
+      dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
+  ) -> dfv.ComponentL:
+    """A default implementation (assuming Constant Propagation)."""
+    return self.componentBot
 
   ################################################
   # BOUND END  : Helper_Functions
