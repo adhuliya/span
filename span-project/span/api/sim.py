@@ -23,6 +23,10 @@ SimNameT = str
 SimFailed = None  # None represents a simplification failure
 SimPending = []   # an empty list represents sim is pending
 
+ValueTypeT = str
+NumValue: ValueTypeT = "Num"
+BoolValue: ValueTypeT = "Bool"
+NameValue: ValueTypeT = "VarName"
 
 ################################################
 # BOUND START: Simplification_lattice.

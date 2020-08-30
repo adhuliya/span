@@ -21,7 +21,7 @@ import span.ir.expr as expr
 import span.ir.instr as instr
 import span.ir.constructs as constructs
 import span.ir.ir as ir
-import span.api.sim as ev
+import span.api.sim as sim
 from span.api.dfv import OLD_INOUT, NEW_IN, NEW_OUT, NodeDfvL, NewOldL
 import span.api.dfv as dfv
 from span.api.lattice import NoChange, DataLT, ChangeL, Changed, mergeAll
@@ -704,7 +704,7 @@ class ForwBackDT(DirectionDT):
 # BOUND START: AnalysisAT_The_Base_Class.
 ################################################
 
-class AnalysisAT(ev.SimAT):
+class AnalysisAT(sim.SimAT):
   # For bi-directional analyses, subclass AnalysisAT directly.
 
   __slots__ : List[str] = ["func", "overallTop", "overallBot"]
@@ -1595,11 +1595,11 @@ class ValueAnalysisAT(AnalysisAT):
   # redefine these variables as needed (see ConstA, IntervalA for examples)
   L: Type[dfv.OverallL] = dfv.OverallL  # the OverallL lattice used
   D: Type[DirectionDT]  = ForwardD  # its a forward flow analysis
-  simNeeded: List[Callable] = [ev.SimAT.Num_Var__to__Num_Lit,
-                               ev.SimAT.Deref__to__Vars,
-                               ev.SimAT.Num_Bin__to__Num_Lit,
-                               ev.SimAT.LhsVar__to__Nil,
-                               ev.SimAT.Cond__to__UnCond,
+  simNeeded: List[Callable] = [sim.SimAT.Num_Var__to__Num_Lit,
+                               sim.SimAT.Deref__to__Vars,
+                               sim.SimAT.Num_Bin__to__Num_Lit,
+                               sim.SimAT.LhsVar__to__Nil,
+                               sim.SimAT.Cond__to__UnCond,
                                #sim.SimAT.Node__to__Nil,
                                ]
 
@@ -2083,6 +2083,32 @@ class ValueAnalysisAT(AnalysisAT):
   ) -> dfv.ComponentL:
     """A default implementation (assuming Constant Propagation)."""
     return self.componentBot
+
+
+  def filterValues(self,
+      e: expr.ExprET,
+      values: List[types.T],
+      dfvIn: dfv.OverallL,
+      valueType: sim.ValueTypeT = sim.NumValue,
+  ) -> List[types.T]:
+    if not values:
+      return values  # returns an empty list
+    exprVal = self.getExprDfv(e, dfvIn)
+    if exprVal.bot:
+      return values
+    elif exprVal.top:
+      return sim.SimPending
+    else:
+      assert exprVal.val is not None, f"{e}, {exprVal}, {dfvIn}"
+      return list(filter(self.filterTest(exprVal, valueType), values))
+
+
+  def filterTest(self,
+      exprVal: dfv.ComponentL,
+      valueType: sim.ValueTypeT = sim.NumValue,
+  ) -> Callable[[types.T], bool]:
+    raise NotImplementedError()
+
 
   ################################################
   # BOUND END  : Helper_Functions

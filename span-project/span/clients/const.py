@@ -178,7 +178,14 @@ class ConstA(analysis.ValueAnalysisAT):
   ################################################
   # BOUND START: Normal_Instructions
   ################################################
-  # uses default implementation in analysis.ValueAnalysisAT class
+
+  def Ptr_Assign_Instr(self,
+      nodeId: types.NodeIdT,
+      insn: instr.AssignI,
+      nodeDfv: NodeDfvL
+  ) -> NodeDfvL:
+    return self.Nop_Instr(nodeId, nodeDfv)
+
   ################################################
   # BOUND END  : Normal_Instructions
   ################################################
@@ -192,137 +199,154 @@ class ConstA(analysis.ValueAnalysisAT):
       nodeDfv: Opt[NodeDfvL] = None,
       values: Opt[List[types.NumericT]] = None,
   ) -> Opt[List[types.NumericT]]:
-    # STEP 1: check if the expression can be evaluated
-    varType = e.type
-    if not varType.isNumeric():
+    # STEP 1: tell the system if the expression can be evaluated
+    if not e.type.isNumeric():
       return sim.SimFailed
 
     # STEP 2: If here, eval may be possible, hence attempt eval
     if nodeDfv is None:
-      return sim.SimPending
+      return sim.SimPending # tell that sim my be possible if nodeDfv given
 
-    # STEP 3: If here, either eval or filter the evals
-    if values is None: # eval
-      exprVal = self.getExprDfv(e, cast(OverallL, nodeDfv.dfvIn))
-      if exprVal.bot: return sim.SimFailed  # cannot be evaluated
-      if exprVal.top: return sim.SimPending  # can be evaluated, needs more info
-      return [exprVal.val]
-    else: # filter the values
-      if not values: return values  # returns an empty list
-      exprVal = self.getExprDfv(e, cast(OverallL, nodeDfv.dfvIn))
-      if exprVal.bot:
-        return values
-      elif exprVal.top:
-        return sim.SimPending
-      else:
-        assert exprVal.val is not None, f"{e}, {exprVal}, {nodeDfv.dfvIn}"
-        testFunc = lambda val: exprVal.val == val
-        return list(filter(testFunc, values))
+    # STEP 3: If here, either eval or filter the values
+    dfvIn = cast(OverallL, nodeDfv.dfvIn)
+    if values is not None:
+      assert len(values), f"{e}, {values}"
+      return self.filterValues(e, values, dfvIn, sim.NumValue) # filter the values
+
+    # STEP 4: If here, eval the expression
+    exprVal = self.getExprDfv(e, dfvIn)
+    if exprVal.bot: return sim.SimFailed  # cannot be evaluated
+    if exprVal.top: return sim.SimPending  # can be evaluated, needs more info
+    return [exprVal.val]
 
 
   def Num_Bin__to__Num_Lit(self,
       e: expr.BinaryE,
       nodeDfv: Opt[NodeDfvL] = None,
-  ) -> sim.SimToNumL:
-    # STEP 1: check if the expression can be evaluated
-    exprType = e.type
-    arg1Type = e.arg1.type
-    arg2Type = e.arg2.type
-
-    if not exprType.isNumeric():
-      return sim.SimToNumFailed
-    if not arg1Type.isNumeric() or not arg2Type.isNumeric():
-      return sim.SimToNumFailed
+      values: Opt[List[types.NumericT]] = None,
+  ) -> Opt[List[types.NumericT]]:
+    # STEP 1: tell the system if the expression can be evaluated
+    if (not e.type.isNumeric()
+        or not e.arg1.type.isNumeric()
+        or not e.arg2.type.isNumeric()):
+      return sim.SimFailed
 
     # STEP 2: If here, eval may be possible, hence attempt eval
     if nodeDfv is None:
-      return sim.SimToNumPending
+      return sim.SimPending # tell that sim my be possible if nodeDfv given
 
-    if isinstance(e.arg1, expr.VarE):
-      val1 = cast(OverallL, nodeDfv.dfvIn).getVal(e.arg1.name)
-    else: # a literal
-      assert isinstance(e.arg1, expr.LitE), f"{e}"
-      assert isinstance(e.arg1.val, (int, float)), f"{e.arg1}"
-      val1 = ComponentL(self.func, val=e.arg1.val)
+    # STEP 3: If here, either eval or filter the values
+    dfvIn = cast(OverallL, nodeDfv.dfvIn)
+    if values is not None:
+      assert len(values), f"{e}, {values}"
+      return self.filterValues(e, values, dfvIn, sim.NumValue) # filter the values
 
-    if val1.bot: return sim.SimToNumFailed
-    if val1.top: return sim.SimToNumPending
+    # STEP 4: If here, eval the expression
+    arg1, arg2 = e.arg1, e.arg2
+    if isinstance(arg1, expr.VarE):
+      val1 = dfvIn.getVal(arg1.name)
+    else: # a literal (can be possible)
+      assert isinstance(arg1, expr.LitE), f"{e}"
+      assert isinstance(arg1.val, (int, float)), f"{e.arg1}"
+      val1 = ComponentL(self.func, val=arg1.val)
 
-    if isinstance(e.arg2, expr.VarE):
-      val2 = cast(OverallL, nodeDfv.dfvIn).getVal(e.arg2.name)
+    if val1.bot: return sim.SimFailed
+    if val1.top: return sim.SimPending
+
+    if isinstance(arg2, expr.VarE):
+      val2 = dfvIn.getVal(arg2.name)
     else:  # a literal
-      assert isinstance(e.arg2, expr.LitE), f"{e}"
-      assert isinstance(e.arg2.val, (int, float)), f"{e.arg1}"
-      val2 = ComponentL(self.func, val=e.arg2.val)
+      assert isinstance(arg2, expr.LitE), f"{e}"
+      assert isinstance(arg2.val, (int, float)), f"{arg2}"
+      val2 = ComponentL(self.func, val=arg2.val)
 
-    if val2.bot: return sim.SimToNumFailed
-    if val2.top: return sim.SimToNumPending
+    if val2.bot: return sim.SimFailed
+    if val2.top: return sim.SimPending
 
     assert val1.val and val2.val, f"{val1}, {val2}"
     opCode = e.opr.opCode
     if opCode == op.BO_ADD_OC:
-      return sim.SimToNumL(val1.val + val2.val)
+      return [val1.val + val2.val]
     elif opCode == op.BO_SUB_OC:
-      return sim.SimToNumL(val1.val - val2.val)
+      return [val1.val - val2.val]
     elif opCode == op.BO_MUL_OC:
-      return sim.SimToNumL(val1.val * val2.val)
+      return [val1.val * val2.val]
     elif opCode == op.BO_DIV_OC:
       if val2.val == 0:
         if LS: LOG.critical("DivideByZero: expr: %s, dfv: %s",
                             e, nodeDfv.dfvIn)
-        return sim.SimToNumFailed
+        return sim.SimFailed
       else:
-        return sim.SimToNumL(val1.val / val2.val)
+        return [val1.val / val2.val]
     elif opCode == op.BO_MOD_OC:
-      return sim.SimToNumL(val1.val % val2.val)
+      return [val1.val % val2.val]
     elif opCode == op.BO_GT_OC:
-      val = 1 if val1.val > val2.val else 0
-      return sim.SimToNumL(val)
+      return [1 if val1.val > val2.val else 0]
     elif opCode == op.BO_GE_OC:
-      val = 1 if val1.val >= val2.val else 0
-      return sim.SimToNumL(val)
+      return [1 if val1.val >= val2.val else 0]
     elif opCode == op.BO_LT_OC:
-      val = 1 if val1.val < val2.val else 0
-      return sim.SimToNumL(val)
+      return [1 if val1.val < val2.val else 0]
     elif opCode == op.BO_LE_OC:
-      val = 1 if val1.val <= val2.val else 0
-      return sim.SimToNumL(val)
+      return [1 if val1.val <= val2.val else 0]
     elif opCode == op.BO_EQ_OC:
-      val = 1 if val1.val == val2.val else 0
-      return sim.SimToNumL(val)
+      return [1 if val1.val == val2.val else 0]
     elif opCode == op.BO_NE_OC:
-      val = 1 if val1.val != val2.val else 0
-      return sim.SimToNumL(val)
+      return [1 if val1.val != val2.val else 0]
 
-    return sim.SimToNumFailed
+    return sim.SimFailed
 
 
   def Cond__to__UnCond(self,
       e: expr.VarE,
-      nodeDfv: Opt[NodeDfvL] = None
-  ) -> sim.SimToBoolL:
-    # STEP 1: check if the expression can be evaluated
-    exprType = e.type
-    if not exprType.isNumeric():
-      return sim.SimToBoolFailed
+      nodeDfv: Opt[NodeDfvL] = None,
+      values: Opt[List[bool]] = None,
+  ) -> Opt[List[bool]]:
+    # STEP 1: tell the system if the expression can be evaluated
+    if not e.type.isNumeric():
+      return sim.SimFailed
 
-    # STEP 2: If here, eval may be possible
+    # STEP 2: If here, eval may be possible, hence attempt eval
     if nodeDfv is None:
-      return sim.SimToBoolPending
+      return sim.SimPending # tell that sim my be possible if nodeDfv given
 
-    # STEP 3: attempt evaluation
-    val = cast(OverallL, nodeDfv.dfvIn).getVal(e.name)
-    if val.bot: return sim.SimToBoolFailed  # cannot be evaluated
+    # STEP 3: If here, either eval or filter the values
+    dfvIn = cast(OverallL, nodeDfv.dfvIn)
+    if values is not None:
+      assert len(values), f"{e}, {values}"
+      return self.filterValues(e, values, dfvIn, sim.BoolValue) # filter the values
+
+    # STEP 4: If here, eval the expression
+    val = dfvIn.getVal(e.name)
+    if val.bot:
+      return sim.SimFailed  # cannot be evaluated
     if val.top:
-      nameType = ir.inferTypeOfVal(self.func, e.name)
-      if isinstance(nameType, types.Ptr):
-        return sim.SimToBoolFailed
-      else:
-        return sim.SimToBoolPending  # can be evaluated but needs more info
+      return sim.SimPending  # can be evaluated but needs more info
+    assert val.val is not None, f"{e}, {val}"
     if val.val != 0:
-      return sim.SimToBoolL(True)
+      return [True]
     else:
-      return sim.SimToBoolL(False)
+      return [False]
+
+
+  def filterTest(self,
+      exprVal: ComponentL,
+      valueType: sim.ValueTypeT = sim.NumValue,
+  ) -> Callable[[types.T], bool]:
+    if valueType == sim.NumValue:
+      def valueTestNumeric(val) -> bool:
+        if exprVal.bot: return True
+        if exprVal.top: return False
+        return exprVal.val == val
+      return valueTestNumeric
+
+    elif valueType == sim.BoolValue:
+      def valueTestBoolean(val) -> bool:
+        if exprVal.bot: return True
+        if exprVal.top: return False
+        return exprVal.isTrue() == val
+      return valueTestBoolean
+
+    raise ValueError(f"{exprVal}, {valueType}")
 
   ################################################
   # BOUND END  : Simplifiers
