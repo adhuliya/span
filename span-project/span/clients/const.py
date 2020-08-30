@@ -128,15 +128,9 @@ class OverallL(dfv.OverallL):
 
   def countConstants(self) -> int:
     """Gives the count of number of constant in the data flow value."""
-    if self.top or self.bot:
-      return 0
-
+    if self.top or self.bot: return 0
     assert self.val, f"{self}"
-    count = 0
-    for var, val in self.val.items():
-      if val.val is not None:
-        count += 1
-    return count
+    return sum(1 for val in self.val.values() if val.isConstant())
 
 
 ################################################
@@ -215,8 +209,8 @@ class ConstA(analysis.ValueAnalysisAT):
 
     # STEP 4: If here, eval the expression
     exprVal = self.getExprDfv(e, dfvIn)
-    if exprVal.bot: return sim.SimFailed  # cannot be evaluated
     if exprVal.top: return sim.SimPending  # can be evaluated, needs more info
+    if exprVal.bot: return sim.SimFailed  # cannot be evaluated
     return [exprVal.val]
 
 
@@ -243,26 +237,19 @@ class ConstA(analysis.ValueAnalysisAT):
 
     # STEP 4: If here, eval the expression
     arg1, arg2 = e.arg1, e.arg2
-    if isinstance(arg1, expr.VarE):
-      val1 = dfvIn.getVal(arg1.name)
-    else: # a literal (can be possible)
-      assert isinstance(arg1, expr.LitE), f"{e}"
-      assert isinstance(arg1.val, (int, float)), f"{e.arg1}"
-      val1 = ComponentL(self.func, val=arg1.val)
+    vals = []
+    for arg in (arg1, arg2):
+      if isinstance(arg, expr.VarE):
+        val = dfvIn.getVal(arg.name)
+      else: # a literal (can be possible)
+        assert isinstance(arg, expr.LitE), f"{e}"
+        assert isinstance(arg.val, (int, float)), f"{arg}"
+        val = ComponentL(self.func, val=arg.val)
+      if val.top: return sim.SimPending
+      if val.bot: return sim.SimFailed
+      vals.append(val)
 
-    if val1.bot: return sim.SimFailed
-    if val1.top: return sim.SimPending
-
-    if isinstance(arg2, expr.VarE):
-      val2 = dfvIn.getVal(arg2.name)
-    else:  # a literal
-      assert isinstance(arg2, expr.LitE), f"{e}"
-      assert isinstance(arg2.val, (int, float)), f"{arg2}"
-      val2 = ComponentL(self.func, val=arg2.val)
-
-    if val2.bot: return sim.SimFailed
-    if val2.top: return sim.SimPending
-
+    val1, val2 = vals[0], vals[1]
     assert val1.val and val2.val, f"{val1}, {val2}"
     opCode = e.opr.opCode
     if opCode == op.BO_ADD_OC:
@@ -273,8 +260,7 @@ class ConstA(analysis.ValueAnalysisAT):
       return [val1.val * val2.val]
     elif opCode == op.BO_DIV_OC:
       if val2.val == 0:
-        if LS: LOG.critical("DivideByZero: expr: %s, dfv: %s",
-                            e, nodeDfv.dfvIn)
+        if LS: LOG.critical("DivideByZero: expr: %s, dfv: %s", e, dfvIn)
         return sim.SimFailed
       else:
         return [val1.val / val2.val]
@@ -292,7 +278,6 @@ class ConstA(analysis.ValueAnalysisAT):
       return [1 if val1.val == val2.val else 0]
     elif opCode == op.BO_NE_OC:
       return [1 if val1.val != val2.val else 0]
-
     return sim.SimFailed
 
 
@@ -317,10 +302,8 @@ class ConstA(analysis.ValueAnalysisAT):
 
     # STEP 4: If here, eval the expression
     val = dfvIn.getVal(e.name)
-    if val.bot:
-      return sim.SimFailed  # cannot be evaluated
-    if val.top:
-      return sim.SimPending  # can be evaluated but needs more info
+    if val.top: return sim.SimPending  # can be evaluated but needs more info
+    if val.bot: return sim.SimFailed  # cannot be evaluated
     assert val.val is not None, f"{e}, {val}"
     if val.val != 0:
       return [True]
@@ -334,15 +317,15 @@ class ConstA(analysis.ValueAnalysisAT):
   ) -> Callable[[types.T], bool]:
     if valueType == sim.NumValue:
       def valueTestNumeric(val) -> bool:
-        if exprVal.bot: return True
         if exprVal.top: return False
+        if exprVal.bot: return True
         return exprVal.val == val
       return valueTestNumeric
 
     elif valueType == sim.BoolValue:
       def valueTestBoolean(val) -> bool:
-        if exprVal.bot: return True
         if exprVal.top: return False
+        if exprVal.bot: return True
         return exprVal.isTrue() == val
       return valueTestBoolean
 

@@ -28,6 +28,7 @@ import span.ir.ir as ir
 
 from span.api.lattice import DataLT, ChangeL, Changed, NoChange
 import span.api.dfv as dfv
+import span.api.lattice as lattice
 from span.api.dfv import NodeDfvL
 import span.api.sim as sim
 import span.api.analysis as analysis
@@ -55,16 +56,13 @@ class ComponentL(dfv.ComponentL):
   def meet(self,
       other: 'ComponentL'
   ) -> Tuple['ComponentL', ChangeL]:
-    if self is other: return self, NoChange
-    if self.bot: return self, NoChange
-    if other.bot: return other, Changed
-    if other.top: return self, NoChange
-    if self.top: return other, Changed
-
-    assert self.val and other.val, f"{self}, {other}"
-    if other.val == self.val:
+    tup = lattice.basicMeetOp(self, other)
+    if tup:
+      return tup
+    elif self.val == other.val:
       return self, NoChange
     else:
+      assert self.val and other.val, f"{self}, {other}"
       lowerLim = min(self.val[0], other.val[0])
       upperLim = max(self.val[1], other.val[1])
       return ComponentL(self.func, val=(lowerLim, upperLim)), Changed
@@ -74,31 +72,20 @@ class ComponentL(dfv.ComponentL):
       other: 'ComponentL'
   ) -> bool:
     """A non-strict weaker-than test. See doc of super class."""
-    if self.bot: return True
-    if other.top: return True
-    if other.bot: return False
-    if self.top: return False
-
-    assert self.val and other.val, f"{self}, {other}"
-    return self.val[0] <= other.val[0] and self.val[1] >= other.val[1]
+    lt = lattice.basicLessThanTest(self, other)
+    return (self.val[0] <= other.val[0] and self.val[1] >= other.val[1]) \
+             if lt is None else lt
 
 
   def __eq__(self, other) -> bool:
-    if self is other:
-      return True
     if not isinstance(other, ComponentL):
       return NotImplemented
-
-    sTop, sBot, oTop, oBot = self.top, self.bot, other.top, other.bot
-    if sTop and oTop: return True
-    if sBot and oBot: return True
-    if sTop or sBot or oTop or oBot: return False
-
-    return self.val == other.val
+    equal = lattice.basicEqualTest(self, other)
+    return self.val == other.val if equal is None else equal
 
 
   def __hash__(self):
-    return hash(self.func.name) ^ hash((self.val, self.top, self.bot))
+    return hash((self.func.name, self.val, self.top, self.bot))
 
 
   def getCopy(self) -> 'ComponentL':
@@ -239,11 +226,9 @@ class ComponentL(dfv.ComponentL):
       return self, other  # full overlap has no disjoint
 
     assert self.val and other.val , f"{self}, {other}"
-    swap = False
-    lower, upper = self.val, other.val
-    if self.val[0] > other.val[0]:
-      swap = True
-      lower, upper = upper, lower  # swap
+    swap, lower, upper = False, self.val, other.val
+    if lower[0] > upper[0]:
+      swap, lower, upper = True, upper, lower  # swap
 
     # partial overlap can be computed
     disjoint1 = ComponentL(self.func, val=(lower[0], upper[0]))
@@ -280,9 +265,8 @@ class ComponentL(dfv.ComponentL):
 
 
   def __str__(self):
-    if self.bot: return "Bot"
-    if self.top: return "Top"
-    return f"{self.val}"
+    s = lattice.getBasicString(self)
+    return s if s else f"{self.val}"
 
 
   def __repr__(self):
@@ -303,6 +287,14 @@ class OverallL(dfv.OverallL):
     # self.componentBot = ComponentL(self.func, bot=True)
 
 
+  def countConstants(self) -> int:
+    """Gives the count of number of constant in the data flow value."""
+    if self.top or self.bot: return 0
+    assert self.val, f"{self}"
+    return sum(1 for val in self.val.values() if val.isConstant())
+
+
+
 ################################################
 # BOUND END  : interval_lattice
 ################################################
@@ -311,7 +303,7 @@ class OverallL(dfv.OverallL):
 # BOUND START: interval_analysis
 ################################################
 
-class IntervalA(analysis.AnalysisAT):
+class IntervalA(analysis.ValueAnalysisAT):
   """Even-Odd (Parity) Analysis."""
   __slots__ : List[str] = ["componentTop", "componentBot"]
   # concrete lattice class of the analysis
@@ -325,291 +317,33 @@ class IntervalA(analysis.AnalysisAT):
                                sim.SimAT.Cond__to__UnCond
                                ]
 
-
   def __init__(self,
       func: constructs.Func,
   ) -> None:
-    super().__init__(func)
-    self.componentTop = ComponentL(self.func, top=True)
-    self.componentBot = ComponentL(self.func, bot=True)
-    self.overallTop: OverallL = OverallL(self.func, top=True)
-    self.overallBot: OverallL = OverallL(self.func, bot=True)
-
-
-  def getIpaBoundaryInfo(self,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    dfvIn = cast(OverallL, nodeDfv.dfvIn.getCopy())
-    dfvOut = cast(OverallL, nodeDfv.dfvOut.getCopy())
-    dfvIn.func, dfvOut.func = self.func, self.func
-
-    vNames = ir.getNamesEnv(self.func, numeric=True)
-
-    if dfvIn.val:
-      for value in dfvIn.val.values(): value.func = self.func
-      for key in list(dfvIn.val.keys()):
-        if key not in vNames: dfvIn.setVal(key, self.componentBot) # remove key
-    if dfvOut.val:
-      for value in dfvOut.val.values(): value.func = self.func
-      for key in list(dfvOut.val.keys()):
-        if key not in vNames: dfvOut.setVal(key, self.componentBot) # remove key
-
-    return NodeDfvL(dfvIn, dfvOut)
-
-
-  def getBoundaryInfo(self,
-      inBi: Opt[DataLT] = None,
-      outBi: Opt[DataLT] = None,
-  ) -> Tuple[OverallL, OverallL]:
-    if inBi is None:
-      # all locations are unknown at start of the function
-      startBi = self.overallBot  # must
-    else:
-      startBi = self.overallBot  # TODO
-
-    # No boundary information at out of end node,
-    # since this analysis is forward only.
-    endBi = self.overallTop
-
-    return startBi, endBi
+    super().__init__(func, ComponentL, OverallL)
 
 
   ################################################
-  # BOUND START: special_instructions
+  # BOUND START: Special_Instructions
   ################################################
-
-  def Nop_Instr(self,
-      nodeId: types.NodeIdT,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    """An identity forward transfer function."""
-    dfvIn = nodeDfv.dfvIn
-    return NodeDfvL(dfvIn, dfvIn)
-
-
-  def Filter_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.FilterI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    """Filter away dead variables.
-    The set of named locations that are dead."""
-    dfvIn = cast(OverallL, nodeDfv.dfvIn)
-
-    if not insn.varNames \
-        or dfvIn.top:  # i.e. nothing to filter or no DFV to filter == Nop
-      return self.Nop_Instr(nodeId, nodeDfv)
-
-    newDfvOut = cast(OverallL, dfvIn.getCopy())
-
-    newDfvOut.filterVals(ir.filterNamesNumeric(self.func, insn.varNames))
-
-    return NodeDfvL(dfvIn, newDfvOut)
-
-
-  def UnDefVal_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.UnDefValI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    if not insn.type.isNumeric():
-      return self.Nop_Instr(nodeId, nodeDfv)
-
-    oldIn = cast(OverallL, nodeDfv.dfvIn)
-
-    newOut = oldIn.getCopy()
-    newOut.setVal(insn.lhs, self.componentBot)
-
-    return NodeDfvL(oldIn, newOut)
-
-
+  # uses default implementation in analysis.ValueAnalysisAT class
   ################################################
-  # BOUND END  : special_instructions
+  # BOUND END  : Special_Instructions
   ################################################
 
   ################################################
-  # BOUND START: normal_instructions
+  # BOUND START: Normal_Instructions
   ################################################
 
-  def Num_Assign_Var_Lit_Instr(self,
+  def Ptr_Assign_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Var_Var_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Var_Deref_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Var_CastVar_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Var_SizeOf_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Var_UnaryArith_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Var_BinArith_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Var_Select_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Var_Array_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Var_Member_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Var_Call_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Ptr_Assign_Var_Call_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    assert isinstance(insn.rhs, expr.CallE), f"{nodeId}: {insn}"
-    return self.processCallE(insn.rhs, cast(OverallL, nodeDfv.dfvIn))
-
-
-  def Record_Assign_Var_Call_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    assert isinstance(insn.rhs, expr.CallE), f"{nodeId}: {insn}"
-    return self.processCallE(insn.rhs, cast(OverallL, nodeDfv.dfvIn))
-
-
-  def Num_Assign_Deref_Lit_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Deref_Var_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Array_Lit_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Array_Var_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Member_Lit_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Member_Var_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Conditional_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.CondI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    oldIn = cast(OverallL, nodeDfv.dfvIn)
-    # special case
-    if isinstance(insn.arg.type, types.Ptr):
-      return NodeDfvL(oldIn, oldIn)
-
-    dfvFalse, dfvTrue = self.calcTrueFalseDfv(insn.arg, oldIn)
-
-    return NodeDfvL(oldIn, None, dfvTrue, dfvFalse)
-
-
-  def Call_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.CallI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processCallE(insn.arg, cast(OverallL, nodeDfv.dfvIn))
-
+    return self.Nop_Instr(nodeId, nodeDfv)
 
   ################################################
-  # BOUND END  : normal_instructions
+  # BOUND END  : Normal_Instructions
   ################################################
 
   ################################################
@@ -621,6 +355,25 @@ class IntervalA(analysis.AnalysisAT):
       nodeDfv: Opt[NodeDfvL] = None,
   ) -> sim.SimToNumL:
     """Specifically for expression: 'var % 2'."""
+    # STEP 1: tell the system if the expression can be evaluated
+    if (not e.type.isNumeric()
+        or not e.opr.isRelationalOp()
+        or not e.arg1.type.isNumeric()
+        or not e.arg2.type.isNumeric()):
+      return sim.SimFailed
+
+    # STEP 2: If here, eval may be possible, hence attempt eval
+    if nodeDfv is None:
+      return sim.SimPending # tell that sim my be possible if nodeDfv given
+
+    # STEP 3: If here, either eval or filter the values
+    dfvIn = cast(OverallL, nodeDfv.dfvIn)
+    if values is not None:
+      assert len(values), f"{e}, {values}"
+      return self.filterValues(e, values, dfvIn, sim.NumValue) # filter the values
+
+    # STEP 4: If here, eval the expression
+    arg1, arg2 = e.arg1, e.arg2
     # STEP 1: check if the expression can be evaluated
     if not e.opr.isRelationalOp():
       return sim.SimToNumFailed
@@ -716,75 +469,6 @@ class IntervalA(analysis.AnalysisAT):
   # BOUND START: helper_functions
   ################################################
 
-  def processLhsRhs(self,
-      lhs: expr.ExprET,
-      rhs: expr.ExprET,
-      nDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    """A common function to handle various IR instructions."""
-
-    dfvIn = cast(OverallL, nDfv.dfvIn)
-    oldOut = cast(OverallL, nDfv.dfvOut)
-    # # Very Special Case
-    # if dfvIn.bot and not isinstance(rhs, expr.LitE):
-    #   return NodeDfvL(dfvIn, dfvIn)
-
-    lhsvarNames = ir.getExprLValueNames(self.func, lhs)
-    assert len(lhsvarNames) >= 1, msg.INVARIANT_VIOLATED
-
-    # Yet another Very Special Case
-    if dfvIn.bot and len(lhsvarNames) > 1:
-      return NodeDfvL(dfvIn, dfvIn)
-
-    rhsDfv = self.getExprDfv(rhs, dfvIn)
-
-    outDfvValues = {}  # a temporary store of out dfvs
-    updatedNameList = []
-    if len(lhsvarNames) == 1:  # a must update
-      for name in lhsvarNames:  # this loop only runs once
-        updatedNameList.append(name)
-        if ir.nameHasArray(self.func, name):  # may update arrays
-          oldVal = dfvIn.getVal(name)
-          newVal, _ = oldVal.meet(rhsDfv)
-          outDfvValues[name] = newVal
-        else:
-          outDfvValues[name] = rhsDfv
-    else:
-      for name in lhsvarNames:  # do may updates (take meet)
-        updatedNameList.append(name)
-        oldDfv = dfvIn.getVal(name)
-        updatedDfv, changed = oldDfv.meet(rhsDfv)
-        outDfvValues[name] = updatedDfv
-
-    if isinstance(rhs, expr.CallE):
-      names = ir.getNamesUsedInExprNonSyntactically(self.func, rhs)
-      names = ir.filterNamesInteger(self.func, names)
-      for name in names:
-        # updatedNameList.append(name)
-        outDfvValues[name] = self.componentBot
-
-    # apply widening
-    for name in updatedNameList:
-      oldDfvOutVal = oldOut.getVal(name)
-      newDfvOutVal = outDfvValues[name]
-      if not oldDfvOutVal.top and newDfvOutVal != oldDfvOutVal:
-        outDfvValues[name] = self.componentBot
-
-    # decide whether to create a new Out Dfv object
-    newValue = False
-    for name, value in outDfvValues.items():
-      if dfvIn.getVal(name) != value:
-        newValue = True
-        break
-
-    newOut = dfvIn
-    if newValue:
-      newOut = cast(OverallL, dfvIn.getCopy())
-      for name, value in outDfvValues.items():
-        if dfvIn.getVal(name) != value:
-          newOut.setVal(name, value)
-    return NodeDfvL(dfvIn, newOut)
-
 
   def getExprDfv(self,
       rhs: expr.ExprET,
@@ -861,20 +545,6 @@ class IntervalA(analysis.AnalysisAT):
 
     # control should not reach here
     assert False, f"class: {rhs.__class__} rhs: {rhs}, dfvIn: {dfvIn}"
-
-
-  def processCallE(self,
-      e: expr.CallE,
-      dfvIn: OverallL,
-  ) -> NodeDfvL:
-    newOut = dfvIn.getCopy()
-
-    names = ir.getNamesUsedInExprNonSyntactically(self.func, e)
-    names = ir.filterNamesInteger(self.func, names)
-    for name in names:
-      newOut.setVal(name, self.componentBot)
-
-    return NodeDfvL(dfvIn, newOut)
 
 
   def calcTrueFalseDfv(self,
