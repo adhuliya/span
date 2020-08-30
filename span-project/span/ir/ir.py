@@ -19,7 +19,7 @@ Note about circular dependency:
 import logging
 
 LOG = logging.getLogger("span")
-from typing import Dict, Set, Tuple, Optional, List
+from typing import Dict, Set, Tuple, Optional, List, Callable, cast
 import sys
 import functools
 
@@ -269,6 +269,15 @@ def filterNamesPointer(func: constructs.Func,
   """Remove names which are not pointers."""
   assert func.tUnit is not None, f"{func}"
   return func.tUnit.filterNamesPointer(names)
+
+
+def filterNames(func: constructs.Func,
+    names: Set[types.VarNameT],
+    typeTest: Callable[[types.Type], bool],
+) -> Set[types.VarNameT]:
+  inferType = cast(tunit.TranslationUnit, func.tUnit).inferTypeOfVal
+  augmentedTest = lambda name: typeTest(inferType(name))
+  return set(filter(augmentedTest,  names))
 
 
 @functools.lru_cache(1000)

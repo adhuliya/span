@@ -22,7 +22,7 @@ import span.ir.ir as ir
 import span.api.sim as ev
 from span.api.dfv import OLD_INOUT, NEW_IN, NEW_OUT, NodeDfvL, NewOldL
 import span.api.dfv as dfv
-from span.api.lattice import NoChange, DataLT, ChangeL, Changed
+from span.api.lattice import NoChange, DataLT, ChangeL, Changed, mergeAll
 from bisect import insort
 
 import span.util.messages as msg
@@ -1622,13 +1622,13 @@ class ValueAnalysisAT(AnalysisAT):
 
 
   def getAllVars(self) -> Set[types.VarNameT]:
-    return NotImplemented
+    raise NotImplementedError()
     # return ir.getNamesEnv(self.func, numeric=True)
 
-  def insnTypeTest(self, insn: instr.InstrIT) -> bool:
+  def isAcceptedType(self, t: types.Type) -> bool:
     """Returns True if the type of the instruction is
     of interest to the analysis."""
-    return NotImplemented
+    raise NotImplementedError()
 
   ################################################
   # BOUND START: Special_Instructions
@@ -1647,10 +1647,10 @@ class ValueAnalysisAT(AnalysisAT):
       insn: instr.UnDefValI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
-    if not self.insnTypeTest(insn.type):
+    if not self.isAcceptedType(insn.type):
       return self.Nop_Instr(nodeId, nodeDfv)
     newOut = oldIn = cast(dfv.OverallL, nodeDfv.dfvIn)
-    if oldIn.getVal(insn.lhs) != self.componentBot:
+    if not oldIn.getVal(insn.lhs).bot:
       newOut = oldIn.getCopy()
       newOut.setVal(insn.lhs, self.componentBot)
     return NodeDfvL(oldIn, newOut)
@@ -1694,7 +1694,7 @@ class ValueAnalysisAT(AnalysisAT):
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
     oldIn = cast(dfv.OverallL, nodeDfv.dfvIn)
-    if not self.insnTypeTest(insn.arg.type):  # special case
+    if not self.isAcceptedType(insn.arg.type):  # special case
       return NodeDfvL(oldIn, oldIn)
     dfvFalse, dfvTrue = self.calcTrueFalseDfv(insn.arg, oldIn)
     return NodeDfvL(oldIn, None, dfvTrue, dfvFalse)
@@ -1724,50 +1724,50 @@ class ValueAnalysisAT(AnalysisAT):
     """A common function to handle various assignment instructions."""
     assert isinstance(dfvIn, dfv.OverallL), f"{type(dfvIn)}"
 
-    if isinstance(lhs.type, types.RecordT):
-      return self.processLhsRhsRecordType(lhs, rhs, dfvIn)
-
-    lhsVarNames = ir.getExprLValueNames(self.func, lhs)
-    assert len(lhsVarNames) >= 1, f"{lhs}: {lhsVarNames}"
-
-    rhsDfv = self.getExprDfv(rhs, dfvIn)
-
+    lhsType = lhs.type
     dfvInGetVal = dfvIn.getVal
-    outDfvValues = {}  # a temporary store of out dfvs
-    if len(lhsVarNames) == 1:  # a must update
-      for name in lhsVarNames:  # this loop is entered once only
-        newVal = rhsDfv
-        if ir.nameHasArray(self.func, name):  # may update arrays
-          oldVal = cast(dfv.ComponentL, dfvInGetVal(name))
-          newVal, _ = oldVal.meet(rhsDfv)
-        if dfvInGetVal(name) != newVal:
-          outDfvValues[name] = newVal
-    else:
-      for name in lhsVarNames:  # do may updates (take meet)
-        oldDfv = cast(dfv.ComponentL, dfvIn.getVal(name))
-        updatedDfv, changed = oldDfv.meet(rhsDfv)
-        if dfvInGetVal(name) != updatedDfv:
-          outDfvValues[name] = updatedDfv
+    # a temporary store of out dfvs
+    outDfvValues: Dict[types.VarNameT, dfv.ComponentL] = {}
 
-    if isinstance(rhs, expr.CallE):  # over-approximate
-      names = ir.getNamesPossiblyModifiedInCallExpr(self.func, rhs)
-      names = ir.filterNamesNumeric(self.func, names)
-      for name in names:
-        if dfvInGetVal(name) != self.componentBot:
-          outDfvValues[name] = self.componentBot
+    if isinstance(lhsType, types.RecordT):
+      outDfvValues = self.processLhsRhsRecordType(lhs, rhs, dfvIn)
+
+    elif self.isAcceptedType(lhsType):
+      lhsVarNames = ir.getExprLValueNames(self.func, lhs)
+      assert len(lhsVarNames) >= 1, f"{lhs}: {lhsVarNames}"
+
+      rhsDfv = self.getExprDfv(rhs, dfvIn)
+
+      if len(lhsVarNames) == 1:  # a must update
+        for name in lhsVarNames:  # this loop is entered once only
+          newVal = rhsDfv
+          if ir.nameHasArray(self.func, name):  # may update arrays
+            oldVal = cast(dfv.ComponentL, dfvInGetVal(name))
+            newVal, _ = oldVal.meet(rhsDfv)
+          if dfvInGetVal(name) != newVal:
+            outDfvValues[name] = newVal
+      else:
+        for name in lhsVarNames:  # do may updates (take meet)
+          oldDfv = cast(dfv.ComponentL, dfvIn.getVal(name))
+          updatedDfv, changed = oldDfv.meet(rhsDfv)
+          if dfvInGetVal(name) != updatedDfv:
+            outDfvValues[name] = updatedDfv
+
+    outDfvValues.update(self.processCallE(rhs, dfvIn))
 
     newOut = dfvIn
     if outDfvValues:
-      newOut = cast(OverallL, dfvIn.getCopy())
+      newOut = cast(dfv.OverallL, dfvIn.getCopy())
+      newOutSetVal = newOut.setVal
       for name, value in outDfvValues.items():
-        newOut.setVal(name, value)
+        newOutSetVal(name, value)
     return NodeDfvL(dfvIn, newOut)
 
 
   def getExprDfv(self,
       e: expr.ExprET,
-      dfvIn: OverallL
-  ) -> ComponentL:
+      dfvIn: dfv.OverallL
+  ) -> dfv.ComponentL:
     """Returns the effective component dfv of the rhs.
     It expects that the rhs is non-record type.
     (Record type expressions are handled separately.)
@@ -1777,19 +1777,19 @@ class ValueAnalysisAT(AnalysisAT):
 
     if isinstance(e, expr.LitE):
       assert isinstance(e.val, (int, float)), f"{e}"
-      return ComponentL(self.func, val=e.val)
+      return dfv.ComponentL(self.func, val=e.val)
 
     elif isinstance(e, expr.VarE):  # handles PseudoVarE too
       return dfvInGetVal(e.name)
 
     elif isinstance(e, expr.DerefE):
       varNames = ir.getExprRValueNames(self.func, e)
-      return lattice.mergeAll(map(dfvInGetVal, varNames))
+      return mergeAll(map(dfvInGetVal, varNames))
 
     elif isinstance(e, expr.CastE):
       if e.arg.type.isNumeric():
         value, _ = value.meet(self.getExprDfv(e.arg, dfvIn))
-        assert isinstance(value, ComponentL)
+        assert isinstance(value, dfv.ComponentL)
         if value.top or value.bot:
           return value
         else:
@@ -1847,7 +1847,7 @@ class ValueAnalysisAT(AnalysisAT):
           val = None
 
         if val is not None:
-          return ComponentL(self.func, val=val)
+          return dfv.ComponentL(self.func, val=val)
         else:
           return self.componentBot
 
@@ -1859,7 +1859,7 @@ class ValueAnalysisAT(AnalysisAT):
 
     elif isinstance(e, (expr.ArrayE, expr.MemberE)):
       varNames = ir.getExprRValueNames(self.func, e)
-      return lattice.mergeAll(map(dfvInGetVal, varNames))
+      return mergeAll(map(dfvInGetVal, varNames))
 
     elif isinstance(e, expr.CallE):
       return self.componentBot
@@ -1871,70 +1871,68 @@ class ValueAnalysisAT(AnalysisAT):
       lhs: expr.ExprET,
       rhs: expr.ExprET,
       dfvIn: DataLT,
-  ) -> NodeDfvL:
+  ) -> Dict[types.VarNameT, dfv.ComponentL]:
     """Processes assignment instruction with RecordT"""
     instrType = lhs.type
     assert isinstance(instrType, types.RecordT), f"{lhs}, {rhs}: {instrType}"
-    assert isinstance(dfvIn, OverallL), f"{type(dfvIn)}"
+    assert isinstance(dfvIn, dfv.OverallL), f"{type(dfvIn)}"
+
+    allMemberInfo = instrType.getNamesOfType(None)
 
     lhsVarNames = ir.getExprLValueNames(self.func, lhs)
     assert len(lhsVarNames) >= 1, f"{lhs}: {lhsVarNames}"
     strongUpdate: bool = len(lhsVarNames) == 1
 
-    rhsVarNames = ir.getExprRValueNames(self.func, rhs)
-    assert len(rhsVarNames) >= 1, f"{lhs}: {rhsVarNames}"
+    rhsVarNames = None
+    if not isinstance(rhs, expr.CallE):  # IMPORTANT
+      # call expression don't yield rhs names
+      rhsVarNames = ir.getExprRValueNames(self.func, rhs)
+      assert len(rhsVarNames) >= 1, f"{lhs}: {rhsVarNames}"
 
-    allMemberInfo = instrType.getNamesOfType(None)
-
-    tmpDfv: Dict[types.VarNameT, ComponentL] = dict()
+    outDfvValues: Dict[types.VarNameT, dfv.ComponentL] = dict()
+    dfvInGetVal = dfvIn.getVal
+    isAcceptedType = self.isAcceptedType
     for memberInfo in allMemberInfo:
-      if memberInfo.type.isNumeric():
+      if isAcceptedType(memberInfo.type):
+        memName = memberInfo.name
         for lhsName in lhsVarNames:
-          fullLhsVarName = f"{lhsName}.{memberInfo.name}"
-          oldLhsDfv = dfvIn.getVal(fullLhsVarName)
-          rhsDfv = lattice.mergeAll(
-            dfvIn.getVal(f"{rhsName}.{memberInfo.name}")
-            for rhsName in rhsVarNames)
+          if rhsVarNames:
+            rhsDfv = mergeAll(  # merge all rhs dfvs of the same member
+              dfvInGetVal(f"{rhsName}.{memName}")
+              for rhsName in rhsVarNames)
+          else:
+            rhsDfv = self.componentBot
+          fullLhsVarName = f"{lhsName}.{memName}"
+          oldLhsDfv = dfvInGetVal(fullLhsVarName)
           if not strongUpdate:
             rhsDfv, _ = oldLhsDfv.meet(rhsDfv)
           if oldLhsDfv != rhsDfv:
-            tmpDfv[fullLhsVarName] = rhsDfv
+            outDfvValues[fullLhsVarName] = rhsDfv
 
-    if isinstance(rhs, expr.CallE):  # over-approximate
-      names = ir.getNamesPossiblyModifiedInCallExpr(self.func, rhs)
-      names = ir.filterNamesNumeric(self.func, names)
-      for name in names:
-        if dfvIn.getVal(name) != self.componentBot:
-          tmpDfv[name] = self.componentBot
-
-    newOut = dfvIn
-    if tmpDfv:
-      newOut = dfvIn.getCopy()
-      for varName, val in tmpDfv.items():
-        newOut.setVal(varName, val)
-
-    return NodeDfvL(dfvIn, newOut)
+    return outDfvValues
 
 
   def processCallE(self,
       e: expr.ExprET,
       dfvIn: DataLT,
-  ) -> NodeDfvL:
+  ) -> Dict[types.VarNameT, dfv.ComponentL]:
     assert isinstance(e, expr.CallE), f"{e}"
-    assert isinstance(dfvIn, OverallL), f"{type(dfvIn)}"
+    assert isinstance(dfvIn, dfv.OverallL), f"{type(dfvIn)}"
 
-    newOut = dfvIn.getCopy()
-    names = ir.getNamesUsedInExprNonSyntactically(self.func, e)
-    names = ir.filterNamesNumeric(self.func, names)
-    for name in names:
-      newOut.setVal(name, self.componentBot)
-    return NodeDfvL(dfvIn, newOut)
+    names = ir.getNamesPossiblyModifiedInCallExpr(self.func, e)
+    names = ir.filterNames(self.func, names, self.isAcceptedType)
+
+    bot = self.componentBot
+    dfvInGetVal = dfvIn.getVal
+    outDfvValues: Dict[types.VarNameT, dfv.ComponentL]\
+      = {name: bot for name in names if dfvInGetVal(name) != bot}
+    return outDfvValues
 
 
   def calcTrueFalseDfv(self,
       arg: expr.SimpleET,
-      dfvIn: OverallL,
-  ) -> Tuple[OverallL, OverallL]:  # dfvFalse, dfvTrue
+      dfvIn: dfv.OverallL,
+  ) -> Tuple[dfv.OverallL, dfv.OverallL]:  # dfvFalse, dfvTrue
     """Conditionally propagate data flow values."""
     assert isinstance(arg, expr.VarE), f"{arg}"
     argInDfvVal = dfvIn.getVal(arg.name)
@@ -1944,7 +1942,7 @@ class ValueAnalysisAT(AnalysisAT):
     varDfvTrue = varDfvFalse = None
 
     tmpExpr = ir.getTmpVarExpr(self.func, arg.name)
-    argDfvFalse = ComponentL(self.func, 0)  # always true
+    argDfvFalse = dfv.ComponentL(self.func, 0)  # always true
 
     varName = arg.name
     if tmpExpr and isinstance(tmpExpr, expr.BinaryE):
@@ -1956,7 +1954,7 @@ class ValueAnalysisAT(AnalysisAT):
         varDfvFalse = self.getExprDfv(tmpExpr.arg2, dfvIn)
 
     if argDfvFalse or varDfvFalse:
-      dfvFalse = cast(OverallL, dfvIn.getCopy())
+      dfvFalse = cast(dfv.OverallL, dfvIn.getCopy())
       if argDfvFalse:
         dfvFalse.setVal(arg.name, argDfvFalse)
       if varDfvFalse:
@@ -1965,7 +1963,7 @@ class ValueAnalysisAT(AnalysisAT):
       dfvFalse = dfvIn
 
     if varDfvTrue:
-      dfvTrue = cast(OverallL, dfvIn.getCopy())
+      dfvTrue = cast(dfv.OverallL, dfvIn.getCopy())
       dfvTrue.setVal(varName, varDfvTrue)
     else:
       dfvTrue = dfvIn
