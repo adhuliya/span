@@ -207,6 +207,20 @@ class ComponentL(dfv.ComponentL):
     return self.val and self.val[0] == self.val[1]
 
 
+  # TODO: cutUpper/cutLower
+  # def cutUpper(self, val: types.NumericT) -> 'ComponentL':
+  #   """limit the upper if possible"""
+  #   if self.top: return self
+  #   if self < other: return self
+  #   if other < self:  return other
+
+  #   assert self.val and other.val , f"{self}, {other}"
+  #   lower = max(self.val[0], other.val[0])
+  #   upper = min(self.val[1], other.val[1])
+
+  #   return ComponentL(self.func, val=(lower, upper))
+
+
   def getIntersectRange(self, other: 'ComponentL') -> 'ComponentL':
     """self and other must intersect"""
     assert self.overlaps(other), f"NoOverlap: {self} and {other}"
@@ -562,9 +576,9 @@ class IntervalA(analysis.ValueAnalysisAT):
   ) -> Tuple[OverallL, OverallL]:  # dfvFalse, dfvTrue
     """Conditionally propagate data flow values."""
     assert isinstance(arg, expr.VarE), f"{arg}"
-    argInDfvVal = dfvIn.getVal(arg.name)
 
     argName = arg.name
+    argInDfvVal = dfvIn.getVal(arg.name)
     zeroDfv = ComponentL(self.func, (0, 0))  # always zero on false branch
 
     dfvValTrue: Dict[types.VarNameT, ComponentL] = {}
@@ -585,11 +599,11 @@ class IntervalA(analysis.ValueAnalysisAT):
         true1, true2 = arg1Dfv.getDisjointRange(arg2Dfv)
         false1 = false2 = arg1Dfv.getIntersectRange(arg2Dfv)  # equal dfv
       elif opCode in (op.BO_LT_OC, op.BO_LE_OC):
-        true1, true2 = arg1Dfv.limitUpper(arg2Dfv), arg2Dfv.limitLower(arg1Dfv)
-        false1, false2 = arg1Dfv.limitLower(arg2Dfv), arg2Dfv.limitUpper(arg1Dfv)
+        true1, true2 = arg1Dfv.cutUpper(arg2Dfv), arg2Dfv.cutLower(arg1Dfv)
+        false1, false2 = arg1Dfv.cutLower(arg2Dfv), arg2Dfv.cutUpper(arg1Dfv)
       elif opCode in (op.BO_GT_OC, op.BO_GE_OC):
-        true1, true2 = arg1Dfv.limitLower(arg2Dfv), arg2Dfv.limitUpper(arg1Dfv)
-        false1, false2 = arg1Dfv.limitUpper(arg2Dfv), arg2Dfv.limitLower(arg1Dfv)
+        true1, true2 = arg1Dfv.cutLower(arg2Dfv), arg2Dfv.cutUpper(arg1Dfv)
+        false1, false2 = arg1Dfv.cutUpper(arg2Dfv), arg2Dfv.cutLower(arg1Dfv)
 
       arg2IsVarE = isinstance(arg2, expr.VarE)
       if true1 and true2:
