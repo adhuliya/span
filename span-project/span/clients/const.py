@@ -361,7 +361,7 @@ class ConstA(analysis.ValueAnalysisAT):
       arg1, arg2 = tmpExpr.arg1, tmpExpr.arg2
       assert isinstance(arg1, expr.VarE), f"{tmpExpr}"
       opCode = tmpExpr.opr.opCode
-      arg1Dfv = self.getExprDfv(tmpExpr.arg1, dfvIn)
+      arg1Dfv = self.getExprDfv(arg1, dfvIn)
       if arg1Dfv.bot and opCode == op.BO_EQ_OC:
         dfvValTrue[arg1.name] = self.getExprDfv(arg2, dfvIn)  # equal dfv
       elif arg1Dfv.bot and opCode == op.BO_NE_OC:
