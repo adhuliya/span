@@ -284,6 +284,7 @@ def basicLessThanTest(first: LatticeLT, second: LatticeLT) -> Opt[bool]:
   if second.top: return True
   if second.bot: return False
   if first.top: return False
+  # assert first.val and second.val, f"{first}, {second}"
   return None  # i.e. can't decide
 
 
@@ -291,13 +292,12 @@ def basicEqualTest(first: LatticeLT, second: LatticeLT) -> Opt[bool]:
   """A basic equality test common to all lattices.
   If this fails the lattices can do more complicated tests.
   """
-  if first is second:
-    return True
-
+  if first is second: return True
   sTop, sBot, oTop, oBot = first.top, first.bot, second.top, second.bot
   if sTop and oTop: return True
   if sBot and oBot: return True
   if sTop or sBot or oTop or oBot: return False
+  # assert first.val and second.val, f"{first}, {second}"
   return None  # i.e. can't decide
 
 
@@ -305,3 +305,5 @@ def getBasicString(obj: LatticeLT) -> Opt[str]:
   if obj.bot: return "Bot"
   if obj.top: return "Top"
   return None
+
+

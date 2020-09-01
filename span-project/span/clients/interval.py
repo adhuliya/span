@@ -207,18 +207,38 @@ class ComponentL(dfv.ComponentL):
     return self.val and self.val[0] == self.val[1]
 
 
-  # TODO: cutUpper/cutLower
-  # def cutUpper(self, val: types.NumericT) -> 'ComponentL':
-  #   """limit the upper if possible"""
-  #   if self.top: return self
-  #   if self < other: return self
-  #   if other < self:  return other
+  def cutLimit(self,
+      other: 'ComponentL',
+      upper: bool = True
+  ) -> 'ComponentL':
+    """Limits the lower value if possible.
+    Limits the upper/lower value to max till the other's upper/lower value.
+    Returns Top value if the cut is non-meaningful.
+    """
+    if self.top: return self
+    if other.bot: return self
+    if other.top: return ComponentL(self.func, top=True) # bad value
 
-  #   assert self.val and other.val , f"{self}, {other}"
-  #   lower = max(self.val[0], other.val[0])
-  #   upper = min(self.val[1], other.val[1])
+    assert other.val, f"{other}"
+    otherLower, otherUpper = other.val
+    if self.bot:
+      if upper:
+        return ComponentL(self.func, val=(float("-inf"), otherUpper))
+      else:
+        return ComponentL(self.func, val=(otherLower, float("+inf")))
 
-  #   return ComponentL(self.func, val=(lower, upper))
+    assert self.val, f"{self}"
+    selfLower, selfUpper = self.val
+
+    if (upper and selfLower > otherUpper)\
+        or (not upper and selfUpper < otherLower):
+      return ComponentL(self.func, top=True)  # bad value
+
+    if upper and selfUpper > otherUpper:
+      return ComponentL(self.func, val=(selfLower, otherUpper))
+    if not upper and selfLower < otherLower:
+      return ComponentL(self.func, val=(otherLower, selfUpper))
+    return self
 
 
   def getIntersectRange(self, other: 'ComponentL') -> 'ComponentL':
@@ -296,6 +316,7 @@ class OverallL(dfv.OverallL):
     if self.top or self.bot: return 0
     assert self.val, f"{self}"
     return sum(1 for val in self.val.values() if val.isConstant())  # type: ignore
+
 
 ################################################
 # BOUND END  : interval_lattice
@@ -590,28 +611,28 @@ class IntervalA(analysis.ValueAnalysisAT):
     if tmpExpr and isinstance(tmpExpr, expr.BinaryE):
       arg1, arg2 = tmpExpr.arg1, tmpExpr.arg2
       assert isinstance(arg1, expr.VarE), f"{tmpExpr}"
-      arg1Dfv, arg2Dfv = self.getExprDfv(arg1, dfvIn), self.getExprDfv(arg2, dfvIn)
+      dfv1, dfv2 = self.getExprDfv(arg1, dfvIn), self.getExprDfv(arg2, dfvIn)
       opCode = tmpExpr.opr.opCode
       if opCode == op.BO_EQ_OC:
-        true1 = true2 = arg1Dfv.getIntersectRange(arg2Dfv)  # equal dfv
-        false1, false2 = arg1Dfv.getDisjointRange(arg2Dfv)
+        true1 = true2 = dfv1.getIntersectRange(dfv2)  # equal dfv
+        false1, false2 = dfv1.getDisjointRange(dfv2)
       elif opCode == op.BO_NE_OC:
-        true1, true2 = arg1Dfv.getDisjointRange(arg2Dfv)
-        false1 = false2 = arg1Dfv.getIntersectRange(arg2Dfv)  # equal dfv
+        true1, true2 = dfv1.getDisjointRange(dfv2)
+        false1 = false2 = dfv1.getIntersectRange(dfv2)  # equal dfv
       elif opCode in (op.BO_LT_OC, op.BO_LE_OC):
-        true1, true2 = arg1Dfv.cutUpper(arg2Dfv), arg2Dfv.cutLower(arg1Dfv)
-        false1, false2 = arg1Dfv.cutLower(arg2Dfv), arg2Dfv.cutUpper(arg1Dfv)
+        true1, true2 = dfv1.cutLimit(dfv2, True), dfv2.cutLimit(dfv1, False)
+        false1, false2 = dfv1.cutLimit(dfv2, False), dfv2.cutUpper(dfv1, True)
       elif opCode in (op.BO_GT_OC, op.BO_GE_OC):
-        true1, true2 = arg1Dfv.cutLower(arg2Dfv), arg2Dfv.cutUpper(arg1Dfv)
-        false1, false2 = arg1Dfv.cutUpper(arg2Dfv), arg2Dfv.cutLower(arg1Dfv)
+        true1, true2 = dfv1.cutLimit(dfv2, False), dfv2.cutLimit(dfv1, True)
+        false1, false2 = dfv1.cutLimit(dfv2, True), dfv2.cutUpper(dfv1, False)
 
       arg2IsVarE = isinstance(arg2, expr.VarE)
       if true1 and true2:
         dfvValTrue[arg1.name] = true1
         if arg2IsVarE: dfvValTrue[arg2.name] = true2
       if false1 and false2:
-        dfvValFalse[arg1.name] = true1
-        if arg2IsVarE: dfvValFalse[arg2.name] = true2
+        dfvValFalse[arg1.name] = false1
+        if arg2IsVarE: dfvValFalse[arg2.name] = false2
 
     return dfv.updateDfv(dfvValFalse, dfvIn), dfv.updateDfv(dfvValTrue, dfvIn)
 

@@ -22,7 +22,7 @@ Following important things are available here,
 import logging
 
 LOG = logging.getLogger("span")
-from typing import Dict, Set, Tuple, List, Callable
+from typing import Dict, Set, Tuple, List, Callable, Any
 from typing import Optional as Opt
 import io
 import re
@@ -1620,6 +1620,35 @@ class TranslationUnit:
 
     self._funcSigToFuncObjMap[givenSignature] = funcList
     return funcList
+
+
+  def getNamesOfPointees(self,
+      func: constructs.Func,
+      varName: types.VarNameT,
+      pointeeMap: Opt[Dict[types.VarNameT, Any]] = None,
+  ) -> Set[types.VarNameT]:
+    """Returns the pointee names of the given pointer name,
+    if dfvIn is None it returns conservative value."""
+
+    # Step 1: what type is the given name?
+    varType = self.inferTypeOfVal(varName)
+    assert varType.isPointer(), f"{varName}, {varType}, {func}"
+
+    if isinstance(varType, types.ArrayT):
+      varType = varType.getElementType()
+
+    if not isinstance(varType, types.Ptr):
+      raise ValueError(f"{varName}: {varType}")
+
+    # Step 2: if here its a pointer, get its pointees
+    pointeeType = varType.getPointeeType()
+
+    if pointeeMap is None or varName not in pointeeMap:  # become conservative
+      return self.getNamesEnv(func, pointeeType)
+
+    pointees = pointeeMap[varName].val
+    assert pointees, f"{pointees}, {pointeeMap}"
+    return pointees
 
 
   def getExprRValueNames(self,

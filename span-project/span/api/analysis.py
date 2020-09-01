@@ -1629,7 +1629,7 @@ class ValueAnalysisAT(AnalysisAT):
                                     self.componentBot, self.getAllVars)
     if nodeDfv:
       inBi, outBi = nodeDfv.dfvIn, nodeDfv.dfvOut
-    return NodeDfvL(inBi, outBi)
+    return NodeDfvL(inBi, outBi)  # good to create a copy
 
 
   def isAcceptedType(self, t: types.Type) -> bool:
