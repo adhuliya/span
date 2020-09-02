@@ -87,7 +87,7 @@ BO_REL_END_OC: OpCodeT = 520  # relational ops end
 # BOUND END  : op_codes
 ################################################
 
-class OpT(types.AnyT):
+class OpT:
   """class type for all operators.
 
   Attributes:

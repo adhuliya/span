@@ -26,10 +26,9 @@ import gc  # REF: https://rushter.com/blog/python-garbage-collector/
 import span.sys.clients as clients
 from span.ir import expr, instr, constructs, tunit
 from span.ir import graph
-from span.ir import types
-import span.ir.conv as irConv
-from span.ir.types import Site, FuncNameT
-from span.ir import tunit as irTUnit
+from span.ir.conv import Site, GLOBAL_INITS_FUNC_NAME, Forward, Backward
+from span.ir.types import FuncNameT
+from span.ir.tunit import TranslationUnit
 from span.api.analysis import AnalysisNameT
 from span.api.dfv import NodeDfvL
 
@@ -84,10 +83,10 @@ class ValueContext:
         direction = clients.getDirection(anName)
         nDfvSelf = self.dfvs[anName]
         nDfvOther = other.dfvs[anName]
-        if direction == types.Forward:
+        if direction == Forward:
           if not nDfvSelf.dfvIn == nDfvOther.dfvIn:
             equal = False
-        elif direction == types.Backward:
+        elif direction == Backward:
           if not nDfvSelf.dfvOut == nDfvOther.dfvOut:
             equal = False
         else:  # bi-directional
@@ -102,9 +101,9 @@ class ValueContext:
     for anName in self.dfvs.keys():
       direction = clients.getDirection(anName)
       nDfvSelf = self.dfvs[anName]
-      if direction == types.Forward:
+      if direction == Forward:
         theHash = hash((theHash, nDfvSelf.dfvIn))
-      elif direction == types.Backward:
+      elif direction == Backward:
         theHash = hash((theHash, nDfvSelf.dfvOut))
       else:  # bi-directional
         theHash = hash((theHash, nDfvSelf))
@@ -124,7 +123,7 @@ class IpaHost:
 
 
   def __init__(self,
-      tUnit: irTUnit.TranslationUnit,
+      tUnit: TranslationUnit,
       entryFunc: FuncNameT = "f:main",
       mainAnName: Opt[AnalysisNameT] = None,
       otherAnalyses: Opt[List[AnalysisNameT]] = None,
@@ -162,7 +161,7 @@ class IpaHost:
     """
     print("\n\nStart IPA Analysis #####################")  # delit
     # STEP 1: Analyze the global inits and extract its BI
-    hostGlobal = self.createHostInstance(irConv.GLOBAL_INITS_FUNC_NAME, ipa=False)
+    hostGlobal = self.createHostInstance(GLOBAL_INITS_FUNC_NAME, ipa=False)
     hostGlobal.analyze()
     # hostGlobal.printResult() #delit
 
@@ -171,7 +170,7 @@ class IpaHost:
 
     # STEP 2: start analyzing from the entry function
     ipaBi = self.computeIpaBi(self.entryFunc, self.swapGlobalBi(globalBi))
-    entryCallSite = Site(irConv.GLOBAL_INITS_FUNC_NAME, 0)
+    entryCallSite = Site(GLOBAL_INITS_FUNC_NAME, 0)
     self.analyzeFunc(entryCallSite,
                      self.entryFunc,
                      ipaBi,
@@ -434,7 +433,7 @@ class IpaHost:
     return result1
 
 
-def diagnoseInterval(tUnit: irTUnit.TranslationUnit):
+def diagnoseInterval(tUnit: TranslationUnit):
   """A diagnosis called by the main driver.
   Run interval analysis using SPAN
   then using Lerner's

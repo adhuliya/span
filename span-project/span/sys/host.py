@@ -36,8 +36,9 @@ from span.ir.expr import (VAR_EXPR_EC, FUNC_EXPR_EC, LIT_EXPR_EC, UNARY_EXPR_EC,
 
 from span.api.dfv import NodeDfvL, NewOldL, OLD_INOUT
 import span.api.sim as simApi
-import span.api.lattice as lattice
-import span.api.analysis as an
+from span.api.lattice import mergeAll, DataLT
+from span.api.analysis import AnalysisAT, AnalysisNameT as AnNameT,\
+  ForwardD, BackwardD, DirectionDT
 import span.sys.clients as clients
 import span.sys.ddm as ddm
 import span.sys.stats as stats
@@ -60,11 +61,11 @@ Cond__to__UnCond__Name: str = simApi.SimAT.Cond__to__UnCond.__name__
 Num_Bin__to__Num_Lit__Name: str = simApi.SimAT.Num_Bin__to__Num_Lit.__name__
 Deref__to__Vars__Name: str = simApi.SimAT.Deref__to__Vars.__name__
 
-ExRead_Instr__Name: str = an.AnalysisAT.ExRead_Instr.__name__
-CondRead_Instr__Name: str = an.AnalysisAT.CondRead_Instr.__name__
-Conditional_Instr__Name: str = an.AnalysisAT.Conditional_Instr.__name__
-UnDefVal_Instr__Name: str = an.AnalysisAT.UnDefVal_Instr.__name__
-Filter_Instr__Name: str = an.AnalysisAT.Filter_Instr.__name__
+ExRead_Instr__Name: str = AnalysisAT.ExRead_Instr.__name__
+CondRead_Instr__Name: str = AnalysisAT.CondRead_Instr.__name__
+Conditional_Instr__Name: str = AnalysisAT.Conditional_Instr.__name__
+UnDefVal_Instr__Name: str = AnalysisAT.UnDefVal_Instr.__name__
+Filter_Instr__Name: str = AnalysisAT.Filter_Instr.__name__
 
 
 # BOUND END  : Module_Storage__for__Optimization
@@ -75,7 +76,7 @@ class Participant:
   __slots__ : List[str] = ["analysisName", "weight", "dependsOn", "neededBy"]
 
   def __init__(self,
-      analysisName: an.AnalysisNameT,
+      analysisName: AnNameT,
       weight: int = 0,
       dependsOn: Opt[Set['Participant']] = None,
       neededBy: Opt[Set['Participant']] = None
@@ -123,15 +124,15 @@ class PriorityAnWorklist:
     self.wlSet: Set[Participant] = set()
     # remember all analyses added in the analysis dependence graph
     self.anDepGraph: \
-      Dict[an.AnalysisNameT, Participant] = {}
+      Dict[AnNameT, Participant] = {}
     # remember the sequence in which the analyses were run
     self.popSequence: \
       List[Participant] = []
 
 
   def addToAnDepGraph(self,
-      anName: an.AnalysisNameT,
-      neededBy: Opt[an.AnalysisNameT] = None
+      anName: AnNameT,
+      neededBy: Opt[AnNameT] = None
   ) -> bool:
     """Add the dependence in the graph and adjust weights.
     neededBy should already be in the graph.
@@ -165,8 +166,8 @@ class PriorityAnWorklist:
 
 
   def add(self,
-      anName: an.AnalysisNameT,
-      neededBy: Opt[an.AnalysisNameT] = None,
+      anName: AnNameT,
+      neededBy: Opt[AnNameT] = None,
   ) -> None:
     """Add an analysis to worklist.
     neededBy should already be in self.anDepGraph.
@@ -182,7 +183,7 @@ class PriorityAnWorklist:
 
 
   def addDependents(self,
-      anName: an.AnalysisNameT
+      anName: AnNameT
   ) -> None:
     """Add dependent analyses on the given analysis."""
     assert anName in self.anDepGraph, f"{anName}: {self.anDepGraph.keys()}"
@@ -198,7 +199,7 @@ class PriorityAnWorklist:
       self.wl.sort()
 
 
-  def pop(self) -> Opt[an.AnalysisNameT]:
+  def pop(self) -> Opt[AnNameT]:
     if not self.wl:
       return None
     participant: Participant = self.wl.pop()
@@ -319,15 +320,15 @@ class Host:
 
   def __init__(self,
       func: constructs.Func,
-      mainAnName: Opt[an.AnalysisNameT] = None,
-      otherAnalyses: Opt[List[an.AnalysisNameT]] = None,
-      supportAnalyses: Opt[List[an.AnalysisNameT]] = None,
-      avoidAnalyses: Opt[List[an.AnalysisNameT]] = None,
+      mainAnName: Opt[AnNameT] = None,
+      otherAnalyses: Opt[List[AnNameT]] = None,
+      supportAnalyses: Opt[List[AnNameT]] = None,
+      avoidAnalyses: Opt[List[AnNameT]] = None,
       maxNumOfAnalyses: int = 1024,
-      analysisSeq: Opt[List[List[an.AnalysisNameT]]] = None,  # for cascading/lerner
+      analysisSeq: Opt[List[List[AnNameT]]] = None,  # for cascading/lerner
       disableAllSim: bool = False,
       ipa: bool = False,
-      biDfv: Opt[Dict[an.AnalysisNameT, NodeDfvL]] = None,  # call site BI
+      biDfv: Opt[Dict[AnNameT, NodeDfvL]] = None,  # call site BI
       useDdm: bool = False,  # use demand driven approach
   ) -> None:
     timer = cutil.Timer("HostSetup")
@@ -344,7 +345,7 @@ class Host:
       if LS: LOG.debug("UsingDDM: #DDM")
       self.ddmObj: ddm.DdMethod = ddm.DdMethod(func, self)
       # analyses dependent on a demand
-      self.anDemandDep: Dict[ddm.AtomicDemand, Set[an.AnalysisNameT]] = dict()
+      self.anDemandDep: Dict[ddm.AtomicDemand, Set[AnNameT]] = dict()
       # map of (nid, simName, expr) --to-> set of demands affected
       self.nodeInstrDemandSimDep: \
         Dict[Tuple[graph.CfgNodeId, simApi.SimNameT,
@@ -352,7 +353,7 @@ class Host:
 
     #IPA inter-procedural analysis?
     self.ipa: bool = ipa
-    self.biDfv: Opt[Dict[an.AnalysisNameT, NodeDfvL]] = biDfv  #IPA
+    self.biDfv: Opt[Dict[AnNameT, NodeDfvL]] = biDfv  #IPA
     if self.ipa: assert biDfv, f"{biDfv}"  #IPA
 
     self.disableAllSim: bool = disableAllSim
@@ -364,7 +365,7 @@ class Host:
       if LS: LOG.error(message)
       raise ValueError(message)
 
-    tmpList: List[an.AnalysisNameT] = []
+    tmpList: List[AnNameT] = []
     if mainAnName:        tmpList.append(mainAnName)
     if otherAnalyses:     tmpList.extend(otherAnalyses)
     if supportAnalyses:  tmpList.extend(supportAnalyses)
@@ -389,7 +390,7 @@ class Host:
     # BLOCK START: Cascading_And_Lerners
     self.lerner: bool = False
     if analysisSeq:  # enable cascading and lerners
-      self.analysisSeq: Opt[List[List[an.AnalysisNameT]]] = analysisSeq
+      self.analysisSeq: Opt[List[List[AnNameT]]] = analysisSeq
       self.lerner = True
       self.lernerStepCurr: int = 0
       self.lernerStepMax: int = len(analysisSeq)
@@ -405,12 +406,12 @@ class Host:
     self.func: constructs.Func = func
 
     # main analysis (that may result in addition of others)
-    self.mainAnName: an.AnalysisNameT = mainAnName
+    self.mainAnName: AnNameT = mainAnName
 
     # currently active analysis and its needed info/objects
-    self.activeAnName: an.AnalysisNameT = ""
-    self.activeAnObj: Opt[an.AnalysisAT] = None
-    self.activeAnTop: Opt[lattice.DataLT] = None
+    self.activeAnName: AnNameT = ""
+    self.activeAnObj: Opt[AnalysisAT] = None
+    self.activeAnTop: Opt[DataLT] = None
     self.activeAnSimNeeds: Set[str] = set()
     self.activeAnIsSimAn: Opt[bool] = None  # active An simplifies?
     # True if transfer function for FilterI instr is present in the analysis
@@ -426,18 +427,18 @@ class Host:
     self.nodeInsnDot: Dict[graph.CfgNodeId, List[str]] = {}
 
     # participant names, with their analysis instance (for curr function)
-    self.anParticipating: Dict[an.AnalysisNameT, an.AnalysisAT] = dict()
+    self.anParticipating: Dict[AnNameT, AnalysisAT] = dict()
     # participated analyses names, with their instance (for curr function)
     # Used by: Cascading_And_Lerners
-    self.anParticipated: Dict[an.AnalysisNameT, an.AnalysisAT] = dict()
+    self.anParticipated: Dict[AnNameT, AnalysisAT] = dict()
     # participants and their work result
-    self.anWorkDict: Dict[an.AnalysisNameT, an.DirectionDT] = dict()
+    self.anWorkDict: Dict[AnNameT, DirectionDT] = dict()
     # map of (nid, simName, expr) --to-> set of analyses affected
     self.nodeInstrSimDep:\
       Dict[Tuple[graph.CfgNodeId, simApi.SimNameT,
-                 expr.ExprET], Set[an.AnalysisNameT]] = dict()
+                 expr.ExprET], Set[AnNameT]] = dict()
     self.anRevNodeDep: \
-      Dict[Tuple[an.AnalysisNameT, graph.CfgNodeId],
+      Dict[Tuple[AnNameT, graph.CfgNodeId],
            Dict[Tuple[Opt[expr.ExprET], simApi.SimNameT], Opt[SimRecord]]] = dict()
     # sim instruction cache: cache the instruction computed for a sim
     self.instrSimCache: \
@@ -447,23 +448,23 @@ class Host:
     self.stats: stats.HostStat = stats.HostStat(self, len(self.funcCfg.nodeMap))
 
     # sim sources: sim to analysis mapping
-    self.simSrcs: Dict[simApi.SimNameT, Set[an.AnalysisNameT]] = dict()
+    self.simSrcs: Dict[simApi.SimNameT, Set[AnNameT]] = dict()
     # cache filtered sim sources
     self.filteredSimSrcs: \
       Dict[Tuple[simApi.SimNameT, expr.ExprET, types.NodeIdT],
-           Set[an.AnalysisNameT]] = dict()
+           Set[AnNameT]] = dict()
 
     # counts the net useful simplifications by a (supporting) analysis
-    self.anSimSuccessCount: Dict[an.AnalysisNameT, int] = dict()
+    self.anSimSuccessCount: Dict[AnNameT, int] = dict()
 
     # records sequence in which analyses have run.
-    self.anRunSequence: List[an.AnalysisNameT] = []
+    self.anRunSequence: List[AnNameT] = []
 
     # max analyses allowed to run in synergy
     self.maxNumOfAnalyses: int = maxNumOfAnalyses
     self.currNumOfAnalyses: int = 0
     # set of analyses to avoid adding
-    self.avoidAnalyses: Set[an.AnalysisNameT] \
+    self.avoidAnalyses: Set[AnNameT] \
       = avoidAnalyses if avoidAnalyses else set()
 
     # record stats
@@ -471,10 +472,10 @@ class Host:
     self.analysisCounter: int = 0
 
     # the set of analyses that the user has asked to run to completion
-    self.mainAnalyses: Set[an.AnalysisNameT] = set()
+    self.mainAnalyses: Set[AnNameT] = set()
 
     # add other analyses if present (as well)
-    self.supportAnalyses: Opt[Set[an.AnalysisNameT]] \
+    self.supportAnalyses: Opt[Set[AnNameT]] \
       = set(supportAnalyses) if supportAnalyses else None
     if otherAnalyses:
       for anName in reversed(otherAnalyses):
@@ -596,11 +597,11 @@ class Host:
     dirn = simApi.simDirnMap[simName]
     inChange  = inOutChange.isNewIn
     outChange = inOutChange.isNewOut
-    if dirn == types.Forward and inChange:
+    if dirn == irConv.Forward and inChange:
       return True
-    if dirn == types.Backward and outChange:
+    if dirn == irConv.Backward and outChange:
       return True
-    if dirn == types.ForwBack and (inChange or outChange):
+    if dirn == irConv.ForwBack and (inChange or outChange):
       return True
     return False
 
@@ -639,8 +640,8 @@ class Host:
 
 
   def conditionallyAddParticipantAn(self,
-      anName: an.AnalysisNameT,
-      neededBy: Opt[an.AnalysisNameT] = None
+      anName: AnNameT,
+      neededBy: Opt[AnNameT] = None
   ) -> bool:
     """Conditionally add an analysis as participant."""
     if self.canAdd(anName):
@@ -649,8 +650,8 @@ class Host:
 
 
   def addParticipantAn(self,
-      anName: an.AnalysisNameT,
-      neededBy: Opt[an.AnalysisNameT] = None
+      anName: AnNameT,
+      neededBy: Opt[AnNameT] = None
   ) -> bool:
     """Adds a new analysis into the mix (if not already present)."""
     if self.currNumOfAnalyses >= self.maxNumOfAnalyses:
@@ -688,8 +689,8 @@ class Host:
 
 
   def addAnToWorklist(self,
-      anName: an.AnalysisNameT,
-      neededBy: Opt[an.AnalysisNameT] = None,
+      anName: AnNameT,
+      neededBy: Opt[AnNameT] = None,
       force: bool = False,
       ipa: bool = False
   ) -> None:
@@ -706,7 +707,7 @@ class Host:
 
   def calcInOut(self,
       node: graph.CfgNode,
-      dirn: an.DirectionDT
+      dirn: DirectionDT
   ) -> Tuple[NodeDfvL, NewOldL, Reachability]:
     """Merge info at IN and OUT of a node."""
     nid = node.id
@@ -721,8 +722,8 @@ class Host:
 
 
   def setupAnalysis(self,
-      anName: an.AnalysisNameT
-  ) -> an.DirectionDT:
+      anName: AnNameT
+  ) -> DirectionDT:
     """Sets up the given analysis as current analysis to run."""
     self.stats.anSwitchTimer.start()
     self.anRunSequence.append(anName)
@@ -798,7 +799,7 @@ class Host:
       self.lernerStepCurr += 1
 
 
-  def initLerner(self, stepAnalyses: List[an.AnalysisNameT]) -> None:
+  def initLerner(self, stepAnalyses: List[AnNameT]) -> None:
     """Initialize a step in lerner's/cascading approach.
     Cascading_And_Lerners
     """
@@ -896,7 +897,7 @@ class Host:
     But self._analyzeInstr() does the main work.
     """
     if treatAsNop:
-      return self.identity(node, insn, nodeDfv)
+      return self.activeAnObj.Nop_Instr(node.id, insn, nodeDfv)
 
     if not isinstance(insn, instr.ParallelI):
       return self._analyzeInstr(node, insn, nodeDfv)
@@ -908,7 +909,7 @@ class Host:
       if LS: LOG.debug("FinalInstrDfv: %s", dfv)
       return dfv
 
-    return lattice.mergeAll(ai(ins) for ins in insn.insns)
+    return mergeAll(ai(ins) for ins in insn.insns)
 
 
   def _analyzeInstr(self,
@@ -968,47 +969,47 @@ class Host:
 
     # BOUND START: transfer_function_selection_process.
     if instrCode == NOP_INSTR_IC:
-      if LLS: LOG.debug(an.AnalysisAT.Nop_Instr.__doc__)
+      if LLS: LOG.debug(AnalysisAT.Nop_Instr.__doc__)
       transferFunc = activeAnObj.Nop_Instr
 
     elif instrCode == USE_INSTR_IC:
-      if LLS: LOG.debug(an.AnalysisAT.Use_Instr.__doc__)
+      if LLS: LOG.debug(AnalysisAT.Use_Instr.__doc__)
       transferFunc = activeAnObj.Use_Instr
 
     elif instrCode == EX_READ_INSTR_IC:
-      if LLS: LOG.debug(an.AnalysisAT.ExRead_Instr.__doc__)
+      if LLS: LOG.debug(AnalysisAT.ExRead_Instr.__doc__)
       transferFunc = activeAnObj.ExRead_Instr
 
     elif instrCode == COND_READ_INSTR_IC:
-      if LLS: LOG.debug(an.AnalysisAT.CondRead_Instr.__doc__)
+      if LLS: LOG.debug(AnalysisAT.CondRead_Instr.__doc__)
       transferFunc = activeAnObj.CondRead_Instr
 
     elif instrCode == UNDEF_VAL_INSTR_IC:
-      if LLS: LOG.debug(an.AnalysisAT.UnDefVal_Instr.__doc__)
+      if LLS: LOG.debug(AnalysisAT.UnDefVal_Instr.__doc__)
       transferFunc = activeAnObj.UnDefVal_Instr
 
     elif instrCode == FILTER_INSTR_IC:
-      if LLS: LOG.debug(an.AnalysisAT.Filter_Instr.__doc__)
+      if LLS: LOG.debug(AnalysisAT.Filter_Instr.__doc__)
       transferFunc = activeAnObj.Filter_Instr
 
     elif isinstance(insn, instr.ReturnI):
       if insn.arg is None:
-        if LLS: LOG.debug(an.AnalysisAT.Return_Void_Instr.__doc__)
+        if LLS: LOG.debug(AnalysisAT.Return_Void_Instr.__doc__)
         transferFunc = activeAnObj.Return_Void_Instr
       elif insn.arg.exprCode == VAR_EXPR_EC:
-        if LLS: LOG.debug(an.AnalysisAT.Return_Var_Instr.__doc__)
+        if LLS: LOG.debug(AnalysisAT.Return_Var_Instr.__doc__)
         transferFunc = activeAnObj.Return_Var_Instr
       else:
-        if LLS: LOG.debug(an.AnalysisAT.Return_Lit_Instr.__doc__)
+        if LLS: LOG.debug(AnalysisAT.Return_Lit_Instr.__doc__)
         transferFunc = activeAnObj.Return_Lit_Instr
 
     elif instrCode == COND_INSTR_IC:
-      if LLS: LOG.debug(an.AnalysisAT.Conditional_Instr.__doc__)
+      if LLS: LOG.debug(AnalysisAT.Conditional_Instr.__doc__)
       transferFunc = activeAnObj.Conditional_Instr
       condInstr = True
 
     elif instrCode == CALL_INSTR_IC:
-      if LLS: LOG.debug(an.AnalysisAT.Call_Instr.__doc__)
+      if LLS: LOG.debug(AnalysisAT.Call_Instr.__doc__)
       transferFunc = activeAnObj.Call_Instr
 
     elif isinstance(insn, instr.AssignI):
@@ -1018,33 +1019,33 @@ class Host:
         lhsVarSim = True
         if rhsExprCode == VAR_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
           if numericInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Var_Var_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Num_Assign_Var_Var_Instr.__doc__)
             transferFunc = activeAnObj.Num_Assign_Var_Var_Instr
             rhsNumVarSim = True
           elif ptrInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_Var_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_Var_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Var_Var_Instr
           elif recordInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Record_Assign_Var_Var_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Record_Assign_Var_Var_Instr.__doc__)
             transferFunc = activeAnObj.Record_Assign_Var_Var_Instr
 
         elif rhsExprCode == LIT_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
           if numericInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Var_Lit_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Num_Assign_Var_Lit_Instr.__doc__)
             transferFunc = activeAnObj.Num_Assign_Var_Lit_Instr
 
           elif ptrInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_Lit_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_Lit_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Var_Lit_Instr
 
         elif rhsExprCode == SIZEOF_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
           # hence lhs, rhs are numeric
-          if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Var_SizeOf_Instr.__doc__)
+          if LLS: LOG.debug(AnalysisAT.Num_Assign_Var_SizeOf_Instr.__doc__)
           transferFunc = activeAnObj.Num_Assign_Var_SizeOf_Instr
 
         elif isinstance(rhs, expr.UnaryE): # lhsExprCode == VAR_EXPR_EC
           if numericInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Var_UnaryArith_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Num_Assign_Var_UnaryArith_Instr.__doc__)
             transferFunc = activeAnObj.Num_Assign_Var_UnaryArith_Instr
             rhsNumUnaryExprSim = True
           else:
@@ -1053,13 +1054,13 @@ class Host:
         elif rhsExprCode == DEREF_EXPR_EC:
           rhsDerefSim = True
           if numericInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Var_Deref_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Num_Assign_Var_Deref_Instr.__doc__)
             transferFunc = activeAnObj.Num_Assign_Var_Deref_Instr
           elif ptrInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_Deref_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_Deref_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Var_Deref_Instr
           elif recordInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Record_Assign_Var_Deref_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Record_Assign_Var_Deref_Instr.__doc__)
             transferFunc = activeAnObj.Record_Assign_Var_Deref_Instr
           else:
             if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s, itype: %s",
@@ -1067,11 +1068,11 @@ class Host:
 
         elif rhsExprCode == BINARY_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
           if numericInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Var_BinArith_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Num_Assign_Var_BinArith_Instr.__doc__)
             transferFunc = activeAnObj.Num_Assign_Var_BinArith_Instr
             rhsNumBinaryExprSim = True
           elif ptrInstrType:  # must be a pointer instruction
-            if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_BinArith_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_BinArith_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Var_BinArith_Instr
           else:
             if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
@@ -1080,34 +1081,34 @@ class Host:
           # iType must be a pointer
           argExprCode = rhs.arg.exprCode
           if argExprCode == VAR_EXPR_EC:
-            if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_AddrOfVar_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_AddrOfVar_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Var_AddrOfVar_Instr
           elif argExprCode == ARR_EXPR_EC:
-            if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_AddrOfArray_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_AddrOfArray_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Var_AddrOfArray_Instr
           elif argExprCode == MEMBER_EXPR_EC:
-            if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_AddrOfMember_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_AddrOfMember_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Var_AddrOfMember_Instr
           elif isinstance(rhs.arg, expr.DerefE):
-            if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_AddrOfDeref_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_AddrOfDeref_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Var_AddrOfDeref_Instr
           elif argExprCode == FUNC_EXPR_EC:
-            if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_AddrOfFunc_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_AddrOfFunc_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Var_AddrOfFunc_Instr
           else:
             if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
 
         elif rhsExprCode == ARR_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
           if numericInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Var_Array_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Num_Assign_Var_Array_Instr.__doc__)
             transferFunc = activeAnObj.Num_Assign_Var_Array_Instr
 
           elif ptrInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_Array_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_Array_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Var_Array_Instr
 
           elif recordInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Record_Assign_Var_Array_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Record_Assign_Var_Array_Instr.__doc__)
             transferFunc = activeAnObj.Record_Assign_Var_Array_Instr
 
           else:
@@ -1116,30 +1117,30 @@ class Host:
         elif rhsExprCode == MEMBER_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
           rhsMemDerefSim = insn.rhs.hasDereference()
           if numericInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Var_Member_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Num_Assign_Var_Member_Instr.__doc__)
             transferFunc = activeAnObj.Num_Assign_Var_Member_Instr
 
           elif ptrInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_Member_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_Member_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Var_Member_Instr
 
           elif recordInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Record_Assign_Var_Member_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Record_Assign_Var_Member_Instr.__doc__)
             transferFunc = activeAnObj.Record_Assign_Var_Member_Instr
           else:
             if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
 
         elif rhsExprCode == CALL_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
           if numericInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Var_Call_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Num_Assign_Var_Call_Instr.__doc__)
             transferFunc = activeAnObj.Num_Assign_Var_Call_Instr
 
           elif ptrInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_Call_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_Call_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Var_Call_Instr
 
           elif recordInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Record_Assign_Var_Call_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Record_Assign_Var_Call_Instr.__doc__)
             transferFunc = activeAnObj.Record_Assign_Var_Call_Instr
 
           else:
@@ -1147,20 +1148,20 @@ class Host:
 
         elif rhsExprCode == FUNC_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
           if ptrInstrType:  # has to be
-            if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_FuncName_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_FuncName_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Var_FuncName_Instr
           else:
             if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
 
         elif rhsExprCode == SELECT_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
           if numericInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Var_Select_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Num_Assign_Var_Select_Instr.__doc__)
             transferFunc = activeAnObj.Num_Assign_Var_Select_Instr
           elif ptrInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_Select_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_Select_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Var_Select_Instr
           elif recordInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Record_Assign_Var_Select_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Record_Assign_Var_Select_Instr.__doc__)
             transferFunc = activeAnObj.Record_Assign_Var_Select_Instr
           else:
             if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
@@ -1168,17 +1169,17 @@ class Host:
         elif isinstance(rhs, expr.CastE):  # lhsExprCode == VAR_EXPR_EC
           if rhs.arg.exprCode == VAR_EXPR_EC:
             if numericInstrType:
-              if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Var_CastVar_Instr.__doc__)
+              if LLS: LOG.debug(AnalysisAT.Num_Assign_Var_CastVar_Instr.__doc__)
               transferFunc = activeAnObj.Num_Assign_Var_CastVar_Instr
             elif ptrInstrType:
-              if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_CastVar_Instr.__doc__)
+              if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_CastVar_Instr.__doc__)
               transferFunc = activeAnObj.Ptr_Assign_Var_CastVar_Instr
             else:
               if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
 
           elif rhs.arg.exprCode == ARR_EXPR_EC:
             if ptrInstrType:
-              if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_CastArr_Instr.__doc__)
+              if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_CastArr_Instr.__doc__)
               transferFunc = activeAnObj.Ptr_Assign_Var_CastArr_Instr
             else:
               if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
@@ -1188,24 +1189,24 @@ class Host:
         lhsDerefSim = True
         if rhsExprCode == VAR_EXPR_EC:  # lhs is a deref
           if numericInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Deref_Var_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Num_Assign_Deref_Var_Instr.__doc__)
             transferFunc = activeAnObj.Num_Assign_Deref_Var_Instr
             rhsNumVarSim = True
           elif ptrInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Deref_Var_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Deref_Var_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Deref_Var_Instr
           elif recordInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Record_Assign_Deref_Var_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Record_Assign_Deref_Var_Instr.__doc__)
             transferFunc = activeAnObj.Record_Assign_Deref_Var_Instr
           else:
             if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
 
         elif rhsExprCode == LIT_EXPR_EC:  # lhs is a deref
           if numericInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Deref_Lit_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Num_Assign_Deref_Lit_Instr.__doc__)
             transferFunc = activeAnObj.Num_Assign_Deref_Lit_Instr
           elif ptrInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Deref_Lit_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Deref_Lit_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Deref_Lit_Instr
           else:
             if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
@@ -1213,24 +1214,24 @@ class Host:
       elif lhsExprCode == ARR_EXPR_EC:
         if rhsExprCode == VAR_EXPR_EC:  # lhs is an array expr
           if numericInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Array_Var_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Num_Assign_Array_Var_Instr.__doc__)
             transferFunc = activeAnObj.Num_Assign_Array_Var_Instr
             rhsNumVarSim = True
           elif ptrInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Array_Var_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Array_Var_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Array_Var_Instr
           elif recordInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Record_Assign_Array_Var_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Record_Assign_Array_Var_Instr.__doc__)
             transferFunc = activeAnObj.Record_Assign_Array_Var_Instr
           else:
             if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
 
         elif rhsExprCode == LIT_EXPR_EC:  # lhs is an array expr
           if numericInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Array_Lit_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Num_Assign_Array_Lit_Instr.__doc__)
             transferFunc = activeAnObj.Num_Assign_Array_Lit_Instr
           elif ptrInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Array_Lit_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Array_Lit_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Array_Lit_Instr
           else:
             if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
@@ -1239,24 +1240,24 @@ class Host:
         lhsMemDerefSim = insn.lhs.hasDereference()
         if rhsExprCode == VAR_EXPR_EC:  # lhs is a member expr
           if numericInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Member_Var_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Num_Assign_Member_Var_Instr.__doc__)
             transferFunc = activeAnObj.Num_Assign_Member_Var_Instr
             rhsNumVarSim = True
           elif ptrInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Member_Var_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Member_Var_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Member_Var_Instr
           elif recordInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Record_Assign_Member_Var_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Record_Assign_Member_Var_Instr.__doc__)
             transferFunc = activeAnObj.Record_Assign_Member_Var_Instr
           else:
             if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
 
         elif rhsExprCode == LIT_EXPR_EC:  # lhs is a member expr
           if numericInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Member_Lit_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Num_Assign_Member_Lit_Instr.__doc__)
             transferFunc = activeAnObj.Num_Assign_Member_Lit_Instr
           elif ptrInstrType:
-            if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Member_Lit_Instr.__doc__)
+            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Member_Lit_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Member_Lit_Instr
           else:
             if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
@@ -1266,6 +1267,7 @@ class Host:
 
     self.stats.funcSelectionTimer.stop()
     # BOUND END  : transfer_function_selection_process.
+    transferFunc = cast(Callable[[Any, Any, Any], NodeDfvL], transferFunc)
 
     tFuncName = transferFunc.__name__  # needed
     if not self.disableAllSim and transferFunc != activeAnObj.Nop_Instr:
@@ -1334,7 +1336,8 @@ class Host:
       else:
         self.nodeInsnDot[node.id].append(str(insn))
 
-    if tFuncName == Conditional_Instr__Name:
+    if condInstr:
+      assert isinstance(insn, instr.CondI), f"{node.id}, {insn}"
       return self.Conditional_Instr(node, insn, nodeDfv)  # type: ignore
     else:
       self.stats.instrAnTimer.start()
@@ -1387,7 +1390,7 @@ class Host:
       simName: simApi.SimNameT,
       e: Opt[expr.ExprET] = None,
       demand: Opt[ddm.AtomicDemand] = None,  #DDM exclusive argument
-      anName: Opt[an.AnalysisNameT] = None,
+      anName: Opt[AnNameT] = None,
   ):
     """Adds active analysis name or demand to the sim needed set."""
     # if demand is not None: # Invariant
@@ -1898,7 +1901,7 @@ class Host:
   # BOUND END  : SpecialInstructions
 
   def canAdd(self,
-      anName: an.AnalysisNameT
+      anName: AnNameT
   ) -> bool:
     """Can this analysis be added?"""
     okToAdd = True  # by default add
@@ -1923,14 +1926,14 @@ class Host:
   #@functools.lru_cache(10)
   def fetchSimSources(self,
       simName: simApi.SimNameT,
-  ) -> Set[an.AnalysisNameT]:
+  ) -> Set[AnNameT]:
     """Fetches allowed analysis names that
     provide the simplification.
     It caches the results."""
     if simName in self.simSrcs:
       return self.simSrcs[simName]
 
-    simAnNames: Set[an.AnalysisNameT] = set()  # adds type info
+    simAnNames: Set[AnNameT] = set()  # adds type info
     for anName in clients.simSrcMap.get(simName, set()):
       if self.canAdd(anName):
         simAnNames.add(anName)  # add simplification analyses
@@ -1973,8 +1976,8 @@ class Host:
 
 
   def incSimSuccessCount(self,
-      simAnName: an.AnalysisNameT,
-      neededBy: an.AnalysisNameT,
+      simAnName: AnNameT,
+      neededBy: AnNameT,
   ):
     """Count the possible success in simplification."""
     self.anSimSuccessCount[simAnName] += 1
@@ -1982,7 +1985,7 @@ class Host:
     self.addAnToWorklist(simAnName, neededBy)
 
 
-  def decSimSuccessCount(self, simAnName: an.AnalysisNameT):
+  def decSimSuccessCount(self, simAnName: AnNameT):
     """Count the confirmed failure in simplification."""
     self.anSimSuccessCount[simAnName] -= 1
     if not self.anSimSuccessCount[simAnName]:
@@ -2022,7 +2025,7 @@ class Host:
       simName: simApi.SimNameT,
       e: Opt[expr.ExprET] = None,
       demand: Opt[ddm.AtomicDemand] = None,  #DDM
-  ) -> Set[an.AnalysisNameT]:
+  ) -> Set[AnNameT]:
     """Adds analyses that can evaluate simName."""
     simAnNames = self.fetchAndFilterSimAnalyses(simName, node.id, e)
 
@@ -2040,7 +2043,7 @@ class Host:
   def initializeAnalysisForDdm(self, #DDM dedicated method
       node: graph.CfgNode,
       simName: simApi.SimNameT,
-      anName: an.AnalysisNameT,
+      anName: AnNameT,
       e: Opt[expr.ExprET] = None,
   ):
     """Called after anName is added using self.addParticipantAn()
@@ -2059,7 +2062,7 @@ class Host:
   def attachDemandToSimAnalysis(self, #DDM dedicated method
       node: graph.CfgNode,
       simName: simApi.SimNameT,
-      anName: an.AnalysisNameT,
+      anName: AnNameT,
       e: Opt[expr.ExprET] = None,
   ):
     if not self.useDdm: return
@@ -2097,7 +2100,7 @@ class Host:
       simName: simApi.SimNameT,
       nid: types.NodeIdT,
       e: Opt[expr.ExprET] = None,
-  ) -> Set[an.AnalysisNameT]:
+  ) -> Set[AnNameT]:
     """
     Fetche the sim analyses and filters away analyses that
     *syntactically* cannot simplify the given expression.
@@ -2156,7 +2159,7 @@ class Host:
 
 
   def collectAndMergeResults(self,
-      anNames: Set[an.AnalysisNameT],
+      anNames: Set[AnNameT],
       simName: simApi.SimNameT,
       node: graph.CfgNode,
       e: Opt[expr.ExprET],
@@ -2251,7 +2254,7 @@ class Host:
 
 
   def setBoundaryResult(self,
-      boundaryInfo: Dict[an.AnalysisNameT, NodeDfvL]
+      boundaryInfo: Dict[AnNameT, NodeDfvL]
   ) -> bool:
     """
     Update the results at the boundary.
@@ -2283,7 +2286,7 @@ class Host:
     return restart
 
 
-  def getBoundaryResult(self) -> Dict[an.AnalysisNameT, NodeDfvL]:
+  def getBoundaryResult(self) -> Dict[AnNameT, NodeDfvL]:
     """
     Returns the boundary result for all the analyses that participated.
     It returns the IN  of start node, and OUT of end node for each analysis.
@@ -2304,7 +2307,7 @@ class Host:
 
   def setCallSiteDfv(self,
       nodeId: types.NodeIdT,
-      results: Dict[an.AnalysisNameT, NodeDfvL]
+      results: Dict[AnNameT, NodeDfvL]
   ) -> bool:
     """
     Update the results at the call site.
@@ -2330,7 +2333,7 @@ class Host:
 
 
   def getCallSiteDfvs(self
-  ) -> Opt[Dict[graph.CfgNode, Dict[an.AnalysisNameT, NodeDfvL]]]:
+  ) -> Opt[Dict[graph.CfgNode, Dict[AnNameT, NodeDfvL]]]:
     """
     Returns the NodeDfvL objects at the call site nodes.
     """
@@ -2354,7 +2357,7 @@ class Host:
     return callSiteDfvs
 
 
-  def getParticipatingAnalyses(self) -> Set[an.AnalysisNameT]:
+  def getParticipatingAnalyses(self) -> Set[AnNameT]:
     return set(self.anParticipating.keys())
 
 
@@ -2366,7 +2369,7 @@ class Host:
 
 
   def getAnalysisResults(self,
-      anName: an.AnalysisNameT,
+      anName: AnNameT,
   ) -> Opt[Dict[graph.CfgNodeId, NodeDfvL]]:
     """Returns the analysis results of the given analysis.
 
@@ -2502,11 +2505,11 @@ class Host:
     iChanged = inOutChange.isNewIn
     oChanged = inOutChange.isNewOut
 
-    if dirnClass is an.ForwardD and iChanged:
+    if dirnClass is ForwardD and iChanged:
       return True
-    if dirnClass is an.BackwardD and oChanged:
+    if dirnClass is BackwardD and oChanged:
       return True
-    if dirnClass is an.ForwardD and (iChanged or oChanged):
+    if dirnClass is ForwardD and (iChanged or oChanged):
       return True
     return False
 

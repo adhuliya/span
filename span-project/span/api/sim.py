@@ -12,6 +12,7 @@ LOG = logging.getLogger("span")
 from typing import List, Optional as Opt, Any, Dict, Set, Tuple
 from span.util.logger import LS
 import span.ir.types as types
+from span.ir.conv import Forward, Backward
 from span.api.lattice import Changed, NoChange, ChangeL, LatticeLT
 import span.ir.expr as expr
 import span.api.dfv as dfv
@@ -694,10 +695,10 @@ pendingSimValueMap: Dict[str, SimL] = {
 }
 
 simDirnMap = {  # the IN/OUT information needed for the sim
-  Node__to__Nil__Name:        types.Forward,  # means dfv at IN is needed
-  Num_Var__to__Num_Lit__Name: types.Forward,
-  Cond__to__UnCond__Name:     types.Forward,
-  Num_Bin__to__Num_Lit__Name: types.Forward,
-  Deref__to__Vars__Name:      types.Forward,
-  LhsVar__to__Nil__Name:      types.Backward, # means dfv at OUT is needed
+  Node__to__Nil__Name:        Forward,  # means dfv at IN is needed
+  Num_Var__to__Num_Lit__Name: Forward,
+  Cond__to__UnCond__Name:     Forward,
+  Num_Bin__to__Num_Lit__Name: Forward,
+  Deref__to__Vars__Name:      Forward,
+  LhsVar__to__Nil__Name:      Backward, # means dfv at OUT is needed
 }

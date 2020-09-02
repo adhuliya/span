@@ -15,7 +15,8 @@ import io
 from span.util.logger import LS
 import span.ir.instr as instr
 import span.ir.expr as expr
-from span.ir.types import EdgeLabelT, FalseEdge, TrueEdge, UnCondEdge, BasicBlockIdT
+from span.ir.types import EdgeLabelT, BasicBlockIdT, FuncNameT
+from span.ir.conv import FalseEdge, TrueEdge, UnCondEdge
 import span.ir.types as types
 import span.util.messages as msg
 
@@ -86,7 +87,7 @@ class CfgNode(object):
       cfgEdge: CfgEdge
   ) -> None:
     """Ensures succ[0] is true edge and succ[1] is false edge"""
-    if cfgEdge.label == types.UnCondEdge:
+    if cfgEdge.label == UnCondEdge:
       self.succEdges.append(cfgEdge)
       return
 
@@ -97,7 +98,7 @@ class CfgNode(object):
 
     assert len(self.succEdges) == 2, msg.INVARIANT_VIOLATED
 
-    if cfgEdge.label == types.TrueEdge:
+    if cfgEdge.label == TrueEdge:
       self.succEdges[0] = cfgEdge
     else:
       self.succEdges[1] = cfgEdge
@@ -189,13 +190,13 @@ class BB:
 
 
   def getSuccEdge(self,
-      edgeLabel: types.EdgeLabelT = types.UnCondEdge
+      edgeLabel: EdgeLabelT = UnCondEdge
   ) -> Opt[BbEdge]:
     """Returns the succ edge of the given label (if present)"""
     assert len(self.succEdges) <= 2, msg.INVARIANT_VIOLATED
 
     if len(self.succEdges) == 1:
-      if edgeLabel == types.UnCondEdge:
+      if edgeLabel == UnCondEdge:
         return self.succEdges[0]
       else:
         return None
@@ -214,7 +215,7 @@ class BB:
       bbEdge: BbEdge
   ) -> None:
     """Ensures succ[0] is true edge and succ[1] is false edge"""
-    if bbEdge.label == types.UnCondEdge:
+    if bbEdge.label == UnCondEdge:
       self.succEdges.append(bbEdge)
       return
 
@@ -225,7 +226,7 @@ class BB:
 
     assert len(self.succEdges) == 2, msg.INVARIANT_VIOLATED
 
-    if bbEdge.label == types.TrueEdge:
+    if bbEdge.label == TrueEdge:
       self.succEdges[0] = bbEdge
     else:
       self.succEdges[1] = bbEdge
@@ -322,7 +323,7 @@ class Cfg(object):
                "_nodesWithCall"]
 
   def __init__(self,
-      funcName: types.FuncNameT,
+      funcName: FuncNameT,
       inputBbMap: Dict[BasicBlockIdT, List[instr.InstrIT]],
       inputBbEdges: List[Tuple[BasicBlockIdT, BasicBlockIdT, EdgeLabelT]]
   ) -> None:
@@ -543,9 +544,9 @@ class Cfg(object):
       for nodeId, node in self.nodeMap.items():
         for succ in node.succEdges:
           suffix = ""
-          if succ.label == types.FalseEdge:
+          if succ.label == FalseEdge:
             suffix = "[color=red, penwidth=2]"
-          elif succ.label == types.TrueEdge:
+          elif succ.label == TrueEdge:
             suffix = "[color=green, penwidth=2]"
           content = f"  n{nodeId} -> n{succ.dest.id} {suffix};\n"
           sio.write(content)
@@ -597,15 +598,15 @@ class Cfg(object):
         condInsn = bb.lastCfgNode.insn
         assert isinstance(condInsn, instr.CondI), msg.INVARIANT_VIOLATED
 
-        trueEdge = bb.getSuccEdge(types.TrueEdge)
+        trueEdge = bb.getSuccEdge(TrueEdge)
         assert trueEdge is not None
         condInsn.trueLabel = labelName.format(bbId=trueEdge.dest.id)
 
-        falseEdge = bb.getSuccEdge(types.FalseEdge)
+        falseEdge = bb.getSuccEdge(FalseEdge)
         assert falseEdge is not None
         condInsn.falseLabel = labelName.format(bbId=falseEdge.dest.id)
       elif len(bb.succEdges) == 1:
-        uncondEdge = bb.getSuccEdge(types.UnCondEdge)
+        uncondEdge = bb.getSuccEdge(UnCondEdge)
         assert uncondEdge is not None
         if len(uncondEdge.dest.predEdges) > 1:
           instrSeq.append(instr.GotoI(labelName.format(bbId=uncondEdge.dest.id)))
@@ -769,8 +770,8 @@ class CalleeInfo:
 
   def __init__(self,
       callExpr: expr.CallE,  # the call expr that invokes the call
-      caller: types.FuncNameT,  # the caller function name
-      calleeNames: List[types.FuncNameT]  # the callee(s) - if function ptr
+      caller: FuncNameT,  # the caller function name
+      calleeNames: List[FuncNameT]  # the callee(s) - if function ptr
   ):
     self.callExpr = callExpr
     self.caller = caller
@@ -789,8 +790,8 @@ class CallGraph:
 
 
   def __init__(self):
-    self.callGraph: Dict[types.FuncNameT, List[CalleeInfo]] = {}
+    self.callGraph: Dict[FuncNameT, List[CalleeInfo]] = {}
     # entryFunctions is calculated from the callgraph dictionary
-    self.entryFunctions: Opt[List[types.FuncNameT]] = None
+    self.entryFunctions: Opt[List[FuncNameT]] = None
 
 

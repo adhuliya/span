@@ -244,86 +244,6 @@ class Info:
     return f"Info({repr(self.loc)},{self.misc})"
 
 
-class VarNameInfo:
-  """Holds the information of all names,
-  including compound names
-  like x.y.z, x[].y.z etc. (which don't have any pointer dereference)
-  Note name of an object is absolute, i.e. it cannot contain
-  a pointer dereference.
-  """
-
-  __slots__ : List[str] = ["name", "type", "hasArray"]
-
-  def __init__(self,
-      name: types.VarNameT,
-      t: types.Type,
-      hasArray: bool = False,
-  ) -> None:
-    self.name: types.VarNameT = name
-    self.type: types.Type = t
-    self.hasArray: bool = hasArray
-
-
-  def mayUpdate(self) -> bool:
-    """Should this name be `may` updated?
-    Write logic to return a boolean value.
-    Currently arrays and heap locations (represented as arrays)
-    are the only possibilities."""
-    return self.hasArray
-
-
-  def __hash__(self) -> int:
-    return hash(self.name)
-
-
-  def __eq__(self, other) -> bool:
-    if self is other:
-      return True
-    if not isinstance(other, VarNameInfo):
-      return NotImplemented
-    equal = True
-    if not self.name == other.name:
-      equal = False
-    elif not self.type == other.type:
-      equal = False
-    elif not self.hasArray == other.hasArray:
-      equal = False
-    return equal
-
-
-  def isEqual(self, other: 'VarNameInfo') -> bool:
-    equal = True
-    if not isinstance(other, VarNameInfo):
-      if LS: LOG.error("ObjectsIncomparable: %s, %s", self, other)
-      return False
-    if not self.name == other.name:
-      if LS: LOG.error("NamesDiffer: %s, %s", self.name, other.name)
-      equal = False
-    if not self.type.isEqual(other.type):
-      equal = False
-    if not self.hasArray == other.hasArray:
-      if LS: LOG.error("HasArrayDiffers: %s, %s", self.hasArray, other.hasArray)
-      equal = False
-
-    if not equal and LS:
-      LOG.debug("ObjectsDiffer: %s, %s", self, other)
-
-    return equal
-
-
-  def __str__(self):
-    hasArray = "HasArray" if self.hasArray else "NoArray"
-    return f"({self.name} : ({hasArray}, {self.type}))"
-
-
-  def __repr__(self):
-    """It expects eval()uator to import this class as follows:
-      from span.ir.types import VarNameInfo
-    """
-    return f"VarNameInfo({repr(self.name)}, {repr(self.type)}, " \
-           f"{repr(self.hasArray)})"
-
-
 ################################################
 # BOUND END  : properties_associated_with_an_entity
 ################################################
@@ -749,6 +669,86 @@ Double = Float64
 ################################################
 # BOUND END  : basic_type_objects
 ################################################
+
+class VarNameInfo:  # IMPORTANT: don't change its position
+  """Holds the information of all names,
+  including compound names
+  like x.y.z, x[].y.z etc. (which don't have any pointer dereference)
+  Note name of an object is absolute, i.e. it cannot contain
+  a pointer dereference.
+  """
+
+  __slots__ : List[str] = ["name", "type", "hasArray"]
+
+  def __init__(self,
+      name: VarNameT,
+      t: Type,
+      hasArray: bool = False,
+  ) -> None:
+    self.name: VarNameT = name
+    self.type: Type = t
+    self.hasArray: bool = hasArray
+
+
+  def mayUpdate(self) -> bool:
+    """Should this name be `may` updated?
+    Write logic to return a boolean value.
+    Currently arrays and heap locations (represented as arrays)
+    are the only possibilities."""
+    return self.hasArray
+
+
+  def __hash__(self) -> int:
+    return hash(self.name)
+
+
+  def __eq__(self, other) -> bool:
+    if self is other:
+      return True
+    if not isinstance(other, VarNameInfo):
+      return NotImplemented
+    equal = True
+    if not self.name == other.name:
+      equal = False
+    elif not self.type == other.type:
+      equal = False
+    elif not self.hasArray == other.hasArray:
+      equal = False
+    return equal
+
+
+  def isEqual(self, other: 'VarNameInfo') -> bool:
+    equal = True
+    if not isinstance(other, VarNameInfo):
+      if LS: LOG.error("ObjectsIncomparable: %s, %s", self, other)
+      return False
+    if not self.name == other.name:
+      if LS: LOG.error("NamesDiffer: %s, %s", self.name, other.name)
+      equal = False
+    if not self.type.isEqual(other.type):
+      equal = False
+    if not self.hasArray == other.hasArray:
+      if LS: LOG.error("HasArrayDiffers: %s, %s", self.hasArray, other.hasArray)
+      equal = False
+
+    if not equal and LS:
+      LOG.debug("ObjectsDiffer: %s, %s", self, other)
+
+    return equal
+
+
+  def __str__(self):
+    hasArray = "HasArray" if self.hasArray else "NoArray"
+    return f"({self.name} : ({hasArray}, {self.type}))"
+
+
+  def __repr__(self):
+    """It expects eval()uator to import this class as follows:
+      from span.ir.types import VarNameInfo
+    """
+    return f"VarNameInfo({repr(self.name)}, {repr(self.type)}, " \
+           f"{repr(self.hasArray)})"
+
 
 
 ################################################

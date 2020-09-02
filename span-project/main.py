@@ -30,6 +30,7 @@ from typing import List, Tuple
 from typing import Optional as Opt
 import span.util.common_util as cutil
 import span.ir.types as types
+import span.ir.conv as irConv
 import span.sys.ddm as ddm
 
 # Initialize -- logger, etc.
@@ -348,7 +349,7 @@ def analyzeSpanIr(args: argparse.Namespace) -> None:
   anNameExpr = args.analyses
   funcName = args.functionName
 
-  funcName = None if not funcName else types.canonicalizeFuncName(funcName)
+  funcName = None if not funcName else irConv.canonicalizeFuncName(funcName)
   print("Analyzing Function(s):", funcName if funcName else "ALL")
 
   mainAnalysis, otherAnalyses, supportAnalyses, avoidAnalyses, maxAnalysisCount = \
@@ -426,7 +427,7 @@ def viewDotFile(args: argparse.Namespace):
   fileName = args.fileName
 
   funcName = args.functionName
-  funcName = None if not funcName else types.canonicalizeFuncName(funcName)
+  funcName = None if not funcName else irConv.canonicalizeFuncName(funcName)
   print("Showing Function(s):", funcName if funcName else "ALL")
 
 
@@ -449,7 +450,7 @@ def viewDotFile(args: argparse.Namespace):
       else:
         assert False
 
-      dotFileName = f"{fileName}.{types.simplifyName(func.name)}.{graphType}.dot"
+      dotFileName = f"{fileName}.{irConv.simplifyName(func.name)}.{graphType}.dot"
       util.writeToFile(dotFileName, dotGraph)
       showDotGraph(dotFileName)
 
@@ -489,7 +490,7 @@ def testSpan(args: argparse.Namespace):
 
 
 def getCmdLineFuncName(funcName: Opt[types.FuncNameT]) -> Opt[types.FuncNameT]:
-  return None if not funcName else types.canonicalizeFuncName(funcName)
+  return None if not funcName else irConv.canonicalizeFuncName(funcName)
 
 
 def sliceDemand(args: argparse.Namespace):
@@ -511,13 +512,13 @@ def sliceDemand(args: argparse.Namespace):
   assert func.cfg, f"{func}"
   node = func.cfg.nodeMap[nid]
   atIn = True if not m.group(2) else m.group(2).lower() == "in"
-  varSet = frozenset(types.constructLocalName(func.name, var) for var in vars.split(","))
+  varSet = frozenset(irConv.constructLocalName(func.name, var) for var in vars.split(","))
 
   print("Note: Assuming all nodes are feasible.")
   ddMethod = ddm.DdMethod(func)
   for varName in varSet:
     demand = ddm.AtomicDemand(func, node, atIn, varName,
-                              ir.inferTypeOfVal(func, varName), types.Backward)
+                              ir.inferTypeOfVal(func, varName), irConv.Backward)
     print("Got Slice:", ddMethod.propagateDemand(demand))
     print("InfeasibleNodeDependence:", ddMethod.infNodeDep)
 

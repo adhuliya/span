@@ -29,7 +29,7 @@ Num_Bin__to__Num_Lit__Name: str = simApi.SimAT.Num_Bin__to__Num_Lit.__name__
 Deref__to__Vars__Name: str = simApi.SimAT.Deref__to__Vars.__name__
 
 
-class SimRecord(types.AnyT):
+class SimRecord:
 
 
   def __init__(self,
@@ -73,3 +73,5 @@ class SimRecord(types.AnyT):
 
   def __hash__(self):
     return hash((self.simName, self._sim))
+
+

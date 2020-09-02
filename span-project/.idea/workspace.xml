@@ -2,7 +2,15 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="33a5c68d-3b8a-4f86-8470-06eab99970cb" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/tests/automated/spanTest105.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/automated/spanTest105.c.results.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/api/sim.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/api/sim.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/ir/graph.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/ir/graph.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/ir/op.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/ir/op.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/ir/types.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/ir/types.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/sys/host.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/sys/host.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -382,7 +390,7 @@
       <workItem from="1598946580709" duration="5637000" />
       <workItem from="1599013705885" duration="4308000" />
       <workItem from="1599025533029" duration="1229000" />
-      <workItem from="1599033089207" duration="3205000" />
+      <workItem from="1599033089207" duration="8375000" />
     </task>
     <servers />
   </component>
