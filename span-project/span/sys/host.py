@@ -928,7 +928,8 @@ class Host:
           # currently: function pointer based calls are handled intra-procedurally
           #            func with no body are handled intra-procedurally
           #            func with variadic arguments are handled intra-procedurally
-          if LLS: LOG.debug("IPA: SkippingFunctionCallForIpa")
+          if LLS: LOG.debug("IPA: SkippingFunctionCallForIpa"
+                            " (Nid %s) Insn: %s", node.id, insn)
           return nodeDfv
 
     transferFunc: Callable = self.identity  # default is identity function
@@ -960,6 +961,7 @@ class Host:
     rhsNumUnaryExprSim = False
     rhsNumVarSim = False
     condInstr = False
+    assignInstr = False
 
     # BOUND START: transfer_function_selection_process.
     if instrCode == NOP_INSTR_IC:
@@ -993,7 +995,6 @@ class Host:
       elif insn.arg.exprCode == VAR_EXPR_EC:
         if LLS: LOG.debug(an.AnalysisAT.Return_Var_Instr.__doc__)
         transferFunc = self.Return_Var_Instr
-        returnVarSim = True
       else:
         if LLS: LOG.debug(an.AnalysisAT.Return_Lit_Instr.__doc__)
         transferFunc = self.Return_Lit_Instr
@@ -1002,17 +1003,14 @@ class Host:
       if LLS: LOG.debug(an.AnalysisAT.Conditional_Instr.__doc__)
       transferFunc = self.Conditional_Instr
       condInstr = True
-      condVarSim = True
 
     elif instrCode == CALL_INSTR_IC:
       if LLS: LOG.debug(an.AnalysisAT.Call_Instr.__doc__)
       transferFunc = self.Call_Instr
 
     elif isinstance(insn, instr.AssignI):
-      lhs = insn.lhs
-      rhs = insn.rhs
-      lhsExprCode = lhs.exprCode
-      rhsExprCode = rhs.exprCode
+      lhs, rhs = insn.lhs, insn.rhs
+      lhsExprCode, rhsExprCode = lhs.exprCode, rhs.exprCode
       if lhsExprCode == VAR_EXPR_EC:
         lhsVarSim = True
         if rhsExprCode == VAR_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
@@ -1279,19 +1277,18 @@ class Host:
           if LLS: LOG.debug("AnalysisDoesNotHandle insn '%s' (so_using_identity)", insn)
 
     if not self.disableAllSim and transferFunc != self.identity:
-      # FIXME: temporarily removed
-      # if tFuncName == UnDefVal_Instr__Name:
-      #   # lhs is a var, hence could be dead code
-      #   nDfv = self.handleLivenessSim(node, insn, nodeDfv)
-      #   if nDfv is not None: return nDfv
-      #   # if nDfv is None then work on the original instruction
+      if tFuncName == UnDefVal_Instr__Name:
+        # lhs is a var, hence could be dead code
+        nDfv = self.handleLivenessSim(node, insn, nodeDfv)
+        if nDfv is not None: return nDfv
+        # if nDfv is None then work on the original instruction
 
-      # # is the instr a var assignment (not deref etc)
-      # if lhsVarSim:
-      #   # lhs is a var, hence could be dead code
-      #   nDfv = self.handleLivenessSim(node, insn, nodeDfv)
-      #   if nDfv is not None: return nDfv
-      #   # if nDfv is None then work on the original instruction
+      # is the instr a var assignment (not deref etc)
+      if lhsVarSim:
+        # lhs is a var, hence could be dead code
+        nDfv = self.handleLivenessSim(node, insn, nodeDfv)
+        if nDfv is not None: return nDfv
+        # if nDfv is None then work on the original instruction
 
       if lhsDerefSim:
         # lhs is a dereference, hence could be simplified

@@ -872,7 +872,7 @@ class AnalysisAT(sim.SimAT):
     Convention:
       Type of lhs and rhs is a record.
     """
-    raise NotImplementedError()
+    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Record_Assign_Instr(self,
@@ -896,7 +896,7 @@ class AnalysisAT(sim.SimAT):
     Convention:
       a and b are variables.
     """
-    raise NotImplementedError()
+    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Var_Var_Instr(self,
@@ -908,7 +908,7 @@ class AnalysisAT(sim.SimAT):
     Convention:
       u and v are variables.
     """
-    raise NotImplementedError()
+    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Var_FuncName_Instr(self,
@@ -921,7 +921,7 @@ class AnalysisAT(sim.SimAT):
       u is a variable.
       f is a function name.
     """
-    raise NotImplementedError()
+    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Record_Assign_Var_Var_Instr(self,
@@ -933,7 +933,7 @@ class AnalysisAT(sim.SimAT):
     Convention:
       a and b are variables.
     """
-    raise NotImplementedError()
+    return self.Record_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Num_Assign_Var_Lit_Instr(self,
@@ -946,7 +946,7 @@ class AnalysisAT(sim.SimAT):
       a is variable.
       b is a literal.
     """
-    raise NotImplementedError()
+    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Var_Lit_Instr(self,
@@ -959,7 +959,7 @@ class AnalysisAT(sim.SimAT):
       a is a variable.
       b is a literal.
     """
-    raise NotImplementedError()
+    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Num_Assign_Var_SizeOf_Instr(self,
@@ -972,7 +972,7 @@ class AnalysisAT(sim.SimAT):
       a and b are both variables.
       b is of type: types.VarArray only.
     """
-    raise NotImplementedError()
+    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Num_Assign_Var_UnaryArith_Instr(self,
@@ -984,7 +984,7 @@ class AnalysisAT(sim.SimAT):
     Convention:
       a and b are both variables.
     """
-    raise NotImplementedError()
+    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Num_Assign_Var_BinArith_Instr(self,
@@ -997,7 +997,7 @@ class AnalysisAT(sim.SimAT):
       a is a variable.
       b, c: at least one of them is a variable.
     """
-    raise NotImplementedError()
+    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Var_BinArith_Instr(self,
@@ -1010,7 +1010,7 @@ class AnalysisAT(sim.SimAT):
       a is a variable.
       b, c: at least one of them is a variable.
     """
-    raise NotImplementedError()
+    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Num_Assign_Var_Deref_Instr(self,
@@ -1022,7 +1022,7 @@ class AnalysisAT(sim.SimAT):
     Convention:
       a and u are variables.
     """
-    raise NotImplementedError()
+    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Var_Deref_Instr(self,
@@ -1034,7 +1034,7 @@ class AnalysisAT(sim.SimAT):
     Convention:
       u and v are variables.
     """
-    raise NotImplementedError()
+    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Record_Assign_Var_Deref_Instr(self,
@@ -1046,7 +1046,7 @@ class AnalysisAT(sim.SimAT):
     Convention:
       v and u are variables.
     """
-    raise NotImplementedError()
+    return self.Record_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Num_Assign_Var_Array_Instr(self,
@@ -1059,7 +1059,7 @@ class AnalysisAT(sim.SimAT):
       a and b are variables.
       i is a variable or a literal.
     """
-    raise NotImplementedError()
+    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Var_Array_Instr(self,
@@ -1072,7 +1072,7 @@ class AnalysisAT(sim.SimAT):
       u and a are variables.
       i is a variable or a literal.
     """
-    raise NotImplementedError()
+    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Record_Assign_Var_Array_Instr(self,
@@ -1085,7 +1085,7 @@ class AnalysisAT(sim.SimAT):
       u and a are variables.
       i is a variable or a literal.
     """
-    raise NotImplementedError()
+    return self.Record_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Num_Assign_Var_Member_Instr(self,
@@ -1098,7 +1098,7 @@ class AnalysisAT(sim.SimAT):
       a and b are variables.
       x is a member/field of a record.
     """
-    raise NotImplementedError()
+    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Var_Member_Instr(self,
@@ -1111,7 +1111,7 @@ class AnalysisAT(sim.SimAT):
       a and b are variables.
       x is a member/field of a record.
     """
-    raise NotImplementedError()
+    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Record_Assign_Var_Member_Instr(self,
@@ -1124,7 +1124,7 @@ class AnalysisAT(sim.SimAT):
       a and b are variables.
       x is a member/field of a record.
     """
-    raise NotImplementedError()
+    return self.Record_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Num_Assign_Var_Select_Instr(self,
@@ -1137,7 +1137,7 @@ class AnalysisAT(sim.SimAT):
       b, c, are always variables.
       d, e are variables or literals.
     """
-    raise NotImplementedError()
+    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Var_Select_Instr(self,
@@ -1150,7 +1150,7 @@ class AnalysisAT(sim.SimAT):
       b, c, are always variables.
       d, e are variables or literals.
     """
-    raise NotImplementedError()
+    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Record_Assign_Var_Select_Instr(self,
@@ -1162,7 +1162,7 @@ class AnalysisAT(sim.SimAT):
     Convention:
       b, c, d, e are always variables.
     """
-    raise NotImplementedError()
+    return self.Record_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Num_Assign_Var_Call_Instr(self,
@@ -1176,7 +1176,7 @@ class AnalysisAT(sim.SimAT):
       func is a function pointer or a function name.
       args are either a variable, a literal or addrof expression.
     """
-    raise NotImplementedError()
+    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Var_Call_Instr(self,
@@ -1185,7 +1185,7 @@ class AnalysisAT(sim.SimAT):
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
     """Instr_Form: pointer: p = func()."""
-    raise NotImplementedError()
+    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Record_Assign_Var_Call_Instr(self,
@@ -1194,7 +1194,7 @@ class AnalysisAT(sim.SimAT):
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
     """Instr_Form: record: r = func()."""
-    raise NotImplementedError()
+    return self.Record_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Num_Assign_Var_CastVar_Instr(self,
@@ -1206,7 +1206,7 @@ class AnalysisAT(sim.SimAT):
     Convention:
       a and b are variables.
     """
-    raise NotImplementedError()
+    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Var_CastVar_Instr(self,
@@ -1218,7 +1218,7 @@ class AnalysisAT(sim.SimAT):
     Convention:
       a and b are variables.
     """
-    raise NotImplementedError()
+    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Var_CastArr_Instr(self,
@@ -1239,7 +1239,7 @@ class AnalysisAT(sim.SimAT):
         t3 = &t2[2];
         x = t3;
     """
-    raise NotImplementedError()
+    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   # Ptr_Assign_Var_CastMember_Instr() is not part of IR.
@@ -1254,7 +1254,7 @@ class AnalysisAT(sim.SimAT):
     Convention:
       u and x are variables.
     """
-    raise NotImplementedError()
+    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Var_AddrOfArray_Instr(self,
@@ -1267,7 +1267,7 @@ class AnalysisAT(sim.SimAT):
       u and a are variables.
       i is a variable of a literal.
     """
-    raise NotImplementedError()
+    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Var_AddrOfMember_Instr(self,
@@ -1280,7 +1280,7 @@ class AnalysisAT(sim.SimAT):
       u and r are variables.
       x is a member/field of a record.
     """
-    raise NotImplementedError()
+    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Var_AddrOfDeref_Instr(self,
@@ -1293,7 +1293,7 @@ class AnalysisAT(sim.SimAT):
       u is a pointer variable
       x is a pointer variable
     """
-    raise NotImplementedError()
+    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Var_AddrOfFunc_Instr(self,
@@ -1306,7 +1306,7 @@ class AnalysisAT(sim.SimAT):
       u is a variable.
       f is function name.
     """
-    raise NotImplementedError()
+    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   # BOUND END  : regular_insn__when_lhs_is_var
@@ -1321,7 +1321,7 @@ class AnalysisAT(sim.SimAT):
     Convention:
       u and b are variables.
     """
-    raise NotImplementedError()
+    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Num_Assign_Deref_Lit_Instr(self,
@@ -1334,7 +1334,7 @@ class AnalysisAT(sim.SimAT):
       u is a variable.
       b is a literal.
     """
-    raise NotImplementedError()
+    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Deref_Var_Instr(self,
@@ -1346,7 +1346,7 @@ class AnalysisAT(sim.SimAT):
     Convention:
       u and v are variables.
     """
-    raise NotImplementedError()
+    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Deref_Lit_Instr(self,
@@ -1359,7 +1359,7 @@ class AnalysisAT(sim.SimAT):
       u is a variable.
       b is a literal.
     """
-    raise NotImplementedError()
+    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Record_Assign_Deref_Var_Instr(self,
@@ -1371,7 +1371,7 @@ class AnalysisAT(sim.SimAT):
     Convention:
       u and v are variables.
     """
-    raise NotImplementedError()
+    return self.Record_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   # BOUND END  : regular_insn__when_lhs_is_deref
@@ -1387,7 +1387,7 @@ class AnalysisAT(sim.SimAT):
       a and b are variables.
       i is either a variable or a literal.
     """
-    raise NotImplementedError()
+    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Num_Assign_Array_Lit_Instr(self,
@@ -1401,7 +1401,7 @@ class AnalysisAT(sim.SimAT):
       i is either a variable or a literal.
       b is a literal.
     """
-    raise NotImplementedError()
+    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Array_Var_Instr(self,
@@ -1414,7 +1414,7 @@ class AnalysisAT(sim.SimAT):
       a and b are variables.
       i is a variable or a literal.
     """
-    raise NotImplementedError()
+    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Array_Lit_Instr(self,
@@ -1428,7 +1428,7 @@ class AnalysisAT(sim.SimAT):
       i is a variable or a literal.
       b is a literal.
     """
-    raise NotImplementedError()
+    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Record_Assign_Array_Var_Instr(self,
@@ -1441,7 +1441,7 @@ class AnalysisAT(sim.SimAT):
       a and b are variables.
       i is a variable or a literal.
     """
-    raise NotImplementedError()
+    return self.Record_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   # BOUND END  : regular_insn__when_lhs_is_array
@@ -1458,7 +1458,7 @@ class AnalysisAT(sim.SimAT):
       b is a variable.
       x is a member/field of a record.
     """
-    raise NotImplementedError()
+    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Num_Assign_Member_Lit_Instr(self,
@@ -1472,7 +1472,7 @@ class AnalysisAT(sim.SimAT):
       b is a literal.
       x is a member/field of a record.
     """
-    raise NotImplementedError()
+    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Member_Var_Instr(self,
@@ -1486,7 +1486,7 @@ class AnalysisAT(sim.SimAT):
       b is a variable.
       x is a member/field of a record.
     """
-    raise NotImplementedError()
+    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Member_Lit_Instr(self,
@@ -1500,7 +1500,7 @@ class AnalysisAT(sim.SimAT):
       b is a literal.
       x is a member/field of a record.
     """
-    raise NotImplementedError()
+    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   def Record_Assign_Member_Var_Instr(self,
@@ -1513,7 +1513,7 @@ class AnalysisAT(sim.SimAT):
       r and b are variables.
       x is a member/field of a record.
     """
-    raise NotImplementedError()
+    return self.Record_Assign_Instr(nodeId, insn, nodeDfv)
 
 
   # BOUND END  : regular_insn__when_lhs_is_member_expr

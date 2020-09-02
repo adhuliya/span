@@ -2,8 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="33a5c68d-3b8a-4f86-8470-06eab99970cb" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/span/api/analysis.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/api/analysis.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/span/clients/pointsto.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/clients/pointsto.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -383,7 +382,7 @@
       <workItem from="1598946580709" duration="5637000" />
       <workItem from="1599013705885" duration="4308000" />
       <workItem from="1599025533029" duration="1229000" />
-      <workItem from="1599033089207" duration="2604000" />
+      <workItem from="1599033089207" duration="3205000" />
     </task>
     <servers />
   </component>
