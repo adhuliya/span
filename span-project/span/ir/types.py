@@ -424,7 +424,10 @@ class Type:
       else:
         return self.getMaxValue()  # FIXME: undefined behavior?
     elif selfIsInteger and valueIsFloat:
-      return int(value)
+      try:
+        return int(value)
+      except:  # possible if +inf/-inf
+        return value
     elif selfIsFloat and valueIsInteger:
       return value
     elif selfIsFloat and valueIsFloat:

@@ -398,8 +398,8 @@ class IntervalA(analysis.ValueAnalysisAT):
       return self.filterValues(e, values, dfvIn, sim.NumValue) # filter the values
 
     # STEP 4: If here, eval the expression
-    arg1Val = self.getExprDfv(arg1, dfvIn)
-    arg2Val = self.getExprDfv(arg2, dfvIn)
+    arg1Val = cast(ComponentL, self.getExprDfv(arg1, dfvIn))
+    arg2Val = cast(ComponentL, self.getExprDfv(arg2, dfvIn))
 
     if arg1Val.top or arg2Val.top:
       return sim.SimPending
@@ -514,81 +514,81 @@ class IntervalA(analysis.ValueAnalysisAT):
   ################################################
 
 
-  def getExprDfv(self,
-      rhs: expr.ExprET,
-      dfvIn: OverallL
-  ) -> ComponentL:
-    """Returns the effective component dfv of the rhs.
-    It expects the rhs to be numeric."""
-    value = self.componentTop
+  def getExprDfvLitE(self,
+      e: expr.LitE,
+      dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
+  ) -> dfv.ComponentL:
+    """A default implementation for Constant Propagation."""
+    assert isinstance(e.val, (int, float)), f"{e}"
+    return ComponentL(self.func, val=(e.val, e.val))
 
-    if isinstance(rhs, expr.LitE):
-      assert isinstance(rhs.val, (int, float)), f"{rhs.val}"
-      return ComponentL(self.func, val=(rhs.val, rhs.val))
 
-    elif isinstance(rhs, expr.VarE):  # handles ObjectE, PseudoVarE
-      return cast(ComponentL, dfvIn.getVal(rhs.name))
-
-    elif isinstance(rhs, expr.DerefE):
-      return self.componentBot
-
-    elif isinstance(rhs, expr.CastE):
-      return cast(ComponentL, dfvIn.getVal(rhs.arg.name))
-
-    elif isinstance(rhs, expr.SizeOfE):
-      return self.componentBot
-
-    elif isinstance(rhs, expr.UnaryE):
-      value = self.getExprDfv(rhs.arg, dfvIn)
+  def getExprDfvCastE(self,
+      e: expr.CastE,
+      dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
+  ) -> dfv.ComponentL:
+    """A default implementation (assuming Constant Propagation)."""
+    assert isinstance(e.arg, expr.VarE), f"{e}"
+    if self.isAcceptedType(e.arg.type):
+      value = dfvInGetVal(e.arg.name)
       if value.top or value.bot:
         return value
       else:
-        rhsOpCode = rhs.opr.opCode
-        if rhsOpCode == op.UO_MINUS_OC:
-          return value.getNegatedRange()
-        elif rhsOpCode == op.UO_BIT_NOT_OC:  # reverse the result
-          return value.bitNotRange()
-        elif rhsOpCode == op.UO_LNOT_OC:
-          return value.logicalNotRange()
-        assert False, msg.CONTROL_HERE_ERROR
-
-    elif isinstance(rhs, expr.BinaryE):
-      val1 = self.getExprDfv(rhs.arg1, dfvIn)
-      val2 = self.getExprDfv(rhs.arg2, dfvIn)
-      rhsOpCode = rhs.opr.opCode
-      if val1.top or val2.top:
-        return self.componentTop
-      elif rhsOpCode == op.BO_MOD_OC:
-        return val2.modRange()
-      elif val1.bot or val2.bot:
-        return self.componentBot
-      else:
-        if rhsOpCode == op.BO_ADD_OC:
-          return val1.addRange(val2)
-        elif rhsOpCode == op.BO_SUB_OC:
-          return val1.subtractRange(val2)
-        elif rhsOpCode == op.BO_MUL_OC:
-          return val1.multiplyRange(val2)
-        else:
-          return self.componentBot  # conservative
-
-    elif isinstance(rhs, expr.SelectE):
-      val1 = self.getExprDfv(rhs.arg1, dfvIn)
-      val2 = self.getExprDfv(rhs.arg2, dfvIn)
-      value, _ = val1.meet(val2)
-      return value
-
-    elif isinstance(rhs, (expr.ArrayE, expr.MemberE)):
-      names = ir.getExprLValueNames(self.func, rhs)
-      for name in names:
-        value, _ = value.meet(cast(ComponentL, dfvIn.getVal(name)))
-      return value
-
-    elif isinstance(rhs, expr.CallE):
+        eTo, val = e.to, value.val
+        assert self.isAcceptedType(eTo) and value.val, f"{e}, {value}"
+        value.val = eTo.castValue(val[0]), eTo.castValue(val[1])
+        return value
+    else:
       return self.componentBot
 
-    # control should not reach here
-    assert False, f"class: {rhs.__class__} rhs: {rhs}, dfvIn: {dfvIn}"
+
+  def getExprDfvUnaryE(self,
+      e: expr.UnaryE,
+      dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
+  ) -> ComponentL:
+    """A default implementation (assuming Constant Propagation)."""
+    assert isinstance(e.arg, expr.VarE), f"{e}"
+    value = cast(ComponentL, dfvInGetVal(e.arg.name))
+    if value.top or value.bot:
+      return value
+    elif value.val is not None:
+      rhsOpCode = e.opr.opCode
+      if rhsOpCode == op.UO_MINUS_OC:
+        value = value.getNegatedRange()  # not NoneType... pylint: disable=E
+      elif rhsOpCode == op.UO_BIT_NOT_OC:
+        assert isinstance(value.val, int), f"{value}"
+        value = value.bitNotRange()  # not NoneType... pylint: disable=E
+      elif rhsOpCode == op.UO_LNOT_OC:
+        value = value.logicalNotRange()
+      else:
+        raise ValueError(f"{e}")
+      return value
+    raise TypeError(f"{type(value)}: {value}")
+
+
+  def getExprDfvBinaryE(self,
+      e: expr.BinaryE,
+      dfvIn: dfv.OverallL,
+  ) -> dfv.ComponentL:
+    """A default implementation (assuming Constant Propagation)."""
+    val1 = cast(ComponentL, self.getExprDfv(e.arg1, dfvIn))
+    val2 = cast(ComponentL, self.getExprDfv(e.arg2, dfvIn))
+    rhsOpCode = e.opr.opCode
+    if val1.top or val2.top:
+      return self.componentTop
+    elif rhsOpCode == op.BO_MOD_OC:
+      return val2.modRange()
+    elif val1.bot or val2.bot:
+      return self.componentBot
+    else:
+      if rhsOpCode == op.BO_ADD_OC:
+        return val1.addRange(val2)
+      elif rhsOpCode == op.BO_SUB_OC:
+        return val1.subtractRange(val2)
+      elif rhsOpCode == op.BO_MUL_OC:
+        return val1.multiplyRange(val2)
+      else:
+        return self.componentBot  # conservative
 
 
   def calcTrueFalseDfv(self,
@@ -611,7 +611,8 @@ class IntervalA(analysis.ValueAnalysisAT):
     if tmpExpr and isinstance(tmpExpr, expr.BinaryE):
       arg1, arg2 = tmpExpr.arg1, tmpExpr.arg2
       assert isinstance(arg1, expr.VarE), f"{tmpExpr}"
-      dfv1, dfv2 = self.getExprDfv(arg1, dfvIn), self.getExprDfv(arg2, dfvIn)
+      dfv1, dfv2 = cast(ComponentL, self.getExprDfv(arg1, dfvIn)), \
+                   cast(ComponentL, self.getExprDfv(arg2, dfvIn))
       opCode = tmpExpr.opr.opCode
       if opCode == op.BO_EQ_OC:
         true1 = true2 = dfv1.getIntersectRange(dfv2)  # equal dfv
@@ -621,10 +622,10 @@ class IntervalA(analysis.ValueAnalysisAT):
         false1 = false2 = dfv1.getIntersectRange(dfv2)  # equal dfv
       elif opCode in (op.BO_LT_OC, op.BO_LE_OC):
         true1, true2 = dfv1.cutLimit(dfv2, True), dfv2.cutLimit(dfv1, False)
-        false1, false2 = dfv1.cutLimit(dfv2, False), dfv2.cutUpper(dfv1, True)
+        false1, false2 = dfv1.cutLimit(dfv2, False), dfv2.cutLimit(dfv1, True)
       elif opCode in (op.BO_GT_OC, op.BO_GE_OC):
         true1, true2 = dfv1.cutLimit(dfv2, False), dfv2.cutLimit(dfv1, True)
-        false1, false2 = dfv1.cutLimit(dfv2, True), dfv2.cutUpper(dfv1, False)
+        false1, false2 = dfv1.cutLimit(dfv2, True), dfv2.cutLimit(dfv1, False)
 
       arg2IsVarE = isinstance(arg2, expr.VarE)
       if true1 and true2:

@@ -1647,13 +1647,14 @@ class TranslationUnit:
       return self.getNamesEnv(func, pointeeType)
 
     pointees = pointeeMap[varName].val
-    assert pointees, f"{pointees}, {pointeeMap}"
+    assert pointees, f"{varName}, {pointees}, {pointeeMap}"
     return pointees
 
 
   def getExprRValueNames(self,
       func: constructs.Func,
-      e: expr.ExprET
+      e: expr.ExprET,
+      pointeeMap: Opt[Dict[types.VarNameT, Any]] = None,
   ) -> Set[types.VarNameT]:
     """Returns the locations that may be read,
     if this expression was on the RHS of an assignment.
@@ -1666,17 +1667,23 @@ class TranslationUnit:
     assert not isinstance(e, expr.CallE), f"{func}, {e}"
 
     if isinstance(e, expr.SelectE):
-      names = self.getExprLValueNames(func, e.arg1) \
-                | self.getExprLValueNames(func, e.arg2)
+      names = self.getExprRValueNames(func, e.arg1, pointeeMap) \
+                | self.getExprRValueNames(func, e.arg2, pointeeMap)
+    elif isinstance(e, expr.LitE):
+      if e.isString():
+        return {e.name}
+      else:
+        return set()  # non-string literals have no names
     else:
-      names = self.getExprLValueNames(func, e)
+      names = self.getExprLValueNames(func, e, pointeeMap)
 
     return names
 
 
   def getExprLValueNames(self,
       func: constructs.Func,
-      e: expr.ExprET
+      e: expr.ExprET,
+      pointeeMap: Opt[Dict[types.VarNameT, Any]] = None,
   ) -> Set[types.VarNameT]:
     """Returns the locations that may be modified,
     if this expression was on the LHS of an assignment.
@@ -1686,27 +1693,28 @@ class TranslationUnit:
     can be viewed as a sequence of member wise assignments.
     """
     names = set()
+    assert not isinstance(e, (expr.CallE, expr.LitE)), f"{func}, {e}"
 
     if isinstance(e, expr.VarE):
       names.add(e.name)
       return names
 
     elif isinstance(e, expr.DerefE):
-      names.update(self.getNamesEnv(func, e.type))
+      names.update(self.getNamesOfPointees(func, e.arg.name, pointeeMap))
       return names
 
     elif isinstance(e, expr.ArrayE):
       if e.hasDereference():
-        names.update(self.getNamesEnv(func, e.type))
+        names.update(self.getNamesOfPointees(func, e.of.name, pointeeMap))
       else:
         names.add(e.getFullName())
       return names
 
     elif isinstance(e, expr.MemberE):
-      of = e.of.type
-      assert isinstance(of, types.Ptr), f"{e}: {of}"
-      for name in self.getNamesEnv(func, of.getPointeeType()):
-        names.add(f"{name}.{e.name}")
+      of, memName = e.of, e.name
+      assert isinstance(of.type, types.Ptr), f"{e}: {of.type}"
+      for name in self.getNamesOfPointees(func, of.name, pointeeMap):
+        names.add(f"{name}.{memName}")
       return names
 
     raise ValueError(f"{e}")
@@ -1714,7 +1722,8 @@ class TranslationUnit:
 
   def getNamesPossiblyModifiedInCallExpr(self,
       func: constructs.Func,  # the caller
-      e: expr.CallE
+      e: expr.CallE,
+      pointeeMap: Opt[Dict[types.VarNameT, Any]] = None,
   ) -> Set[types.VarNameT]:
     """E.g. in call: func(a, b, p)
     An over-approximation.
