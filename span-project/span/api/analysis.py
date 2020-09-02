@@ -765,13 +765,14 @@ class AnalysisAT(sim.SimAT):
     instructions have to handled in a way other than
     like a NOP instruction.
     """
-    return self.Nop_Instr(nodeId, nodeDfv)
+    return self.Nop_Instr(nodeId, insn, nodeDfv)
 
 
   # BOUND START: special_instructions_seven
 
   def Nop_Instr(self,
       nodeId: types.NodeIdT,
+      insn: instr.InstrIT,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
     """Instr_Form: void: NopI().
@@ -785,8 +786,10 @@ class AnalysisAT(sim.SimAT):
       return NodeDfvL(dfvIn, dfvIn)
 
 
-  def BlockInfo_Instr(self,
-      nodeDfv: NodeDfvL
+  def Barrier_Instr(self,
+      nodeId: types.NodeIdT,
+      insn: instr.InstrIT,
+      nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
     """DF information is blocked from travelling from IN-to-OUT and OUT-to-IN.
 
@@ -802,7 +805,7 @@ class AnalysisAT(sim.SimAT):
   ) -> NodeDfvL:
     """Instr_Form: void: UseI(x).
     Value of x is read from memory."""
-    raise NotImplementedError()
+    return self.Nop_Instr(nodeId, insn, nodeDfv)
 
 
   def ExRead_Instr(self,
@@ -813,7 +816,7 @@ class AnalysisAT(sim.SimAT):
     """Instr_Form: void: ExReadI(x).
     x and only x is read, others are forcibly
     marked as not read (in backward direction)."""
-    raise NotImplementedError()
+    return self.Barrier_Instr(nodeDfv)
 
 
   def CondRead_Instr(self,
@@ -823,7 +826,7 @@ class AnalysisAT(sim.SimAT):
   ) -> NodeDfvL:
     """Instr_Form: void: CondReadI(x, {y, z}).
     y and z are read if x is read."""
-    raise NotImplementedError()
+    return self.Barrier_Instr(nodeDfv)
 
 
   def UnDefVal_Instr(self,
@@ -833,7 +836,7 @@ class AnalysisAT(sim.SimAT):
   ) -> NodeDfvL:
     """Instr_Form: void: input(x). (user supplies value of x)
     Thus value of x is undefined."""
-    raise NotImplementedError()
+    return self.Nop_Instr(nodeId, insn, nodeDfv)
 
 
   def Filter_Instr(self,
@@ -843,7 +846,7 @@ class AnalysisAT(sim.SimAT):
   ) -> NodeDfvL:
     """Instr_Form: void: FilterI({x,y,z}).
     x,y,z are known to be dead after this program point."""
-    raise NotImplementedError()
+    return self.Nop_Instr(nodeId, insn, nodeDfv)
 
 
   # BOUND END  : special_instructions_seven
@@ -860,7 +863,7 @@ class AnalysisAT(sim.SimAT):
     Convention:
       Type of lhs and rhs is numeric.
     """
-    raise NotImplementedError()
+    return self.Nop_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Instr(self,
@@ -884,7 +887,7 @@ class AnalysisAT(sim.SimAT):
     Convention:
       Type of lhs and rhs is a record.
     """
-    raise NotImplementedError()
+    return self.Nop_Instr(nodeId, insn, nodeDfv)
 
 
   def Num_Assign_Var_Var_Instr(self,
@@ -1528,7 +1531,7 @@ class AnalysisAT(sim.SimAT):
     Convention:
       args are either a variable, a literal or addrof expression.
     """
-    raise NotImplementedError()
+    return self.Nop_Instr(nodeId, insn, nodeDfv)
 
 
   def Return_Var_Instr(self,
@@ -1540,7 +1543,7 @@ class AnalysisAT(sim.SimAT):
     Convention:
       b is a variable.
     """
-    raise NotImplementedError()
+    return self.Nop_Instr(nodeId, insn, nodeDfv)
 
 
   def Return_Lit_Instr(self,
@@ -1552,7 +1555,7 @@ class AnalysisAT(sim.SimAT):
     Convention:
       b is a literal.
     """
-    raise NotImplementedError()
+    return self.Nop_Instr(nodeId, insn, nodeDfv)
 
 
   def Return_Void_Instr(self,
@@ -1562,7 +1565,7 @@ class AnalysisAT(sim.SimAT):
   ) -> NodeDfvL:
     """Instr_Form: void: return;
     """
-    raise NotImplementedError()
+    return self.Nop_Instr(nodeId, insn, nodeDfv)
 
 
   def Conditional_Instr(self,
@@ -1574,7 +1577,7 @@ class AnalysisAT(sim.SimAT):
     Convention:
       b is a variable.
     """
-    raise NotImplementedError()
+    return self.Nop_Instr(nodeId, insn, nodeDfv)
 
   # BOUND END  : regular_insn__other
   # BOUND END  : regular_instructions
@@ -1663,7 +1666,7 @@ class ValueAnalysisAT(AnalysisAT):
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
     if not self.isAcceptedType(insn.type):
-      return self.Nop_Instr(nodeId, nodeDfv)
+      return self.Nop_Instr(nodeId, insn, nodeDfv)
     newOut = oldIn = cast(dfv.OverallL, nodeDfv.dfvIn)
     if not oldIn.getVal(insn.lhs).bot:
       newOut = oldIn.getCopy()
@@ -2108,7 +2111,7 @@ class ValueAnalysisAT(AnalysisAT):
       exprVal: dfv.ComponentL,
       valueType: sim.ValueTypeT = sim.NumValue,
   ) -> Callable[[types.T], bool]:
-    raise NotImplementedError()
+    return lambda x: True
 
 
   ################################################

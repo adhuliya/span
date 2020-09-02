@@ -9,7 +9,7 @@ import logging
 LOG = logging.getLogger("span")
 
 from typing import Dict, Tuple, Set, List, Callable,\
-  Optional as Opt, cast
+  Optional as Opt, cast, Any
 from collections import deque
 import time
 import io
@@ -932,7 +932,10 @@ class Host:
                             " (Nid %s) Insn: %s", node.id, insn)
           return nodeDfv
 
-    transferFunc: Callable = self.identity  # default is identity function
+    activeAnObj = self.activeAnObj
+    assert activeAnObj, f"{self.activeAnName}"
+    transferFunc: Callable[[Any, Any, Any], NodeDfvL]\
+      = activeAnObj.Nop_Instr  # default is NOP
 
     # is reachable (vs feasible) ?
     if Node__to__Nil__Name in self.activeAnSimNeeds:
@@ -966,47 +969,47 @@ class Host:
     # BOUND START: transfer_function_selection_process.
     if instrCode == NOP_INSTR_IC:
       if LLS: LOG.debug(an.AnalysisAT.Nop_Instr.__doc__)
-      transferFunc = self.identity
+      transferFunc = activeAnObj.Nop_Instr
 
     elif instrCode == USE_INSTR_IC:
       if LLS: LOG.debug(an.AnalysisAT.Use_Instr.__doc__)
-      transferFunc = self.Use_Instr
+      transferFunc = activeAnObj.Use_Instr
 
     elif instrCode == EX_READ_INSTR_IC:
       if LLS: LOG.debug(an.AnalysisAT.ExRead_Instr.__doc__)
-      transferFunc = self.ExRead_Instr
+      transferFunc = activeAnObj.ExRead_Instr
 
     elif instrCode == COND_READ_INSTR_IC:
       if LLS: LOG.debug(an.AnalysisAT.CondRead_Instr.__doc__)
-      transferFunc = self.CondRead_Instr
+      transferFunc = activeAnObj.CondRead_Instr
 
     elif instrCode == UNDEF_VAL_INSTR_IC:
       if LLS: LOG.debug(an.AnalysisAT.UnDefVal_Instr.__doc__)
-      transferFunc = self.UnDefVal_Instr
+      transferFunc = activeAnObj.UnDefVal_Instr
 
     elif instrCode == FILTER_INSTR_IC:
       if LLS: LOG.debug(an.AnalysisAT.Filter_Instr.__doc__)
-      transferFunc = self.Filter_Instr
+      transferFunc = activeAnObj.Filter_Instr
 
     elif isinstance(insn, instr.ReturnI):
       if insn.arg is None:
         if LLS: LOG.debug(an.AnalysisAT.Return_Void_Instr.__doc__)
-        transferFunc = self.Return_Void_Instr
+        transferFunc = activeAnObj.Return_Void_Instr
       elif insn.arg.exprCode == VAR_EXPR_EC:
         if LLS: LOG.debug(an.AnalysisAT.Return_Var_Instr.__doc__)
-        transferFunc = self.Return_Var_Instr
+        transferFunc = activeAnObj.Return_Var_Instr
       else:
         if LLS: LOG.debug(an.AnalysisAT.Return_Lit_Instr.__doc__)
-        transferFunc = self.Return_Lit_Instr
+        transferFunc = activeAnObj.Return_Lit_Instr
 
     elif instrCode == COND_INSTR_IC:
       if LLS: LOG.debug(an.AnalysisAT.Conditional_Instr.__doc__)
-      transferFunc = self.Conditional_Instr
+      transferFunc = activeAnObj.Conditional_Instr
       condInstr = True
 
     elif instrCode == CALL_INSTR_IC:
       if LLS: LOG.debug(an.AnalysisAT.Call_Instr.__doc__)
-      transferFunc = self.Call_Instr
+      transferFunc = activeAnObj.Call_Instr
 
     elif isinstance(insn, instr.AssignI):
       lhs, rhs = insn.lhs, insn.rhs
@@ -1016,33 +1019,33 @@ class Host:
         if rhsExprCode == VAR_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
           if numericInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Var_Var_Instr.__doc__)
-            transferFunc = self.Num_Assign_Var_Var_Instr
+            transferFunc = activeAnObj.Num_Assign_Var_Var_Instr
             rhsNumVarSim = True
           elif ptrInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_Var_Instr.__doc__)
-            transferFunc = self.Ptr_Assign_Var_Var_Instr
+            transferFunc = activeAnObj.Ptr_Assign_Var_Var_Instr
           elif recordInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Record_Assign_Var_Var_Instr.__doc__)
-            transferFunc = self.Record_Assign_Var_Var_Instr
+            transferFunc = activeAnObj.Record_Assign_Var_Var_Instr
 
         elif rhsExprCode == LIT_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
           if numericInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Var_Lit_Instr.__doc__)
-            transferFunc = self.Num_Assign_Var_Lit_Instr
+            transferFunc = activeAnObj.Num_Assign_Var_Lit_Instr
 
           elif ptrInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_Lit_Instr.__doc__)
-            transferFunc = self.Ptr_Assign_Var_Lit_Instr
+            transferFunc = activeAnObj.Ptr_Assign_Var_Lit_Instr
 
         elif rhsExprCode == SIZEOF_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
           # hence lhs, rhs are numeric
           if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Var_SizeOf_Instr.__doc__)
-          transferFunc = self.Num_Assign_Var_SizeOf_Instr
+          transferFunc = activeAnObj.Num_Assign_Var_SizeOf_Instr
 
         elif isinstance(rhs, expr.UnaryE): # lhsExprCode == VAR_EXPR_EC
           if numericInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Var_UnaryArith_Instr.__doc__)
-            transferFunc = self.Num_Assign_Var_UnaryArith_Instr
+            transferFunc = activeAnObj.Num_Assign_Var_UnaryArith_Instr
             rhsNumUnaryExprSim = True
           else:
             if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
@@ -1051,13 +1054,13 @@ class Host:
           rhsDerefSim = True
           if numericInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Var_Deref_Instr.__doc__)
-            transferFunc = self.Num_Assign_Var_Deref_Instr
+            transferFunc = activeAnObj.Num_Assign_Var_Deref_Instr
           elif ptrInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_Deref_Instr.__doc__)
-            transferFunc = self.Ptr_Assign_Var_Deref_Instr
+            transferFunc = activeAnObj.Ptr_Assign_Var_Deref_Instr
           elif recordInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Record_Assign_Var_Deref_Instr.__doc__)
-            transferFunc = self.Record_Assign_Var_Deref_Instr
+            transferFunc = activeAnObj.Record_Assign_Var_Deref_Instr
           else:
             if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s, itype: %s",
                               insn, insn.type)
@@ -1065,11 +1068,11 @@ class Host:
         elif rhsExprCode == BINARY_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
           if numericInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Var_BinArith_Instr.__doc__)
-            transferFunc = self.Num_Assign_Var_BinArith_Instr
+            transferFunc = activeAnObj.Num_Assign_Var_BinArith_Instr
             rhsNumBinaryExprSim = True
           elif ptrInstrType:  # must be a pointer instruction
             if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_BinArith_Instr.__doc__)
-            transferFunc = self.Ptr_Assign_Var_BinArith_Instr
+            transferFunc = activeAnObj.Ptr_Assign_Var_BinArith_Instr
           else:
             if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
 
@@ -1078,34 +1081,34 @@ class Host:
           argExprCode = rhs.arg.exprCode
           if argExprCode == VAR_EXPR_EC:
             if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_AddrOfVar_Instr.__doc__)
-            transferFunc = self.Ptr_Assign_Var_AddrOfVar_Instr
+            transferFunc = activeAnObj.Ptr_Assign_Var_AddrOfVar_Instr
           elif argExprCode == ARR_EXPR_EC:
             if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_AddrOfArray_Instr.__doc__)
-            transferFunc = self.Ptr_Assign_Var_AddrOfArray_Instr
+            transferFunc = activeAnObj.Ptr_Assign_Var_AddrOfArray_Instr
           elif argExprCode == MEMBER_EXPR_EC:
             if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_AddrOfMember_Instr.__doc__)
-            transferFunc = self.Ptr_Assign_Var_AddrOfMember_Instr
+            transferFunc = activeAnObj.Ptr_Assign_Var_AddrOfMember_Instr
           elif isinstance(rhs.arg, expr.DerefE):
             if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_AddrOfDeref_Instr.__doc__)
-            transferFunc = self.Ptr_Assign_Var_AddrOfDeref_Instr
+            transferFunc = activeAnObj.Ptr_Assign_Var_AddrOfDeref_Instr
           elif argExprCode == FUNC_EXPR_EC:
             if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_AddrOfFunc_Instr.__doc__)
-            transferFunc = self.Ptr_Assign_Var_AddrOfFunc_Instr
+            transferFunc = activeAnObj.Ptr_Assign_Var_AddrOfFunc_Instr
           else:
             if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
 
         elif rhsExprCode == ARR_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
           if numericInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Var_Array_Instr.__doc__)
-            transferFunc = self.Num_Assign_Var_Array_Instr
+            transferFunc = activeAnObj.Num_Assign_Var_Array_Instr
 
           elif ptrInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_Array_Instr.__doc__)
-            transferFunc = self.Ptr_Assign_Var_Array_Instr
+            transferFunc = activeAnObj.Ptr_Assign_Var_Array_Instr
 
           elif recordInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Record_Assign_Var_Array_Instr.__doc__)
-            transferFunc = self.Record_Assign_Var_Array_Instr
+            transferFunc = activeAnObj.Record_Assign_Var_Array_Instr
 
           else:
             if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
@@ -1114,30 +1117,30 @@ class Host:
           rhsMemDerefSim = insn.rhs.hasDereference()
           if numericInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Var_Member_Instr.__doc__)
-            transferFunc = self.Num_Assign_Var_Member_Instr
+            transferFunc = activeAnObj.Num_Assign_Var_Member_Instr
 
           elif ptrInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_Member_Instr.__doc__)
-            transferFunc = self.Ptr_Assign_Var_Member_Instr
+            transferFunc = activeAnObj.Ptr_Assign_Var_Member_Instr
 
           elif recordInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Record_Assign_Var_Member_Instr.__doc__)
-            transferFunc = self.Record_Assign_Var_Member_Instr
+            transferFunc = activeAnObj.Record_Assign_Var_Member_Instr
           else:
             if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
 
         elif rhsExprCode == CALL_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
           if numericInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Var_Call_Instr.__doc__)
-            transferFunc = self.Num_Assign_Var_Call_Instr
+            transferFunc = activeAnObj.Num_Assign_Var_Call_Instr
 
           elif ptrInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_Call_Instr.__doc__)
-            transferFunc = self.Ptr_Assign_Var_Call_Instr
+            transferFunc = activeAnObj.Ptr_Assign_Var_Call_Instr
 
           elif recordInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Record_Assign_Var_Call_Instr.__doc__)
-            transferFunc = self.Record_Assign_Var_Call_Instr
+            transferFunc = activeAnObj.Record_Assign_Var_Call_Instr
 
           else:
             if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
@@ -1145,20 +1148,20 @@ class Host:
         elif rhsExprCode == FUNC_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
           if ptrInstrType:  # has to be
             if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_FuncName_Instr.__doc__)
-            transferFunc = self.Ptr_Assign_Var_FuncName_Instr
+            transferFunc = activeAnObj.Ptr_Assign_Var_FuncName_Instr
           else:
             if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
 
         elif rhsExprCode == SELECT_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
           if numericInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Var_Select_Instr.__doc__)
-            transferFunc = self.Num_Assign_Var_Select_Instr
+            transferFunc = activeAnObj.Num_Assign_Var_Select_Instr
           elif ptrInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_Select_Instr.__doc__)
-            transferFunc = self.Ptr_Assign_Var_Select_Instr
+            transferFunc = activeAnObj.Ptr_Assign_Var_Select_Instr
           elif recordInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Record_Assign_Var_Select_Instr.__doc__)
-            transferFunc = self.Record_Assign_Var_Select_Instr
+            transferFunc = activeAnObj.Record_Assign_Var_Select_Instr
           else:
             if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
 
@@ -1166,17 +1169,17 @@ class Host:
           if rhs.arg.exprCode == VAR_EXPR_EC:
             if numericInstrType:
               if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Var_CastVar_Instr.__doc__)
-              transferFunc = self.Num_Assign_Var_CastVar_Instr
+              transferFunc = activeAnObj.Num_Assign_Var_CastVar_Instr
             elif ptrInstrType:
               if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_CastVar_Instr.__doc__)
-              transferFunc = self.Ptr_Assign_Var_CastVar_Instr
+              transferFunc = activeAnObj.Ptr_Assign_Var_CastVar_Instr
             else:
               if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
 
           elif rhs.arg.exprCode == ARR_EXPR_EC:
             if ptrInstrType:
               if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Var_CastArr_Instr.__doc__)
-              transferFunc = self.Ptr_Assign_Var_CastArr_Instr
+              transferFunc = activeAnObj.Ptr_Assign_Var_CastArr_Instr
             else:
               if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
 
@@ -1186,24 +1189,24 @@ class Host:
         if rhsExprCode == VAR_EXPR_EC:  # lhs is a deref
           if numericInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Deref_Var_Instr.__doc__)
-            transferFunc = self.Num_Assign_Deref_Var_Instr
+            transferFunc = activeAnObj.Num_Assign_Deref_Var_Instr
             rhsNumVarSim = True
           elif ptrInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Deref_Var_Instr.__doc__)
-            transferFunc = self.Ptr_Assign_Deref_Var_Instr
+            transferFunc = activeAnObj.Ptr_Assign_Deref_Var_Instr
           elif recordInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Record_Assign_Deref_Var_Instr.__doc__)
-            transferFunc = self.Record_Assign_Deref_Var_Instr
+            transferFunc = activeAnObj.Record_Assign_Deref_Var_Instr
           else:
             if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
 
         elif rhsExprCode == LIT_EXPR_EC:  # lhs is a deref
           if numericInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Deref_Lit_Instr.__doc__)
-            transferFunc = self.Num_Assign_Deref_Lit_Instr
+            transferFunc = activeAnObj.Num_Assign_Deref_Lit_Instr
           elif ptrInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Deref_Lit_Instr.__doc__)
-            transferFunc = self.Ptr_Assign_Deref_Lit_Instr
+            transferFunc = activeAnObj.Ptr_Assign_Deref_Lit_Instr
           else:
             if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
 
@@ -1211,24 +1214,24 @@ class Host:
         if rhsExprCode == VAR_EXPR_EC:  # lhs is an array expr
           if numericInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Array_Var_Instr.__doc__)
-            transferFunc = self.Num_Assign_Array_Var_Instr
+            transferFunc = activeAnObj.Num_Assign_Array_Var_Instr
             rhsNumVarSim = True
           elif ptrInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Array_Var_Instr.__doc__)
-            transferFunc = self.Ptr_Assign_Array_Var_Instr
+            transferFunc = activeAnObj.Ptr_Assign_Array_Var_Instr
           elif recordInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Record_Assign_Array_Var_Instr.__doc__)
-            transferFunc = self.Record_Assign_Array_Var_Instr
+            transferFunc = activeAnObj.Record_Assign_Array_Var_Instr
           else:
             if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
 
         elif rhsExprCode == LIT_EXPR_EC:  # lhs is an array expr
           if numericInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Array_Lit_Instr.__doc__)
-            transferFunc = self.Num_Assign_Array_Lit_Instr
+            transferFunc = activeAnObj.Num_Assign_Array_Lit_Instr
           elif ptrInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Array_Lit_Instr.__doc__)
-            transferFunc = self.Ptr_Assign_Array_Lit_Instr
+            transferFunc = activeAnObj.Ptr_Assign_Array_Lit_Instr
           else:
             if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
 
@@ -1237,24 +1240,24 @@ class Host:
         if rhsExprCode == VAR_EXPR_EC:  # lhs is a member expr
           if numericInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Member_Var_Instr.__doc__)
-            transferFunc = self.Num_Assign_Member_Var_Instr
+            transferFunc = activeAnObj.Num_Assign_Member_Var_Instr
             rhsNumVarSim = True
           elif ptrInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Member_Var_Instr.__doc__)
-            transferFunc = self.Ptr_Assign_Member_Var_Instr
+            transferFunc = activeAnObj.Ptr_Assign_Member_Var_Instr
           elif recordInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Record_Assign_Member_Var_Instr.__doc__)
-            transferFunc = self.Record_Assign_Member_Var_Instr
+            transferFunc = activeAnObj.Record_Assign_Member_Var_Instr
           else:
             if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
 
         elif rhsExprCode == LIT_EXPR_EC:  # lhs is a member expr
           if numericInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Num_Assign_Member_Lit_Instr.__doc__)
-            transferFunc = self.Num_Assign_Member_Lit_Instr
+            transferFunc = activeAnObj.Num_Assign_Member_Lit_Instr
           elif ptrInstrType:
             if LLS: LOG.debug(an.AnalysisAT.Ptr_Assign_Member_Lit_Instr.__doc__)
-            transferFunc = self.Ptr_Assign_Member_Lit_Instr
+            transferFunc = activeAnObj.Ptr_Assign_Member_Lit_Instr
           else:
             if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
 
@@ -1265,18 +1268,7 @@ class Host:
     # BOUND END  : transfer_function_selection_process.
 
     tFuncName = transferFunc.__name__  # needed
-
-    # always handle Conditional_Instr - since it affects node feasibility
-    if not condInstr:
-      if tFuncName not in self.activeAnTFuncs:
-        if tFuncName == ExRead_Instr__Name or tFuncName == CondRead_Instr__Name:
-          # return nodeDfv  # act as a blocking instruction
-          return self.Barrier_Instr(node, node.insn, nodeDfv)
-        else:
-          transferFunc = self.identity
-          if LLS: LOG.debug("AnalysisDoesNotHandle insn '%s' (so_using_identity)", insn)
-
-    if not self.disableAllSim and transferFunc != self.identity:
+    if not self.disableAllSim and transferFunc != activeAnObj.Nop_Instr:
       if tFuncName == UnDefVal_Instr__Name:
         # lhs is a var, hence could be dead code
         nDfv = self.handleLivenessSim(node, insn, nodeDfv)
@@ -1337,16 +1329,18 @@ class Host:
         # if nDfv is None then work on the original instruction
 
     if GD:
-      if transferFunc == self.identity:
+      if transferFunc == self.Nop_Instr:
         self.nodeInsnDot[node.id].append("nop")
       else:
         self.nodeInsnDot[node.id].append(str(insn))
 
-    self.stats.instrAnTimer.start()
-    nDfv = transferFunc(node, insn, nodeDfv)
-    self.stats.instrAnTimer.stop()
-    assert nDfv, f"{nDfv}"
-    return nDfv
+    if tFuncName == Conditional_Instr__Name:
+      return self.Conditional_Instr(node, insn, nodeDfv)  # type: ignore
+    else:
+      self.stats.instrAnTimer.start()
+      nDfv = transferFunc(node, insn, nodeDfv)  # type: ignore
+      self.stats.instrAnTimer.stop()
+      return nDfv
 
 
   def getCachedInstrSimResult(self,
@@ -1782,548 +1776,7 @@ class Host:
     return self.handleNewInstr(node, simName, insn, rhsArg, newInsn, nodeDfv)
 
 
-  def identity(self,
-      node: graph.CfgNode,  # redundant but needed
-      insn: instr.InstrIT,  # redundant but needed
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    """identity flow function."""
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): NopI()", node.id)
-    self.stats.idInstrAnTimer.start()
-    assert self.activeAnObj
-    nDfv = self.activeAnObj.Nop_Instr(node.id, nodeDfv)
-    self.stats.idInstrAnTimer.stop()
-    return nDfv
-
-
   # BOUND START: RegularInstructions
-
-  def Num_Assign_Var_Var_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Num_Assign_Var_Var_Instr(node.id, insn, nodeDfv)
-
-
-  def Num_Assign_Var_Lit_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Num_Assign_Var_Lit_Instr(node.id, insn, nodeDfv)
-
-
-  def Num_Assign_Deref_Var_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Num_Assign_Deref_Var_Instr(node.id, insn, nodeDfv)
-
-
-  def Num_Assign_Deref_Lit_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Num_Assign_Deref_Lit_Instr(node.id, insn, nodeDfv)
-
-
-  def Num_Assign_Var_Deref_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Num_Assign_Var_Deref_Instr(node.id, insn, nodeDfv)
-
-
-  def Num_Assign_Var_UnaryArith_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Num_Assign_Var_UnaryArith_Instr(node.id, insn, nodeDfv)
-
-
-  def Num_Assign_Var_BinArith_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Num_Assign_Var_BinArith_Instr(node.id, insn, nodeDfv)
-
-
-  def Ptr_Assign_Var_BinArith_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Ptr_Assign_Var_BinArith_Instr(node.id, insn, nodeDfv)
-
-
-  def Num_Assign_Var_Array_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Num_Assign_Var_Array_Instr(node.id, insn, nodeDfv)
-
-
-  def Num_Assign_Array_Var_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Num_Assign_Array_Var_Instr(node.id, insn, nodeDfv)
-
-
-  def Num_Assign_Array_Lit_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Num_Assign_Array_Lit_Instr(node.id, insn, nodeDfv)
-
-
-  def Num_Assign_Member_Var_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Num_Assign_Member_Var_Instr(node.id, insn, nodeDfv)
-
-
-  def Num_Assign_Member_Lit_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Num_Assign_Member_Lit_Instr(node.id, insn, nodeDfv)
-
-
-  def Num_Assign_Var_Member_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Num_Assign_Var_Member_Instr(node.id, insn, nodeDfv)
-
-
-  def Num_Assign_Var_CastVar_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Num_Assign_Var_CastVar_Instr(node.id, insn, nodeDfv)
-
-
-  def Num_Assign_Var_Select_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Num_Assign_Var_Select_Instr(node.id, insn, nodeDfv)
-
-
-  def Num_Assign_Var_Call_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Num_Assign_Var_Call_Instr(node.id, insn, nodeDfv)
-
-
-  def Num_Assign_Var_SizeOf_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Num_Assign_Var_SizeOf_Instr(node.id, insn, nodeDfv)
-
-
-  def Ptr_Assign_Var_AddrOfVar_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Ptr_Assign_Var_AddrOfVar_Instr(node.id, insn, nodeDfv)
-
-
-  def Ptr_Assign_Var_AddrOfArray_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Ptr_Assign_Var_AddrOfArray_Instr(node.id, insn, nodeDfv)
-
-
-  def Ptr_Assign_Var_AddrOfMember_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Ptr_Assign_Var_AddrOfMember_Instr(node.id, insn, nodeDfv)
-
-
-  def Ptr_Assign_Var_AddrOfDeref_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Ptr_Assign_Var_AddrOfDeref_Instr(node.id, insn, nodeDfv)
-
-
-  def Ptr_Assign_Var_AddrOfFunc_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Ptr_Assign_Var_AddrOfFunc_Instr(node.id, insn, nodeDfv)
-
-
-  def Ptr_Assign_Var_Var_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Ptr_Assign_Var_Var_Instr(node.id, insn, nodeDfv)
-
-
-  def Ptr_Assign_Var_FuncName_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Ptr_Assign_Var_FuncName_Instr(node.id, insn, nodeDfv)
-
-
-  def Ptr_Assign_Var_Lit_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Ptr_Assign_Var_Lit_Instr(node.id, insn, nodeDfv)
-
-
-  def Ptr_Assign_Deref_Var_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Ptr_Assign_Deref_Var_Instr(node.id, insn, nodeDfv)
-
-
-  def Ptr_Assign_Deref_Lit_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Ptr_Assign_Deref_Lit_Instr(node.id, insn, nodeDfv)
-
-
-  def Ptr_Assign_Var_Deref_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Ptr_Assign_Var_Deref_Instr(node.id, insn, nodeDfv)
-
-
-  def Ptr_Assign_Var_Array_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Ptr_Assign_Var_Array_Instr(node.id, insn, nodeDfv)
-
-
-  def Ptr_Assign_Array_Var_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Ptr_Assign_Array_Var_Instr(node.id, insn, nodeDfv)
-
-
-  def Ptr_Assign_Array_Lit_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Ptr_Assign_Array_Lit_Instr(node.id, insn, nodeDfv)
-
-
-  def Ptr_Assign_Member_Var_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Ptr_Assign_Member_Var_Instr(node.id, insn, nodeDfv)
-
-
-  def Ptr_Assign_Member_Lit_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Ptr_Assign_Member_Lit_Instr(node.id, insn, nodeDfv)
-
-
-  def Ptr_Assign_Var_Select_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Ptr_Assign_Var_Select_Instr(node.id, insn, nodeDfv)
-
-
-  def Ptr_Assign_Var_Member_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Ptr_Assign_Var_Member_Instr(node.id, insn, nodeDfv)
-
-
-  def Ptr_Assign_Var_CastVar_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Ptr_Assign_Var_CastVar_Instr(node.id, insn, nodeDfv)
-
-
-  def Ptr_Assign_Var_CastArr_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Ptr_Assign_Var_CastArr_Instr(node.id, insn, nodeDfv)
-
-
-  # Ptr_Assign_Var_CastMember_Instr() is not in IR
-
-  def Ptr_Assign_Var_Call_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Ptr_Assign_Var_Call_Instr(node.id, insn, nodeDfv)
-
-
-  def Record_Assign_Var_Var_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Record_Assign_Var_Var_Instr(node.id, insn, nodeDfv)
-
-
-  def Record_Assign_Var_Array_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Record_Assign_Var_Array_Instr(node.id, insn, nodeDfv)
-
-
-  def Record_Assign_Array_Var_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Record_Assign_Array_Var_Instr(node.id, insn, nodeDfv)
-
-
-  def Record_Assign_Var_Member_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Record_Assign_Var_Member_Instr(node.id, insn, nodeDfv)
-
-
-  def Record_Assign_Member_Var_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Record_Assign_Member_Var_Instr(node.id, insn, nodeDfv)
-
-
-  def Record_Assign_Var_Select_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Record_Assign_Var_Select_Instr(node.id, insn, nodeDfv)
-
-
-  def Record_Assign_Var_Call_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Record_Assign_Var_Call_Instr(node.id, insn, nodeDfv)
-
-
-  def Record_Assign_Deref_Var_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Record_Assign_Deref_Var_Instr(node.id, insn, nodeDfv)
-
-
-  def Record_Assign_Var_Deref_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Record_Assign_Var_Deref_Instr(node.id, insn, nodeDfv)
-
-
-  def Call_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    if isinstance(insn, instr.CallI):
-      calleeName = insn.arg.callee.name
-      if calleeName in {"f:printf", "f:fflush", "f:fprintf"}:  # FIXME
-        return self.identity(node, insn, nodeDfv)
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    # FIXME: the type ignore thing
-    return self.activeAnObj.Call_Instr(node.id, insn, nodeDfv)  # type: ignore
-
-
-  def Return_Var_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.ReturnI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Return_Var_Instr(node.id, insn, nodeDfv)
-
-
-  def Return_Lit_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.ReturnI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Return_Lit_Instr(node.id, insn, nodeDfv)
-
-
-  def Return_Void_Instr(self,
-      node: graph.CfgNode,
-      insn: instr.ReturnI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-    assert self.activeAnObj
-    return self.activeAnObj.Return_Void_Instr(node.id, insn, nodeDfv)
-
 
   def Conditional_Instr(self,
       node: graph.CfgNode,
@@ -2334,17 +1787,10 @@ class Host:
     self.stats.instrAnTimer.stop() # okay - excluding edge feasibility computation
     nodes = self.setEdgeFeasibility(node, insn.arg)
     self.stats.instrAnTimer.start() # okay
-    if nodes: self.addNodes(nodes)
+    if nodes:
+      self.addNodes(nodes)
 
-    name = self.Conditional_Instr.__name__
-    assert self.activeAnObj
-    if name not in self.activeAnObj.__class__.__dict__:
-      newNodeDfv = self.identity(node, insn, nodeDfv)
-    else:
-      if LS: LOG.debug("FinallyProcessingInstruction (Node %s): %s", node.id, insn)
-      newNodeDfv = self.activeAnObj.Conditional_Instr(node.id, insn, nodeDfv)
-
-    return newNodeDfv
+    return self.activeAnObj.Conditional_Instr(node.id, insn, nodeDfv)
 
 
   def setEdgeFeasibility(self, node, arg) -> Opt[List[graph.CfgNode]]:
@@ -2371,7 +1817,6 @@ class Host:
     if self.useDdm: self.ddmObj.timer.stop()
 
     return nodes
-
 
   # BOUND END  : RegularInstructions
 
@@ -2821,10 +2266,10 @@ class Host:
       nDfv = boundaryInfo[anName]
 
       # FIXME: Assuming all analyses are forward or backward (not both)
-      nodeId = 1 if anDirn == types.Forward else len(self.funcCfg.nodeMap)
+      nodeId = 1 if anDirn == irConv.Forward else len(self.funcCfg.nodeMap)
       node = self.funcCfg.nodeMap[nodeId]
       updateDfv = NodeDfvL(nDfv.dfvIn, nDfv.dfvIn) \
-                      if anDirn == types.Forward \
+                      if anDirn == irConv.Forward \
                       else NodeDfvL(nDfv.dfvOut, nDfv.dfvOut)
       inOutChange = dirnObj.update(node, updateDfv)
       if inOutChange:
