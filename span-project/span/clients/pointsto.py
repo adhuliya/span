@@ -345,19 +345,41 @@ class PointsToA(analysis.ValueAnalysisAT):
     leftArgDfv = cast(ComponentL, self.getExprDfv(e.arg1, dfvIn))
     rightArgDfv = cast(ComponentL, self.getExprDfv(e.arg2, dfvIn))
 
-    if leftArgDfv.top or rightArgDfv.top:
-      return sim.SimPending
+    if leftArgDfv.top or rightArgDfv.top: return sim.SimPending
+    if leftArgDfv.bot or rightArgDfv.bot: return sim.SimFailed
+    assert leftArgDfv.val and rightArgDfv.val, f"{leftArgDfv}, {rightArgDfv}"
 
     retVal: Opt[int] = None
-    if leftArgDfv == rightArgDfv and leftArgDfv.val \
-        and len(leftArgDfv.val) == 1:  # equal
+    if leftArgDfv == rightArgDfv and len(leftArgDfv.val) == 1:  # equal
       retVal = 1 if opCode == op.BO_EQ_OC else 0
-    elif not (leftArgDfv.bot or rightArgDfv.bot):
-      assert leftArgDfv.val and rightArgDfv.val
-      if len(leftArgDfv.val & rightArgDfv.val) == 0:  # not equal
+    elif len(leftArgDfv.val & rightArgDfv.val) == 0:  # not equal
         retVal = 0 if opCode == op.BO_EQ_OC else 1
 
     return [retVal] if retVal is not None else sim.SimFailed
+
+
+  def filterTest(self,
+      exprVal: dfv.ComponentL,
+      valueType: sim.ValueTypeT = sim.NumValue,
+  ) -> Callable[[types.T], bool]:
+    assert isinstance(exprVal, ComponentL), f"{exprVal}"
+    if valueType == sim.NumValue:
+      def valueTestNumeric(numVal: types.NumericT) -> bool:
+        return True
+      return valueTestNumeric  # return the test function
+
+    elif valueType == sim.BoolValue:
+      def valueTestBoolean(boolVal: bool) -> bool:
+        return True
+      return valueTestBoolean  # return the test function
+
+    elif valueType == sim.NameValue:
+      def valueTestName(nameVal: types.VarNameT) -> bool:
+        if exprVal.top: return False
+        if exprVal.bot: return True
+        return nameVal in exprVal.val
+      return valueTestName  # return the test function
+    raise ValueError(f"{exprVal}, {valueType}")
 
 
   ################################################

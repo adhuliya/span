@@ -2091,6 +2091,7 @@ class ValueAnalysisAT(AnalysisAT):
       dfvIn: dfv.OverallL,
       valueType: sim.ValueTypeT = sim.NumValue,
   ) -> List[types.T]:
+    """Depends on `self.filterTest`."""
     if not values:
       return values  # returns an empty list
     exprVal = self.getExprDfv(e, dfvIn)
