@@ -119,8 +119,8 @@ class SimL(LatticeLT):
     return cls._theBot
 
 
-SimPending = SimL.getTop()
-SimFailed = SimL.getBot()
+# SimPending = SimL.getTop()
+# SimFailed = SimL.getBot()
 
 
 class SimToVarL(SimL):
