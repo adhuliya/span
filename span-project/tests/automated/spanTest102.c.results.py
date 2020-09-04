@@ -50,7 +50,7 @@ TestActionAndResult(
             name = "s:Node",
             members = [
             ],
-            loc = Info(Loc(3,3)),
+            info = Info(Loc(3,3)),
           ),
 
         "s:node":
@@ -60,7 +60,7 @@ TestActionAndResult(
               ("val", types.Int32),
               ("next", types.Ptr(to=types.Struct("s:Node"))),
             ],
-            loc = Info(Loc(1,9)),
+            info = Info(Loc(1,9)),
           ),
       }, # end allRecords dict
 

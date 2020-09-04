@@ -214,15 +214,6 @@ class EvenOddA(analysis.AnalysisAT):
   # BOUND START: special_instructions
   ################################################
 
-  def Nop_Instr(self,
-      nodeId: types.NodeIdT,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    """An identity forward transfer function."""
-    dfvIn = nodeDfv.dfvIn
-    return NodeDfvL(dfvIn, dfvIn)
-
-
   def Filter_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.FilterI,

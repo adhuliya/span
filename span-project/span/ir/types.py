@@ -1291,12 +1291,11 @@ class Struct(RecordT):
   def __init__(self,
       name: StructNameT,
       members: Opt[List[Tuple[MemberNameT, Type]]] = None,
-      loc: Opt[Loc] = None,
+      info: Opt[Info] = None,
   ) -> None:
-    super().__init__(name, members, loc, STRUCT_TC)
+    super().__init__(name, members, info, STRUCT_TC)
     self.name = name
     self.members = members
-    self.loc = loc
 
 
   def bitSize(self):
@@ -1369,10 +1368,10 @@ class Struct(RecordT):
   def __repr__(self):
     """It expects the eval()uator to import this module as:
        import span.ir.types as types
-       from span.ir.types import Loc
+       from span.ir.types import Loc, Info
     """
     return f"types.Struct({repr(self.name)}, " \
-           f"{repr(self.members)}, {repr(self.loc)})"
+           f"{repr(self.members)}, {repr(self.info)})"
 
 
 class Union(RecordT):
@@ -1384,9 +1383,9 @@ class Union(RecordT):
   def __init__(self,
       name: UnionNameT,
       members: Opt[List[Tuple[MemberNameT, Type]]] = None,
-      loc: Opt[Loc] = None,
+      info: Opt[Info] = None,
   ) -> None:
-    super().__init__(name, members, loc, UNION_TC)
+    super().__init__(name, members, info, UNION_TC)
 
 
   def bitSize(self) -> int:
@@ -1461,7 +1460,7 @@ class Union(RecordT):
   def __repr__(self):
     """It expects the eval()uator to import this module as:
        import span.ir.types as types
-       from span.ir.types import Loc
+       from span.ir.types import Loc, Info
     """
     return f"types.Union({repr(self.name)}, " \
            f"{repr(self.members)}, {repr(self.info)})"

@@ -59,7 +59,8 @@ class ValueContext:
 
 
   def getCopy(self):
-    return ValueContext(self.funcName, {key: val.getCopy() for key, val in self.dfvs.items()})
+    return ValueContext(self.funcName,
+                        {k: v.getCopy() for k, v in self.dfvs.items()})
 
 
   def addValue(self,

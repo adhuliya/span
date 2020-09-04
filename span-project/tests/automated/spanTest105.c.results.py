@@ -45,7 +45,7 @@ TestActionAndResult(
               ("val", types.Int32),
               ("next", types.Ptr(to=types.Struct("s:Node"))),
             ],
-            loc = Info(Loc(1,1)),
+            info = Info(Loc(1,1)),
           ),
     
       }, # end allRecords dict

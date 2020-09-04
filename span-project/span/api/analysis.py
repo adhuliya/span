@@ -729,32 +729,6 @@ class AnalysisAT(sim.SimAT):
     self.overallBot = self.L(func, bot=True)  # L is callable. pylint: disable=E
 
 
-  def getBoundaryInfo(self,
-      inBi: Opt[DataLT] = None,
-      outBi: Opt[DataLT] = None,
-  ) -> Tuple[DataLT, DataLT]:
-    """Boundary Info for intra-procedural analysis.
-    Args:
-      inBi: IN boundary value can be given for testing purposes
-      outBi: OUT boundary value can be given for testing purposes
-    """
-    startBi = inBi if inBi else self.overallBot  # sound initialization
-    endBi = outBi if outBi else self.overallTop  # since forward analysis
-    return startBi, endBi  # type: ignore
-
-
-  def getIpaBoundaryInfo(self,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    """Prepares the given data flow value for the IPA.
-    Things done:
-    1. Throws away data flow information of variables
-       not in the function's environment.
-    2. Corrects the self.func field of the data flow value objects.
-    """
-    raise NotImplementedError()
-
-
   def Default_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.InstrIT,
@@ -767,6 +741,19 @@ class AnalysisAT(sim.SimAT):
     """
     return self.Nop_Instr(nodeId, insn, nodeDfv)
 
+
+  def getBoundaryInfo(self,
+      nodeDfv: Opt[NodeDfvL] = None,
+      ipa: bool = False,
+  ) -> NodeDfvL:
+    """Must generate a valid boundary info."""
+    if ipa and not nodeDfv:
+      raise ValueError(f"{ipa}, {nodeDfv}")
+
+    inBi, outBi = self.overallBot, self.overallBot
+    if ipa: raise NotImplementedError()  # for IPA override this function
+    if nodeDfv: inBi, outBi = nodeDfv.dfvIn, nodeDfv.dfvOut
+    return NodeDfvL(inBi, outBi)  # good to create a copy
 
   # BOUND START: special_instructions_seven
 
@@ -1769,7 +1756,8 @@ class ValueAnalysisAT(AnalysisAT):
         if dfvInGetVal(name) != newVal:
           outDfvValues[name] = newVal
 
-    outDfvValues.update(self.processCallE(rhs, dfvIn))
+    if isinstance(rhs, expr.CallE):
+      outDfvValues.update(self.processCallE(rhs, dfvIn))
     return self.genNodeDfvL(outDfvValues, dfvIn)
 
 
@@ -1939,9 +1927,7 @@ class ValueAnalysisAT(AnalysisAT):
       e: expr.LitE,
       dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
   ) -> dfv.ComponentL:
-    """A default implementation for Constant Propagation."""
-    assert isinstance(e.val, (int, float)), f"{e}"
-    return dfv.ComponentL(self.func, val=e.val)
+    raise NotImplementedError()
 
 
   def getExprDfvVarE(self,
@@ -1992,61 +1978,14 @@ class ValueAnalysisAT(AnalysisAT):
       e: expr.UnaryE,
       dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
   ) -> dfv.ComponentL:
-    """A default implementation (assuming Constant Propagation)."""
-    assert isinstance(e.arg, expr.VarE), f"{e}"
-    value = dfvInGetVal(e.arg.name)
-    if value.top or value.bot:
-      return value
-    elif value.val is not None:
-      rhsOpCode = e.opr.opCode
-      if rhsOpCode == op.UO_MINUS_OC:
-        value.val = -value.val  # not NoneType... pylint: disable=E
-      elif rhsOpCode == op.UO_BIT_NOT_OC:
-        assert isinstance(value.val, int), f"{value}"
-        value.val = ~value.val  # not NoneType... pylint: disable=E
-      elif rhsOpCode == op.UO_LNOT_OC:
-        value.val = int(not bool(value.val))
-      else:
-        raise ValueError(f"{e}")
-      return value
-    raise TypeError(f"{type(value)}: {value}")
+    raise NotImplementedError()
 
 
   def getExprDfvBinaryE(self,
       e: expr.BinaryE,
       dfvIn: dfv.OverallL,
   ) -> dfv.ComponentL:
-    """A default implementation (assuming Constant Propagation)."""
-    val1 = self.getExprDfv(e.arg1, dfvIn)
-    val2 = self.getExprDfv(e.arg2, dfvIn)
-    if val1.top or val2.top:
-      return self.componentTop
-    elif val1.bot or val2.bot:
-      return self.componentBot
-    else:
-      assert val1.val and val2.val, f"{val1}, {val2}"
-      rhsOpCode = e.opr.opCode
-      if rhsOpCode == op.BO_ADD_OC:
-        val: Opt[float] = val1.val + val2.val
-      elif rhsOpCode == op.BO_SUB_OC:
-        val = val1.val - val2.val
-      elif rhsOpCode == op.BO_MUL_OC:
-        val = val1.val * val2.val
-      elif rhsOpCode == op.BO_DIV_OC:
-        if val2.val == 0:
-          return self.componentBot
-        val = val1.val / val2.val
-      elif rhsOpCode == op.BO_MOD_OC:
-        if val2.val == 0:
-          return self.componentBot
-        val = val1.val % val2.val
-      else:
-        val = None
-
-      if val is not None:
-        return dfv.ComponentL(self.func, val=val)
-      else:
-        return self.componentBot
+    raise NotImplementedError()
 
 
   def getExprDfvSelectE(self,

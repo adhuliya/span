@@ -9,7 +9,7 @@ import logging
 LOG = logging.getLogger("span")
 
 from typing import Dict, Tuple, Set, List, Callable,\
-  Optional as Opt, cast, Any
+  Optional as Opt, cast, Any, List
 from collections import deque
 import time
 import io
@@ -20,8 +20,9 @@ import span.util.common_util as cutil
 from span.util.util import LS, AS, GD
 import span.util.messages as msg
 
-import span.ir.types as types
-import span.ir.conv as irConv
+from span.ir.types import NodeIdT, VarNameT
+from span.ir.conv import FalseEdge, TrueEdge
+from span.ir.conv import Forward, Backward, ForwBack, NULL_OBJ_NAME
 import span.ir.op as op
 import span.ir.expr as expr
 import span.ir.instr as instr
@@ -35,7 +36,7 @@ from span.ir.expr import (VAR_EXPR_EC, FUNC_EXPR_EC, LIT_EXPR_EC, UNARY_EXPR_EC,
                           CAST_EXPR_EC, DEREF_EXPR_EC, )
 
 from span.api.dfv import NodeDfvL, NewOldL, OLD_INOUT
-import span.api.sim as simApi
+from span.api.sim import SimNameT, simDirnMap, SimAT, SimFailed, SimPending
 from span.api.lattice import mergeAll, DataLT
 from span.api.analysis import AnalysisAT, AnalysisNameT as AnNameT,\
   ForwardD, BackwardD, DirectionDT
@@ -54,12 +55,12 @@ NotReachable: Reachability = False
 
 # BOUND START: Module_Storage__for__Optimization
 
-Node__to__Nil__Name: str = simApi.SimAT.Node__to__Nil.__name__
-LhsVar__to__Nil__Name: str = simApi.SimAT.LhsVar__to__Nil.__name__
-Num_Var__to__Num_Lit__Name: str = simApi.SimAT.Num_Var__to__Num_Lit.__name__
-Cond__to__UnCond__Name: str = simApi.SimAT.Cond__to__UnCond.__name__
-Num_Bin__to__Num_Lit__Name: str = simApi.SimAT.Num_Bin__to__Num_Lit.__name__
-Deref__to__Vars__Name: str = simApi.SimAT.Deref__to__Vars.__name__
+Node__to__Nil__Name: str = SimAT.Node__to__Nil.__name__
+LhsVar__to__Nil__Name: str = SimAT.LhsVar__to__Nil.__name__
+Num_Var__to__Num_Lit__Name: str = SimAT.Num_Var__to__Num_Lit.__name__
+Cond__to__UnCond__Name: str = SimAT.Cond__to__UnCond.__name__
+Num_Bin__to__Num_Lit__Name: str = SimAT.Num_Bin__to__Num_Lit.__name__
+Deref__to__Vars__Name: str = SimAT.Deref__to__Vars.__name__
 
 ExRead_Instr__Name: str = AnalysisAT.ExRead_Instr.__name__
 CondRead_Instr__Name: str = AnalysisAT.CondRead_Instr.__name__
@@ -348,7 +349,7 @@ class Host:
       self.anDemandDep: Dict[ddm.AtomicDemand, Set[AnNameT]] = dict()
       # map of (nid, simName, expr) --to-> set of demands affected
       self.nodeInstrDemandSimDep: \
-        Dict[Tuple[graph.CfgNodeId, simApi.SimNameT,
+        Dict[Tuple[graph.CfgNodeId, SimNameT,
                    expr.ExprET], Set[ddm.AtomicDemand]] = dict()
 
     #IPA inter-procedural analysis?
@@ -435,23 +436,23 @@ class Host:
     self.anWorkDict: Dict[AnNameT, DirectionDT] = dict()
     # map of (nid, simName, expr) --to-> set of analyses affected
     self.nodeInstrSimDep:\
-      Dict[Tuple[graph.CfgNodeId, simApi.SimNameT,
+      Dict[Tuple[graph.CfgNodeId, SimNameT,
                  expr.ExprET], Set[AnNameT]] = dict()
     self.anRevNodeDep: \
       Dict[Tuple[AnNameT, graph.CfgNodeId],
-           Dict[Tuple[Opt[expr.ExprET], simApi.SimNameT], Opt[SimRecord]]] = dict()
+           Dict[Tuple[Opt[expr.ExprET], SimNameT], Opt[SimRecord]]] = dict()
     # sim instruction cache: cache the instruction computed for a sim
     self.instrSimCache: \
-      Dict[Tuple[types.NodeIdT, simApi.SimNameT],
+      Dict[Tuple[NodeIdT, SimNameT],
            Dict[Tuple[instr.InstrIT, Opt[expr.ExprET]], instr.InstrIT]] = dict()
 
     self.stats: stats.HostStat = stats.HostStat(self, len(self.funcCfg.nodeMap))
 
     # sim sources: sim to analysis mapping
-    self.simSrcs: Dict[simApi.SimNameT, Set[AnNameT]] = dict()
+    self.simSrcs: Dict[SimNameT, Set[AnNameT]] = dict()
     # cache filtered sim sources
     self.filteredSimSrcs: \
-      Dict[Tuple[simApi.SimNameT, expr.ExprET, types.NodeIdT],
+      Dict[Tuple[SimNameT, expr.ExprET, NodeIdT],
            Set[AnNameT]] = dict()
 
     # counts the net useful simplifications by a (supporting) analysis
@@ -513,8 +514,7 @@ class Host:
     if not self.activeAnIsSimAn: return
     if not self.doesChangeMatchAnDirection(inOutChange): return
 
-    nid = node.id
-    tup1 = (self.activeAnName, nid)
+    nid, tup1 = node.id, (self.activeAnName, node.id)
 
     if tup1 not in self.anRevNodeDep:
       return  # no analysis depends on the active analysis
@@ -523,9 +523,7 @@ class Host:
 
     for tup2 in simRecordDict.keys():
       simRecord = simRecordDict[tup2]
-      assert simRecord is None or not simRecord.hasFailedValue(),\
-        f"{tup1}{tup2}: {simRecord}"
-      if simRecord is None:  # None represents failed value
+      if simRecord is SimFailed:
         continue  # i.e. update is useless
       e, simName = tup2[0], tup2[1]  # tup2 type is (expr, simName)
       value = self.calculateSimValue(self.activeAnName, simName, node, e)
@@ -545,7 +543,7 @@ class Host:
 
   def recomputeDemands(self, #DDM dedicated method
       node: graph.CfgNode,
-      simName: simApi.SimNameT,
+      simName: SimNameT,
       e: expr.ExprET,
   ) -> None:
     """Recompute demands that depend on this simplification."""
@@ -590,25 +588,25 @@ class Host:
 
 
   def doesSimNeedsUpdate(self,
-      simName: simApi.SimNameT,
+      simName: SimNameT,
       inOutChange: NewOldL,
   ) -> bool:
     """using self.doesChangeMatchAnDirection() instead"""
-    dirn = simApi.simDirnMap[simName]
+    dirn = simDirnMap[simName]
     inChange  = inOutChange.isNewIn
     outChange = inOutChange.isNewOut
-    if dirn == irConv.Forward and inChange:
+    if dirn == Forward and inChange:
       return True
-    if dirn == irConv.Backward and outChange:
+    if dirn == Backward and outChange:
       return True
-    if dirn == irConv.ForwBack and (inChange or outChange):
+    if dirn == ForwBack and (inChange or outChange):
       return True
     return False
 
 
   def reAddAnalyses(self,
       node: graph.CfgNode,
-      simName: simApi.SimNameT,
+      simName: SimNameT,
       e: expr.ExprET,
   ) -> None:
     if LS: oldAnCount = len(self.anWorkList.wlSet)
@@ -754,7 +752,8 @@ class Host:
         else:
           bi = (top, top)
       else:
-        bi = self.activeAnObj.getBoundaryInfo()
+        nDfv = self.activeAnObj.getBoundaryInfo()
+        bi = (nDfv.dfvIn, nDfv.dfvOut)
 
       dirn.nidNdfvMap[startNodeId] = NodeDfvL(bi[0], top)
       dirn.nidNdfvMap[endNodeId] = NodeDfvL(top, bi[1])
@@ -940,7 +939,7 @@ class Host:
 
     # is reachable (vs feasible) ?
     if Node__to__Nil__Name in self.activeAnSimNeeds:
-      nilSim = self.getSimplification(node, Node__to__Nil__Name)
+      nilSim = self.getSim(node, Node__to__Nil__Name)
       if nilSim is not None:
         if LLS: LOG.debug("Unreachable_Node: %s: %s", node.id, insn)
         # return nodeDfv  # i.e. Barrier_Instr
@@ -1348,7 +1347,7 @@ class Host:
 
   def getCachedInstrSimResult(self,
       node: graph.CfgNode,
-      simName: simApi.SimNameT,
+      simName: SimNameT,
       insn: instr.InstrIT,
       e: expr.ExprET,
       demand: Opt[ddm.AtomicDemand] = None, #DDM
@@ -1361,33 +1360,24 @@ class Host:
     newInsn = self.getCachedInstrSim(nid, simName, insn, e)
 
     if newInsn is FAILED_INSN_SIM:  # i.e. simplification failed already
-      # print(f"INSTR_HIT1(Node {node.id})({'D' if demand else 'A'})"
-      #       f"({self.activeAnName})({simName}): {insn}: {insn}") #delit
       self.stats.cachedInstrSimHits.hit()
       self.stats.simTimer.stop()
-      #print(f"SIMTIMER: {self.stats.simTimer}, {node}, {simName}, {e}, {demand}") #delit
       return None, True  # i.e. process_the_original_insn (IMPORTANT)
 
     if newInsn is not None:   # i.e. some simplification happened
-      # print(f"INSTR_HIT2(Node {node.id})({'D' if demand else 'A'})"
-      #       f"({self.activeAnName})({simName}): {insn}: {newInsn}") #delit
       self.stats.cachedInstrSimHits.hit()
       self.stats.simTimer.stop()
-      #print(f"SIMTIMER: {self.stats.simTimer}, {node}, {simName}, {e}, {demand}") #delit
       return newInsn, True
 
-    # print(f"INSTR_MISS(Node {node.id})({'D' if demand else 'A'})"
-    #       f"({self.activeAnName})({simName}): {insn}") #delit
     self.stats.cachedInstrSimHits.miss()
     self.stats.simTimer.stop()
-    #print(f"SIMTIMER: {self.stats.simTimer}, {node}, {simName}, {e}, {demand}") #delit
     return None, False
 
 
   #@functools.lru_cache(500)
   def addExprSimNeed(self,
-      nid: types.NodeIdT,
-      simName: simApi.SimNameT,
+      nid: NodeIdT,
+      simName: SimNameT,
       e: Opt[expr.ExprET] = None,
       demand: Opt[ddm.AtomicDemand] = None,  #DDM exclusive argument
       anName: Opt[AnNameT] = None,
@@ -1416,7 +1406,7 @@ class Host:
 
   def handleNewInstr(self,
       node: graph.CfgNode,
-      simName: simApi.SimNameT,
+      simName: SimNameT,
       insn: instr.InstrIT,
       e: expr.ExprET,
       newInsn: instr.InstrIT,
@@ -1465,13 +1455,13 @@ class Host:
     newInsn, valid = self.getCachedInstrSimResult(node, simName, insn, lhs)
     if valid: return self.analyzeInstr(node, newInsn, nodeDfv) if newInsn else None
 
-    simToLive = self.getSimplification(node, simName, lhs)
+    simToLive = self.getSim(node, simName, lhs)
     if simToLive is None:
       self.setCachedInstrSim(node.id, simName, insn, lhs, insn)
       return None  # i.e. no liveness info available
 
-    simVal: Opt[Set[types.VarNameT]] = simToLive.val
-    if simToLive == simApi.SimToLivePending:
+    simVal: Opt[Set[VarNameT]] = simToLive.val
+    if simToLive == SimPending:
       newInsn = instr.FilterI(ir.getNamesEnv(self.func))
     elif simVal and lhs.name in simVal:
       self.setCachedInstrSim(node.id, simName, insn, lhs, insn)
@@ -1512,7 +1502,7 @@ class Host:
     if ret is None:
       self.setCachedInstrSim(node.id, simName, insn, lhsArg, insn)
       return None  # i.e. process_the_original_insn
-    elif ret == simApi.SimToVarPending:
+    elif ret == SimPending:
       newInsn = instr.ExReadI({lhsArg.name})
     else:  # take meet of the dfv of the set of instructions now possible
       assert ret.val and len(ret.val), f"{node}: {ret}"
@@ -1553,7 +1543,7 @@ class Host:
     if ret is None:
       self.setCachedInstrSim(node.id, simName, insn, rhsArg, insn)
       return None  # i.e. process_the_original_insn
-    elif ret == simApi.SimToVarPending:
+    elif ret == SimPending:
       newInsn = instr.CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhsArg))
     else:  # take meet of the dfv of the set of instructions now possible
       assert ret.val and len(ret.val), f"{node}: {ret}"
@@ -1594,7 +1584,7 @@ class Host:
     if ret is None:
       self.setCachedInstrSim(node.id, simName, insn, lhs.of, insn)
       return None  # i.e. process_the_original_insn
-    elif ret == simApi.SimToVarPending:
+    elif ret == SimPending:
       newInsn = instr.ExReadI({lhs.of.name})
     else:  # take meet of the dfv of the set of instructions now possible
       assert ret.val and len(ret.val), f"{node}: {ret}"
@@ -1636,7 +1626,7 @@ class Host:
     if ret is None:
       self.setCachedInstrSim(node.id, simName, insn, rhs.of, insn)
       return None  # i.e. process_the_original_insn
-    elif ret == simApi.SimToVarPending:
+    elif ret == SimPending:
       newInsn = instr.CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs.of))
     else:  # take meet of the dfv of the set of instructions now possible
       assert ret.val and len(ret.val), f"{node}: {ret}"
@@ -1661,11 +1651,11 @@ class Host:
     newInsn, valid = self.getCachedInstrSimResult(node, simName, insn, rhs)
     if valid: return self.analyzeInstr(node, newInsn, nodeDfv) if newInsn else None
 
-    ret = self.getSimplification(node, simName, rhs)
+    ret = self.getSim(node, simName, rhs)
     if ret is None:
       self.setCachedInstrSim(node.id, simName, insn, rhs, insn)
       return None  # i.e. process_the_original_insn
-    elif ret == simApi.SimToNumPending:
+    elif ret == SimPending:
       if isinstance(lhs, expr.VarE):
         newInsn = instr.CondReadI(lhs.name, {rhs.name})
       elif lhs.hasDereference():
@@ -1702,11 +1692,11 @@ class Host:
     newInsn, valid = self.getCachedInstrSimResult(node, simName, insn, rhsArg)
     if valid: return self.analyzeInstr(node, newInsn, nodeDfv) if newInsn else None
 
-    ret = self.getSimplification(node, simName, rhsArg)
+    ret = self.getSim(node, simName, rhsArg)
     if ret is None:
       self.setCachedInstrSim(node.id, simName, insn, rhsArg, insn)
       return None  # i.e. process_the_original_insn
-    elif ret == simApi.SimToNumPending:
+    elif ret == SimPending:
       assert isinstance(rhsArg, expr.VarE), f"{node.id}: {insn}"
       newInsn = instr.CondReadI(lhs.name, {rhsArg.name})
     else:
@@ -1729,11 +1719,11 @@ class Host:
     newInsn, valid = self.getCachedInstrSimResult(node, simName, insn, rhs)
     if valid: return self.analyzeInstr(node, newInsn, nodeDfv) if newInsn else None
 
-    ret = self.getSimplification(node, simName, rhs)
+    ret = self.getSim(node, simName, rhs)
     if ret is None:
       self.setCachedInstrSim(node.id, simName, insn, rhs, insn)
       return None  # i.e. process_the_original_insn
-    elif ret == simApi.SimToNumPending:
+    elif ret == SimPending:
       newInsn = instr.CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs))
     else:
       assert isinstance(ret.val, (int, float)), f"{ret}"
@@ -1761,11 +1751,11 @@ class Host:
     newInsn, valid = self.getCachedInstrSimResult(node, simName, insn, rhsArg)
     if valid: return self.analyzeInstr(node, newInsn, nodeDfv) if newInsn else None
 
-    ret = self.getSimplification(node, simName, rhsArg)
+    ret = self.getSim(node, simName, rhsArg)
     if ret is None:
       self.setCachedInstrSim(node.id, simName, insn, rhsArg, insn)
       return None  # i.e. process_the_original_insn
-    elif ret == simApi.SimToNumPending:
+    elif ret == SimPending:
       newInsn = instr.CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs))
     else:
       AssignI, LitE, BinaryE = instr.AssignI, expr.LitE, expr.BinaryE
@@ -1801,10 +1791,10 @@ class Host:
     if self.disableAllSim:
       nodes = self.ef.setAllSuccEdgesFeasible(node)
     elif Cond__to__UnCond__Name in self.activeAnSimNeeds:
-      boolSim = self.getSimplification(node, Cond__to__UnCond__Name, arg)
+      boolSim = self.getSim(node, Cond__to__UnCond__Name, arg)
       if boolSim is None:
         nodes = self.ef.setAllSuccEdgesFeasible(node)
-      elif boolSim == simApi.SimToBoolPending:
+      elif boolSim == SimPending:
         nodes = None
       elif boolSim.val == False:  # only false edge taken
         nodes = self.ef.setFalseEdgeFeasible(node)
@@ -1925,7 +1915,7 @@ class Host:
 
   #@functools.lru_cache(10)
   def fetchSimSources(self,
-      simName: simApi.SimNameT,
+      simName: SimNameT,
   ) -> Set[AnNameT]:
     """Fetches allowed analysis names that
     provide the simplification.
@@ -1944,8 +1934,8 @@ class Host:
 
   def setupSimSourcesDep(self,
       node: graph.CfgNode,
-      simAnNames: Set[simApi.SimNameT],
-      simName: simApi.SimNameT,
+      simAnNames: Set[SimNameT],
+      simName: SimNameT,
       e: Opt[expr.ExprET] = None,  # None is a special case (Node__to__Nil)
   ) -> None:
     """Adds curr analysis' dependence on analyses providing simplification.
@@ -1953,9 +1943,7 @@ class Host:
     """
     if not simAnNames: return
 
-    nid = node.id
-    revNodeDep = self.anRevNodeDep
-    tup2 = (e, simName)
+    nid, revNodeDep, tup2 = node.id, self.anRevNodeDep, (e, simName)
 
     for simAnName in simAnNames:
       tup1 = (simAnName, nid)
@@ -1968,11 +1956,8 @@ class Host:
         simValue = self.calculateSimValue(simAnName, simName, node, e)
         sr = SimRecord(simName, simValue)
         self.incSimSuccessCount(simAnName, self.activeAnName) #COUNT_HERE:INC
-        if sr.hasFailedValue():
-          self.decSimSuccessCount(simAnName)   #COUNT_HERE:DEC
-          simRecordMap[tup2] = None
-        else:
-          simRecordMap[tup2] = sr
+        if not sr: self.decSimSuccessCount(simAnName)   #COUNT_HERE:DEC
+        simRecordMap[tup2] = sr if sr else SimFailed
 
 
   def incSimSuccessCount(self,
@@ -1995,34 +1980,32 @@ class Host:
 
   def calculateSimValue(self,
       simAnName: str,
-      simName: simApi.SimNameT,
+      simName: SimNameT,
       node: graph.CfgNode,
       e: Opt[expr.ExprET] = None,
-  ) -> simApi.SimL:
+      values: Opt[List] = None,
+  ) -> Opt[List]:
     """Calculates the simplification value for the given parameters."""
     if self.lerner:
       anObj = self.anParticipated[simAnName]
     else:
       anObj = self.anParticipating[simAnName]
 
-    nid = node.id
-    simFunction = getattr(anObj, simName)
+    assert hasattr(anObj, simName), f"{simAnName}, {simName}"
+    nid, simFunction = node.id, getattr(anObj, simName)
     nDfv = self.anWorkDict[simAnName].getDfv(nid)
 
     if LS: LOG.debug("SimOfExpr: %s isAttemptedBy %s withDfv %s.", e, simAnName, nDfv)
-    if e is None:  # Note: if no expr, it assumes sim works on node id
-      value = simFunction(nid, nDfv)
-    else:
-      value = simFunction(e, nDfv)
+    # Note: if e is None, it assumes sim works on node id
+    value = simFunction(e if e else nid, nDfv, values)
     if LS: LOG.debug("SimOfExpr: %s is %s, by %s.", e, value, simAnName)
-
     return value
 
 
   #@functools.lru_cache(500)
   def fetchAndSetupSimSrcs(self,
       node: graph.CfgNode,
-      simName: simApi.SimNameT,
+      simName: SimNameT,
       e: Opt[expr.ExprET] = None,
       demand: Opt[ddm.AtomicDemand] = None,  #DDM
   ) -> Set[AnNameT]:
@@ -2036,13 +2019,12 @@ class Host:
         self.initializeAnalysisForDdm(node, simName, anName, e)
 
     self.setupSimSourcesDep(node, simAnNames, simName, e)
-
     return simAnNames
 
 
   def initializeAnalysisForDdm(self, #DDM dedicated method
       node: graph.CfgNode,
-      simName: simApi.SimNameT,
+      simName: SimNameT,
       anName: AnNameT,
       e: Opt[expr.ExprET] = None,
   ):
@@ -2054,14 +2036,13 @@ class Host:
     if self.useDdm: self.ddmObj.timer.start()
     wl = self.anWorkDict[anName].wl
     assert not wl.fullSequence, f"Analysis {anName} already started."
-
     wl.initForDdm()
     if self.useDdm: self.ddmObj.timer.stop()
 
 
   def attachDemandToSimAnalysis(self, #DDM dedicated method
       node: graph.CfgNode,
-      simName: simApi.SimNameT,
+      simName: SimNameT,
       anName: AnNameT,
       e: Opt[expr.ExprET] = None,
   ):
@@ -2097,12 +2078,12 @@ class Host:
 
   #@functools.lru_cache(1000)
   def fetchAndFilterSimAnalyses(self,
-      simName: simApi.SimNameT,
-      nid: types.NodeIdT,
+      simName: SimNameT,
+      nid: NodeIdT,
       e: Opt[expr.ExprET] = None,
   ) -> Set[AnNameT]:
     """
-    Fetche the sim analyses and filters away analyses that
+    Fetch the sim analyses and filters away analyses that
     *syntactically* cannot simplify the given expression.
     It caches the results.
     """
@@ -2116,13 +2097,12 @@ class Host:
     simAnNames = self.fetchSimSources(simName)
 
     filteredSimAnNames = []
-    failedSimValue = simApi.failedSimValueMap[simName]
 
     for anName in simAnNames:
       anClass = clients.analyses[anName]
       anObj = anClass(self.func)
       simFunc = getattr(anObj, simName)
-      if simFunc(e) != failedSimValue:  # filtering away analyses here
+      if simFunc(e) is SimFailed:  # filtering away analyses here
         filteredSimAnNames.append(anName)
 
     self.filteredSimSrcs[tup] = set(filteredSimAnNames)  # caching the results
@@ -2131,99 +2111,92 @@ class Host:
 
   # BOUND START: Simplification_Methods
 
-  def getSimplification(self,
+  def getSim(self,
       node: graph.CfgNode,
-      simName: simApi.SimNameT,
+      simName: SimNameT,
       e: Opt[expr.ExprET] = None,  # could be None (in case of Node__to__Nil)
       demand: Opt[ddm.AtomicDemand] = None,  #DDM exclusive argument
-  ) -> Opt[simApi.SimL]:  # returns None if sim failed
-    """Returns the simplification of the given expression."""
+  ) -> Opt[List]:  # returns None if sim failed
+    """Returns the simplification of the given expression.
+    This function does the basic setup if needed and
+    returns the combined sim of the given expression.
+    """
     self.stats.simTimer.start()
     if demand is not None and simName not in self.activeAnSimNeeds:
       self.stats.simTimer.stop()
-      return None  # i.e. process_the_original_insn
+      return SimFailed  # i.e. process_the_original_insn
 
     if LS: LOG.debug("SimplifyingExpr:(Node %s) %s, SimName: %s. (For: %s)",
-                     node.id, e, simName, demand if demand else self.mainAnName)
+                     node.id, e, simName, demand if demand else self.activeAnName)
 
+    # record the dependence
     self.addExprSimNeed(node.id, simName, e, demand,
-                        None if demand else self.activeAnName)  # record the dependence
+                        None if demand else self.activeAnName)
     anNames = self.fetchAndSetupSimSrcs(node, simName, e, demand)
 
     res = self.collectAndMergeResults(anNames, simName, node, e)
 
     if LS: LOG.debug("SimOfExpr (merged): %s is %s.", e, res)
     self.stats.simTimer.stop()
-    #print(f"SIMTIMER: {self.stats.simTimer}, {node}, {simName}, {e}, {demand}") #delit
     return res
 
 
   def collectAndMergeResults(self,
       anNames: Set[AnNameT],
-      simName: simApi.SimNameT,
+      simName: SimNameT,
       node: graph.CfgNode,
       e: Opt[expr.ExprET],
-  ) -> Opt[simApi.SimL]:  # A None value indicates failed sim
-    if not anNames: return None  # no sim analyses -- hence fail
+  ) -> Opt[List]:  # A None value indicates failed sim
+    """Collects and merges the simplification by various analyses.
+    Step 1: Select one working simplification from any one analysis.
+    Step 2: Refine the simplification.
+    """
+    if not anNames: return SimFailed  # no sim analyses -- hence fail
 
     nid, tup2, res = node.id, (e, simName), []
 
-    for anName in anNames:    # 1: collect results
-      tup1 = (anName, nid)
-      simRecordDict = self.anRevNodeDep[tup1]
-      simRecord = simRecordDict[tup2]
-      if simRecord is not None:  # if None then sim failed already
-        res.append(simRecord.getSim())
+    # Step 1: Find the first useful result
+    values: Opt[List] = SimFailed
+    for anName in anNames:    # loop to select the first working sim
+      simRecord = self.anRevNodeDep[(anName, nid)][tup2]
+      if simRecord is not None:
+        values = simRecord.getSim()
+        break  # break at the first useful value
+    if values in (SimPending, SimFailed):
+      return values  # failed/pending values can never be refined
 
-    mRes = None  # default: sim failed
-    if res:                   # 2: merge and return results
-      mRes = self.mergeResults(*res) if len(res) > 1 else res[0]
-    return mRes
-
-
-  def mergeResults(self,
-      *res,
-  ) -> Opt[simApi.SimL]:
-    """Merge the results of various simplifications.
-    The list res should have the same SimL type,
-    and it should match with simApi.failedSimValueMap[simName].
-    A separate merge function will help in customizing the merge logic later.
-    """
-    if not res: return None
-    result = None
-    for r in res:
-      if result is not None:
-        result, _ = result.join(r)
-      else:
-        result = r
-    return result
+    # Step 2: Refine the simplification
+    assert values not in (SimPending, SimFailed), f"{values}"
+    for anName in anNames:
+      values = self.calculateSimValue(anName, simName, node, e, values)
+      assert values != SimFailed, f"{anName}, {simName}, {node}, {e}, {values}"
+      if values == SimPending:
+        break  # no use to continue
+    return values  # a refined result
 
 
   def Calc_Deref__to__Vars(self,
       node: graph.CfgNode,
       e: expr.VarE,
       demand: Opt[ddm.AtomicDemand] = None, #DDM
-  ) -> Opt[simApi.SimToVarL]:
+  ) -> Opt[List[VarNameT]]:
     """
     This function is basically a call to self.getSimplification()
     with some checks.
     """
-    res = cast(Opt[simApi.SimToVarL],
-               self.getSimplification(node, Deref__to__Vars__Name, e, demand))
+    res = cast(Opt[List], self.getSim(node, Deref__to__Vars__Name, e, demand))
 
-    if res is None:
-      return None  # i.e. process_the_original_insn
+    if res is SimFailed:
+      return SimFailed  # i.e. process_the_original_insn
 
-    if self.lerner and res.val and len(res.val) > 1:
-      res = None  # equivalent to simApi.SimToVarFailed
-    elif res.val and len(res.val) > 1:
-      if irConv.NULL_OBJ_NAME in res.val:
-        res.val.remove(irConv.NULL_OBJ_NAME)
-    elif res.val and len(res.val) == 1 and \
-        irConv.NULL_OBJ_NAME in res.val:
+    if self.lerner and len(res) > 1:
+      res = SimFailed
+    elif len(res) > 1 and NULL_OBJ_NAME in res:
+        res.val.remove(NULL_OBJ_NAME)
+    elif len(res) == 1 and NULL_OBJ_NAME in res:
       if LS: LOG.error("NullDerefEncountered (bad user program): %s, %s",
                        e.name, node)
-      res = None  # i.e. process_the_original_insn (i.e. sim failed)
+      res = SimFailed  # i.e. process_the_original_insn
 
     if LS: LOG.debug("SimOfExpr (joined): %s is %s.", e.name, res)
     return res
@@ -2269,10 +2242,10 @@ class Host:
       nDfv = boundaryInfo[anName]
 
       # FIXME: Assuming all analyses are forward or backward (not both)
-      nodeId = 1 if anDirn == irConv.Forward else len(self.funcCfg.nodeMap)
+      nodeId = 1 if anDirn == Forward else len(self.funcCfg.nodeMap)
       node = self.funcCfg.nodeMap[nodeId]
       updateDfv = NodeDfvL(nDfv.dfvIn, nDfv.dfvIn) \
-                      if anDirn == irConv.Forward \
+                      if anDirn == Forward \
                       else NodeDfvL(nDfv.dfvOut, nDfv.dfvOut)
       inOutChange = dirnObj.update(node, updateDfv)
       if inOutChange:
@@ -2306,7 +2279,7 @@ class Host:
 
 
   def setCallSiteDfv(self,
-      nodeId: types.NodeIdT,
+      nodeId: NodeIdT,
       results: Dict[AnNameT, NodeDfvL]
   ) -> bool:
     """
@@ -2424,9 +2397,9 @@ class Host:
         toLabel = funcCfg.genDotBbLabel(bbEdge.dest.id)
 
         suffix = ""
-        if bbEdge.label == types.TrueEdge:
+        if bbEdge.label == TrueEdge:
           suffix = " [color=green, penwidth=2]"
-        elif bbEdge.label == types.FalseEdge:
+        elif bbEdge.label == FalseEdge:
           suffix = " [color=red, penwidth=2]"
 
         content = f"  \"{currentIterName}{fromLabel}\" -> \"{currentIterName}{toLabel}\" {suffix};"
@@ -2437,8 +2410,8 @@ class Host:
 
 
   def getCachedInstrSim(self,
-      nid: types.NodeIdT,
-      simName: simApi.SimNameT,
+      nid: NodeIdT,
+      simName: SimNameT,
       insn: instr.InstrIT,
       e: expr.ExprET,
   ) -> Opt[instr.InstrIT]:
@@ -2455,8 +2428,8 @@ class Host:
 
 
   def setCachedInstrSim(self,
-      nid: types.NodeIdT,
-      simName: simApi.SimNameT,
+      nid: NodeIdT,
+      simName: SimNameT,
       insn: instr.InstrIT,
       e: expr.ExprET,
       newInsn: instr.InstrIT,
@@ -2479,8 +2452,8 @@ class Host:
 
 
   def removeCachedInstrSim(self,
-      nid: types.NodeIdT,
-      simName: simApi.SimNameT,
+      nid: NodeIdT,
+      simName: SimNameT,
       insn: Opt[instr.InstrIT] = None,
       e: Opt[expr.ExprET] = None,
   ) -> None:

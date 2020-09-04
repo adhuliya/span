@@ -178,7 +178,7 @@ class ConstA(analysis.ValueAnalysisAT):
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
-    return self.Nop_Instr(nodeId, nodeDfv)
+    return self.Nop_Instr(nodeId, insn, nodeDfv)
 
   ################################################
   # BOUND END  : Normal_Instructions
@@ -338,6 +338,74 @@ class ConstA(analysis.ValueAnalysisAT):
   ################################################
   # BOUND START: Helper_Functions
   ################################################
+
+  def getExprDfvLitE(self,
+      e: expr.LitE,
+      dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
+  ) -> ComponentL:
+    """A default implementation for Constant Propagation."""
+    assert isinstance(e.val, (int, float)), f"{e}"
+    return ComponentL(self.func, val=e.val)
+
+
+  def getExprDfvUnaryE(self,
+      e: expr.UnaryE,
+      dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
+  ) -> ComponentL:
+    assert isinstance(e.arg, expr.VarE), f"{e}"
+    value = dfvInGetVal(e.arg.name)
+    if value.top or value.bot:
+      return value
+    elif value.val is not None:
+      rhsOpCode = e.opr.opCode
+      if rhsOpCode == op.UO_MINUS_OC:
+        value.val = -value.val  # not NoneType... pylint: disable=E
+      elif rhsOpCode == op.UO_BIT_NOT_OC:
+        assert isinstance(value.val, int), f"{value}"
+        value.val = ~value.val  # not NoneType... pylint: disable=E
+      elif rhsOpCode == op.UO_LNOT_OC:
+        value.val = int(not bool(value.val))
+      else:
+        raise ValueError(f"{e}")
+      return value
+    raise TypeError(f"{type(value)}: {value}")
+
+
+  def getExprDfvBinaryE(self,
+      e: expr.BinaryE,
+      dfvIn: dfv.OverallL,
+  ) -> dfv.ComponentL:
+    val1 = self.getExprDfv(e.arg1, dfvIn)
+    val2 = self.getExprDfv(e.arg2, dfvIn)
+    if val1.top or val2.top:
+      return self.componentTop
+    elif val1.bot or val2.bot:
+      return self.componentBot
+    else:
+      assert val1.val and val2.val, f"{val1}, {val2}"
+      rhsOpCode = e.opr.opCode
+      if rhsOpCode == op.BO_ADD_OC:
+        val: Opt[float] = val1.val + val2.val
+      elif rhsOpCode == op.BO_SUB_OC:
+        val = val1.val - val2.val
+      elif rhsOpCode == op.BO_MUL_OC:
+        val = val1.val * val2.val
+      elif rhsOpCode == op.BO_DIV_OC:
+        if val2.val == 0:
+          return self.componentBot
+        val = val1.val / val2.val
+      elif rhsOpCode == op.BO_MOD_OC:
+        if val2.val == 0:
+          return self.componentBot
+        val = val1.val % val2.val
+      else:
+        val = None
+
+      if val is not None:
+        return ComponentL(self.func, val=val)
+      else:
+        return self.componentBot
+
 
   def calcFalseTrueDfv(self,
       arg: expr.SimpleET,

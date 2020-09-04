@@ -240,7 +240,7 @@ class PointsToA(analysis.ValueAnalysisAT):
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
-    return self.Nop_Instr(nodeId, nodeDfv)
+    return self.Nop_Instr(nodeId, insn, nodeDfv)
 
   ################################################
   # BOUND END  : Normal_Instructions

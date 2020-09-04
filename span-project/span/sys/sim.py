@@ -18,6 +18,7 @@ import io
 import span.ir.types as types
 import span.ir.expr as expr
 import span.api.sim as simApi
+from span.api.sim import SimPending, SimFailed, SimNameT
 from span.api.analysis import AnalysisNameT
 
 # simpliciation names
@@ -33,15 +34,15 @@ class SimRecord:
 
 
   def __init__(self,
-      simName: simApi.SimNameT,
-      sim: Opt[simApi.SimL] = None,
+      simName: SimNameT,
+      sim: Opt[List] = None,
   ) -> None:
     self.simName = simName
-    self._sim = sim if sim else simApi.pendingSimValueMap[simName]
+    self._sim = sim if sim else SimPending
 
 
   def hasFailedValue(self):
-    return self._sim == simApi.failedSimValueMap[self.simName]
+    return self._sim is SimFailed
 
 
   def getSim(self):
@@ -50,7 +51,7 @@ class SimRecord:
     return self._sim
 
 
-  def setSimValue(self, value: simApi.SimL) -> bool:
+  def setSimValue(self, value: Opt[List]) -> bool:
     """Returns true if the value has changed."""
     # TODO: add monotonicity check
     changed = False
@@ -58,6 +59,10 @@ class SimRecord:
       changed = True
     self._sim = value
     return changed
+
+
+  def __bool__(self):
+    return self._sim is not SimFailed
 
 
   def __eq__(self, other) -> bool:
@@ -72,6 +77,7 @@ class SimRecord:
 
 
   def __hash__(self):
-    return hash((self.simName, self._sim))
+    ss = self._sim
+    return hash((self.simName, len(ss) if ss else 0))
 
 

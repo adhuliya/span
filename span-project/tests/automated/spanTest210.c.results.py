@@ -65,7 +65,7 @@ TestActionAndResult(
               ("val", types.Int32),
               ("next", types.Ptr(to=types.Struct("s:Node"))),
             ],
-            loc = Info(Loc(3,1)),
+            info = Info(Loc(3,1)),
           ),
     
         "s:_IO_marker":
@@ -76,7 +76,7 @@ TestActionAndResult(
               ("_sbuf", types.Ptr(to=types.Struct("s:_IO_FILE"))),
               ("_pos", types.Int32),
             ],
-            loc = Info(Loc(160,1)),
+            info = Info(Loc(160,1)),
           ),
     
         "s:_IO_FILE_plus":
@@ -84,7 +84,7 @@ TestActionAndResult(
             name = "s:_IO_FILE_plus",
             members = [
             ],
-            loc = Info(Loc(317,1)),
+            info = Info(Loc(317,1)),
           ),
     
         "s:_IO_FILE":
@@ -121,7 +121,7 @@ TestActionAndResult(
               ("_mode", types.Int32),
               ("_unused2", types.ConstSizeArray(of=types.Int8, size=20)),
             ],
-            loc = Info(Loc(245,1)),
+            info = Info(Loc(245,1)),
           ),
     
       }, # end allRecords dict

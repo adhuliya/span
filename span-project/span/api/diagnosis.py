@@ -81,7 +81,7 @@ class Report:
     return ret
 
 
-class DiagnosisRT(types.AnyT):
+class DiagnosisRT:
   """The base class for all diagnoses reporting classes.
   Changed suffix "DT" to "RT" since "D" was clashing with Direction (ForwardD..)
   """
