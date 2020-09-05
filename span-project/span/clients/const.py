@@ -131,7 +131,7 @@ class OverallL(dfv.OverallL):
     """Gives the count of number of constant in the data flow value."""
     if self.top or self.bot: return 0
     assert self.val, f"{self}"
-    return sum(1 for val in self.val.values() if val.isConstant())
+    return sum(1 for val in self.val.values() if val.isConstant()) # ok val.isConst..
 
 
 ################################################
@@ -192,8 +192,8 @@ class ConstA(analysis.ValueAnalysisAT):
   def Num_Var__to__Num_Lit(self,
       e: expr.VarE,
       nodeDfv: Opt[NodeDfvL] = None,
-      values: Opt[List[types.NumericT]] = None,
-  ) -> Opt[List[types.NumericT]]:
+      values: Opt[Set[types.NumericT]] = None,
+  ) -> Opt[Set[types.NumericT]]:
     # STEP 1: tell the system if the expression can be evaluated
     if not e.type.isNumeric():
       return SimFailed
@@ -212,14 +212,14 @@ class ConstA(analysis.ValueAnalysisAT):
     exprVal = self.getExprDfv(e, dfvIn)
     if exprVal.top: return SimPending  # can be evaluated, needs more info
     if exprVal.bot: return SimFailed  # cannot be evaluated
-    return [exprVal.val]
+    return {exprVal.val}
 
 
   def Num_Bin__to__Num_Lit(self,
       e: expr.BinaryE,
       nodeDfv: Opt[NodeDfvL] = None,
-      values: Opt[List[types.NumericT]] = None,
-  ) -> Opt[List[types.NumericT]]:
+      values: Opt[Set[types.NumericT]] = None,
+  ) -> Opt[Set[types.NumericT]]:
     # STEP 1: tell the system if the expression can be evaluated
     if (not e.type.isNumeric()
         or not e.arg1.type.isNumeric()
@@ -254,39 +254,39 @@ class ConstA(analysis.ValueAnalysisAT):
     assert val1.val and val2.val, f"{val1}, {val2}"
     opCode = e.opr.opCode
     if opCode == op.BO_ADD_OC:
-      return [val1.val + val2.val]
+      return {val1.val + val2.val}
     elif opCode == op.BO_SUB_OC:
-      return [val1.val - val2.val]
+      return {val1.val - val2.val}
     elif opCode == op.BO_MUL_OC:
-      return [val1.val * val2.val]
+      return {val1.val * val2.val}
     elif opCode == op.BO_DIV_OC:
       if val2.val == 0:
         if LS: LOG.critical("DivideByZero: expr: %s, dfv: %s", e, dfvIn)
         return SimFailed
       else:
-        return [val1.val / val2.val]
+        return {val1.val / val2.val}
     elif opCode == op.BO_MOD_OC:
-      return [val1.val % val2.val]
+      return {val1.val % val2.val}
     elif opCode == op.BO_GT_OC:
-      return [1 if val1.val > val2.val else 0]
+      return {1 if val1.val > val2.val else 0}
     elif opCode == op.BO_GE_OC:
-      return [1 if val1.val >= val2.val else 0]
+      return {1 if val1.val >= val2.val else 0}
     elif opCode == op.BO_LT_OC:
-      return [1 if val1.val < val2.val else 0]
+      return {1 if val1.val < val2.val else 0}
     elif opCode == op.BO_LE_OC:
-      return [1 if val1.val <= val2.val else 0]
+      return {1 if val1.val <= val2.val else 0}
     elif opCode == op.BO_EQ_OC:
-      return [1 if val1.val == val2.val else 0]
+      return {1 if val1.val == val2.val else 0}
     elif opCode == op.BO_NE_OC:
-      return [1 if val1.val != val2.val else 0]
+      return {1 if val1.val != val2.val else 0}
     return SimFailed
 
 
   def Cond__to__UnCond(self,
       e: expr.VarE,
       nodeDfv: Opt[NodeDfvL] = None,
-      values: Opt[List[bool]] = None,
-  ) -> Opt[List[bool]]:
+      values: Opt[Set[bool]] = None,
+  ) -> Opt[Set[bool]]:
     # STEP 1: tell the system if the expression can be evaluated
     if not e.type.isNumeric():
       return SimFailed
@@ -307,9 +307,9 @@ class ConstA(analysis.ValueAnalysisAT):
     if val.bot: return SimFailed  # cannot be evaluated
     assert val.val is not None, f"{e}, {val}"
     if val.val != 0:
-      return [True]
+      return {True}
     else:
-      return [False]
+      return {False}
 
 
   def filterTest(self,

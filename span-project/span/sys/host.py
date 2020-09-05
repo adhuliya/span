@@ -1983,8 +1983,8 @@ class Host:
       simName: SimNameT,
       node: graph.CfgNode,
       e: Opt[expr.ExprET] = None,
-      values: Opt[List] = None,
-  ) -> Opt[List]:
+      values: Opt[Set] = None,
+  ) -> Opt[Set]:
     """Calculates the simplification value for the given parameters."""
     if self.lerner:
       anObj = self.anParticipated[simAnName]
@@ -2116,7 +2116,7 @@ class Host:
       simName: SimNameT,
       e: Opt[expr.ExprET] = None,  # could be None (in case of Node__to__Nil)
       demand: Opt[ddm.AtomicDemand] = None,  #DDM exclusive argument
-  ) -> Opt[List]:  # returns None if sim failed
+  ) -> Opt[Set]:  # returns None if sim failed
     """Returns the simplification of the given expression.
     This function does the basic setup if needed and
     returns the combined sim of the given expression.
@@ -2146,7 +2146,7 @@ class Host:
       simName: SimNameT,
       node: graph.CfgNode,
       e: Opt[expr.ExprET],
-  ) -> Opt[List]:  # A None value indicates failed sim
+  ) -> Opt[Set]:  # A None value indicates failed sim
     """Collects and merges the simplification by various analyses.
     Step 1: Select one working simplification from any one analysis.
     Step 2: Refine the simplification.
@@ -2156,7 +2156,7 @@ class Host:
     nid, tup2, res = node.id, (e, simName), []
 
     # Step 1: Find the first useful result
-    values: Opt[List] = SimFailed
+    values: Opt[Set] = SimFailed
     for anName in anNames:    # loop to select the first working sim
       simRecord = self.anRevNodeDep[(anName, nid)][tup2]
       if simRecord is not None:
@@ -2179,12 +2179,12 @@ class Host:
       node: graph.CfgNode,
       e: expr.VarE,
       demand: Opt[ddm.AtomicDemand] = None, #DDM
-  ) -> Opt[List[VarNameT]]:
+  ) -> Opt[Set[VarNameT]]:
     """
     This function is basically a call to self.getSimplification()
     with some checks.
     """
-    res = cast(Opt[List], self.getSim(node, Deref__to__Vars__Name, e, demand))
+    res = cast(Opt[Set], self.getSim(node, Deref__to__Vars__Name, e, demand))
 
     if res is SimFailed:
       return SimFailed  # i.e. process_the_original_insn
