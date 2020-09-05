@@ -234,8 +234,9 @@ class TranslationUnit:
       if e.hasDereference():
         return e
       else:
-        return expr.VarE(e.getFullName(), info=e.info)
-
+        varExpr = expr.VarE(e.getFullName(), info=e.info)
+        varExpr.type = e.type
+        return varExpr
 
     exprPredicate = lambda e: isinstance(e, expr.MemberE)
 
