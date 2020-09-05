@@ -549,7 +549,7 @@ def getBoundaryInfoIpa(
   of func."""
   dfvIn = cast(OverallL, nodeDfv.dfvIn.getCopy())
   dfvOut = cast(OverallL, nodeDfv.dfvOut.getCopy())
-  dfvIn.func, dfvOut.func = func, func
+  dfvIn.func = dfvOut.func = func
 
   vNames: Set[types.VarNameT] = getAllVars()
 

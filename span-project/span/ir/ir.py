@@ -193,14 +193,14 @@ def dumpIr(tUnit: tunit.TranslationUnit) -> str:
 
 def getExprRValueNames(func: constructs.Func,
     e: expr.ExprET
-) -> List[types.VarNameT]:
+) -> Set[types.VarNameT]:
   assert func.tUnit is not None, f"{func}"
   return func.tUnit.getExprRValueNames(func, e)
 
 
 def getExprLValueNames(func: constructs.Func,
     e: expr.ExprET
-) -> List[types.VarNameT]:
+) -> Set[types.VarNameT]:
   assert func.tUnit is not None, f"{func}"
   return func.tUnit.getExprLValueNames(func, e)
 

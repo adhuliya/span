@@ -8,7 +8,7 @@
 import logging
 
 LOG = logging.getLogger("span")
-from typing import Optional as Opt, Set, Tuple, List, Callable
+from typing import Optional as Opt, Set, Tuple, List, Callable, cast
 
 from span.util.logger import LS
 
@@ -20,8 +20,10 @@ import span.ir.constructs as obj
 import span.ir.ir as ir
 from span.ir.ir import \
   (getNamesEnv, getNamesGlobal, getExprRValueNames,
-   getExprLValueNames)
-from span.api.lattice import ChangeL, Changed, NoChange, DataLT
+   getExprLValueNames, getNamesUsedInExprSyntactically)
+from span.api.lattice import \
+  (ChangeL, Changed, NoChange, DataLT, basicEqualTest, basicLessThanTest,
+   getBasicString)
 from span.api.dfv import NodeDfvL
 from span.api.sim import SimFailed, SimPending, SimAT
 from span.api.analysis import AnalysisAT, BackwardD
@@ -127,29 +129,15 @@ class OverallL(DataLT):
 
 
   def __lt__(self, other) -> bool:
-    assert isinstance(other, OverallL), f"{other}"
-    if self.bot: return True
-    if other.top: return True
-    if other.bot: return False
-    if self.top: return False
-
-    # self is weaker if its a superset
-    assert self.val is not None and other.val is not None
-    return self.val >= other.val
+    lt = basicLessThanTest(self, other)
+    return self.val >= other.val if lt is None else lt
 
 
   def __eq__(self, other) -> bool:
-    if self is other:
-      return True
     if not isinstance(other, OverallL):
       return NotImplemented
-    sTop, sBot, oTop, oBot = self.top, self.bot, other.top, other.bot
-    if sTop and oTop: return True
-    if sBot and oBot: return True
-    if sTop or oBot or sBot or oTop: return False
-
-    assert self.val and other.val, f"{self}, {other}"
-    return self.val == other.val
+    equal = basicEqualTest(self, other)
+    return self.val == other.val if equal is None else equal
 
 
   def __hash__(self):
@@ -159,21 +147,8 @@ class OverallL(DataLT):
 
 
   def __str__(self):
-    if self.top:
-      return "Top"
-    elif self.bot:
-      # added isUserVar(name) for ACM Winter School 2019
-      # vnames = {types.simplifyName(name)
-      #          for name in getNamesEnv(self.func) if isUserVar(name)}
-      return "Bot"
-    else:
-      # added isUserVar(name) for ACM Winter School 2019
-      # vnames = {types.simplifyName(name) for name in self.val if isUserVar(name)}
-      vnames = {simplifyName(name) for name in self.val}  # if not isDummyVar(name)}
-    if vnames:
-      return f"{vnames}"
-    else:
-      return "{}"
+    s = getBasicString(self)
+    return s if s else f"{map(simplifyName, self.val)}"
 
 
   def __repr__(self):
@@ -193,7 +168,6 @@ class StrongLiveVarsA(AnalysisAT):
   # liveness lattice
   L: type = OverallL
   D: type = BackwardD
-  # blocking expression methods
   simNeeded: List[Callable] = [SimAT.Deref__to__Vars,
                                SimAT.Cond__to__UnCond,
                                SimAT.Node__to__Nil,
@@ -209,31 +183,45 @@ class StrongLiveVarsA(AnalysisAT):
 
 
   def getBoundaryInfo(self,
-      inBi: Opt[DataLT] = None,
-      outBi: Opt[DataLT] = None,
-  ) -> Tuple[OverallL, OverallL]:
-    """
-    The boundary information at start/end node.
+      nodeDfv: Opt[NodeDfvL] = None,
+      ipa: bool = False,
+  ) -> NodeDfvL:
+    """Must generate a valid boundary info."""
+    if ipa and not nodeDfv:
+      raise ValueError(f"{ipa}, {nodeDfv}")
 
-    Returns:
-      startBi: boundary data flow value at IN of start node
-      endBi: boundary data flow value at OUT of end node
-    """
-    # No boundary information at IN of start node
-    # since this analysis is backward only.
-    startBi: OverallL = self.overallTop
+    inBi, outBi = self.overallBot, self.overallBot
 
-    if inBi is None:
-      # all globals are live at end/exit node
-      endBi = OverallL(self.func, val=getNamesGlobal(self.func))
-    else:
-      endBi = OverallL(self.func, val=getNamesGlobal(self.func))  # TODO
+    if ipa:
+      dfvIn = cast(OverallL, nodeDfv.dfvIn.getCopy())
+      dfvOut = cast(OverallL, nodeDfv.dfvOut.getCopy())
+      dfvIn.func = dfvOut.func = self.func
 
-    return startBi, endBi
+      vNames: Set[types.VarNameT] = self.getAllVars()
 
+      if dfvIn.val: dfvIn.val = dfvIn.val & vNames
+      if dfvOut.val: dfvOut.val = dfvOut.val & vNames
+      return NodeDfvL(dfvIn, dfvOut)
+
+    if nodeDfv: inBi, outBi = nodeDfv.dfvIn, nodeDfv.dfvOut
+    return NodeDfvL(inBi, outBi)  # good to create a copy
+
+
+  def getAllVars(self) -> Set[types.VarNameT]:
+    """Gets all the variables of the accepted type."""
+    return ir.getNamesEnv(self.func)
+
+
+  def isAcceptedType(self) -> bool:
+    return True  # liveness accepts all types
+
+  ################################################
+  # BOUND START: Special_Instructions
+  ################################################
 
   def Nop_Instr(self,
       nodeId: types.NodeIdT,
+      insn: instr.InstrIT,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
     """An identity backward transfer function."""
@@ -245,420 +233,6 @@ class StrongLiveVarsA(AnalysisAT):
       return NodeDfvL(nodeOut, nodeOut)
 
 
-  def Num_Assign_Var_Lit_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Var_Var_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Var_UnaryArith_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ):
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Var_BinArith_Instr(self,
-      hello: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Var_Deref_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Var_Call_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Var_Array_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Var_CastVar_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Var_Member_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Var_Select_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Var_SizeOf_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Deref_Lit_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Deref_Var_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Member_Var_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Member_Lit_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Array_Var_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Num_Assign_Array_Lit_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Ptr_Assign_Var_Var_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Ptr_Assign_Deref_Var_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Ptr_Assign_Var_Deref_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Ptr_Assign_Var_AddrOfVar_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Ptr_Assign_Array_Lit_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Ptr_Assign_Array_Var_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Ptr_Assign_Deref_Lit_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Ptr_Assign_Member_Lit_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Ptr_Assign_Member_Var_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Ptr_Assign_Var_AddrOfArray_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Ptr_Assign_Var_AddrOfDeref_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Ptr_Assign_Var_AddrOfFunc_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Ptr_Assign_Var_AddrOfMember_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Ptr_Assign_Var_Array_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Ptr_Assign_Var_BinArith_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Ptr_Assign_Var_Call_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Ptr_Assign_Var_CastArr_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Ptr_Assign_Var_CastVar_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Ptr_Assign_Var_FuncName_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Ptr_Assign_Var_Lit_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Ptr_Assign_Var_Member_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Ptr_Assign_Var_Select_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Record_Assign_Array_Var_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Record_Assign_Deref_Var_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Record_Assign_Member_Var_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Record_Assign_Var_Array_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Record_Assign_Var_Call_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Record_Assign_Var_Deref_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Record_Assign_Var_Member_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Record_Assign_Var_Select_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Record_Assign_Var_Var_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Call_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.CallI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    oldOut = nodeDfv.dfvOut
-
-    if oldOut.bot:
-      return NodeDfvL(oldOut, oldOut)
-
-    varNames = getNamesUsedInExprSyntactically(insn.arg) | \
-               getNamesUsedInExprNonSyntactically(self.func, insn.arg)
-
-    return self._killGen(nodeDfv, gen=varNames)
-
-
-  def Conditional_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.CondI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    names = getNamesUsedInExprSyntactically(insn.arg)
-
-    if names:
-      assert len(names) == 1
-      return self._killGen(nodeDfv, gen=names)
-    else:
-      return self.Nop_Instr(nodeId, nodeDfv)
-
-
   def ExRead_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.ExReadI,
@@ -666,7 +240,6 @@ class StrongLiveVarsA(AnalysisAT):
   ) -> NodeDfvL:
     newIn = OverallL(self.func, top=True)
     newIn.setValLive(insn.vars)
-
     return NodeDfvL(newIn, nodeDfv.dfvOut)
 
 
@@ -686,15 +259,6 @@ class StrongLiveVarsA(AnalysisAT):
     return self._killGen(nodeDfv, gen=insn.vars)
 
 
-  def Return_Var_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.ReturnI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    assert isinstance(insn.arg, expr.VarE)
-    return self._killGen(nodeDfv, gen={insn.arg.name})
-
-
   def CondRead_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.CondReadI,
@@ -709,28 +273,85 @@ class StrongLiveVarsA(AnalysisAT):
     if lhsIsLive:
       return self._killGen(nodeDfv, kill={lName}, gen=rNames)
 
-    return self.Nop_Instr(nodeId, nodeDfv)
+    return self.Nop_Instr(nodeId, insn, nodeDfv)
 
+  ################################################
+  # BOUND END  : Special_Instructions
+  ################################################
 
-  def _killGen(self,
-      nodeDfv: NodeDfvL,
-      kill: Opt[Set[types.VarNameT]] = None,
-      gen: Opt[Set[types.VarNameT]] = None,
+  ################################################
+  # BOUND START: Normal_Instructions
+  ################################################
+
+  def Num_Assign_Instr(self,
+      nodeId: types.NodeIdT,
+      insn: instr.AssignI,
+      nodeDfv: NodeDfvL
   ) -> NodeDfvL:
-    # FIXME: Optimize me.
-    oldOut = nodeDfv.dfvOut
-    assert isinstance(oldOut, OverallL), f"{oldOut}"
+    """Instr_Form: numeric: lhs = rhs.
+    Convention:
+      Type of lhs and rhs is numeric.
+    """
+    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
-    if LS: LOG.debug(f"StrongLiveVarsA: Kill={kill}, Gen={gen}")
 
-    newIn = oldOut.getCopy()
-    if kill:
-      newIn.setValDead(kill)
-    if gen:
-      newIn.setValLive(gen)
+  def Ptr_Assign_Instr(self,
+      nodeId: types.NodeIdT,
+      insn: instr.AssignI,
+      nodeDfv: NodeDfvL
+  ) -> NodeDfvL:
+    """Instr_Form: pointer: lhs = rhs.
+    Convention:
+      Type of lhs and rhs is a record.
+    """
+    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
-    return NodeDfvL(newIn, oldOut)
 
+  def Record_Assign_Instr(self,
+      nodeId: types.NodeIdT,
+      insn: instr.AssignI,
+      nodeDfv: NodeDfvL
+  ) -> NodeDfvL:
+    """Instr_Form: record: lhs = rhs.
+    Convention:
+      Type of lhs and rhs is a record.
+    """
+    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
+
+
+  def Call_Instr(self,
+      nodeId: types.NodeIdT,
+      insn: instr.CallI,
+      nodeDfv: NodeDfvL,
+  ) -> NodeDfvL:
+    dfvOut = nodeDfv.dfvOut
+    if dfvOut.bot: return NodeDfvL(dfvOut, dfvOut)
+    varNames = self.processCallE(insn.arg)
+    return self._killGen(nodeDfv, gen=varNames)
+
+
+  def Conditional_Instr(self,
+      nodeId: types.NodeIdT,
+      insn: instr.CondI,
+      nodeDfv: NodeDfvL
+  ) -> NodeDfvL:
+    return self._killGen(nodeDfv, gen={insn.arg.name})
+
+
+  def Return_Var_Instr(self,
+      nodeId: types.NodeIdT,
+      insn: instr.ReturnI,
+      nodeDfv: NodeDfvL
+  ) -> NodeDfvL:
+    return self._killGen(nodeDfv, gen={insn.arg.name})
+
+  ################################################
+  # BOUND END  : Normal_Instructions
+  ################################################
+
+  ################################################
+  # BOUND START: Simplifiers
+  ################################################
 
   def LhsVar__to__Nil(self,
       e: expr.VarE,
@@ -745,21 +366,53 @@ class StrongLiveVarsA(AnalysisAT):
     if dfvOut.bot: return SimFailed
     return dfvOut.val  # return the set of variables live
 
+  ################################################
+  # BOUND END  : Simplifiers
+  ################################################
+
+  ################################################
+  # BOUND START: Helper_Functions
+  ################################################
+
+  def _killGen(self,
+      nodeDfv: NodeDfvL,
+      kill: Opt[Set[types.VarNameT]] = None,
+      gen: Opt[Set[types.VarNameT]] = None,
+  ) -> NodeDfvL:
+    dfvOut = nodeDfv.dfvOut
+    assert isinstance(dfvOut, OverallL), f"{dfvOut}"
+
+    if LS: LOG.debug(f"StrongLiveVarsA: Kill={kill}, Gen={gen}")
+
+    if dfvOut.bot and not kill: return NodeDfvL(dfvOut, dfvOut)
+    if dfvOut.top and not gen: return NodeDfvL(dfvOut, dfvOut)
+
+    outVal, newIn = dfvOut.val, dfvOut
+    realKill = kill - gen if gen and kill else kill
+    if (realKill and outVal & realKill) or (gen and gen - outVal):
+      newIn = dfvOut.getCopy()
+      if realKill: newIn.setValDead(kill)
+      if gen: newIn.setValLive(gen)
+    return NodeDfvL(newIn, dfvOut)
+
 
   def processLhsRhs(self,
       lhs: expr.ExprET,
       rhs: expr.ExprET,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
+    """Processes all kinds of assignment instructions.
+    The record types are also handled without any special treatment."""
     dfvOut = nodeDfv.dfvOut  # dfv at OUT of a node
     assert isinstance(dfvOut, OverallL), f"{dfvOut}"
     rhsNamesAreLive: bool = False
+    rhsIsCallExpr: bool = isinstance(rhs, expr.CallE)
 
     # Find out: should variables be marked live?
-    if dfvOut.bot or isinstance(rhs, expr.CallE):
+    if dfvOut.bot or rhsIsCallExpr:
       rhsNamesAreLive = True
 
-    lhsNames = set(getExprLValueNames(self.func, lhs))
+    lhsNames = getExprLValueNames(self.func, lhs)
     assert len(lhsNames) >= 1, f"{lhsNames}: {lhs}, {nodeDfv}"
     if dfvOut.val and set(lhsNames) & dfvOut.val:
       rhsNamesAreLive = True
@@ -770,10 +423,13 @@ class StrongLiveVarsA(AnalysisAT):
     if not rhsNamesAreLive:
       return NodeDfvL(dfvOut, dfvOut)
 
-    rhsNames = getNamesUsedInExprSyntactically(rhs) | \
-               getNamesUsedInExprNonSyntactically(self.func, rhs)
+    if rhsIsCallExpr:
+      rhsNames = self.processCallE(rhs)
+    else:
+      rhsNames = getExprRValueNames(self.func, rhs)\
+                 | getNamesUsedInExprSyntactically(rhs)
 
-    # at least one side should names only one location (a SPAN IR check)
+    # at least one side should name only one location (a SPAN IR check)
     assert len(lhsNames) >= 1 and len(rhsNames) >= 0, \
       f"{lhs} ({lhsNames}) = {rhs} ({rhsNames}) {rhs.info}"
 
@@ -781,6 +437,20 @@ class StrongLiveVarsA(AnalysisAT):
       return self._killGen(nodeDfv, kill=lhsNames, gen=rhsNames)
     else:
       return self._killGen(nodeDfv, gen=rhsNames)
+
+
+  def processCallE(self,
+      e: expr.ExprET,
+  ) -> Set[types.VarNameT]:
+    assert isinstance(e, expr.CallE), f"{e}"
+    names = getNamesGlobal(self.func)
+    names |= getNamesUsedInExprSyntactically(e)
+    return names
+
+  ################################################
+  # BOUND END  : Helper_Functions
+  ################################################
+
 
 ################################################
 # BOUND END  : StrongLiveVars analysis

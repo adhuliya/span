@@ -1404,35 +1404,35 @@ def getVarExprs(e: ExprET) -> List[VarE]:
 
 def getNamesUsedInExprSyntactically(
     e: ExprET,
-    forLiveness=False,
-) -> List[types.VarNameT]:
+    forLiveness=True,
+) -> Set[types.VarNameT]:
   """Returns the names syntactically present in the expression.
-  Note if forLiveness if false,
+  Note if forLiveness is False,
     It will also return the function name in a call.
     The name of variable whose address is taken.
   """
   thisFunction = getNamesUsedInExprSyntactically
 
   if isinstance(e, LitE):
-    return []
+    return set()
   if isinstance(e, VarE):  # covers PseudoVarE too
-    return [e.name]
+    return {e.name}
 
   if isinstance(e, (DerefE, UnaryE, CastE, SizeOfE, AllocE)):
     return thisFunction(e.arg, forLiveness)
   if isinstance(e, (MemberE, ArrayE)):
     l1 = thisFunction(e.of, forLiveness)
-    if isinstance(e, ArrayE): l1.extend(thisFunction(e.index, forLiveness))
+    if isinstance(e, ArrayE): l1.update(thisFunction(e.index, forLiveness))
     return l1
   if isinstance(e, (BinaryE, SelectE)):
     l1 = thisFunction(e.arg1, forLiveness)
-    l1.extend(thisFunction(e.arg2, forLiveness))
-    if isinstance(e, SelectE): l1.extend(thisFunction(e.cond, forLiveness))
+    l1.update(thisFunction(e.arg2, forLiveness))
+    if isinstance(e, SelectE): l1.update(thisFunction(e.cond, forLiveness))
     return l1
 
   if isinstance(e, AddrOfE):
     if forLiveness and isinstance(e.arg, VarE):  # forLiveness
-      return []  # i.e. in '&a' discard 'a'
+      return set()  # i.e. in '&a' discard 'a'
     return thisFunction(e.arg, forLiveness)
   if isinstance(e, CallE):
     if forLiveness and not e.hasDereference():  # forLiveness
@@ -1442,5 +1442,6 @@ def getNamesUsedInExprSyntactically(
     for arg in e.args:
       varNames.extend(thisFunction(arg, forLiveness))
     return varNames
+  raise ValueError(f"{e}")
 
-  assert False, msg.CONTROL_HERE_ERROR
+

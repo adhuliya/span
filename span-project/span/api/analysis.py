@@ -825,7 +825,7 @@ class AnalysisAT(sim.SimAT):
     Convention:
       Type of lhs and rhs is a record.
     """
-    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Nop_Instr(nodeId, insn, nodeDfv)
 
 
   def Record_Assign_Instr(self,

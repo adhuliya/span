@@ -10,7 +10,7 @@ import logging
 LOG = logging.getLogger("span")
 from span.util.logger import LS
 
-from typing import List, Optional as Opt, Dict, Set, TypeAlias
+from typing import List, Optional as Opt, Dict, Set
 from span.ir.types import VarNameT, NumericT, NodeIdT
 from span.ir.conv import Forward, Backward
 import span.ir.expr as expr
@@ -18,7 +18,7 @@ from span.api.dfv import NodeDfvL
 
 # simplification function names (that contain '__to__' in their name)
 SimNameT = str
-SimT: TypeAlias = Opt[Set]
+SimT = Opt[Set]
 SimFailed: SimT = None  # None represents a simplification failure
 SimPending: SimT = set()  # an empty set represents sim is pending
 
