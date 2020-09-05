@@ -788,14 +788,14 @@ class FilterI(InstrIT):
 class UnDefValI(InstrIT):
   """Variable takes a user input, i.e. an unknown/undefined value."""
 
-  __slots__ : List[str] = ["lhs"]
+  __slots__ : List[str] = ["lhsName"]
 
   def __init__(self,
-      lhs: types.VarNameT,  # deliberately named lhs
+      lhsName: types.VarNameT,  # deliberately named lhs
       info: Opt[types.Info] = None
   ) -> None:
     super().__init__(UNDEF_VAL_INSTR_IC, info)
-    self.lhs: types.VarNameT = lhs  # deliberately named lhs
+    self.lhsName: types.VarNameT = lhsName  # deliberately named lhs
 
 
   def __eq__(self, other) -> bool:
@@ -804,7 +804,7 @@ class UnDefValI(InstrIT):
     if not isinstance(other, UnDefValI):
       return NotImplemented
     equal = True
-    if not self.lhs == other.lhs:
+    if not self.lhsName == other.lhsName:
       equal = False
     elif not self.info == other.info:
       equal = False
@@ -812,12 +812,12 @@ class UnDefValI(InstrIT):
 
 
   def __str__(self):
-    return f"input({self.lhs})"
+    return f"input({self.lhsName})"
 
 
   def __repr__(self):
     return f"# {str(self)}\n" \
-           f"instr.UnDefValI({repr(self.lhs)})"
+           f"instr.UnDefValI({repr(self.lhsName)})"
 
 
 class BarrierI(InstrIT):

@@ -10,23 +10,21 @@ import logging
 LOG = logging.getLogger("span")
 from typing import Optional as Opt, Set, Tuple, List, Callable
 
-import span.util.util as util
 from span.util.logger import LS
-import span.util.messages as msg
 
 import span.ir.types as types
-import span.ir.conv as irConv
-import span.ir.op as op
+from span.ir.conv import getSuffixes, simplifyName
 import span.ir.expr as expr
 import span.ir.instr as instr
 import span.ir.constructs as obj
 import span.ir.ir as ir
-
+from span.ir.ir import \
+  (getNamesEnv, getNamesGlobal, getExprRValueNames,
+   getExprLValueNames)
 from span.api.lattice import ChangeL, Changed, NoChange, DataLT
 from span.api.dfv import NodeDfvL
-import span.api.sim as sim
-import span.api.analysis as analysis
-import span.ir.tunit as irTunit
+from span.api.sim import SimFailed, SimPending, SimAT
+from span.api.analysis import AnalysisAT, BackwardD
 
 ################################################
 # BOUND START: StrongLiveVars lattice
@@ -61,19 +59,16 @@ class OverallL(DataLT):
     if self < other: return self, NoChange
     if other < self: return other, Changed
 
-    # if here, elements are incomparable.
-    # Both are neither top nor bot.
-    assert other.val is not None
+    # if here, elements are incomparable, and neither is top/bot.
+    assert self.val and other.val, f"{self}, {other}"
     new = self.getCopy()
     new.setValLive(other.val)
-
     return new, Changed
 
 
   def getCopy(self) -> 'OverallL':
     if self.top: return OverallL(self.func, top=True)
     if self.bot: return OverallL(self.func, bot=True)
-
     assert self.val is not None
     return OverallL(self.func, self.val.copy())
 
@@ -83,7 +78,6 @@ class OverallL(DataLT):
   ) -> IsLiveT:
     if self.top: return Dead
     if self.bot: return Live
-
     assert self.val is not None
     return varName in self.val
 
@@ -92,7 +86,7 @@ class OverallL(DataLT):
       varNames: Set[types.VarNameT],
       liveness: IsLiveT
   ) -> None:
-    if liveness == Live:
+    if liveness is Live:
       self.setValLive(varNames)
     else:
       self.setValDead(varNames)
@@ -101,17 +95,16 @@ class OverallL(DataLT):
   def setValLive(self,
       varNames: Set[types.VarNameT]
   ) -> None:
-    if self.bot or \
-        (self.val and self.val >= varNames):
+    if self.bot or (self.val and self.val >= varNames):
       return  # varNames already live
 
     self.top = False  # no more a top value (if it was)
-    self.val = self.val if self.val is not None else set()
+    self.val = set() if not self.val else self.val
 
     for varName in varNames:
       self.val.update(ir.getPrefixes(varName))
 
-    if self.val == ir.getNamesEnv(self.func):
+    if self.val == getNamesEnv(self.func):
       self.val, self.top, self.bot = None, False, True
 
 
@@ -123,10 +116,10 @@ class OverallL(DataLT):
       return  # varNames already dead
 
     self.bot = False  # no more a bot value (if it was)
-    self.val = self.val if self.val is not None else ir.getNamesEnv(self.func).copy()
+    self.val = self.val if self.val is not None else getNamesEnv(self.func).copy()
 
     for varName in varNames:
-      for name in ir.getSuffixes(self.func, varName):
+      for name in getSuffixes(self.func, varName):
         self.val.remove(name)  # FIXME: kill all suffixes
 
     if not self.val:
@@ -171,12 +164,12 @@ class OverallL(DataLT):
     elif self.bot:
       # added isUserVar(name) for ACM Winter School 2019
       # vnames = {types.simplifyName(name)
-      #          for name in ir.getNamesEnv(self.func) if ir.isUserVar(name)}
+      #          for name in getNamesEnv(self.func) if isUserVar(name)}
       return "Bot"
     else:
       # added isUserVar(name) for ACM Winter School 2019
-      # vnames = {types.simplifyName(name) for name in self.val if ir.isUserVar(name)}
-      vnames = {irConv.simplifyName(name) for name in self.val}  # if not ir.isDummyVar(name)}
+      # vnames = {types.simplifyName(name) for name in self.val if isUserVar(name)}
+      vnames = {simplifyName(name) for name in self.val}  # if not isDummyVar(name)}
     if vnames:
       return f"{vnames}"
     else:
@@ -195,15 +188,15 @@ class OverallL(DataLT):
 # BOUND START: StrongLiveVars analysis
 ################################################
 
-class StrongLiveVarsA(analysis.AnalysisAT):
+class StrongLiveVarsA(AnalysisAT):
   """Strongly Live Variables Analysis."""
   # liveness lattice
   L: type = OverallL
-  D: type = analysis.BackwardD
+  D: type = BackwardD
   # blocking expression methods
-  simNeeded: List[Callable] = [sim.SimAT.Deref__to__Vars,
-                               sim.SimAT.Cond__to__UnCond,
-                               sim.SimAT.Node__to__Nil,
+  simNeeded: List[Callable] = [SimAT.Deref__to__Vars,
+                               SimAT.Cond__to__UnCond,
+                               SimAT.Node__to__Nil,
                               ]
 
 
@@ -232,9 +225,9 @@ class StrongLiveVarsA(analysis.AnalysisAT):
 
     if inBi is None:
       # all globals are live at end/exit node
-      endBi = OverallL(self.func, val=ir.getNamesGlobal(self.func))
+      endBi = OverallL(self.func, val=getNamesGlobal(self.func))
     else:
-      endBi = OverallL(self.func, val=ir.getNamesGlobal(self.func))  # TODO
+      endBi = OverallL(self.func, val=getNamesGlobal(self.func))  # TODO
 
     return startBi, endBi
 
@@ -646,8 +639,8 @@ class StrongLiveVarsA(analysis.AnalysisAT):
     if oldOut.bot:
       return NodeDfvL(oldOut, oldOut)
 
-    varNames = ir.getNamesUsedInExprSyntactically(insn.arg) | \
-               ir.getNamesUsedInExprNonSyntactically(self.func, insn.arg)
+    varNames = getNamesUsedInExprSyntactically(insn.arg) | \
+               getNamesUsedInExprNonSyntactically(self.func, insn.arg)
 
     return self._killGen(nodeDfv, gen=varNames)
 
@@ -657,7 +650,7 @@ class StrongLiveVarsA(analysis.AnalysisAT):
       insn: instr.CondI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
-    names = ir.getNamesUsedInExprSyntactically(insn.arg)
+    names = getNamesUsedInExprSyntactically(insn.arg)
 
     if names:
       assert len(names) == 1
@@ -682,7 +675,7 @@ class StrongLiveVarsA(analysis.AnalysisAT):
       insn: instr.UnDefValI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
-    return self._killGen(nodeDfv, kill={insn.lhs})
+    return self._killGen(nodeDfv, kill={insn.lhsName})
 
 
   def Use_Instr(self,
@@ -741,15 +734,16 @@ class StrongLiveVarsA(analysis.AnalysisAT):
 
   def LhsVar__to__Nil(self,
       e: expr.VarE,
-      nodeDfv: Opt[NodeDfvL] = None
-  ) -> sim.SimToLiveL:
+      nodeDfv: Opt[NodeDfvL] = None,
+      values: Opt[Set[types.VarNameT]] = None,
+  ) -> Opt[Set[types.VarNameT]]:
     if nodeDfv is None:
-      return sim.SimToLivePending
+      return SimPending
 
     dfvOut = nodeDfv.dfvOut
-    if dfvOut.top: return sim.SimToLivePending
-    if dfvOut.bot: return sim.SimToLiveFailed
-    return sim.SimToLiveL(dfvOut.val)  # return the set of variables live
+    if dfvOut.top: return SimPending
+    if dfvOut.bot: return SimFailed
+    return dfvOut.val  # return the set of variables live
 
 
   def processLhsRhs(self,
@@ -765,8 +759,8 @@ class StrongLiveVarsA(analysis.AnalysisAT):
     if dfvOut.bot or isinstance(rhs, expr.CallE):
       rhsNamesAreLive = True
 
-    lhsNames = set(ir.getExprLValueNames(self.func, lhs))
-    assert len(lhsNames) >= 1, f"{msg.INVARIANT_VIOLATED}: {lhs}"
+    lhsNames = set(getExprLValueNames(self.func, lhs))
+    assert len(lhsNames) >= 1, f"{lhsNames}: {lhs}, {nodeDfv}"
     if dfvOut.val and set(lhsNames) & dfvOut.val:
       rhsNamesAreLive = True
 
@@ -776,8 +770,8 @@ class StrongLiveVarsA(analysis.AnalysisAT):
     if not rhsNamesAreLive:
       return NodeDfvL(dfvOut, dfvOut)
 
-    rhsNames = ir.getNamesUsedInExprSyntactically(rhs) | \
-               ir.getNamesUsedInExprNonSyntactically(self.func, rhs)
+    rhsNames = getNamesUsedInExprSyntactically(rhs) | \
+               getNamesUsedInExprNonSyntactically(self.func, rhs)
 
     # at least one side should names only one location (a SPAN IR check)
     assert len(lhsNames) >= 1 and len(rhsNames) >= 0, \

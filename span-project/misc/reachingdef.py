@@ -387,7 +387,7 @@ class ReachingDefA(analysis.AnalysisAT):
     oldIn = nodeDfv.dfvIn
 
     newOut = oldIn.getCopy()
-    newOut.setVal(insn.lhs, self.componentBot)
+    newOut.setVal(insn.lhsName, self.componentBot)
 
     return NodeDfvL(oldIn, newOut)
 

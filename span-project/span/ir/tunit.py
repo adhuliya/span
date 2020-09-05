@@ -760,7 +760,7 @@ class TranslationUnit:
       iType = self.inferTypeOfVal(insn.lhs)
 
     elif isinstance(insn, _instr.UnDefValI):
-      iType = self.inferTypeOfVal(insn.lhs)
+      iType = self.inferTypeOfVal(insn.lhsName)
 
     elif isinstance(insn, _instr.CondI):
       _ = self.inferTypeOfExpr(insn.arg)

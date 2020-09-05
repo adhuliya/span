@@ -450,7 +450,7 @@ class LiveVarsA(analysis.AnalysisAT):
       insn: instr.UnDefValI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
-    return self._killGen(nodeDfv, kill={insn.lhs})
+    return self._killGen(nodeDfv, kill={insn.lhsName})
 
 
   def Use_Instr(self,

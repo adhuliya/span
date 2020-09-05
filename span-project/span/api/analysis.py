@@ -403,15 +403,12 @@ class DirectionDT:
     """
     nid = node.id
     oldNdfv = self.nidNdfvMap.get(nid, self.topNdfv)
-    oldIn = oldNdfv.dfvIn
-    oldOut = oldNdfv.dfvOut
-    oldOutTrue = oldNdfv.dfvOutTrue
-    oldOutFalse = oldNdfv.dfvOutFalse
-    inOutChange = OLD_INOUT
+    oldIn, oldOut = oldNdfv.dfvIn, oldNdfv.dfvOut
+    oldOutTrue, oldOutFalse = oldNdfv.dfvOutTrue, oldNdfv.dfvOutFalse
 
     if AS:
       if nodeDfv < oldNdfv:
-        pass  # okay
+        pass  # i.e. its okay
       else:
         LOG.error("NonMonotonicDFV: Analysis: %s", oldIn.__class__)
         if not nodeDfv.dfvIn < oldNdfv.dfvIn:
@@ -421,11 +418,8 @@ class DirectionDT:
           LOG.error("NonMonotonicDFV (OUT):\n NodeId: %s, Info: %s, Instr: %s, Old: %s,\n New: %s.",
                     nid, node.insn, node.insn.info, oldNdfv.dfvOut, nodeDfv.dfvOut)
 
-    # START: NEW CODE - no meet
-    newIn = nodeDfv.dfvIn
-    newOut = nodeDfv.dfvOut
-    newOutTrue = nodeDfv.dfvOutTrue
-    newOutFalse = nodeDfv.dfvOutFalse
+    newIn, newOut = nodeDfv.dfvIn, nodeDfv.dfvOut
+    newOutTrue, newOutFalse = nodeDfv.dfvOutTrue, nodeDfv.dfvOutFalse
 
     isNewIn = newIn != oldIn
     isNewOut = newOut != oldOut \
@@ -433,37 +427,6 @@ class DirectionDT:
                or newOutTrue != oldOutTrue
     self.nidNdfvMap[nid] = nodeDfv
     return NewOldL.getNewOldObj(isNewIn, isNewOut)
-
-    # END  : NEW CODE - no meet
-
-    # START: OLD CODE
-    # # Merge the values and note the change
-    # newIn, chIn = oldIn.meet(nodeDfv.dfvIn)
-    # newOut, chOut = oldOut.meet(nodeDfv.dfvOut)
-    # if oldOutTrue is oldOut:  # avoid unnecessary computation
-    #   newOutTrue, chOutTrue = newOut, chOut
-    # else:
-    #   newOutTrue, chOutTrue = oldOutTrue.meet(nodeDfv.dfvOutTrue)
-
-    # if oldOutFalse is oldOut:  # avoid unnecessary computation
-    #   newOutFalse, chOutFalse = newOut, chOut
-    # else:
-    #   newOutFalse, chOutFalse = oldOutFalse.meet(nodeDfv.dfvOutFalse)
-
-    # # Summarize the change into inOutChange
-    # if chOut or chOutTrue or chOutFalse:
-    #   chOut = Changed
-    #   inOutChange, _ = inOutChange.meet(NEW_OUT)
-
-    # if chIn:
-    #   inOutChange, _ = inOutChange.meet(NEW_IN)
-
-    # if chIn or chOut:
-    #   newNodeDfv = NodeDfvL(newIn, newOut, newOutTrue, newOutFalse)
-    #   self.nidNdfvMap[nid] = newNodeDfv
-
-    # return inOutChange
-    # END  : OLD CODE
 
 
   def add(self, node: graph.CfgNode):
@@ -1654,11 +1617,11 @@ class ValueAnalysisAT(AnalysisAT):
   ) -> NodeDfvL:
     if not self.isAcceptedType(insn.type):
       return self.Nop_Instr(nodeId, insn, nodeDfv)
-    newOut = oldIn = cast(dfv.OverallL, nodeDfv.dfvIn)
-    if not oldIn.getVal(insn.lhs).bot:
-      newOut = oldIn.getCopy()
-      newOut.setVal(insn.lhs, self.componentBot)
-    return NodeDfvL(oldIn, newOut)
+    newOut = dfvIn = cast(dfv.OverallL, nodeDfv.dfvIn)
+    if not dfvIn.getVal(insn.lhsName).bot:
+      newOut = dfvIn.getCopy()
+      newOut.setVal(insn.lhsName, self.componentBot)
+    return NodeDfvL(dfvIn, newOut)
 
 
   ################################################
@@ -1698,11 +1661,11 @@ class ValueAnalysisAT(AnalysisAT):
       insn: instr.CondI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
-    oldIn = cast(dfv.OverallL, nodeDfv.dfvIn)
+    dfvIn = cast(dfv.OverallL, nodeDfv.dfvIn)
     if not self.isAcceptedType(insn.arg.type):  # special case
-      return NodeDfvL(oldIn, oldIn)
-    dfvFalse, dfvTrue = self.calcFalseTrueDfv(insn.arg, oldIn)
-    return NodeDfvL(oldIn, None, dfvTrue, dfvFalse)
+      return NodeDfvL(dfvIn, dfvIn)
+    outDfvFalse, outDfvTrue = self.calcFalseTrueDfv(insn.arg, dfvIn)
+    return NodeDfvL(dfvIn, None, outDfvTrue, outDfvFalse)
 
 
   def Call_Instr(self,
@@ -1838,42 +1801,10 @@ class ValueAnalysisAT(AnalysisAT):
       arg: expr.SimpleET,
       dfvIn: dfv.OverallL,
   ) -> Tuple[dfv.OverallL, dfv.OverallL]:  # dfvFalse, dfvTrue
-    """Conditionally propagate data flow values."""
-    assert isinstance(arg, expr.VarE), f"{arg}"
-    argInDfvVal = dfvIn.getVal(arg.name)
-    if not (argInDfvVal.top or argInDfvVal.bot): # i.e. arg is a constant
-      return dfvIn, dfvIn
-
-    varDfvTrue = varDfvFalse = None
-
-    tmpExpr = ir.getTmpVarExpr(self.func, arg.name)
-    argDfvFalse = dfv.ComponentL(self.func, 0)  # always true
-
-    varName = arg.name
-    if tmpExpr and isinstance(tmpExpr, expr.BinaryE):
-      opCode = tmpExpr.opr.opCode
-      varDfv = self.getExprDfv(tmpExpr.arg1, dfvIn)
-      if opCode == op.BO_EQ_OC and varDfv.bot:
-        varDfvTrue = self.getExprDfv(tmpExpr.arg2, dfvIn)
-      elif opCode == op.BO_NE_OC and varDfv.bot:
-        varDfvFalse = self.getExprDfv(tmpExpr.arg2, dfvIn)
-
-    if argDfvFalse or varDfvFalse:
-      dfvFalse = cast(dfv.OverallL, dfvIn.getCopy())
-      if argDfvFalse:
-        dfvFalse.setVal(arg.name, argDfvFalse)
-      if varDfvFalse:
-        dfvFalse.setVal(varName, varDfvFalse)
-    else:
-      dfvFalse = dfvIn
-
-    if varDfvTrue:
-      dfvTrue = cast(dfv.OverallL, dfvIn.getCopy())
-      dfvTrue.setVal(varName, varDfvTrue)
-    else:
-      dfvTrue = dfvIn
-
-    return dfvFalse, dfvTrue
+    """Conditionally propagate data flow values.
+    Default implementation returns the same dfvIn.
+    """
+    return dfvIn, dfvIn
 
 
   def getExprDfv(self,
@@ -1952,16 +1883,10 @@ class ValueAnalysisAT(AnalysisAT):
       e: expr.CastE,
       dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
   ) -> dfv.ComponentL:
-    """A default implementation (assuming Constant Propagation)."""
+    """A default implementation"""
     assert isinstance(e.arg, expr.VarE), f"{e}"
     if self.isAcceptedType(e.arg.type):
-      value = dfvInGetVal(e.arg.name)
-      if value.top or value.bot:
-        return value
-      else:
-        assert self.isAcceptedType(e.to) and value.val, f"{e}, {value}"
-        value.val = e.to.castValue(value.val)
-        return value
+      return dfvInGetVal(e.arg.name)
     else:
       return self.componentBot
 
@@ -2013,7 +1938,7 @@ class ValueAnalysisAT(AnalysisAT):
       e: expr.MemberE,
       dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
   ) -> dfv.ComponentL:
-    """A default implementation (assuming Constant Propagation)."""
+    """A default implementation"""
     varNames = ir.getExprRValueNames(self.func, e)
     assert varNames, f"{e}, {varNames}"
     return mergeAll(map(dfvInGetVal, varNames))
@@ -2023,16 +1948,16 @@ class ValueAnalysisAT(AnalysisAT):
       e: expr.CallE,
       dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
   ) -> dfv.ComponentL:
-    """A default implementation (assuming Constant Propagation)."""
+    """A default implementation"""
     return self.componentBot
 
 
   def filterValues(self,
       e: expr.ExprET,
-      values: List[types.T],
+      values: Set[types.T],
       dfvIn: dfv.OverallL,
       valueType: sim.ValueTypeT = sim.NumValue,
-  ) -> List[types.T]:
+  ) -> Set[types.T]:
     """Depends on `self.filterTest`."""
     if not values:
       return values  # returns an empty list
@@ -2043,7 +1968,7 @@ class ValueAnalysisAT(AnalysisAT):
       return sim.SimPending
     else:
       assert exprVal.val is not None, f"{e}, {exprVal}, {dfvIn}"
-      return list(filter(self.filterTest(exprVal, valueType), values))
+      return set(filter(self.filterTest(exprVal, valueType), values))
 
 
   def filterTest(self,

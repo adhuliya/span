@@ -349,6 +349,23 @@ class ConstA(analysis.ValueAnalysisAT):
     return ComponentL(self.func, val=e.val)
 
 
+  def getExprDfvCastE(self,
+      e: expr.CastE,
+      dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
+  ) -> dfv.ComponentL:
+    assert isinstance(e.arg, expr.VarE), f"{e}"
+    if self.isAcceptedType(e.arg.type):
+      value = dfvInGetVal(e.arg.name)
+      if value.top or value.bot:
+        return value
+      else:
+        assert self.isAcceptedType(e.to) and value.val, f"{e}, {value}"
+        value.val = e.to.castValue(value.val)
+        return value
+    else:
+      return self.componentBot
+
+
   def getExprDfvUnaryE(self,
       e: expr.UnaryE,
       dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
