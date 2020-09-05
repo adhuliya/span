@@ -25,7 +25,8 @@ from span.api.lattice import DataLT, ChangeL, Changed, NoChange
 import span.api.dfv as dfv
 import span.api.lattice as lattice
 from span.api.dfv import NodeDfvL
-import span.api.sim as sim
+from span.api.sim import SimFailed, SimPending, BoolValue,\
+  NumValue, ValueTypeT, SimAT
 import span.api.analysis as analysis
 import span.ir.tunit as irTUnit
 
@@ -333,11 +334,11 @@ class IntervalA(analysis.ValueAnalysisAT):
   L: Opt[Type[dfv.DataLT]] = OverallL
   # concrete direction class of the analysis
   D: Opt[Type[analysis.DirectionDT]] = analysis.ForwardD
-  simNeeded: List[Callable] = [sim.SimAT.Num_Var__to__Num_Lit,
-                               sim.SimAT.Num_Bin__to__Num_Lit,
-                               sim.SimAT.Deref__to__Vars,
-                               sim.SimAT.LhsVar__to__Nil,
-                               sim.SimAT.Cond__to__UnCond
+  simNeeded: List[Callable] = [SimAT.Num_Var__to__Num_Lit,
+                               SimAT.Num_Bin__to__Num_Lit,
+                               SimAT.Deref__to__Vars,
+                               SimAT.LhsVar__to__Nil,
+                               SimAT.Cond__to__UnCond
                                ]
 
   def __init__(self,
@@ -376,8 +377,8 @@ class IntervalA(analysis.ValueAnalysisAT):
   def Num_Bin__to__Num_Lit(self,
       e: expr.BinaryE,
       nodeDfv: Opt[NodeDfvL] = None,
-      values: Opt[List[types.NumericT]] = None,
-  ) -> Opt[List[types.NumericT]]:
+      values: Opt[Set[types.NumericT]] = None,
+  ) -> Opt[Set[types.NumericT]]:
     """Specifically for expression: '_ <relop> _'."""
     # STEP 1: tell the system if the expression can be evaluated
     arg1, arg2 = e.arg1, e.arg2
@@ -385,24 +386,24 @@ class IntervalA(analysis.ValueAnalysisAT):
         or not e.opr.isRelationalOp()
         or not arg1.type.isNumeric()
         or not arg2.type.isNumeric()):
-      return sim.SimFailed
+      return SimFailed
 
     # STEP 2: If here, eval may be possible, hence attempt eval
     if nodeDfv is None:
-      return sim.SimPending # tell that sim my be possible if nodeDfv given
+      return SimPending # tell that sim my be possible if nodeDfv given
 
     # STEP 3: If here, either eval or filter the values
     dfvIn = cast(OverallL, nodeDfv.dfvIn)
     if values is not None:
       assert len(values), f"{e}, {values}"
-      return self.filterValues(e, values, dfvIn, sim.NumValue) # filter the values
+      return self.filterValues(e, values, dfvIn, NumValue) # filter the values
 
     # STEP 4: If here, eval the expression
     arg1Val = cast(ComponentL, self.getExprDfv(arg1, dfvIn))
     arg2Val = cast(ComponentL, self.getExprDfv(arg2, dfvIn))
 
     if arg1Val.top or arg2Val.top:
-      return sim.SimPending
+      return SimPending
 
     overlaps = arg1Val.overlaps(arg2Val)
     constArg1 = arg1Val.isConstant()
@@ -448,55 +449,55 @@ class IntervalA(analysis.ValueAnalysisAT):
         result = False
 
     if result is not None:
-      return [1 if result else 0]
+      return {1 if result else 0}
     else:
-      return sim.SimFailed
+      return SimFailed
 
 
   def Cond__to__UnCond(self,
       e: expr.VarE,
       nodeDfv: Opt[NodeDfvL] = None,
-      values: Opt[List[bool]] = None,
-  ) -> Opt[List[bool]]:
+      values: Opt[Set[bool]] = None,
+  ) -> Opt[Set[bool]]:
     # STEP 1: tell the system if the expression can be evaluated
     if not e.type.isNumeric():
-      return sim.SimFailed
+      return SimFailed
 
     # STEP 2: If here, eval may be possible, hence attempt eval
     if nodeDfv is None:
-      return sim.SimPending # tell that sim my be possible if nodeDfv given
+      return SimPending # tell that sim my be possible if nodeDfv given
 
     # STEP 3: If here, either eval or filter the values
     dfvIn = cast(OverallL, nodeDfv.dfvIn)
     if values is not None:
       assert len(values), f"{e}, {values}"
-      return self.filterValues(e, values, dfvIn, sim.BoolValue) # filter the values
+      return self.filterValues(e, values, dfvIn, BoolValue) # filter the values
 
     # STEP 4: If here, eval the expression
     val = cast(ComponentL, dfvIn.getVal(e.name))
-    if val.top: return sim.SimPending  # can be evaluated but needs more info
-    if val.bot: return sim.SimFailed  # cannot be evaluated
+    if val.top: return SimPending  # can be evaluated but needs more info
+    if val.bot: return SimFailed  # cannot be evaluated
     assert val.val is not None, f"{e}, {val}"
     if val.isExactZero():
-      return [False]  # take false edge
+      return {False}  # take false edge
     elif not val.inRange(0):
-      return [True]  # take true edge
+      return {True}  # take true edge
     else:
-      return sim.SimFailed  # both edges are possible
+      return SimFailed  # both edges are possible
 
 
   def filterTest(self,
       exprVal: ComponentL,
-      valueType: sim.ValueTypeT = sim.NumValue,
+      valueType: ValueTypeT = NumValue,
   ) -> Callable[[types.T], bool]:
-    if valueType == sim.NumValue:
+    if valueType == NumValue:
       def valueTestNumeric(numVal: types.NumericT) -> bool:
         if exprVal.top: return False
         if exprVal.bot: return True
         return exprVal.inRange(numVal)
       return valueTestNumeric  # return the test function
 
-    elif valueType == sim.BoolValue:
+    elif valueType == BoolValue:
       def valueTestBoolean(boolVal: bool) -> bool:
         if exprVal.top: return False
         if exprVal.bot: return True

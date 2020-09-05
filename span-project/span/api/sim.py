@@ -6,10 +6,11 @@
 """The analysis' simplification(Sim)/evaluation interface."""
 
 import logging
+
 LOG = logging.getLogger("span")
 from span.util.logger import LS
 
-from typing import List, Optional as Opt, Dict, Set
+from typing import List, Optional as Opt, Dict, Set, TypeAlias
 from span.ir.types import VarNameT, NumericT, NodeIdT
 from span.ir.conv import Forward, Backward
 import span.ir.expr as expr
@@ -17,13 +18,15 @@ from span.api.dfv import NodeDfvL
 
 # simplification function names (that contain '__to__' in their name)
 SimNameT = str
-SimFailed = None  # None represents a simplification failure
-SimPending = []   # an empty list represents sim is pending
+SimT: TypeAlias = Opt[Set]
+SimFailed: SimT = None  # None represents a simplification failure
+SimPending: SimT = set()  # an empty set represents sim is pending
 
 ValueTypeT = str
 NumValue: ValueTypeT = "Num"
 BoolValue: ValueTypeT = "Bool"
 NameValue: ValueTypeT = "VarName"
+
 
 ################################################
 # BOUND START: Simplification_base_class.
@@ -45,7 +48,8 @@ class SimAT:
   given any data flow value.
   """
 
-  __slots__ : List[str] = []
+  __slots__: List[str] = []
+
 
   def Node__to__Nil(self,
       node: NodeIdT,
@@ -124,14 +128,11 @@ Cond__to__UnCond__Name: str = SimAT.Cond__to__UnCond.__name__
 Num_Bin__to__Num_Lit__Name: str = SimAT.Num_Bin__to__Num_Lit.__name__
 Deref__to__Vars__Name: str = SimAT.Deref__to__Vars.__name__
 
-
 simDirnMap = {  # the IN/OUT information needed for the sim
   Node__to__Nil__Name:        Forward,  # means dfv at IN is needed
   Num_Var__to__Num_Lit__Name: Forward,
   Cond__to__UnCond__Name:     Forward,
   Num_Bin__to__Num_Lit__Name: Forward,
   Deref__to__Vars__Name:      Forward,
-  LhsVar__to__Nil__Name:      Backward, # means dfv at OUT is needed
+  LhsVar__to__Nil__Name:      Backward,  # means dfv at OUT is needed
 }
-
-

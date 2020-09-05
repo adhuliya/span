@@ -32,7 +32,8 @@ import span.ir.ir as ir
 from span.api.lattice import ChangeL, Changed, NoChange, DataLT
 import span.api.dfv as dfv
 from span.api.dfv import NodeDfvL
-import span.api.sim as sim
+from span.api.sim import SimFailed, SimPending, BoolValue, \
+  NumValue, ValueTypeT, SimAT
 import span.api.lattice as lattice
 import span.api.analysis as analysis
 import span.ir.tunit as irTUnit
@@ -146,12 +147,12 @@ class ConstA(analysis.ValueAnalysisAT):
   __slots__ : List[str] = []
   L: type = OverallL  # the lattice ConstA uses
   D: type = analysis.ForwardD  # its a forward flow analysis
-  simNeeded: List[Callable] = [sim.SimAT.Num_Var__to__Num_Lit,
-                               sim.SimAT.Deref__to__Vars,
-                               sim.SimAT.Num_Bin__to__Num_Lit,
-                               sim.SimAT.LhsVar__to__Nil,
-                               sim.SimAT.Cond__to__UnCond,
-                               #sim.SimAT.Node__to__Nil,
+  simNeeded: List[Callable] = [SimAT.Num_Var__to__Num_Lit,
+                               SimAT.Deref__to__Vars,
+                               SimAT.Num_Bin__to__Num_Lit,
+                               SimAT.LhsVar__to__Nil,
+                               SimAT.Cond__to__UnCond,
+                               #SimAT.Node__to__Nil,
                                ]
 
 
@@ -195,22 +196,22 @@ class ConstA(analysis.ValueAnalysisAT):
   ) -> Opt[List[types.NumericT]]:
     # STEP 1: tell the system if the expression can be evaluated
     if not e.type.isNumeric():
-      return sim.SimFailed
+      return SimFailed
 
     # STEP 2: If here, eval may be possible, hence attempt eval
     if nodeDfv is None:
-      return sim.SimPending # tell that sim my be possible if nodeDfv given
+      return SimPending # tell that sim my be possible if nodeDfv given
 
     # STEP 3: If here, either eval or filter the values
     dfvIn = cast(OverallL, nodeDfv.dfvIn)
     if values is not None:
       assert len(values), f"{e}, {values}"
-      return self.filterValues(e, values, dfvIn, sim.NumValue) # filter the values
+      return self.filterValues(e, values, dfvIn, NumValue) # filter the values
 
     # STEP 4: If here, eval the expression
     exprVal = self.getExprDfv(e, dfvIn)
-    if exprVal.top: return sim.SimPending  # can be evaluated, needs more info
-    if exprVal.bot: return sim.SimFailed  # cannot be evaluated
+    if exprVal.top: return SimPending  # can be evaluated, needs more info
+    if exprVal.bot: return SimFailed  # cannot be evaluated
     return [exprVal.val]
 
 
@@ -223,17 +224,17 @@ class ConstA(analysis.ValueAnalysisAT):
     if (not e.type.isNumeric()
         or not e.arg1.type.isNumeric()
         or not e.arg2.type.isNumeric()):
-      return sim.SimFailed
+      return SimFailed
 
     # STEP 2: If here, eval may be possible, hence attempt eval
     if nodeDfv is None:
-      return sim.SimPending # tell that sim my be possible if nodeDfv given
+      return SimPending # tell that sim my be possible if nodeDfv given
 
     # STEP 3: If here, either eval or filter the values
     dfvIn = cast(OverallL, nodeDfv.dfvIn)
     if values is not None:
       assert len(values), f"{e}, {values}"
-      return self.filterValues(e, values, dfvIn, sim.NumValue) # filter the values
+      return self.filterValues(e, values, dfvIn, NumValue) # filter the values
 
     # STEP 4: If here, eval the expression
     arg1, arg2 = e.arg1, e.arg2
@@ -245,8 +246,8 @@ class ConstA(analysis.ValueAnalysisAT):
         assert isinstance(arg, expr.LitE), f"{e}"
         assert isinstance(arg.val, (int, float)), f"{arg}"
         val = ComponentL(self.func, val=arg.val)
-      if val.top: return sim.SimPending
-      if val.bot: return sim.SimFailed
+      if val.top: return SimPending
+      if val.bot: return SimFailed
       vals.append(val)
 
     val1, val2 = vals[0], vals[1]
@@ -261,7 +262,7 @@ class ConstA(analysis.ValueAnalysisAT):
     elif opCode == op.BO_DIV_OC:
       if val2.val == 0:
         if LS: LOG.critical("DivideByZero: expr: %s, dfv: %s", e, dfvIn)
-        return sim.SimFailed
+        return SimFailed
       else:
         return [val1.val / val2.val]
     elif opCode == op.BO_MOD_OC:
@@ -278,7 +279,7 @@ class ConstA(analysis.ValueAnalysisAT):
       return [1 if val1.val == val2.val else 0]
     elif opCode == op.BO_NE_OC:
       return [1 if val1.val != val2.val else 0]
-    return sim.SimFailed
+    return SimFailed
 
 
   def Cond__to__UnCond(self,
@@ -288,22 +289,22 @@ class ConstA(analysis.ValueAnalysisAT):
   ) -> Opt[List[bool]]:
     # STEP 1: tell the system if the expression can be evaluated
     if not e.type.isNumeric():
-      return sim.SimFailed
+      return SimFailed
 
     # STEP 2: If here, eval may be possible, hence attempt eval
     if nodeDfv is None:
-      return sim.SimPending # tell that sim my be possible if nodeDfv given
+      return SimPending # tell that sim my be possible if nodeDfv given
 
     # STEP 3: If here, either eval or filter the values
     dfvIn = cast(OverallL, nodeDfv.dfvIn)
     if values is not None:
       assert len(values), f"{e}, {values}"
-      return self.filterValues(e, values, dfvIn, sim.BoolValue) # filter the values
+      return self.filterValues(e, values, dfvIn, BoolValue) # filter the values
 
     # STEP 4: If here, eval the expression
     val = dfvIn.getVal(e.name)
-    if val.top: return sim.SimPending  # can be evaluated but needs more info
-    if val.bot: return sim.SimFailed  # cannot be evaluated
+    if val.top: return SimPending  # can be evaluated but needs more info
+    if val.bot: return SimFailed  # cannot be evaluated
     assert val.val is not None, f"{e}, {val}"
     if val.val != 0:
       return [True]
@@ -313,16 +314,16 @@ class ConstA(analysis.ValueAnalysisAT):
 
   def filterTest(self,
       exprVal: ComponentL,
-      valueType: sim.ValueTypeT = sim.NumValue,
+      valueType: ValueTypeT = NumValue,
   ) -> Callable[[types.T], bool]:
-    if valueType == sim.NumValue:
+    if valueType == NumValue:
       def valueTestNumeric(val) -> bool:
         if exprVal.top: return False
         if exprVal.bot: return True
         return exprVal.val == val
       return valueTestNumeric
 
-    elif valueType == sim.BoolValue:
+    elif valueType == BoolValue:
       def valueTestBoolean(val) -> bool:
         if exprVal.top: return False
         if exprVal.bot: return True

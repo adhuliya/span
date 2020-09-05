@@ -27,13 +27,13 @@ import span.ir.op as op
 import span.ir.expr as expr
 import span.ir.instr as instr
 import span.ir.constructs as constructs
-import span.api.sim as sim
 
 import span.api.lattice as lattice
 from span.api.lattice import ChangeL, Changed, NoChange, DataLT
 import span.api.dfv as dfv
 from span.api.dfv import NodeDfvL
-import span.api.sim as simApi
+from span.api.sim import SimFailed, SimPending, ValueTypeT,\
+  NumValue, NameValue, BoolValue, SimAT
 import span.api.analysis as analysis
 
 ################################################
@@ -208,9 +208,9 @@ class PointsToA(analysis.ValueAnalysisAT):
 
   L: type = OverallL
   D: type = analysis.ForwardD
-  simNeeded: List[Callable] = [sim.SimAT.Deref__to__Vars,
-                               sim.SimAT.Cond__to__UnCond,
-                               sim.SimAT.LhsVar__to__Nil,
+  simNeeded: List[Callable] = [SimAT.Deref__to__Vars,
+                               SimAT.Cond__to__UnCond,
+                               SimAT.LhsVar__to__Nil,
                               ]
 
 
@@ -253,69 +253,69 @@ class PointsToA(analysis.ValueAnalysisAT):
   def Deref__to__Vars(self,
       e: expr.VarE,
       nodeDfv: Opt[NodeDfvL] = None,
-      values: Opt[List[types.VarNameT]] = None,
-  ) -> Opt[List[types.VarNameT]]:
+      values: Opt[Set[types.VarNameT]] = None,
+  ) -> Opt[Set[types.VarNameT]]:
     varName = e.name
 
     # STEP 1: check if the expression can be evaluated
     varType = ir.inferTypeOfVal(self.func, varName)
 
     if not isinstance(varType, (types.Ptr, types.ArrayT)):
-      return simApi.SimFailed
+      return SimFailed
 
     # STEP 2: If here, eval may be possible, hence attempt eval
     if nodeDfv is None:
-      return simApi.SimPending
+      return SimPending
 
     # STEP 3: If here, either eval or filter the values
     dfvIn = cast(OverallL, nodeDfv.dfvIn)
     if values is not None:
       assert len(values), f"{e}, {values}"
-      return self.filterValues(e, values, dfvIn, sim.NameValue) # filter the values
+      return self.filterValues(e, values, dfvIn, NameValue) # filter the values
 
     # STEP 4: If here, eval the expression
     # special case (deref of array is the array itself)
     if isinstance(varType, types.ArrayT):
       if LS: LOG.info("WARN: Deref_of_Array: %s, %s", e, varType)
-      return [varName]
+      return {varName}
 
     val = dfvIn.getVal(varName)
-    if val.top: return simApi.SimPending
-    if val.bot: return simApi.SimFailed
-    return list(val.val)
+    if val.top: return SimPending
+    if val.bot: return SimFailed
+    return val.val
 
 
   def Cond__to__UnCond(self,
       e: expr.VarE,
       nodeDfv: Opt[NodeDfvL] = None,
-      values: Opt[List[bool]] = None,
-  ) -> Opt[List[bool]]:
+      values: Opt[Set[bool]] = None,
+  ) -> Opt[Set[bool]]:
     # STEP 1: check if the expression can be evaluated
     nameType = ir.inferTypeOfVal(self.func, e.name)
     if not isinstance(nameType, types.Ptr):
-      return sim.SimFailed  # i.e. no eval possible for the expression
+      return SimFailed  # i.e. no eval possible for the expression
 
     # STEP 2: If here, eval may be possible, hence attempt eval
     if nodeDfv is None:
-      return sim.SimPending  # i.e. given a dfv, eval may be possible
+      return SimPending  # i.e. given a dfv, eval may be possible
 
     # STEP 3: If here, either eval or filter the values
     dfvIn = cast(OverallL, nodeDfv.dfvIn)
     if values is not None:
       assert len(values), f"{e}, {values}"
-      return self.filterValues(e, values, dfvIn, sim.BoolValue) # filter the values
+      return self.filterValues(e, values, dfvIn, BoolValue) # filter the values
 
     # STEP 4: If here, eval the expression
     dfvIn = cast(OverallL, nodeDfv.dfvIn)
     val = cast(ComponentL, dfvIn.getVal(e.name))
 
-    if val.bot: return sim.SimFailed  # cannot be evaluated
-    if val.top: return sim.SimPending  # can be evaluated, needs more info
+    if val.bot: return SimFailed  # cannot be evaluated
+    if val.top: return SimPending  # can be evaluated, needs more info
 
     if val.val and len(val.val) == 1 and irConv.NULL_OBJ_NAME in val.val:
-      return [False]
+      return {False}
     else:
-      return sim.SimFailed
+      return SimFailed
 
 
   def Num_Bin__to__Num_Lit(self,
@@ -327,26 +327,26 @@ class PointsToA(analysis.ValueAnalysisAT):
     # STEP 1: check if the expression can be evaluated
     opCode = e.opr.opCode
     if opCode not in (op.BO_NE_OC, op.BO_EQ_OC):
-      return sim.SimFailed
+      return SimFailed
     if not isinstance(e.arg1.type, types.Ptr):
-      return sim.SimFailed
+      return SimFailed
 
     # STEP 2: If here, eval may be possible, hence attempt eval
     if nodeDfv is None:
-      return sim.SimPending
+      return SimPending
 
     # STEP 3: If here, either eval or filter the values
     dfvIn = cast(OverallL, nodeDfv.dfvIn)
     if values is not None:
       assert len(values), f"{e}, {values}"
-      return self.filterValues(e, values, dfvIn, sim.NumValue) # filter the values
+      return self.filterValues(e, values, dfvIn, NumValue) # filter the values
 
     # STEP 4: If here, eval the expression
     leftArgDfv = cast(ComponentL, self.getExprDfv(e.arg1, dfvIn))
     rightArgDfv = cast(ComponentL, self.getExprDfv(e.arg2, dfvIn))
 
-    if leftArgDfv.top or rightArgDfv.top: return sim.SimPending
-    if leftArgDfv.bot or rightArgDfv.bot: return sim.SimFailed
+    if leftArgDfv.top or rightArgDfv.top: return SimPending
+    if leftArgDfv.bot or rightArgDfv.bot: return SimFailed
     assert leftArgDfv.val and rightArgDfv.val, f"{leftArgDfv}, {rightArgDfv}"
 
     retVal: Opt[int] = None
@@ -355,25 +355,25 @@ class PointsToA(analysis.ValueAnalysisAT):
     elif len(leftArgDfv.val & rightArgDfv.val) == 0:  # not equal
         retVal = 0 if opCode == op.BO_EQ_OC else 1
 
-    return [retVal] if retVal is not None else sim.SimFailed
+    return [retVal] if retVal is not None else SimFailed
 
 
   def filterTest(self,
       exprVal: dfv.ComponentL,
-      valueType: sim.ValueTypeT = sim.NumValue,
+      valueType: ValueTypeT = NumValue,
   ) -> Callable[[types.T], bool]:
     assert isinstance(exprVal, ComponentL), f"{exprVal}"
-    if valueType == sim.NumValue:
+    if valueType == NumValue:
       def valueTestNumeric(numVal: types.NumericT) -> bool:
         return True
       return valueTestNumeric  # return the test function
 
-    elif valueType == sim.BoolValue:
+    elif valueType == BoolValue:
       def valueTestBoolean(boolVal: bool) -> bool:
         return True
       return valueTestBoolean  # return the test function
 
-    elif valueType == sim.NameValue:
+    elif valueType == NameValue:
       def valueTestName(nameVal: types.VarNameT) -> bool:
         if exprVal.top: return False
         if exprVal.bot: return True
