@@ -147,6 +147,45 @@ TestActionAndResult(
   } # end of results
 ), # end TestActionAndResult
 
+TestActionAndResult(
+  action = "analyze", # analyze/diagnose/c2spanir
+  analyses = ["PointsToA", "IntervalA"], # which analyses to run
+  diagnoses = [], # diagnoses to run (must initialize)
+  results = {
+    "analysis.results": {
+      "PointsToA": {
+        "f:main": {
+          7 : dfv.NodeDfvL( # (c = *p)
+            dfvIn= pointsto.OverallL(None, val={
+              "v:main:p": pointsto.ComponentL(None, {"v:main:a"})
+            }),
+            dfvOut= pointsto.OverallL(None, val={
+              "v:main:p": pointsto.ComponentL(None, {"v:main:a"})
+            })
+          ),
+        }
+      }, # end analysis PointsToA
+
+      "IntervalA": {
+        "f:main": {
+          7 : dfv.NodeDfvL( # (c = *p)
+            dfvIn= interval.OverallL(None, val={
+              "v:main:a": interval.ComponentL(None, val=(10,10)),
+              "v:main:b": interval.ComponentL(None, val=(20,20)),
+            }),
+
+            dfvOut= interval.OverallL(None, val={
+              "v:main:a": interval.ComponentL(None, val=(10,10)),
+              "v:main:b": interval.ComponentL(None, val=(20,20)),
+              "v:main:c": interval.ComponentL(None, val=(10,10)),
+            }),
+          ),
+        }
+      }, # end analysis ConstA
+    }, # end analysis.results
+  } # end of results
+), # end TestActionAndResult
+
 ]
 # BLOCK END  : list of test actions and results
 

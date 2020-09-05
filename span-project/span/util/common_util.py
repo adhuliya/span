@@ -357,8 +357,8 @@ class Timer:
       self.stopCounts += 1
     return self
 
-  def stopAndPrint(self) -> None:
-    print(self.stop())
+  def stopAndLog(self) -> None:
+    if LS: LOG.debug(self.stop())
 
   def getDurationInMillisec(self) -> float:
     return self.cumulativeTime * 1000

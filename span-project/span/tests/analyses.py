@@ -26,6 +26,8 @@ from span.tests.common import \
 import span.sys.host as host
 import span.ir.graph as graph
 import span.api.dfv as dfv
+from span.api.analysis import AnalysisNameT
+from span.sys.clients import analyses as AllAnalyses
 
 
 class SpanAnalysisTests(unittest.TestCase):
@@ -53,12 +55,22 @@ class SpanAnalysisTests(unittest.TestCase):
           print(f"Checking analysis results of {cFile},")
           self.runAndCheckAnalysisResults(cFile, action)
 
+  def allAnPresent(self, analyses: List[AnalysisNameT]):
+    for anName in analyses:
+      if anName not in AllAnalyses:
+        return False
+    return True
+
 
   def runAndCheckAnalysisResults(self,
       cFileName: str,
       action: TestActionAndResult
   ) -> None:
     tUnit: ir.TranslationUnit = genTranslationUnit(cFileName, self)
+
+    if not self.allAnPresent(action.analyses):
+      print(f"  SkippingTest(AnalysesNotPresent):", action.analyses)
+      return None
 
     mainAnalysis = action.analyses[0]
     otherAnalyses = action.analyses[1:]
@@ -98,7 +110,6 @@ class SpanAnalysisTests(unittest.TestCase):
       self.assertEqual(results[nid], expectedResults[nid],
                        f"({cFileName}) Node {nid}")
 
-    # self.assertEqual(results, givenResults)
     return True
 
 

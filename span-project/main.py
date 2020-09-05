@@ -371,7 +371,7 @@ def analyzeSpanIr(args: argparse.Namespace) -> None:
                                   maxNumOfAnalyses=maxAnalysisCount,
                                   disableAllSim=disableAllSim,
                                   useDdm=idemand)
-  timer.stopAndPrint()
+  timer.stopAndLog()
   print(f"TimeElapsed(SpanAnalysis(no   setups)): {analysisTime} ms")
 
 
@@ -408,7 +408,7 @@ def analyzeFunctions(
     totalAnalysisTime += analysisTime
     print("HostObjectSize (after  analysis):", cutil.getSize(syn1))
     print("========================================")
-    syn1.printResult() # print the result of each analysis
+    syn1.printOrLogResult() # print the result of each analysis
 
   return totalAnalysisTime
 
@@ -545,7 +545,7 @@ def simulateCascading(args: argparse.Namespace):
   analyzeFunctions(currTUnit=currTUnit,
                    funcName=funcName,
                    analysisSeq=analysisSeq)
-  timer.stopAndPrint()
+  timer.stopAndLog()
 
 
 def dumpSpanIr(args: argparse.Namespace):
@@ -592,7 +592,7 @@ def parseTUnitObject(fileName: str, ipa=False) -> tunit.TranslationUnit:
   currTUnit: tunit.TranslationUnit = ir.readSpanIr(spanIrFileName)
   if ipa: irIpa.preProcess(currTUnit)
 
-  timer.stopAndPrint()
+  timer.stopAndLog()
   print("TUnitObjSize:", cutil.getSize(currTUnit))
   return currTUnit
 
@@ -792,7 +792,7 @@ if __name__ == "__main__":
 
   timer = cutil.Timer("TotalTimeTaken")
   args.func(args)             # take action
-  timer.stopAndPrint()
+  timer.stopAndLog()
 
   LOG.info("FINISHED!")  # type: ignore
 

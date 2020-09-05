@@ -13,7 +13,10 @@ import io
 LOG = logging.getLogger("span")
 
 from span.util.logger import LS
-from span.api.lattice import LatticeLT, DataLT, ChangeL, Changed, NoChange, BoundLatticeLT
+from span.api.lattice import\
+  (LatticeLT, DataLT, ChangeL, Changed, NoChange,
+   BoundLatticeLT, basicMeetOp, basicLessThanTest,
+   basicEqualTest, getBasicString)
 from span.util.util import AS
 import span.ir.constructs as constructs
 import span.ir.types as types
@@ -340,73 +343,68 @@ class OverallL(DataLT):
 
   def meet(self, other) -> Tuple['OverallL', ChangeL]:
     assert isinstance(other, OverallL), f"{other}"
-    if self is other: return self, NoChange
-    if self.bot: return self, NoChange
-    if other.top: return self, NoChange
-    if other.bot: return other, Changed
-    if self.top: return other, Changed
 
-    assert self.val and other.val
-    if self.val == other.val: return self, NoChange
-
-    # take meet of individual entities (variables)
-    meet_val: Dict[types.VarNameT, ComponentL] = {}
-    vars_set = {vName for vName in self.val.keys()}
-    vars_set.update({vName for vName in other.val.keys()})
-    bot = self.componentBot
-    for vName in vars_set:
-      dfv1: ComponentL = self.val.get(vName, bot)
-      dfv2: ComponentL = other.val.get(vName, bot)
-      if not (dfv1.bot or dfv2.bot): # do not store bot, as it is the default
+    tup = basicMeetOp(self, other)
+    if tup:
+      return tup
+    elif self.val == other.val:
+      return self, NoChange
+    else:
+      # take meet of individual entities (variables)
+      meet_val: Dict[types.VarNameT, ComponentL] = {}
+      vNames = set(self.val.keys())
+      vNames.update(other.val.keys())
+      bot = self.componentBot
+      selfValGet, otherValGet = self.val.get, other.val.get
+      for vName in vNames:
+        dfv1: ComponentL = selfValGet(vName, bot)
+        if dfv1.bot: continue  # do not store bot, as it is the default
+        dfv2: ComponentL = otherValGet(vName, bot)
+        if dfv2.bot: continue  # do not store bot, as it is the default
         dfv3, _ = dfv1.meet(dfv2)
         if not dfv3.bot:
           meet_val[vName] = dfv3
 
-    if meet_val:
-      value = self.__class__(self.func, val=meet_val)
-    else:
-      value = self.__class__(self.func, bot=True)
+      if meet_val:
+        value = self.__class__(self.func, val=meet_val)
+      else:
+        value = self.__class__(self.func, bot=True)
 
-    return value, Changed
+      return value, Changed
 
 
   def __lt__(self,
       other: 'OverallL'
   ) -> bool:
-    if self.bot: return True
-    if other.top: return True
-    if other.bot: return False
-    if self.top: return False
+    lt = basicLessThanTest(self, other)
+    if lt is not None: return lt
 
     assert self.val and other.val, f"{self}, {other}"
-    vNames = {vName for vName in self.val}
-    vNames.update({vName for vName in other.val})
+    vNames = set(self.val.keys())
+    vNames.update(other.val.keys())
     bot = self.componentBot
+    selfValGet, otherValGet = self.val.get, other.val.get
     for vName in vNames:
-      dfv1 = self.val.get(vName, bot)
-      dfv2 = other.val.get(vName, bot)
+      dfv1 = selfValGet(vName, bot)
+      dfv2 = otherValGet(vName, bot)
       if not dfv1 < dfv2: return False
     return True
 
 
   def __eq__(self, other) -> bool:
     """strictly equal check."""
-    if self is other:
-      return True
     if not isinstance(other, self.__class__):
       return NotImplemented
 
-    sTop, sBot, oTop, oBot = self.top, self.bot, other.top, other.bot
-    if sTop and oTop: return True
-    if sBot and oBot: return True
-    if sTop or sBot or oTop or oBot: return False
+    equal = basicEqualTest(self, other)
+    if equal is not None: return equal
 
     # self and other are proper values
     assert self.val and other.val, f"{self.val}, {other.val}"
-    vNames = {var for var in self.val}
-    vNames.update(var for var in other.val)
-    selfGetVal, otherGetVal = self.val.get, other.val.get
+    vNames = set(self.val.keys())
+    vNames.update(other.val.keys())
     bot = self.componentBot
+    selfGetVal, otherGetVal = self.val.get, other.val.get
     for vName in vNames:
       dfv1 = selfGetVal(vName, bot)
       dfv2 = otherGetVal(vName, bot)
@@ -426,7 +424,6 @@ class OverallL(DataLT):
     """returns entity lattice value."""
     if self.top: return self.componentTop
     if self.bot: return self.componentBot
-
     assert self.val, f"{self}"
     return self.val.get(varName, self.componentBot)
 
@@ -502,10 +499,6 @@ class OverallL(DataLT):
     string.write("{")
     prefix = None
     for key in self.val:
-      # if not irConv.isUserVar(key): # added for ACM Winter School
-      #   continue
-      # if irConv.isDummyVar(key):  # skip printing dummy variables
-      #   continue
       if prefix: string.write(prefix)
       prefix = ", "
       name = irConv.simplifyName(key)

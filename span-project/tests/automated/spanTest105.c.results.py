@@ -71,5 +71,32 @@ TestActionAndResult(
   } # end TestActionAndResult.results dictionary
 ),
 
+TestActionAndResult(
+  action = "analyze", # analyze/diagnose/c2spanir
+  analyses = ["ConstA"], # which analyses to run
+  diagnoses = [], # diagnoses to run (must initialize)
+  results = {
+    "analysis.results": {
+      "ConstA": {
+        "f:main": {
+          5 : dfv.NodeDfvL( # (return 1t)
+            dfvIn= const.OverallL(None, val={
+              "v:main:n1.val": const.ComponentL(None, val=10),
+              "v:main:n2.val": const.ComponentL(None, val=10),
+              "v:main:1t": const.ComponentL(None, val=10),
+            }),
+
+            dfvOut= const.OverallL(None, val={
+              "v:main:n1.val": const.ComponentL(None, val=10),
+              "v:main:n2.val": const.ComponentL(None, val=10),
+              "v:main:1t": const.ComponentL(None, val=10),
+            }),
+          ),
+        }
+      }, # end analysis ConstA
+    }, # end analysis.results
+  } # end of results
+), # end TestActionAndResult
+
 ]
 # BLOCK END  : list of test actions and results

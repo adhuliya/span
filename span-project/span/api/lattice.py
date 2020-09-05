@@ -293,10 +293,10 @@ def basicEqualTest(first: LatticeLT, second: LatticeLT) -> Opt[bool]:
   If this fails the lattices can do more complicated tests.
   """
   if first is second: return True
-  sTop, sBot, oTop, oBot = first.top, first.bot, second.top, second.bot
-  if sTop and oTop: return True
-  if sBot and oBot: return True
-  if sTop or sBot or oTop or oBot: return False
+  fTop, fBot, sTop, sBot = first.top, first.bot, second.top, second.bot
+  if fTop and sTop: return True
+  if fBot and sBot: return True
+  if fTop or fBot or sTop or sBot: return False
   # assert first.val and second.val, f"{first}, {second}"
   return None  # i.e. can't decide
 

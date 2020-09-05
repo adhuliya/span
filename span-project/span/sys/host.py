@@ -494,7 +494,7 @@ class Host:
     # for support analyses that fail to simplify ALL needs
     self.activeAnIsUseful: bool = True
 
-    timer.stopAndPrint()
+    timer.stopAndLog()
 
 
   def addNodes(self, nodes: List[graph.CfgNode]) -> None:
@@ -782,7 +782,7 @@ class Host:
         self.analysisCounter += 1
         self._analyze()
 
-    timer.stopAndPrint()
+    timer.stopAndLog()
     return timer.getDurationInMillisec()
 
 
@@ -2161,7 +2161,7 @@ class Host:
 
   # BOUND END  : Simplification_Methods
 
-  def printResult(self):
+  def printOrLogResult(self):
     """prints the result of all analyses."""
     print("Function:", self.func.name, "TUnit:", self.func.tUnit.name)
     for anName, res in self.anWorkDict.items():
@@ -2174,10 +2174,10 @@ class Host:
         print(f">> {nid}. ({node.insn}): {nDfv}")
       print("Worklist:", self.anWorkDict[anName].wl.getAllNodesStr())
 
-    print(self.stats)
-    if self.useDdm: print(self.ddmObj.timer)
-    print(self.tUnit.stats)
-    print()  # an extra line
+    if LS: LOG.debug("Stats:\n%s", self.stats)
+    if self.useDdm:
+      if LS: LOG.debug("DDM Stats\n%s", self.ddmObj.timer)
+    if LS: LOG.debug("Stats:\n%s", self.tUnit.stats)
 
     if LS: LOG.debug("AnWorklistDots:\n%s", self.getAnIterationDotString())
     # print("DiagnosticInfo:", file=sys.stderr)
