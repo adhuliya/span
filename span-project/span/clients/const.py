@@ -344,7 +344,7 @@ class ConstA(analysis.ValueAnalysisAT):
       e: expr.LitE,
       dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
   ) -> ComponentL:
-    """A default implementation for Constant Propagation."""
+    if LS: LOG.debug("ReachedHere")  #delit
     assert isinstance(e.val, (int, float)), f"{e}"
     return ComponentL(self.func, val=e.val)
 

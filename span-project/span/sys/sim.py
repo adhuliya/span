@@ -38,7 +38,7 @@ class SimRecord:
       sim: Opt[List] = None,
   ) -> None:
     self.simName = simName
-    self._sim = sim if sim else SimPending
+    self._sim = sim
 
 
   def hasFailedValue(self):
@@ -79,5 +79,13 @@ class SimRecord:
   def __hash__(self):
     ss = self._sim
     return hash((self.simName, len(ss) if ss else 0))
+
+
+  def __str__(self):
+    return f"SimRecord({self.simName}, {self._sim})"
+
+
+  def __repr__(self):
+    return self.__str__()
 
 

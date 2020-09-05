@@ -528,6 +528,8 @@ class Host:
       e, simName = tup2[0], tup2[1]  # tup2 type is (expr, simName)
       value = self.calculateSimValue(self.activeAnName, simName, node, e)
       changed = simRecord.setSimValue(value)  # update value
+      if LS: LOG.debug("SimOfExpr: '%s' with simRecord: %s, changed: %s",
+                       e, simRecord, changed)
       if changed:
         assert e, f"{tup2}"
         self.reAddAnalyses(node, simName, e)
@@ -901,7 +903,7 @@ class Host:
     if not isinstance(insn, instr.ParallelI):
       return self._analyzeInstr(node, insn, nodeDfv)
 
-    if LS: LOG.debug("Analyzing_Instr (Node %s): %s", node.id, insn)
+    if LS: LOG.debug("Analyzing_Instr (ParallelI) (Node %s): %s", node.id, insn)
 
     def ai(ins):
       dfv = self._analyzeInstr(node, ins, nodeDfv)
@@ -917,7 +919,8 @@ class Host:
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
     LLS = LS
-    if LLS: LOG.debug("Analyzing_Instr (Node %s): %s", node.id, insn)
+    if LLS: LOG.debug("Analyzing_Instr (Node %s): %s, iType: %s",
+                      node.id, insn, insn.type)
 
     if self.ipa:  #IPA
       callE = instr.getCallExpr(insn)
@@ -953,7 +956,6 @@ class Host:
     ptrInstrType: bool = iType.isPointer()
     recordInstrType: bool = iType.isRecord()
     instrCode = insn.instrCode
-    if LLS: LOG.debug("InstrValueType: %s, instrCode: %s", iType, instrCode)
 
     lhsVarSim = False
     rhsDerefSim = False
@@ -968,47 +970,36 @@ class Host:
 
     # BOUND START: transfer_function_selection_process.
     if instrCode == NOP_INSTR_IC:
-      if LLS: LOG.debug(AnalysisAT.Nop_Instr.__doc__)
       transferFunc = activeAnObj.Nop_Instr
 
     elif instrCode == USE_INSTR_IC:
-      if LLS: LOG.debug(AnalysisAT.Use_Instr.__doc__)
       transferFunc = activeAnObj.Use_Instr
 
     elif instrCode == EX_READ_INSTR_IC:
-      if LLS: LOG.debug(AnalysisAT.ExRead_Instr.__doc__)
       transferFunc = activeAnObj.ExRead_Instr
 
     elif instrCode == COND_READ_INSTR_IC:
-      if LLS: LOG.debug(AnalysisAT.CondRead_Instr.__doc__)
       transferFunc = activeAnObj.CondRead_Instr
 
     elif instrCode == UNDEF_VAL_INSTR_IC:
-      if LLS: LOG.debug(AnalysisAT.UnDefVal_Instr.__doc__)
       transferFunc = activeAnObj.UnDefVal_Instr
 
     elif instrCode == FILTER_INSTR_IC:
-      if LLS: LOG.debug(AnalysisAT.Filter_Instr.__doc__)
       transferFunc = activeAnObj.Filter_Instr
 
     elif isinstance(insn, instr.ReturnI):
       if insn.arg is None:
-        if LLS: LOG.debug(AnalysisAT.Return_Void_Instr.__doc__)
         transferFunc = activeAnObj.Return_Void_Instr
       elif insn.arg.exprCode == VAR_EXPR_EC:
-        if LLS: LOG.debug(AnalysisAT.Return_Var_Instr.__doc__)
         transferFunc = activeAnObj.Return_Var_Instr
       else:
-        if LLS: LOG.debug(AnalysisAT.Return_Lit_Instr.__doc__)
         transferFunc = activeAnObj.Return_Lit_Instr
 
     elif instrCode == COND_INSTR_IC:
-      if LLS: LOG.debug(AnalysisAT.Conditional_Instr.__doc__)
       transferFunc = activeAnObj.Conditional_Instr
       condInstr = True
 
     elif instrCode == CALL_INSTR_IC:
-      if LLS: LOG.debug(AnalysisAT.Call_Instr.__doc__)
       transferFunc = activeAnObj.Call_Instr
 
     elif isinstance(insn, instr.AssignI):
@@ -1018,257 +1009,210 @@ class Host:
         lhsVarSim = True
         if rhsExprCode == VAR_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
           if numericInstrType:
-            if LLS: LOG.debug(AnalysisAT.Num_Assign_Var_Var_Instr.__doc__)
             transferFunc = activeAnObj.Num_Assign_Var_Var_Instr
             rhsNumVarSim = True
           elif ptrInstrType:
-            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_Var_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Var_Var_Instr
           elif recordInstrType:
-            if LLS: LOG.debug(AnalysisAT.Record_Assign_Var_Var_Instr.__doc__)
             transferFunc = activeAnObj.Record_Assign_Var_Var_Instr
 
         elif rhsExprCode == LIT_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
           if numericInstrType:
-            if LLS: LOG.debug(AnalysisAT.Num_Assign_Var_Lit_Instr.__doc__)
             transferFunc = activeAnObj.Num_Assign_Var_Lit_Instr
 
           elif ptrInstrType:
-            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_Lit_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Var_Lit_Instr
 
         elif rhsExprCode == SIZEOF_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
           # hence lhs, rhs are numeric
-          if LLS: LOG.debug(AnalysisAT.Num_Assign_Var_SizeOf_Instr.__doc__)
           transferFunc = activeAnObj.Num_Assign_Var_SizeOf_Instr
 
         elif isinstance(rhs, expr.UnaryE): # lhsExprCode == VAR_EXPR_EC
           if numericInstrType:
-            if LLS: LOG.debug(AnalysisAT.Num_Assign_Var_UnaryArith_Instr.__doc__)
             transferFunc = activeAnObj.Num_Assign_Var_UnaryArith_Instr
             rhsNumUnaryExprSim = True
           else:
-            if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
+            raise ValueError(f"{node}, {insn}, {insn.type}")
 
         elif rhsExprCode == DEREF_EXPR_EC:
           rhsDerefSim = True
           if numericInstrType:
-            if LLS: LOG.debug(AnalysisAT.Num_Assign_Var_Deref_Instr.__doc__)
             transferFunc = activeAnObj.Num_Assign_Var_Deref_Instr
           elif ptrInstrType:
-            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_Deref_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Var_Deref_Instr
           elif recordInstrType:
-            if LLS: LOG.debug(AnalysisAT.Record_Assign_Var_Deref_Instr.__doc__)
             transferFunc = activeAnObj.Record_Assign_Var_Deref_Instr
           else:
-            if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s, itype: %s",
-                              insn, insn.type)
+            raise ValueError(f"{node}, {insn}, {insn.type}")
 
         elif rhsExprCode == BINARY_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
           if numericInstrType:
-            if LLS: LOG.debug(AnalysisAT.Num_Assign_Var_BinArith_Instr.__doc__)
             transferFunc = activeAnObj.Num_Assign_Var_BinArith_Instr
             rhsNumBinaryExprSim = True
           elif ptrInstrType:  # must be a pointer instruction
-            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_BinArith_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Var_BinArith_Instr
           else:
-            if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
+            raise ValueError(f"{node}, {insn}, {insn.type}")
 
         elif isinstance(rhs, expr.AddrOfE): # lhsExprCode == VAR_EXPR_EC
           # iType must be a pointer
           argExprCode = rhs.arg.exprCode
           if argExprCode == VAR_EXPR_EC:
-            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_AddrOfVar_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Var_AddrOfVar_Instr
           elif argExprCode == ARR_EXPR_EC:
-            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_AddrOfArray_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Var_AddrOfArray_Instr
           elif argExprCode == MEMBER_EXPR_EC:
-            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_AddrOfMember_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Var_AddrOfMember_Instr
           elif isinstance(rhs.arg, expr.DerefE):
-            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_AddrOfDeref_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Var_AddrOfDeref_Instr
           elif argExprCode == FUNC_EXPR_EC:
-            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_AddrOfFunc_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Var_AddrOfFunc_Instr
           else:
-            if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
+            raise ValueError(f"{node}, {insn}, {insn.type}")
 
         elif rhsExprCode == ARR_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
           if numericInstrType:
-            if LLS: LOG.debug(AnalysisAT.Num_Assign_Var_Array_Instr.__doc__)
             transferFunc = activeAnObj.Num_Assign_Var_Array_Instr
 
           elif ptrInstrType:
-            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_Array_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Var_Array_Instr
 
           elif recordInstrType:
-            if LLS: LOG.debug(AnalysisAT.Record_Assign_Var_Array_Instr.__doc__)
             transferFunc = activeAnObj.Record_Assign_Var_Array_Instr
 
           else:
-            if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
+            raise ValueError(f"{node}, {insn}, {insn.type}")
 
         elif rhsExprCode == MEMBER_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
           rhsMemDerefSim = insn.rhs.hasDereference()
           if numericInstrType:
-            if LLS: LOG.debug(AnalysisAT.Num_Assign_Var_Member_Instr.__doc__)
             transferFunc = activeAnObj.Num_Assign_Var_Member_Instr
 
           elif ptrInstrType:
-            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_Member_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Var_Member_Instr
 
           elif recordInstrType:
-            if LLS: LOG.debug(AnalysisAT.Record_Assign_Var_Member_Instr.__doc__)
             transferFunc = activeAnObj.Record_Assign_Var_Member_Instr
           else:
-            if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
+            raise ValueError(f"{node}, {insn}, {insn.type}")
 
         elif rhsExprCode == CALL_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
           if numericInstrType:
-            if LLS: LOG.debug(AnalysisAT.Num_Assign_Var_Call_Instr.__doc__)
             transferFunc = activeAnObj.Num_Assign_Var_Call_Instr
 
           elif ptrInstrType:
-            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_Call_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Var_Call_Instr
 
           elif recordInstrType:
-            if LLS: LOG.debug(AnalysisAT.Record_Assign_Var_Call_Instr.__doc__)
             transferFunc = activeAnObj.Record_Assign_Var_Call_Instr
 
           else:
-            if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
+            raise ValueError(f"{node}, {insn}, {insn.type}")
 
         elif rhsExprCode == FUNC_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
           if ptrInstrType:  # has to be
-            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_FuncName_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Var_FuncName_Instr
           else:
-            if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
+            raise ValueError(f"{node}, {insn}, {insn.type}")
 
         elif rhsExprCode == SELECT_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
           if numericInstrType:
-            if LLS: LOG.debug(AnalysisAT.Num_Assign_Var_Select_Instr.__doc__)
             transferFunc = activeAnObj.Num_Assign_Var_Select_Instr
           elif ptrInstrType:
-            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_Select_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Var_Select_Instr
           elif recordInstrType:
-            if LLS: LOG.debug(AnalysisAT.Record_Assign_Var_Select_Instr.__doc__)
             transferFunc = activeAnObj.Record_Assign_Var_Select_Instr
           else:
-            if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
+            raise ValueError(f"{node}, {insn}, {insn.type}")
 
         elif isinstance(rhs, expr.CastE):  # lhsExprCode == VAR_EXPR_EC
           if rhs.arg.exprCode == VAR_EXPR_EC:
             if numericInstrType:
-              if LLS: LOG.debug(AnalysisAT.Num_Assign_Var_CastVar_Instr.__doc__)
               transferFunc = activeAnObj.Num_Assign_Var_CastVar_Instr
             elif ptrInstrType:
-              if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_CastVar_Instr.__doc__)
               transferFunc = activeAnObj.Ptr_Assign_Var_CastVar_Instr
             else:
-              if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
+              raise ValueError(f"{node}, {insn}, {insn.type}")
 
           elif rhs.arg.exprCode == ARR_EXPR_EC:
             if ptrInstrType:
-              if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Var_CastArr_Instr.__doc__)
               transferFunc = activeAnObj.Ptr_Assign_Var_CastArr_Instr
             else:
-              if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
+              raise ValueError(f"{node}, {insn}, {insn.type}")
 
       elif lhsExprCode == DEREF_EXPR_EC:
         # lhs has to be a deref
         lhsDerefSim = True
         if rhsExprCode == VAR_EXPR_EC:  # lhs is a deref
           if numericInstrType:
-            if LLS: LOG.debug(AnalysisAT.Num_Assign_Deref_Var_Instr.__doc__)
             transferFunc = activeAnObj.Num_Assign_Deref_Var_Instr
             rhsNumVarSim = True
           elif ptrInstrType:
-            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Deref_Var_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Deref_Var_Instr
           elif recordInstrType:
-            if LLS: LOG.debug(AnalysisAT.Record_Assign_Deref_Var_Instr.__doc__)
             transferFunc = activeAnObj.Record_Assign_Deref_Var_Instr
           else:
-            if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
+            raise ValueError(f"{node}, {insn}, {insn.type}")
 
         elif rhsExprCode == LIT_EXPR_EC:  # lhs is a deref
           if numericInstrType:
-            if LLS: LOG.debug(AnalysisAT.Num_Assign_Deref_Lit_Instr.__doc__)
             transferFunc = activeAnObj.Num_Assign_Deref_Lit_Instr
           elif ptrInstrType:
-            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Deref_Lit_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Deref_Lit_Instr
           else:
-            if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
+            raise ValueError(f"{node}, {insn}, {insn.type}")
 
       elif lhsExprCode == ARR_EXPR_EC:
         if rhsExprCode == VAR_EXPR_EC:  # lhs is an array expr
           if numericInstrType:
-            if LLS: LOG.debug(AnalysisAT.Num_Assign_Array_Var_Instr.__doc__)
             transferFunc = activeAnObj.Num_Assign_Array_Var_Instr
             rhsNumVarSim = True
           elif ptrInstrType:
-            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Array_Var_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Array_Var_Instr
           elif recordInstrType:
-            if LLS: LOG.debug(AnalysisAT.Record_Assign_Array_Var_Instr.__doc__)
             transferFunc = activeAnObj.Record_Assign_Array_Var_Instr
           else:
-            if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
+            raise ValueError(f"{node}, {insn}, {insn.type}")
 
         elif rhsExprCode == LIT_EXPR_EC:  # lhs is an array expr
           if numericInstrType:
-            if LLS: LOG.debug(AnalysisAT.Num_Assign_Array_Lit_Instr.__doc__)
             transferFunc = activeAnObj.Num_Assign_Array_Lit_Instr
           elif ptrInstrType:
-            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Array_Lit_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Array_Lit_Instr
           else:
-            if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
+            raise ValueError(f"{node}, {insn}, {insn.type}")
 
       elif lhsExprCode == MEMBER_EXPR_EC:
         lhsMemDerefSim = insn.lhs.hasDereference()
         if rhsExprCode == VAR_EXPR_EC:  # lhs is a member expr
           if numericInstrType:
-            if LLS: LOG.debug(AnalysisAT.Num_Assign_Member_Var_Instr.__doc__)
             transferFunc = activeAnObj.Num_Assign_Member_Var_Instr
             rhsNumVarSim = True
           elif ptrInstrType:
-            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Member_Var_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Member_Var_Instr
           elif recordInstrType:
-            if LLS: LOG.debug(AnalysisAT.Record_Assign_Member_Var_Instr.__doc__)
             transferFunc = activeAnObj.Record_Assign_Member_Var_Instr
           else:
-            if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
+            raise ValueError(f"{node}, {insn}, {insn.type}")
 
         elif rhsExprCode == LIT_EXPR_EC:  # lhs is a member expr
           if numericInstrType:
-            if LLS: LOG.debug(AnalysisAT.Num_Assign_Member_Lit_Instr.__doc__)
             transferFunc = activeAnObj.Num_Assign_Member_Lit_Instr
           elif ptrInstrType:
-            if LLS: LOG.debug(AnalysisAT.Ptr_Assign_Member_Lit_Instr.__doc__)
             transferFunc = activeAnObj.Ptr_Assign_Member_Lit_Instr
           else:
-            if LLS: LOG.error("Unknown_or_Unhandled_Instruction: %s", insn)
+            raise ValueError(f"{node}, {insn}, {insn.type}")
 
     else:
-      if LLS: LOG.error("Unknown_or_Unhandled_Instruction.")
+      raise ValueError(f"{node}, {insn}, {insn.type}")
 
     self.stats.funcSelectionTimer.stop()
     # BOUND END  : transfer_function_selection_process.
     transferFunc = cast(Callable[[Any, Any, Any], NodeDfvL], transferFunc)
 
     tFuncName = transferFunc.__name__  # needed
+    if LLS: LOG.debug("Instr_identified_as: %s",
+                      getattr(AnalysisAT, tFuncName).__doc__.strip())
     if not self.disableAllSim and transferFunc != activeAnObj.Nop_Instr:
       if tFuncName == UnDefVal_Instr__Name:
         # lhs is a var, hence could be dead code
@@ -1340,6 +1284,8 @@ class Host:
       return self.Conditional_Instr(node, insn, nodeDfv)  # type: ignore
     else:
       self.stats.instrAnTimer.start()
+      if LS: LOG.debug("FinallyInvokingInstrFunc: %s.%s() on %s",
+                       self.activeAnName, tFuncName, insn)
       nDfv = transferFunc(node, insn, nodeDfv)  # type: ignore
       self.stats.instrAnTimer.stop()
       return nDfv
@@ -1498,16 +1444,15 @@ class Host:
                                                   insn, lhsArg, demand)
     if valid: return newInsn
 
-    ret = self.Calc_Deref__to__Vars(node, lhsArg)
-    if ret is None:
+    values = self.Calc_Deref__to__Vars(node, lhsArg)
+    if values is SimFailed:
       self.setCachedInstrSim(node.id, simName, insn, lhsArg, insn)
       return None  # i.e. process_the_original_insn
-    elif ret == SimPending:
+    elif values is SimPending:
       newInsn = instr.ExReadI({lhsArg.name})
     else:  # take meet of the dfv of the set of instructions now possible
-      assert ret.val and len(ret.val), f"{node}: {ret}"
       AssignI, VarE = instr.AssignI, expr.VarE
-      newInsn = instr.ParallelI([AssignI(VarE(vName), rhs) for vName in ret.val])
+      newInsn = instr.ParallelI([AssignI(VarE(vName), rhs) for vName in values])
       newInsn.addInstr(instr.ExReadI({lhsArg.name}))
 
     self.tUnit.inferTypeOfInstr(newInsn)
@@ -1539,17 +1484,18 @@ class Host:
                                                   insn, rhsArg, demand)
     if valid: return newInsn
 
-    ret = self.Calc_Deref__to__Vars(node, rhsArg)
-    if ret is None:
+    values = self.Calc_Deref__to__Vars(node, rhsArg)
+    if values is SimFailed:
       self.setCachedInstrSim(node.id, simName, insn, rhsArg, insn)
       return None  # i.e. process_the_original_insn
-    elif ret == SimPending:
+    elif values == SimPending:
       newInsn = instr.CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhsArg))
     else:  # take meet of the dfv of the set of instructions now possible
-      assert ret.val and len(ret.val), f"{node}: {ret}"
+      assert values and len(values), f"{node}: {values}"
       AssignI, VarE = instr.AssignI, expr.VarE
-      newInsn = instr.ParallelI([AssignI(lhs, VarE(vName)) for vName in ret.val])
-      newInsn.addInstr(instr.CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhsArg)))
+      newInsn = instr.ParallelI([AssignI(lhs, VarE(vName)) for vName in values])
+      newInsn.addInstr(instr.CondReadI(
+        lhs.name, ir.getNamesUsedInExprSyntactically(rhsArg)))
 
     self.tUnit.inferTypeOfInstr(newInsn)
     self.setCachedInstrSim(node.id, simName, insn, rhsArg, newInsn)
@@ -1651,11 +1597,11 @@ class Host:
     newInsn, valid = self.getCachedInstrSimResult(node, simName, insn, rhs)
     if valid: return self.analyzeInstr(node, newInsn, nodeDfv) if newInsn else None
 
-    ret = self.getSim(node, simName, rhs)
-    if ret is None:
+    values = self.getSim(node, simName, rhs)
+    if values is SimFailed:
       self.setCachedInstrSim(node.id, simName, insn, rhs, insn)
       return None  # i.e. process_the_original_insn
-    elif ret == SimPending:
+    elif values is SimPending:
       if isinstance(lhs, expr.VarE):
         newInsn = instr.CondReadI(lhs.name, {rhs.name})
       elif lhs.hasDereference():
@@ -1669,14 +1615,13 @@ class Host:
         readVarNames = {indexName} if indexName else set()
         newInsn = instr.CondReadI(lhs.of.name, {rhs.name} | readVarNames)
       else:
-        assert False, f"{insn}"
+        raise ValueError(f"{insn}")
 
     else:  # there is some simplification
       if not self.activeAnIsSimAn and self.blockNonSimAn:
         return self.Barrier_Instr(node, node.insn, nodeDfv)
       AssignI, LitE = instr.AssignI, expr.LitE
-      assert isinstance(ret.val, (int, float)), f"{ret}"
-      newInsn = instr.ParallelI([AssignI(lhs, LitE(ret.val))])
+      newInsn = instr.ParallelI([AssignI(lhs, LitE(val)) for val in values])
 
     return self.handleNewInstr(node, simName, insn, rhs, newInsn, nodeDfv)
 
@@ -1719,16 +1664,16 @@ class Host:
     newInsn, valid = self.getCachedInstrSimResult(node, simName, insn, rhs)
     if valid: return self.analyzeInstr(node, newInsn, nodeDfv) if newInsn else None
 
-    ret = self.getSim(node, simName, rhs)
-    if ret is None:
+    values = self.getSim(node, simName, rhs)
+    if values is SimFailed:
       self.setCachedInstrSim(node.id, simName, insn, rhs, insn)
       return None  # i.e. process_the_original_insn
-    elif ret == SimPending:
+    elif values is SimPending:
       newInsn = instr.CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs))
     else:
-      assert isinstance(ret.val, (int, float)), f"{ret}"
       AssignI, LitE = instr.AssignI, expr.LitE
-      newInsn = instr.ParallelI([AssignI(lhs, LitE(ret.val))])
+      newInsn = instr.ParallelI(
+        [AssignI(lhs, LitE(val)) for val in values])
       newInsn.addInstr(instr.CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs)))
 
     return self.handleNewInstr(node, simName, insn, rhs, newInsn, nodeDfv)
@@ -1751,20 +1696,22 @@ class Host:
     newInsn, valid = self.getCachedInstrSimResult(node, simName, insn, rhsArg)
     if valid: return self.analyzeInstr(node, newInsn, nodeDfv) if newInsn else None
 
-    ret = self.getSim(node, simName, rhsArg)
-    if ret is None:
+    values = self.getSim(node, simName, rhsArg)
+    if values is SimFailed:
       self.setCachedInstrSim(node.id, simName, insn, rhsArg, insn)
       return None  # i.e. process_the_original_insn
-    elif ret == SimPending:
+    elif values is SimPending:
       newInsn = instr.CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs))
     else:
       AssignI, LitE, BinaryE = instr.AssignI, expr.LitE, expr.BinaryE
-      assert isinstance(ret.val, (int, float)), f"{ret}"
       if argPos == 1:
-        newInsn = instr.ParallelI([AssignI(lhs, BinaryE(LitE(ret.val), rhs.opr, rhs.arg2))])
+        newInsn = instr.ParallelI(
+          [AssignI(lhs, BinaryE(LitE(val), rhs.opr, rhs.arg2)) for val in values])
       else:
-        newInsn = instr.ParallelI([AssignI(lhs, BinaryE(rhs.arg1, rhs.opr, LitE(ret.val)))])
-      newInsn.addInstr(instr.CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs)))
+        newInsn = instr.ParallelI(
+          [AssignI(lhs, BinaryE(rhs.arg1, rhs.opr, LitE(val))) for val in values])
+      newInsn.addInstr(
+        instr.CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs)))
 
     return self.handleNewInstr(node, simName, insn, rhsArg, newInsn, nodeDfv)
 
@@ -1777,6 +1724,7 @@ class Host:
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
     # always handle conditional instruction
+    if LS: LOG.debug("FinallyInvokingInstrFunc: Conditional_Instr() on %s", insn)
     self.stats.instrAnTimer.stop() # okay - excluding edge feasibility computation
     nodes = self.setEdgeFeasibility(node, insn.arg)
     self.stats.instrAnTimer.start() # okay
@@ -1792,16 +1740,16 @@ class Host:
       nodes = self.ef.setAllSuccEdgesFeasible(node)
     elif Cond__to__UnCond__Name in self.activeAnSimNeeds:
       boolSim = self.getSim(node, Cond__to__UnCond__Name, arg)
-      if boolSim is None:
+      if boolSim is SimFailed:
         nodes = self.ef.setAllSuccEdgesFeasible(node)
-      elif boolSim == SimPending:
-        nodes = None
-      elif boolSim.val == False:  # only false edge taken
+      elif boolSim is SimPending:
+        nodes = None  # no edge to be taken yet
+      elif False in boolSim:  # only false edge taken
         nodes = self.ef.setFalseEdgeFeasible(node)
-      elif boolSim.val == True:   # only true edge taken
+      elif True in boolSim:   # only true edge taken
         nodes = self.ef.setTrueEdgeFeasible(node)
       else:
-        assert False, f"{boolSim}"
+        raise ValueError(f"{node}, {arg}, {boolSim}")
 
     if self.useDdm: self.ddmObj.timer.start()
     if nodes and self.useDdm: #DDM
@@ -1955,6 +1903,8 @@ class Host:
         self.attachDemandToSimAnalysis(node, simName, simAnName, e)
         simValue = self.calculateSimValue(simAnName, simName, node, e)
         sr = SimRecord(simName, simValue)
+        if LS: LOG.debug("InitialSimValue of '%s' for '%s' is %s (%s)",
+                         e, simName, simValue, sr)
         self.incSimSuccessCount(simAnName, self.activeAnName) #COUNT_HERE:INC
         if not sr: self.decSimSuccessCount(simAnName)   #COUNT_HERE:DEC
         simRecordMap[tup2] = sr if sr else SimFailed
@@ -1995,10 +1945,10 @@ class Host:
     nid, simFunction = node.id, getattr(anObj, simName)
     nDfv = self.anWorkDict[simAnName].getDfv(nid)
 
-    if LS: LOG.debug("SimOfExpr: %s isAttemptedBy %s withDfv %s.", e, simAnName, nDfv)
+    if LS: LOG.debug("SimOfExpr: '%s' isAttemptedBy %s withDfv %s.", e, simAnName, nDfv)
     # Note: if e is None, it assumes sim works on node id
     value = simFunction(e if e else nid, nDfv, values)
-    if LS: LOG.debug("SimOfExpr: %s is %s, by %s.", e, value, simAnName)
+    if LS: LOG.debug("SimOfExpr: '%s' is %s, by %s.", e, value, simAnName)
     return value
 
 
@@ -2095,18 +2045,20 @@ class Host:
       return self.filteredSimSrcs[tup]
 
     simAnNames = self.fetchSimSources(simName)
+    if LS: LOG.debug("AllSimAnalyses for simName '%s' are %s",
+                     simName, simAnNames)
 
-    filteredSimAnNames = []
+    filteredSimAnNames = set()
 
     for anName in simAnNames:
       anClass = clients.analyses[anName]
-      anObj = anClass(self.func)
+      anObj = anClass(self.func)  # FIXME: remove this redundancy
       simFunc = getattr(anObj, simName)
-      if simFunc(e) is SimFailed:  # filtering away analyses here
-        filteredSimAnNames.append(anName)
+      if simFunc(e) is not SimFailed:  # filtering away analyses here
+        filteredSimAnNames.add(anName)
 
-    self.filteredSimSrcs[tup] = set(filteredSimAnNames)  # caching the results
-    return set(filteredSimAnNames)
+    self.filteredSimSrcs[tup] = filteredSimAnNames  # caching the results
+    return filteredSimAnNames
 
 
   # BOUND START: Simplification_Methods
@@ -2136,7 +2088,7 @@ class Host:
 
     res = self.collectAndMergeResults(anNames, simName, node, e)
 
-    if LS: LOG.debug("SimOfExpr (merged): %s is %s.", e, res)
+    if LS: LOG.debug("SimOfExpr (merged): '%s' is %s.", e, res)
     self.stats.simTimer.stop()
     return res
 
@@ -2157,21 +2109,26 @@ class Host:
 
     # Step 1: Find the first useful result
     values: Opt[Set] = SimFailed
+    if LS: LOG.debug("SimAnalyses for %s: %s", simName, anNames)
     for anName in anNames:    # loop to select the first working sim
       simRecord = self.anRevNodeDep[(anName, nid)][tup2]
       if simRecord is not None:
         values = simRecord.getSim()
+        if LS: LOG.debug("SelectedSim of %s for refinement: %s",
+                         anName, values)
         break  # break at the first useful value
     if values in (SimPending, SimFailed):
       return values  # failed/pending values can never be refined
 
     # Step 2: Refine the simplification
     assert values not in (SimPending, SimFailed), f"{values}"
+    if LS: LOG.debug("Refining(Start): %s", values)
     for anName in anNames:
       values = self.calculateSimValue(anName, simName, node, e, values)
       assert values != SimFailed, f"{anName}, {simName}, {node}, {e}, {values}"
       if values == SimPending:
         break  # no use to continue
+    if LS: LOG.debug("Refining(End): Refined value is %s", values)
     return values  # a refined result
 
 
@@ -2198,7 +2155,7 @@ class Host:
                        e.name, node)
       res = SimFailed  # i.e. process_the_original_insn
 
-    if LS: LOG.debug("SimOfExpr (joined): %s is %s.", e.name, res)
+    if LS: LOG.debug("SimOfExpr (joined): '%s' is %s.", e.name, res)
     return res
 
 

@@ -20,7 +20,8 @@ import span.ir.constructs as obj
 import span.ir.ir as ir
 from span.ir.ir import \
   (getNamesEnv, getNamesGlobal, getExprRValueNames,
-   getExprLValueNames, getNamesUsedInExprSyntactically)
+   getExprLValueNames, getNamesUsedInExprSyntactically,
+   getNamesUsedInExprNonSyntactically, inferTypeOfVal)
 from span.api.lattice import \
   (ChangeL, Changed, NoChange, DataLT, basicEqualTest, basicLessThanTest,
    getBasicString)
@@ -121,7 +122,9 @@ class OverallL(DataLT):
     self.val = self.val if self.val is not None else getNamesEnv(self.func).copy()
 
     for varName in varNames:
-      for name in getSuffixes(self.func, varName):
+      suffixes = getSuffixes(self.func, varName,
+                             inferTypeOfVal(self.func, varName))
+      for name in suffixes:
         self.val.remove(name)  # FIXME: kill all suffixes
 
     if not self.val:
@@ -148,7 +151,7 @@ class OverallL(DataLT):
 
   def __str__(self):
     s = getBasicString(self)
-    return s if s else f"{map(simplifyName, self.val)}"
+    return s if s else f"{set(map(simplifyName, self.val))}"
 
 
   def __repr__(self):
@@ -190,7 +193,8 @@ class StrongLiveVarsA(AnalysisAT):
     if ipa and not nodeDfv:
       raise ValueError(f"{ipa}, {nodeDfv}")
 
-    inBi, outBi = self.overallBot, self.overallBot
+    inBi = self.overallTop
+    outBi = OverallL(self.func, val=getNamesGlobal(self.func))
 
     if ipa:
       dfvIn = cast(OverallL, nodeDfv.dfvIn.getCopy())
@@ -388,6 +392,11 @@ class StrongLiveVarsA(AnalysisAT):
     if dfvOut.top and not gen: return NodeDfvL(dfvOut, dfvOut)
 
     outVal, newIn = dfvOut.val, dfvOut
+    if outVal is None:
+      top, bot = dfvOut.top, dfvOut.bot
+      if not (top or bot): raise ValueError(f"{dfvOut}")
+      outVal = set() if top else getNamesEnv(self.func)
+
     realKill = kill - gen if gen and kill else kill
     if (realKill and outVal & realKill) or (gen and gen - outVal):
       newIn = dfvOut.getCopy()
@@ -426,7 +435,7 @@ class StrongLiveVarsA(AnalysisAT):
     if rhsIsCallExpr:
       rhsNames = self.processCallE(rhs)
     else:
-      rhsNames = getExprRValueNames(self.func, rhs)\
+      rhsNames = getNamesUsedInExprNonSyntactically(self.func, rhs)\
                  | getNamesUsedInExprSyntactically(rhs)
 
     # at least one side should name only one location (a SPAN IR check)

@@ -12,22 +12,21 @@ from typing import List, Tuple, Set, Dict, Any, Type, Callable, cast
 from typing import Optional as Opt
 import io
 
-from span.util.util import LS, US, AS
+from span.util.util import LS, AS
 import span.ir.types as types
 import span.ir.conv as conv
 import span.ir.graph as graph
-import span.ir.op as op
 import span.ir.expr as expr
 import span.ir.instr as instr
 import span.ir.constructs as constructs
-import span.ir.ir as ir
-import span.api.sim as sim
-from span.api.dfv import OLD_INOUT, NEW_IN, NEW_OUT, NodeDfvL, NewOldL
-import span.api.dfv as dfv
-from span.api.lattice import NoChange, DataLT, ChangeL, Changed, mergeAll
-from bisect import insort
+from span.ir.ir import \
+  (getExprRValueNames, getExprLValueNames, getNamesEnv,
+   filterNames, nameHasArray, getNamesPossiblyModifiedInCallExpr)
 
-import span.util.messages as msg
+import span.api.sim as sim
+from span.api.dfv import OLD_INOUT, NEW_IN, NodeDfvL, NewOldL
+import span.api.dfv as dfv
+from span.api.lattice import NoChange, DataLT, mergeAll
 
 AnalysisNameT = str
 
@@ -154,7 +153,7 @@ class FastNodeWorkList:
         sio.write(f"{prefix}{nid}")
         sio.write("." if self.isNop[nid - 1] else "")
         if not prefix: prefix = ", "
-      sio.write("] ('.' == Nop)")
+      sio.write("] ('.' is Nop)")
       prefix = sio.getvalue()  # reusing prefix
     return prefix
 
@@ -576,7 +575,7 @@ class BackwardDT(DirectionDT):
   def generateInitialWorklist(self) -> FastNodeWorkList:
     """Defaults to reverse post order."""
     wl = FastNodeWorkList(self.cfg.nodeMap, postOrder=True)
-    if LS: LOG.debug("Backward_Worklist_Init: %s", self.wl)
+    if LS: LOG.debug("Backward_Worklist_Init: %s", wl)
     return wl
 
 
@@ -725,9 +724,8 @@ class AnalysisAT(sim.SimAT):
       insn: instr.InstrIT,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
-    """Instr_Form: void: NopI().
-    Default implementation for forward analyses.
-    """
+    """Instr_Form: void: NopI()."""
+    # Default implementation for forward analyses.
     assert self.D and self.D.__name__.startswith("Forw"), f"{self.D}"
     dfvIn = nodeDfv.dfvIn
     if dfvIn is nodeDfv.dfvOut:
@@ -741,11 +739,12 @@ class AnalysisAT(sim.SimAT):
       insn: instr.InstrIT,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
-    """DF information is blocked from travelling from IN-to-OUT and OUT-to-IN.
+    """Data Flow information is blocked from travelling
+    from IN-to-OUT and OUT-to-IN.
 
     This implementation works for *any* direction analysis.
     """
-    return nodeDfv  # no information travelling from IN/OUT or OUT/IN
+    return nodeDfv  # no information travel from IN to OUT or OUT to IN
 
 
   def Use_Instr(self,
@@ -766,7 +765,7 @@ class AnalysisAT(sim.SimAT):
     """Instr_Form: void: ExReadI(x).
     x and only x is read, others are forcibly
     marked as not read (in backward direction)."""
-    return self.Barrier_Instr(nodeDfv)
+    return self.Barrier_Instr(nodeId, insn, nodeDfv)
 
 
   def CondRead_Instr(self,
@@ -776,7 +775,7 @@ class AnalysisAT(sim.SimAT):
   ) -> NodeDfvL:
     """Instr_Form: void: CondReadI(x, {y, z}).
     y and z are read if x is read."""
-    return self.Barrier_Instr(nodeDfv)
+    return self.Barrier_Instr(nodeId, insn, nodeDfv)
 
 
   def UnDefVal_Instr(self,
@@ -1595,8 +1594,8 @@ class ValueAnalysisAT(AnalysisAT):
 
   def getAllVars(self) -> Set[types.VarNameT]:
     """Gets all the variables of the accepted type."""
-    names = ir.getNamesEnv(self.func)
-    return ir.filterNames(self.func, names, self.isAcceptedType)
+    names = getNamesEnv(self.func)
+    return filterNames(self.func, names, self.isAcceptedType)
 
   ################################################
   # BOUND START: Special_Instructions
@@ -1694,6 +1693,8 @@ class ValueAnalysisAT(AnalysisAT):
     This is a common function to all the value analyses.
     """
     assert isinstance(dfvIn, dfv.OverallL), f"{type(dfvIn)}"
+    if LS: LOG.debug("ProcessingAssignInstr: %s = %s, iType: %s",
+                     lhs, rhs, lhs.type)
 
     lhsType = lhs.type
     dfvInGetVal = cast(Callable[[types.VarNameT], dfv.ComponentL], dfvIn.getVal)
@@ -1703,16 +1704,18 @@ class ValueAnalysisAT(AnalysisAT):
       outDfvValues = self.processLhsRhsRecordType(lhs, rhs, dfvInGetVal)
 
     elif self.isAcceptedType(lhsType):
-      lhsVarNames = ir.getExprLValueNames(self.func, lhs)
+      lhsVarNames = getExprLValueNames(self.func, lhs)
       assert len(lhsVarNames) >= 1, f"{lhs}: {lhsVarNames}"
       mustUpdate = len(lhsVarNames) == 1
 
       rhsDfv = self.getExprDfv(rhs, dfvIn)
+      if LS: LOG.debug("RhsDfvOfExpr: '%s' is %s, lhsVarNames are %s",
+                       rhs, rhsDfv, lhsVarNames)
 
       for name in lhsVarNames:
         # this loop enters only once if mustUpdate == True
         newVal = rhsDfv
-        if not mustUpdate or ir.nameHasArray(self.func, name):
+        if not mustUpdate or nameHasArray(self.func, name):
           # do may updates
           oldVal = dfvInGetVal(name)
           newVal, _ = oldVal.meet(newVal)
@@ -1749,14 +1752,14 @@ class ValueAnalysisAT(AnalysisAT):
 
     allMemberInfo = instrType.getNamesOfType(None)
 
-    lhsVarNames = ir.getExprLValueNames(self.func, lhs)
+    lhsVarNames = getExprLValueNames(self.func, lhs)
     assert len(lhsVarNames) >= 1, f"{lhs}: {lhsVarNames}"
     strongUpdate: bool = len(lhsVarNames) == 1
 
     rhsVarNames = None
     if not isinstance(rhs, expr.CallE):  # IMPORTANT
       # call expression don't yield rhs names
-      rhsVarNames = ir.getExprRValueNames(self.func, rhs)
+      rhsVarNames = getExprRValueNames(self.func, rhs)
       assert len(rhsVarNames) >= 1, f"{lhs}: {rhsVarNames}"
 
     outDfvValues: Dict[types.VarNameT, dfv.ComponentL] = {}
@@ -1787,8 +1790,8 @@ class ValueAnalysisAT(AnalysisAT):
     assert isinstance(e, expr.CallE), f"{e}"
     assert isinstance(dfvIn, dfv.OverallL), f"{type(dfvIn)}"
 
-    names = ir.getNamesPossiblyModifiedInCallExpr(self.func, e)
-    names = ir.filterNames(self.func, names, self.isAcceptedType)
+    names = getNamesPossiblyModifiedInCallExpr(self.func, e)
+    names = filterNames(self.func, names, self.isAcceptedType)
 
     bot = self.componentBot
     dfvInGetVal = dfvIn.getVal
@@ -1874,7 +1877,7 @@ class ValueAnalysisAT(AnalysisAT):
       dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
   ) -> dfv.ComponentL:
     """A default implementation (assuming Constant Propagation)."""
-    varNames = ir.getExprRValueNames(self.func, e)
+    varNames = getExprRValueNames(self.func, e)
     assert varNames, f"{e}, {varNames}"
     return mergeAll(map(dfvInGetVal, varNames))
 
@@ -1929,7 +1932,7 @@ class ValueAnalysisAT(AnalysisAT):
       dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
   ) -> dfv.ComponentL:
     """A default implementation (assuming Constant Propagation)."""
-    varNames = ir.getExprRValueNames(self.func, e)
+    varNames = getExprRValueNames(self.func, e)
     assert varNames, f"{e}, {varNames}"
     return mergeAll(map(dfvInGetVal, varNames))
 
@@ -1939,7 +1942,7 @@ class ValueAnalysisAT(AnalysisAT):
       dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
   ) -> dfv.ComponentL:
     """A default implementation"""
-    varNames = ir.getExprRValueNames(self.func, e)
+    varNames = getExprRValueNames(self.func, e)
     assert varNames, f"{e}, {varNames}"
     return mergeAll(map(dfvInGetVal, varNames))
 

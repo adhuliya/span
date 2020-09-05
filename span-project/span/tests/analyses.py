@@ -96,8 +96,7 @@ class SpanAnalysisTests(unittest.TestCase):
 
     for nid in givenNodeIds:
       self.assertEqual(results[nid], expectedResults[nid],
-                       (f"({cFileName}) Node {nid}: Result: {results[nid]}"
-                        f" and expected is {expectedResults[nid]}."))
+                       f"({cFileName}) Node {nid}")
 
     # self.assertEqual(results, givenResults)
     return True
