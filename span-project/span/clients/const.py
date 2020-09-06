@@ -16,10 +16,8 @@ import logging
 
 LOG = logging.getLogger("span")
 from typing import Tuple, Set, Dict, List, Optional as Opt,\
-  Callable, cast, Iterable
-import io
+  Callable, cast
 
-import span.util.util as util
 from span.util.util import LS
 
 import span.ir.types as types
@@ -36,10 +34,6 @@ from span.api.sim import SimFailed, SimPending, BoolValue, \
   NumValue, ValueTypeT, SimAT
 import span.api.lattice as lattice
 import span.api.analysis as analysis
-import span.ir.tunit as irTUnit
-
-import span.util.messages as msg
-
 
 ################################################
 # BOUND START: Const_lattice

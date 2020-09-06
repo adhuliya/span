@@ -22,7 +22,6 @@ import span.ir.instr as instr
 import span.ir.constructs as constructs
 import span.ir.tunit as tunit
 
-import span.util.messages as msg
 import span.util.common_util as cutil
 import span.ir.constructs as constructs
 import span.ir.ir as ir
@@ -72,12 +71,12 @@ class SpanIrTests(unittest.TestCase):
     print("\nTesting spanir now (its attributes).")
     fileMap = genFileMap(self)
 
-    for cFile, pyFile in fileMap.items():
+    for cFileName, pyFile in fileMap.items():
       pyFileActions: List[TestActionAndResult] = evalTestCaseFile(pyFile)
       for action in pyFileActions:
         if action.action == "c2spanir":
-          print(f"Checking attributes: {cFile}: ")
-          tUnit: ir.TranslationUnit = genTranslationUnit(cFile, self)
+          print(f"Checking attributes: {cFileName}: ")
+          tUnit: ir.TranslationUnit = genTranslationUnit(cFileName)
           # Now check for the various attributes.
           # STEP 1: check the names api
           for key in action.results.keys():
@@ -85,12 +84,12 @@ class SpanIrTests(unittest.TestCase):
               tup = action.results[key]
               if tup[0] == "global":  # i.e. all the global variables
                 self.assertEqual(tUnit.getNamesGlobal(tup[1]), tup[2],
-                                 msg=(f"{cFile}: {pyFile}: Got: {tUnit.getNamesGlobal(tup[1])}"
+                                 msg=(f"{cFileName}: {pyFile}: Got: {tUnit.getNamesGlobal(tup[1])}"
                                       f"Exptected: {tup[2]}"))
               elif tup[0].startswith("f:"):
                 tmp = tUnit.getNamesEnv(tUnit.allFunctions[tup[0]], tup[1])
                 self.assertEqual(tmp, tup[2],
-                                 msg=(f"{cFile}: {pyFile}: Got: {tmp}"
+                                 msg=(f"{cFileName}: {pyFile}: Got: {tmp}"
                                       f"Exptected: {tup[2]}"))
               else:
                 self.assertTrue(False, "Should not reach here.")
@@ -102,7 +101,7 @@ class SpanIrTests(unittest.TestCase):
       cFileName: str,
       action: TestActionAndResult
   ) -> bool:
-    tUnit: ir.TranslationUnit = genTranslationUnit(cFileName, self)
+    tUnit: ir.TranslationUnit = genTranslationUnit(cFileName)
 
     self.assertTrue(action.results["ir.tunit"].isEqual(tUnit), msg=f"For {cFileName}")
     return True

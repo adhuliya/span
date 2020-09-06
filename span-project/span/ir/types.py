@@ -22,8 +22,7 @@ import traceback
 import functools
 
 from span.util.util import LS, AS
-from span.util.messages import PTR_INDLEV_INVALID
-import span.util.messages as msg
+from span.util.data import PTR_INDLEV_INVALID
 
 ################################################
 # BOUND START: useful_types
@@ -625,8 +624,7 @@ class Type:
     #   elif tc == STRUCT_TC:     ss = "STRUCT"
     #   elif tc == UNION_TC:      ss = "UNION"
 
-    if AS: assert False, msg.CONTROL_HERE_ERROR
-    return f"types.UNKNOWN({tc})"
+    raise ValueError(f"{tc}")
 
 
 ################################################
@@ -769,13 +767,9 @@ class Ptr(Type):
       indlev: int = 1
   ) -> None:
     super().__init__(PTR_TC)
-    if indlev < 1:
-      if LS: LOG.error(PTR_INDLEV_INVALID)
-      if AS: assert False, PTR_INDLEV_INVALID
-    # type of the object pointed to
-    self.to = to
-    # indirection level to the object
-    self.indlev = indlev
+    if indlev < 1: raise ValueError(f"{indlev}: {PTR_INDLEV_INVALID}")
+    self.to = to # type of the object pointed to
+    self.indlev = indlev # indirection level to the object
 
     # correct a recursive pointer
     while isinstance(self.to, Ptr):

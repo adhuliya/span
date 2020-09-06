@@ -4,14 +4,23 @@
     <list default="true" id="33a5c68d-3b8a-4f86-8470-06eab99970cb" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/span/api/dfv.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/api/dfv.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/span/api/lattice.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/api/lattice.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/span/clients/register.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/clients/register.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/clients/const.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/clients/const.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/clients/evenodd.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/clients/evenodd.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/clients/interval.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/clients/interval.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/clients/pointsto.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/clients/pointsto.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/clients/simplelive.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/clients/simplelive.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/ir/expr.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/ir/expr.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/ir/graph.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/ir/graph.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/ir/ir.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/ir/ir.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/ir/tunit.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/ir/tunit.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/ir/types.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/ir/types.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/span/sys/host.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/sys/host.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/span/tests/analyses.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/tests/analyses.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/span/util/common_util.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/util/common_util.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/automated/spanTest006.c.results.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/automated/spanTest006.c.results.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/automated/spanTest105.c.results.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/automated/spanTest105.c.results.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/tests/basic.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/tests/basic.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/tests/common.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/tests/common.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/tests/spanir.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/tests/spanir.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/util/messages.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/util/data.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -393,7 +402,8 @@
       <workItem from="1599025533029" duration="1229000" />
       <workItem from="1599033089207" duration="17041000" />
       <workItem from="1599225290416" duration="5147000" />
-      <workItem from="1599269547783" duration="26480000" />
+      <workItem from="1599269547783" duration="26605000" />
+      <workItem from="1599356171814" duration="3650000" />
     </task>
     <servers />
   </component>
@@ -466,10 +476,10 @@
       <screen x="0" y="0" width="1366" height="744" />
     </state>
     <state x="417" y="106" width="639" height="524" key="StructurePopup/0.0.1366.744@0.0.1366.744" timestamp="1599048962472" />
-    <state x="339" y="199" key="com.intellij.ide.util.TipDialog" timestamp="1599269548989">
+    <state x="339" y="199" key="com.intellij.ide.util.TipDialog" timestamp="1599356178002">
       <screen x="0" y="0" width="1366" height="744" />
     </state>
-    <state x="339" y="199" key="com.intellij.ide.util.TipDialog/0.0.1366.744@0.0.1366.744" timestamp="1599269548989" />
+    <state x="339" y="199" key="com.intellij.ide.util.TipDialog/0.0.1366.744@0.0.1366.744" timestamp="1599356178002" />
     <state x="0" y="0" width="866" height="744" key="find.popup" timestamp="1597916625815">
       <screen x="0" y="0" width="1366" height="744" />
     </state>

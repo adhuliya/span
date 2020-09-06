@@ -49,7 +49,6 @@ import span.ir.ipa        as irIpa
 import span.ir.query      as irQuery
 
 import span.util.util     as util
-import span.util.messages as msg
 
 import span.sys.host      as host
 import span.sys.ipa       as sysIpa
@@ -216,7 +215,7 @@ def diagnoseSpanIr(args: argparse.Namespace) -> None:
   cFileName = ".".join(spanirFileName.split(".")[:-1]) # remove .spanir extension
   # -analyzer-disable-all-checks"
   cmd = f"scan-build -V" \
-        f" -enable-checker core.span.SlangBug {msg.DISABLE_CHECKER_STRING}" \
+        f" -enable-checker core.span.SlangBug " \
         f" clang -c -std=c99 {includesString} {cFileName}"
   completed = subp.run(cmd, shell=True)
   print("Return Code:", completed.returncode)

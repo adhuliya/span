@@ -18,9 +18,9 @@ import span.ir.expr as expr
 from span.ir.types import EdgeLabelT, BasicBlockIdT, FuncNameT
 from span.ir.conv import FalseEdge, TrueEdge, UnCondEdge
 import span.ir.types as types
-import span.util.messages as msg
+import span.util.data as data
 
-from span.util.messages import START_BB_ID_NOT_MINUS_ONE, END_BB_ID_NOT_ZERO
+from span.util.data import START_BB_ID_NOT_MINUS_ONE, END_BB_ID_NOT_ZERO
 import span.util.util as util
 
 # Type names to make code self documenting
@@ -96,7 +96,7 @@ class CfgNode(object):
       # create a space for two
       self.succEdges.extend([None, None])  # type: ignore
 
-    assert len(self.succEdges) == 2, msg.INVARIANT_VIOLATED
+    if len(self.succEdges) != 2: raise TypeError(f"{self.succEdges}")
 
     if cfgEdge.label == TrueEdge:
       self.succEdges[0] = cfgEdge
@@ -193,7 +193,7 @@ class BB:
       edgeLabel: EdgeLabelT = UnCondEdge
   ) -> Opt[BbEdge]:
     """Returns the succ edge of the given label (if present)"""
-    assert len(self.succEdges) <= 2, msg.INVARIANT_VIOLATED
+    assert len(self.succEdges) <= 2, data.INVARIANT_VIOLATED
 
     if len(self.succEdges) == 1:
       if edgeLabel == UnCondEdge:
@@ -224,7 +224,7 @@ class BB:
       # create a space for two
       self.succEdges.extend([None,None])  # type: ignore
 
-    assert len(self.succEdges) == 2, msg.INVARIANT_VIOLATED
+    assert len(self.succEdges) == 2, data.INVARIANT_VIOLATED
 
     if bbEdge.label == TrueEdge:
       self.succEdges[0] = bbEdge
@@ -379,10 +379,10 @@ class Cfg(object):
   ) -> None:
     """Builds the complete Cfg structure."""
 
-    assert inputBbMap and inputBbEdges, msg.INVARIANT_VIOLATED
+    assert inputBbMap and inputBbEdges, data.INVARIANT_VIOLATED
     # -1 is start bb id, 0 is the end bb id (MUST)
-    assert -1 in inputBbMap, msg.INVARIANT_VIOLATED
-    assert 0 in inputBbMap, msg.INVARIANT_VIOLATED
+    assert -1 in inputBbMap, data.INVARIANT_VIOLATED
+    assert 0 in inputBbMap, data.INVARIANT_VIOLATED
 
     # STEP 1: Create BBs in their dict.
     for bbId, instrSeq in inputBbMap.items():
@@ -596,7 +596,7 @@ class Cfg(object):
       if len(bb.succEdges) > 1:  # bb ends with a conditional instruction
         # modify jump labels of the last instruction
         condInsn = bb.lastCfgNode.insn
-        assert isinstance(condInsn, instr.CondI), msg.INVARIANT_VIOLATED
+        assert isinstance(condInsn, instr.CondI), data.INVARIANT_VIOLATED
 
         trueEdge = bb.getSuccEdge(TrueEdge)
         assert trueEdge is not None
@@ -612,7 +612,7 @@ class Cfg(object):
           instrSeq.append(instr.GotoI(labelName.format(bbId=uncondEdge.dest.id)))
     else:
       # must be the end node
-      assert bb.id == 0, msg.INVARIANT_VIOLATED
+      assert bb.id == 0, data.INVARIANT_VIOLATED
 
     return instrSeq
 

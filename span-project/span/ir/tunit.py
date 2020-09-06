@@ -37,7 +37,6 @@ import span.ir.expr as expr
 import span.ir.instr as instr
 import span.ir.constructs as constructs
 import span.ir.graph as graph
-import span.util.messages as msg
 
 class Stats:
   def __init__(self, tunit: 'TranslationUnit', totalCfgNodes=0):
@@ -577,9 +576,6 @@ class TranslationUnit:
         func: constructs.Func = self.allFunctions[val]
         return func.sig
 
-    if AS:
-      print(val, self._nameInfoMap)
-      assert False, msg.INVARIANT_VIOLATED
     raise ValueError(f"{val}")
 
 
@@ -636,7 +632,6 @@ class TranslationUnit:
 
     if isinstance(e, lExpr.VarE):
       eType = self.inferTypeOfVal(e.name)
-      # assert not isinstance(eType, types.FuncSig), msg.INVARIANT_VIOLATED
 
     elif isinstance(e, lExpr.LitE):
       if type(e.val) == str:
@@ -690,7 +685,7 @@ class TranslationUnit:
       elif isinstance(argType, types.ArrayT):
         eType = argType.getElementType()
       else:
-        assert False, msg.CONTROL_HERE_ERROR
+        raise ValueError(f"{e}, {argType}")
 
     elif isinstance(e, lExpr.MemberE):
       fieldName = e.name
@@ -1133,7 +1128,7 @@ class TranslationUnit:
           else:
             retainedEdges.append(bbEdge)
 
-        if AS: assert len(succEdges) == 1, msg.SHOULD_BE_ONLY_ONE_EDGE
+        assert len(succEdges) == 1, f"{succEdges}"
 
         for predEdge in predEdges:
           newEdge = (predEdge[0], succEdges[0][1], predEdge[2])
@@ -1299,7 +1294,7 @@ class TranslationUnit:
       name: types.VarNameT
   ) -> Opt[types.VarNameInfo]:
     """Returns the NameTypeInfo of a name or None if there is none"""
-    if AS: assert name in self._nameInfoMap, msg.INVARIANT_VIOLATED
+    assert name in self._nameInfoMap, f"{name}, {self._nameInfoMap}"
     return self._nameInfoMap[name]
 
 
@@ -1309,8 +1304,7 @@ class TranslationUnit:
     """Returns true if the name contains array access"""
     if name in self._nameInfoMap:
       return self._nameInfoMap[name].hasArray
-    else:
-      assert False, f"{msg.INVARIANT_VIOLATED}: {name}"
+    raise ValueError(f"{name}, {self._nameInfoMap}")
 
 
   def getNamesLocal(self,

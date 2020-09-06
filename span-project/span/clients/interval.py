@@ -9,10 +9,6 @@ import logging
 
 LOG = logging.getLogger("span")
 from typing import Tuple, Dict, Set, List, Optional as Opt, cast, Callable, Type
-import io
-
-import span.util.util as util
-import span.util.messages as msg
 
 import span.ir.types as types
 import span.ir.op as op
@@ -21,14 +17,13 @@ import span.ir.instr as instr
 import span.ir.constructs as constructs
 import span.ir.ir as ir
 
-from span.api.lattice import DataLT, ChangeL, Changed, NoChange
+from span.api.lattice import ChangeL, Changed, NoChange
 import span.api.dfv as dfv
 import span.api.lattice as lattice
 from span.api.dfv import NodeDfvL
 from span.api.sim import SimFailed, SimPending, BoolValue,\
   NumValue, ValueTypeT, SimAT
 import span.api.analysis as analysis
-import span.ir.tunit as irTUnit
 
 
 ################################################

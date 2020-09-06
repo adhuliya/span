@@ -18,7 +18,6 @@ import functools
 import span.util.util as util
 import span.util.common_util as cutil
 from span.util.util import LS, AS, GD
-import span.util.messages as msg
 
 from span.ir.types import NodeIdT, VarNameT
 from span.ir.conv import FalseEdge, TrueEdge
@@ -372,15 +371,15 @@ class Host:
     if supportAnalyses:  tmpList.extend(supportAnalyses)
     if avoidAnalyses:     tmpList.extend(avoidAnalyses)
     if analysisSeq:
-      assert mainAnName is None, msg.INVARIANT_VIOLATED
-      assert otherAnalyses is None, msg.INVARIANT_VIOLATED
-      assert avoidAnalyses is None, msg.INVARIANT_VIOLATED
-      assert maxNumOfAnalyses == 1024, msg.INVARIANT_VIOLATED
+      assert mainAnName is None
+      assert otherAnalyses is None
+      assert avoidAnalyses is None
+      assert maxNumOfAnalyses == 1024
       for anSeq in analysisSeq:
         for anName in anSeq:
           tmpList.append(anName)
 
-    assert tmpList, msg.INVARIANT_VIOLATED
+    assert tmpList
     for anName in tmpList:
       if anName not in clients.analyses:
         message = f"Analysis '{anName}' is not present/registered."

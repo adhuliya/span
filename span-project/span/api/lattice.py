@@ -11,7 +11,6 @@ LOG = logging.getLogger("span")
 
 from typing import Tuple, Any, List, TypeVar, Optional as Opt, Sequence as Seq, Iterable
 
-from span.util.messages import TOP_BOT_BOTH
 import span.ir.constructs as obj
 
 import span.ir.types as types

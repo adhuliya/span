@@ -16,7 +16,7 @@ from span.api.analysis import AnalysisNameT
 from span.api.diagnosis import DiagnosisNameT
 import span.util.common_util as cutil
 import span.ir.ir as ir
-import span.util.messages as msg
+import span.util.data as data
 
 # IMPORTANT imports for eval() to work
 from span.ir.types import Loc, Info
@@ -44,8 +44,8 @@ class TestActionAndResult:
   Represents the test action to be taken,
   and the results to be expected in a single unit.
   The C file on which the action is to be invoked,
-  is generally embedded in the file name this
-  class is instantiated.
+  is embedded in the file name this class' object
+  is created in.
   """
 
 
@@ -73,18 +73,9 @@ class FilePair:
     self.resultFile = resultFile
 
 
-def genTranslationUnit(cFileName: str,
-    testCase: unittest.TestCase
-) -> ir.TranslationUnit:
+def genTranslationUnit(cFileName: str) -> ir.TranslationUnit:
   """Generates the translation unit and returns it as a python object."""
-  cmd = f"clang --analyze -Xanalyzer -analyzer-checker=core.span.SlangGenAst {cFileName}"
-  status, output = subp.getstatusoutput(cmd)
-  testCase.assertEqual(status, 0)
-
-  spanir = cutil.readFromFile(f"{cFileName}.spanir")
-  tUnit: ir.TranslationUnit = eval(spanir)
-
-  return tUnit
+  return ir.genTranslationUnit(cFileName)
 
 
 def genFileMap(testCase: unittest.TestCase) -> Dict[TestFileName, ResultFileName]:
@@ -93,7 +84,7 @@ def genFileMap(testCase: unittest.TestCase) -> Dict[TestFileName, ResultFileName
 
   # get all the test c files
   status, cFiles = subp.getstatusoutput("ls spanTest[0-9][0-9][0-9].c")
-  testCase.assertEqual(status, 0, msg.FAIL_C_TEST_FILES_NOT_PRESENT)
+  testCase.assertEqual(status, 0, data.FAIL_C_TEST_FILES_NOT_PRESENT)
 
   fileMap: Dict[TestFileName, ResultFileName] = dict()
   cFileList = cFiles.split()
@@ -103,7 +94,7 @@ def genFileMap(testCase: unittest.TestCase) -> Dict[TestFileName, ResultFileName
   # get all result files
   suffix = ".results.py"
   status, pyFiles = subp.getstatusoutput(f"ls spanTest[0-9][0-9][0-9].c{suffix}")
-  testCase.assertEqual(status, 0, msg.FAIL_C_RESULT_FILES_NOT_PRESENT)
+  testCase.assertEqual(status, 0, data.FAIL_C_RESULT_FILES_NOT_PRESENT)
 
   pyFileList = pyFiles.split()
   for pyFile in pyFileList:

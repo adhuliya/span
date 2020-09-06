@@ -9,14 +9,8 @@ Assumes the basic tests were successful.
 """
 
 import unittest
-import sys
-import subprocess as subp
 from typing import List, Dict
 
-import span.util.messages as msg
-import span.util.common_util as cutil
-
-import span.ir.constructs as constructs
 import span.ir.ir as ir
 from span.tests.common import \
   (genFileMap,
@@ -55,7 +49,9 @@ class SpanAnalysisTests(unittest.TestCase):
           print(f"Checking analysis results of {cFile},")
           self.runAndCheckAnalysisResults(cFile, action)
 
-  def allAnPresent(self, analyses: List[AnalysisNameT]):
+
+  def allAnalysesPresent(self, analyses: List[AnalysisNameT]):
+    """Returns True if all the given analyses are present in the system."""
     for anName in analyses:
       if anName not in AllAnalyses:
         return False
@@ -66,9 +62,10 @@ class SpanAnalysisTests(unittest.TestCase):
       cFileName: str,
       action: TestActionAndResult
   ) -> None:
-    tUnit: ir.TranslationUnit = genTranslationUnit(cFileName, self)
+    """Runs the analyses and checks their results."""
+    tUnit: ir.TranslationUnit = genTranslationUnit(cFileName)
 
-    if not self.allAnPresent(action.analyses):
+    if not self.allAnalysesPresent(action.analyses):
       print(f"  SkippingTest(AnalysesNotPresent):", action.analyses)
       return None
 

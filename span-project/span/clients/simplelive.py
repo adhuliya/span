@@ -10,22 +10,16 @@ import logging
 LOG = logging.getLogger("span")
 from typing import Optional as Opt, Set, Tuple, List, Callable, cast
 
-import span.util.util as util
-from span.util.logger import LS
-import span.util.messages as msg
-
 import span.ir.types as types
-import span.ir.op as op
 import span.ir.expr as expr
 import span.ir.instr as instr
 import span.ir.constructs as obj
 import span.ir.ir as ir
 
-from span.api.lattice import ChangeL, Changed, NoChange, DataLT
+from span.api.lattice import DataLT
 from span.api.dfv import NodeDfvL
 import span.api.sim as sim
 import span.api.analysis as analysis
-import span.ir.tunit as irTunit
 
 ################################################
 # BOUND START: LiveVars lattice
@@ -523,7 +517,7 @@ class LiveVarsA(analysis.AnalysisAT):
     rhsNamesAreLive: bool = True  # its simple liveness
 
     lhsNames = ir.getExprLValueNames(self.func, lhs)
-    assert len(lhsNames) >= 1, f"{msg.INVARIANT_VIOLATED}: {lhs}"
+    assert len(lhsNames) >= 1, f"{lhs}: {lhsNames}"
 
     rhsNames = ir.getNamesUsedInExprSyntactically(rhs) | \
                ir.getNamesUsedInExprNonSyntactically(self.func, rhs)

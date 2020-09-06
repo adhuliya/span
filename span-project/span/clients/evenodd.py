@@ -14,27 +14,20 @@ import logging
 
 LOG = logging.getLogger("span")
 from typing import Tuple, Dict, Set, List, Optional as Opt, Callable, cast
-import io
-
-import span.util.util as util
-import span.util.messages as msg
 
 import span.ir.types as types
 import span.ir.op as op
 import span.ir.expr as expr
 import span.ir.instr as instr
 import span.ir.constructs as constructs
-import span.ir.ir as ir
 
 from span.api.lattice import DataLT, ChangeL, Changed,\
   NoChange, basicMeetOp, basicLessThanTest, basicEqualTest, getBasicString
 import span.api.dfv as dfv
 from span.api.dfv import NodeDfvL
-import span.api.sim as sim
-from span.api.sim import SimFailed, SimPending, SimNameT, SimAT,\
+from span.api.sim import SimFailed, SimPending, SimAT,\
   NumValue, BoolValue
 import span.api.analysis as analysis
-import span.ir.tunit as irTUnit
 
 Even = True
 Odd = False

@@ -17,10 +17,6 @@ from span.util.logger import LS
 import span.ir.types as types
 import span.ir.conv as irConv
 import span.ir.op as op
-import span.util.util as util
-import span.util.messages as msg
-
-import io
 
 ExprCodeT = types.ExprCodeT
 

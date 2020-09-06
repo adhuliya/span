@@ -20,18 +20,17 @@ import logging
 
 LOG = logging.getLogger("span")
 from typing import Dict, Set, Tuple, Optional, List, Callable, cast
-import sys
+import subprocess as subp
 import functools
 
 import span.ir.types as types
-import span.ir.op as op
 import span.ir.expr as expr
 import span.ir.instr as instr
 import span.ir.constructs as constructs
 import span.ir.tunit as tunit
-import span.ir.graph as graph
 
 import span.util.util as util
+import span.util.data as data
 from span.util.util import LS
 
 """
@@ -328,5 +327,32 @@ def readSpanIr(fileName: types.FileNameT) -> TranslationUnit:
   content = util.readFromFile(fileName)
   tUnit: TranslationUnit = eval(content)
   return tUnit
+
+
+def convertCFile(cFileName: str) -> str:
+  """Converts the given C file to SPANIR.
+  On success a file named: {cFileName}.spanir should be created
+  in the current directory.
+  It returns the SpanIr File name.
+  """
+  cmd = data.CMD_F_GEN_SPANIR.format(cFileName=cFileName)
+  status, output = subp.getstatusoutput(cmd)
+  if status != 0:
+    print(output)
+    print(data.MSG_C2SPANIR_FAILED.format(cFileName=cFileName, cmd=cmd))
+    raise IOError()
+  return f"{cFileName}.spanir"
+
+
+def genTranslationUnit(cFileName: str) -> TranslationUnit:
+  """Generates the translation unit and returns it as a python object.
+  Along with the status of success or failure (0 is success).
+  """
+  spanirFile = convertCFile(cFileName)
+  tUnit = readSpanIr(spanirFile)
+  return tUnit
+
+
+
 
 
