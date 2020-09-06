@@ -187,10 +187,20 @@ class TranslationUnit:
     self.genCfgs()  # MUST
 
     self.assignFunctionIds()
+
+    self.checkInvariants(level=0)  # IMPORTANT: checks the IR for basic correctness
+
     self.logStats() # must be the last call (OPTIONAL)
 
     self.initialized = True
     if LS: LOG.info(f"PreProcessing_TUnit({self.name}): END/DONE.")
+
+
+  def checkInvariants(self, level: int = 0):
+    """Checks the IR for basic correctness"""
+    for func in self.yieldFunctionsWithBody():
+      for insn in func.yieldInstrSeq():
+        insn.checkInvariants(level)
 
 
   def assignFunctionIds(self):
@@ -319,7 +329,6 @@ class TranslationUnit:
       e.arg = arg
     elif isinstance(e, expr.CastE):
       arg = self.findAndConvertExpr(e.arg, exprPredicate, convertExpr)
-      assert isinstance(arg, expr.LocationET)
       e.arg = arg
     elif isinstance(e, expr.ArrayE):
       of = self.findAndConvertExpr(e.of, exprPredicate, convertExpr)
@@ -389,11 +398,14 @@ class TranslationUnit:
 
     names = []
     for varName in self._globalsAndAddrTakenSet:
-      varInfo = self._nameInfoMap[varName]
-      if varInfo.type == pointeeType:
+      if irConv.isFuncName(varName):
+        nameType = self.allFunctions[varName].sig
+      else:
+        nameType = self._nameInfoMap[varName].type
+      if nameType == pointeeType:
         names.append(varName)
-      elif isinstance(varInfo.type, types.ArrayT) \
-        and varInfo.type.getElementType() == pointeeType:
+      elif isinstance(nameType, types.ArrayT) \
+        and nameType.getElementType() == pointeeType:
         names.append(varName)
 
     if cache:
@@ -1014,6 +1026,13 @@ class TranslationUnit:
           newExpr = expr.LitE(int(not (bool(arg.val))), info=arg.info)
         elif opCode == op.UO_BIT_NOT_OC:
           newExpr = expr.LitE(~arg.val, info=arg.info)  # type: ignore
+
+    elif isinstance(e, expr.CastE):
+      if isinstance(e.arg, expr.LitE):
+        newExpr = e.arg
+        if isinstance(e.arg.val, (int, float)):
+          newVal = e.arg.type.castValue(e.arg.val)
+          newExpr = expr.LitE(newVal, info=e.arg.info)
 
     return newExpr
 

@@ -326,7 +326,7 @@ class IpaHost:
     for anName, nDfv in bi.items():
       AnalysisClass = clients.analyses[anName]
       analysisObj = AnalysisClass(func)
-      newBi[anName] = analysisObj.getBoundaryInfoIpa(nDfv)
+      newBi[anName] = analysisObj.getBoundaryInfo(nDfv, ipa=True)
 
     if LS: LOG.debug("IpaBI: (%s): %s", funcName, newBi)
     return newBi
@@ -441,7 +441,7 @@ def diagnoseInterval(tUnit: TranslationUnit):
   """
   #mainAnalysis = "ConstA"
   mainAnalysis = "IntervalA"
-  otherAnalyses : List[str] = ["PointsToA", "EvenOddA"]
+  otherAnalyses : List[str] = ["PointsToA"]
   #otherAnalyses : List[str] = ["EvenOddA"]
   #otherAnalyses : List[str] = []
   maxNumOfAnalyses = len(otherAnalyses) + 1

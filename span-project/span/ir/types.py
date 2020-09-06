@@ -327,7 +327,7 @@ class Type:
       return set()
 
 
-  def castValue(self, value: NumericT):
+  def castValue(self, value: NumericT) -> NumericT:
     # FIXME: make it more precise
     assert self.isNumeric()
     assert isinstance(value, (int, float))

@@ -70,6 +70,16 @@ class InstrIT:
     self.info = info
 
 
+  def checkInvariants(self, level: int = 0):
+    """Runs some invariant checks on self.
+    Args:
+      level: An argument to help invoke specific checks in future.
+    """
+    if level == 0:
+      assert self.instrCode is not None, f"{self}"
+      assert self.type is not None, f"{self}"
+
+
   def isArtificial(self) -> bool:
     """Returns True if the instruction is artificial."""
     return self.instrCode in ARTIFICIAL_INSTR_CODES
@@ -125,6 +135,13 @@ class AssignI(InstrIT):
     super().__init__(ASSIGN_INSTR_IC, info)
     self.lhs = lhs
     self.rhs = rhs
+
+
+  def checkInvariants(self, level: int = 0):
+    super().checkInvariants(level)
+    if level == 0:
+      self.lhs.checkInvariants(level)
+      self.rhs.checkInvariants(level)
 
 
   def __eq__(self, other) -> bool:
@@ -332,6 +349,13 @@ class CondI(InstrIT):
     self.falseLabel = falseLabel
 
 
+  def checkInvariants(self, level: int = 0):
+    super().checkInvariants(level)
+    if level == 0:
+      assert isinstance(self.arg, expr.VarE), f"{self}"
+      self.arg.checkInvariants(level)
+
+
   def __eq__(self, other) -> bool:
     if self is other:
       return True
@@ -396,6 +420,14 @@ class ReturnI(InstrIT):
       raise ValueError(f"{arg}")
     super().__init__(RETURN_INSTR_IC, info)
     self.arg = arg
+
+
+  def checkInvariants(self, level: int = 0):
+    super().checkInvariants(level)
+    if level == 0:
+      assert self.arg is None \
+             or isinstance(self.arg, (expr.VarE, expr.LitE)), f"{self}"
+      if self.arg: self.arg.checkInvariants(level)
 
 
   def __eq__(self, other) -> bool:
@@ -467,6 +499,13 @@ class CallI(InstrIT):
       raise ValueError(f"{arg}")
     super().__init__(CALL_INSTR_IC, info)
     self.arg = arg
+
+
+  def checkInvariants(self, level: int = 0):
+    super().checkInvariants(level)
+    if level == 0:
+      assert self.arg is not None, f"{self}"
+      self.arg.checkInvariants(level)
 
 
   def __eq__(self, other) -> bool:

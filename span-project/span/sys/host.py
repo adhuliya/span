@@ -1525,17 +1525,17 @@ class Host:
                                                   insn, lhs.of, demand)
     if valid: return newInsn
 
-    ret = self.Calc_Deref__to__Vars(node, lhs.of)
-    if ret is None:
+    values = self.Calc_Deref__to__Vars(node, lhs.of)
+    if values is SimFailed:
       self.setCachedInstrSim(node.id, simName, insn, lhs.of, insn)
       return None  # i.e. process_the_original_insn
-    elif ret == SimPending:
+    elif values is SimPending:
       newInsn = instr.ExReadI({lhs.of.name})
     else:  # take meet of the dfv of the set of instructions now possible
-      assert ret.val and len(ret.val), f"{node}: {ret}"
+      assert values, f"{node}: {values}"
       AssignI, VarE = instr.AssignI, expr.VarE
       newInsn = instr.ParallelI([AssignI(VarE(f"{varName}.{lhs.name}"), rhs)
-                                 for varName in ret.val])
+                                 for varName in values])
       newInsn.addInstr(instr.ExReadI({lhs.of.name}))
 
     self.tUnit.inferTypeOfInstr(newInsn)
@@ -1567,17 +1567,17 @@ class Host:
                                                   insn, rhs.of, demand)
     if valid: return newInsn
 
-    ret = self.Calc_Deref__to__Vars(node, rhs.of)
-    if ret is None:
+    values = self.Calc_Deref__to__Vars(node, rhs.of)
+    if values is SimFailed:
       self.setCachedInstrSim(node.id, simName, insn, rhs.of, insn)
       return None  # i.e. process_the_original_insn
-    elif ret == SimPending:
+    elif values is SimPending:
       newInsn = instr.CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs.of))
     else:  # take meet of the dfv of the set of instructions now possible
-      assert ret.val and len(ret.val), f"{node}: {ret}"
+      assert values, f"{node}: {values}"
       AssignI, VarE = instr.AssignI, expr.VarE
       newInsn = instr.ParallelI([AssignI(lhs, VarE(f"{vName}.{rhs.name}"))
-                                 for vName in ret.val])
+                                 for vName in values])
       newInsn.addInstr(instr.CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs.of)))
 
     self.tUnit.inferTypeOfInstr(newInsn)
@@ -1636,19 +1636,18 @@ class Host:
     newInsn, valid = self.getCachedInstrSimResult(node, simName, insn, rhsArg)
     if valid: return self.analyzeInstr(node, newInsn, nodeDfv) if newInsn else None
 
-    ret = self.getSim(node, simName, rhsArg)
-    if ret is None:
+    values = self.getSim(node, simName, rhsArg)
+    if values is SimFailed:
       self.setCachedInstrSim(node.id, simName, insn, rhsArg, insn)
       return None  # i.e. process_the_original_insn
-    elif ret == SimPending:
+    elif values is SimPending:
       assert isinstance(rhsArg, expr.VarE), f"{node.id}: {insn}"
       newInsn = instr.CondReadI(lhs.name, {rhsArg.name})
     else:
-      assert isinstance(ret.val, (int, float)), f"{ret}"
       rhs = insn.rhs
       AssignI, UnaryE, LitE = instr.AssignI, expr.UnaryE, expr.LitE
       newInsn = instr.ParallelI(
-        [AssignI(lhs, UnaryE(rhs.opr, LitE(ret.val)).computeExpr())])
+        [AssignI(lhs, UnaryE(rhs.opr, LitE(val)).computeExpr()) for val in values])
 
     return self.handleNewInstr(node, simName, insn, rhsArg, newInsn, nodeDfv)
 
@@ -2086,6 +2085,7 @@ class Host:
     anNames = self.fetchAndSetupSimSrcs(node, simName, e, demand)
 
     res = self.collectAndMergeResults(anNames, simName, node, e)
+    if res is not None and len(res) == 0: assert res is SimPending, f"{res}"
 
     if LS: LOG.debug("SimOfExpr (merged): '%s' is %s.", e, res)
     self.stats.simTimer.stop()

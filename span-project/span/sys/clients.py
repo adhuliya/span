@@ -19,6 +19,7 @@ from span.util.logger import LS
 import span.clients.register as register
 
 import span.api.sim as sim
+import span.ir.conv as irConv
 import span.api.analysis as analysis
 import span.ir.types as types
 
@@ -50,7 +51,6 @@ class Clients:
 
 
   def __str__(self):
-    ret: str = None
     with io.StringIO() as sio:
       for name in sorted(self.__dict__):
         sio.write(f"{name} ")
@@ -154,11 +154,11 @@ def getDirection(anName: analysis.AnalysisNameT
     D = anClass.D  # it must be type correct
     assert D, f"{anClass.__name__}"
     if D.__name__.startswith("Forw"):
-      direction = types.Forward
+      direction = irConv.Forward
     elif D.__name__.startswith("Back"):
-      direction = types.Backward
+      direction = irConv.Backward
     elif D.__name__.startswith("ForwBack"):
-      direction = types.ForwBack
+      direction = irConv.ForwBack
   return direction
 
 

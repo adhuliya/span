@@ -71,14 +71,14 @@ class ExprET:
     return False
 
 
-  def checkInvariants(self, level: int = 0):  # -> 'ExprET':
+  def checkInvariants(self, level: int = 0):
     """Runs some invariant checks on self.
     Args:
       level: An argument to help invoke specific checks in future.
     """
-    assert self.exprCode is not None
-    assert self.type is not None
-    return self  # returning self helps utilize current code in tunit
+    if level == 0:
+      assert self.exprCode is not None
+      assert self.type is not None
 
 
   def __eq__(self, other) -> bool:
@@ -159,12 +159,11 @@ class LitE(SimpleET):
     self.name: types.VarNameT = ""
 
 
-  def checkInvariants(self, level: int = 0) -> 'LitE':
-    super().checkInvariants()
+  def checkInvariants(self, level: int = 0):
+    super().checkInvariants(level)
     assert isinstance(self.val, (int, float, str)), f"{self}"
     if self.name:
       assert isinstance(self.val, str), f"{self}"
-    return self
 
 
   def isNumeric(self) -> bool:
@@ -281,12 +280,11 @@ class VarE(LocationET, SimpleET):
       self.exprCode = FUNC_EXPR_EC
 
 
-  def checkInvariants(self, level: int = 0) -> 'VarE':
-    super().checkInvariants()
+  def checkInvariants(self, level: int = 0):
+    super().checkInvariants(level)
     assert self.name, f"{self}"
     if self.hasFunctionName():
       assert self.exprCode == FUNC_EXPR_EC, f"{self}"
-    return self
 
 
 
@@ -637,13 +635,13 @@ class MemberE(DerefET):
     self.of = of
 
 
-  def checkInvariants(self, level: int = 0) -> 'MemberE':
+  def checkInvariants(self, level: int = 0):
+    super().checkInvariants(level)
     assert self.hasDereference(), f"{self}"
     assert isinstance(self.of, VarE), f"{self}"
     assert self.of and self.name, f"{self}"
     assert not irConv.isMemberName(self.name), f"{self}"
     assert not irConv.isMemberName(self.of.name), f"{self}"
-    return self
 
 
   def getFullName(self) -> types.VarNameT:
@@ -807,9 +805,9 @@ class UnaryE(UnaryET):
     self.arg = arg
 
 
-  def checkInvariants(self, level: int = 0) -> 'UnaryE':
+  def checkInvariants(self, level: int = 0):
+    super().checkInvariants(level)
     assert not isinstance(self.arg, LitE), f"{self}"
-    return self
 
 
   def computeExpr(self) -> LitE:
@@ -961,6 +959,12 @@ class CastE(UnaryET):
     super().__init__(CAST_EXPR_EC, info)
     self.arg = arg
     self.to = self.type = to  # it is same as self.type
+
+
+  def checkInvariants(self, level: int = 0):
+    super().checkInvariants()
+    if level == 0:
+      assert isinstance(self.arg, LocationET), f"{self}"
 
 
   def __eq__(self, other) -> bool:
@@ -1148,6 +1152,17 @@ class CallE(ExprET):
     super().__init__(CALL_EXPR_EC, info)
     self.callee = callee
     self.args: List[SimpleET] = [] if args is None else args
+
+
+  def checkInvariants(self, level: int = 0):
+    super().checkInvariants(level)
+    if level == 0:
+      assert isinstance(self.callee, VarE), f"{self}"
+      self.callee.checkInvariants(level)
+      if self.args:
+        for arg in self.args:
+          assert isinstance(arg, (VarE, LitE)), f"{self}: {arg}"
+          arg.checkInvariants(level)
 
 
   def isPointerCall(self) -> bool:
