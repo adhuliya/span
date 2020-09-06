@@ -405,7 +405,7 @@ class PointsToA(analysis.ValueAnalysisAT):
     It expects the rhs to be pointer type or an array type."""
     value: dfv.ComponentL = self.componentTop
     rhsType = rhs.type
-    assert isinstance(rhsType, (types.Ptr, types.ArrayT)), \
+    assert isinstance(rhsType, (types.Ptr, types.ArrayT, types.FuncSig)), \
       f"{type(rhs)}: {rhsType}, {rhs}"
 
     if isinstance(rhs, expr.LitE):
@@ -418,16 +418,16 @@ class PointsToA(analysis.ValueAnalysisAT):
 
     elif isinstance(rhs, expr.AddrOfE):
       arg = rhs.arg
-      if isinstance(arg, expr.VarE):
+      if isinstance(arg, expr.VarE):  # handles PseudoVarE too
         return ComponentL(self.func, val={arg.name})
       elif isinstance(arg, (expr.ArrayE, expr.MemberE, expr.DerefE)):
         names = PointsToA.getNamesOfLValuesInExpr(self.func, arg, dfvIn)
-        return ComponentL(self.func, val=names)
+        return ComponentL(self.func, val=names) if names else self.componentTop
 
     elif isinstance(rhs, expr.VarE):  # handles PseudoVarE too
       if isinstance(rhsType, types.Ptr):
         return dfvIn.getVal(rhs.name)
-      elif isinstance(rhsType, types.ArrayT):
+      elif isinstance(rhsType, (types.ArrayT, types.FuncSig)):
         return ComponentL(self.func, val={rhs.name})
       else:  # for all other types
         if LS: LOG.error("%s", rhsType)
@@ -447,7 +447,7 @@ class PointsToA(analysis.ValueAnalysisAT):
       names = ir.filterNamesPointer(self.func, names)
       for name in names:
         value, _ = value.meet(dfvIn.getVal(name))
-      return value
+      return value if names else self.componentTop
 
     elif isinstance(rhs, expr.UnaryE):
       return self.componentBot

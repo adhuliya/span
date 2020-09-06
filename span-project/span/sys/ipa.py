@@ -11,7 +11,6 @@ Note: All IR related processing for IPA is done in span.ir.ipa module.
 """
 
 import logging
-
 LOG = logging.getLogger("span")
 
 from typing import Dict, Tuple, Set, List
@@ -33,7 +32,8 @@ from span.api.analysis import AnalysisNameT
 from span.api.dfv import NodeDfvL
 
 from span.sys.host import Host
-from span.util.util import LS
+# from span.util.util import LS  # ipa module uses its own LS
+LS = True
 import span.util.common_util as cutil
 
 recursionLimit = 100
@@ -167,10 +167,11 @@ class IpaHost:
     # hostGlobal.printResult() #delit
 
     globalBi = hostGlobal.getBoundaryResult()
+    globalBi = self.swapGlobalBi(globalBi)
     print("GlobalBi:", globalBi)  # delit
 
     # STEP 2: start analyzing from the entry function
-    ipaBi = self.computeIpaBi(self.entryFunc, self.swapGlobalBi(globalBi))
+    ipaBi = self.computeIpaBi(self.entryFunc, globalBi)
     entryCallSite = Site(GLOBAL_INITS_FUNC_NAME, 0)
     self.analyzeFunc(entryCallSite,
                      self.entryFunc,
@@ -236,7 +237,7 @@ class IpaHost:
           if reAnalyze:
             break  # first re-analyze then goto other call sites
 
-      LOG.debug("ReAnalyzingFunction: %s", funcName) if reAnalyze else None
+      if LS: LOG.debug("ReAnalyzingFunction: %s", funcName) if reAnalyze else None
     return host.getBoundaryResult()
 
 

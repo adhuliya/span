@@ -142,6 +142,7 @@ zero or NULL/nullptr assignment to a pointer.
 """
 NULL_OBJ_NAME = "g:00"
 NULL_OBJ_TYPE = types.Void  ## Null object type is Void
+NULL_OBJ_PTR_TYPE = types.Ptr(NULL_OBJ_TYPE)
 
 DUMMY_VAR_REGEX = re.compile(r"^(.*:|)\d+d$")
 """A dummy var name regex. Also see: `span.ir.tunit.addDummyObjects(self)`"""

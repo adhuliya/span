@@ -461,6 +461,8 @@ class TranslationUnit:
     """Add the varName into self._nameInfoMap along
     with all its sub-names if its an array or a record."""
     nameInfos = objType.getNamesOfType(None, varName)
+    if varName == "v:BZ2_bzWriteOpen:1p":  #delit
+      print("NameInfosOf", varName, objType, nameInfos)  #delit
 
     for nameInfo in nameInfos:
       self._nameInfoMap[nameInfo.name] = nameInfo   # cache the results
@@ -494,11 +496,11 @@ class TranslationUnit:
               if isinstance(arg, expr.LitE):
                 if arg.type.isNumeric() and arg.val == 0:
                   rhs = expr.AddrOfE(expr.VarE(irConv.NULL_OBJ_NAME, rhs.info), rhs.info)
-                  insn.rhs = rhs
+                  insn.rhs, rhs.type = rhs, irConv.NULL_OBJ_PTR_TYPE
             if isinstance(rhs, expr.LitE):
               if rhs.type.isNumeric() and rhs.val == 0:
                 rhs = expr.AddrOfE(expr.VarE(irConv.NULL_OBJ_NAME, rhs.info), rhs.info)
-                insn.rhs = rhs
+                insn.rhs, rhs.type = rhs, irConv.NULL_OBJ_PTR_TYPE
 
 
   def addThisTUnitRefToObjs(self):  # IMPORTANT (MUST)
@@ -620,14 +622,18 @@ class TranslationUnit:
     and a type of ConstSizeArray of char."""
 
     assert isinstance(e.val, str)
+    if e.name:
+      eType = self._nameInfoMap[e.name].type
+      assert isinstance(eType, types.ConstSizeArray), f"{e}, {e.name}, {eType}"
+      return eType
+
     # since "XXX" is suffixed to every string literal
     # "XXX" is suffixed to a string literal since some
     # strings end with '"' and '""""' is an invalid end of string in python
     e.val = e.val[:-3]  # type: ignore
     eType = types.ConstSizeArray(of=types.Char, size=len(e.val))
-    # eType = types.Char # its not the correct type
 
-    if e.name is None:
+    if not e.name:
       self._stringLitCount += 1
       e.name = irConv.NAKED_STR_LIT_NAME.format(count=self._stringLitCount)
       self._nameInfoMap[e.name] = types.VarNameInfo(e.name, eType, True)

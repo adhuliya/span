@@ -1636,7 +1636,7 @@ class ValueAnalysisAT(AnalysisAT):
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
+    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
 
   def Ptr_Assign_Instr(self,
@@ -1644,7 +1644,7 @@ class ValueAnalysisAT(AnalysisAT):
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
+    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
 
   def Record_Assign_Instr(self,
@@ -1652,7 +1652,7 @@ class ValueAnalysisAT(AnalysisAT):
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
+    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
 
   def Conditional_Instr(self,
@@ -1673,7 +1673,7 @@ class ValueAnalysisAT(AnalysisAT):
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
     dfvIn = cast(dfv.OverallL, nodeDfv.dfvIn)
-    return self.genNodeDfvL(self.processCallE(insn.arg, dfvIn), dfvIn)
+    return self.genNodeDfvL(self.processCallE(insn.arg, dfvIn), nodeDfv)
 
 
   ################################################
@@ -1687,11 +1687,12 @@ class ValueAnalysisAT(AnalysisAT):
   def processLhsRhs(self,
       lhs: expr.ExprET,
       rhs: expr.ExprET,
-      dfvIn: DataLT,
+      nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
     """A common function to handle various assignment instructions.
     This is a common function to all the value analyses.
     """
+    dfvIn = nodeDfv.dfvIn
     assert isinstance(dfvIn, dfv.OverallL), f"{type(dfvIn)}"
     if LS: LOG.debug("ProcessingAssignInstr: %s = %s, iType: %s",
                      lhs, rhs, lhs.type)
@@ -1724,15 +1725,16 @@ class ValueAnalysisAT(AnalysisAT):
 
     if isinstance(rhs, expr.CallE):
       outDfvValues.update(self.processCallE(rhs, dfvIn))
-    return self.genNodeDfvL(outDfvValues, dfvIn)
+    nDfv = self.genNodeDfvL(outDfvValues, nodeDfv)
+    return nDfv
 
 
   def genNodeDfvL(self,
       outDfvValues: Dict[types.VarNameT, dfv.ComponentL],
-      dfvIn: dfv.OverallL,
+      nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
     """A convenience function to create and return the NodeDfvL."""
-    newOut = dfvIn
+    dfvIn = newOut = nodeDfv.dfvIn
     if outDfvValues:
       newOut = cast(dfv.OverallL, dfvIn.getCopy())
       newOutSetVal = newOut.setVal

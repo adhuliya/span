@@ -1202,8 +1202,10 @@ class Host:
           else:
             raise ValueError(f"{node}, {insn}, {insn.type}")
 
+    elif isinstance(insn, instr.GotoI):
+      transferFunc = activeAnObj.Nop_Instr
     else:
-      raise ValueError(f"{node}, {insn}, {insn.type}")
+      raise ValueError(f"{self.func}, {node}, {insn}, {insn.type}")
 
     self.stats.funcSelectionTimer.stop()
     # BOUND END  : transfer_function_selection_process.

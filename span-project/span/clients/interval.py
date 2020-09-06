@@ -25,6 +25,8 @@ from span.api.sim import SimFailed, SimPending, BoolValue,\
   NumValue, ValueTypeT, SimAT
 import span.api.analysis as analysis
 
+from span.util.util import LS
+
 
 ################################################
 # BOUND START: interval_lattice
@@ -508,6 +510,23 @@ class IntervalA(analysis.ValueAnalysisAT):
   ################################################
   # BOUND START: helper_functions
   ################################################
+
+
+  def genNodeDfvL(self,
+      outDfvValues: Dict[types.VarNameT, dfv.ComponentL],
+      nodeDfv: NodeDfvL,
+  ) -> NodeDfvL:
+    """A convenience function to create and return the NodeDfvL."""
+    dfvIn = newOut = nodeDfv.dfvIn
+    dfvOutGetVal = nodeDfv.dfvOut.getVal  # the node's current dfvOut
+    if outDfvValues:
+      newOut = cast(dfv.OverallL, dfvIn.getCopy())
+      newOutSetVal = newOut.setVal
+      for name, value in outDfvValues.items():
+        if not dfvOutGetVal(name).top:
+          value = self.componentBot  # widening
+        newOutSetVal(name, value)
+    return NodeDfvL(dfvIn, newOut)
 
 
   def getExprDfvLitE(self,

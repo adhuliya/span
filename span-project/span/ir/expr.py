@@ -225,16 +225,13 @@ class LitE(SimpleET):
 
 
   def __hash__(self) -> int:
-    return hash((self.val, self.exprCode))
+    return hash(self.val)
 
 
   def __str__(self):
     if isinstance(self.val, str):
-      # escaped = self.val.encode('unicode_escape')
-      # return escaped.decode("ascii")
-      newVal = repr(self.val)
+      newVal = repr(repr(self.val))
       newVal = newVal[1:-1]
-      newVal = "'" + newVal + "'"
       return f"{newVal}"
     return f"{self.val}"
 
