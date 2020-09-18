@@ -454,8 +454,8 @@ def diagnoseInterval(tUnit: TranslationUnit):
                         )
   ipaHostSpan.analyze()
 
-  ipaHostLern = IpaHost(tUnit, analysisSeq=[[mainAnalysis] + otherAnalyses])
-  #ipaHostLern = IpaHost(tUnit, analysisSeq=[[mainAnalysis]])
+  #ipaHostLern = IpaHost(tUnit, analysisSeq=[[mainAnalysis] + otherAnalyses])
+  ipaHostLern = IpaHost(tUnit, analysisSeq=[[mainAnalysis]])
   ipaHostLern.analyze()
 
   totalPPoints = 0  # total program points
