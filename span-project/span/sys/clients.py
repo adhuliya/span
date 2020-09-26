@@ -18,12 +18,11 @@ import io
 from span.util.logger import LS
 import span.clients.register as register
 
-import span.api.sim as sim
 import span.ir.conv as irConv
 import span.api.analysis as analysis
 import span.ir.types as types
 
-LhsVar__to__Nil__Name = sim.SimAT.LhsVar__to__Nil.__name__
+LhsVar__to__Nil__Name = analysis.AnalysisAT.LhsVar__to__Nil.__name__
 
 # list of all concrete analysis class given
 # this dictionary is used with in package span.sys only.
@@ -31,9 +30,9 @@ analyses: Dict[analysis.AnalysisNameT, type] = dict()
 # record of analyses names, that implement a particular expr evaluation
 # NOTE: if no analysis simplifies a particular sim func, still
 # add an empty set corresponding to the key.
-simSrcMap: Dict[sim.SimNameT, Set[analysis.AnalysisNameT]] = dict()
+simSrcMap: Dict[analysis.SimNameT, Set[analysis.AnalysisNameT]] = dict()
 # record of blocking expressions of an analysis
-simNeedMap: Dict[analysis.AnalysisNameT, Set[sim.SimNameT]] = dict()
+simNeedMap: Dict[analysis.AnalysisNameT, Set[analysis.SimNameT]] = dict()
 # record analyses that also work as simplifiers
 simAnalyses: Set[analysis.AnalysisNameT] = set()
 # map analyses to the set of transfer functions it gives
@@ -76,7 +75,7 @@ def initGlobals():
 
   # init evals
   simSrcMap = dict()
-  for memberName in sim.simNames:
+  for memberName in analysis.simNames:
     simSrcMap[memberName] = set()
 
   simNeedMap = dict()

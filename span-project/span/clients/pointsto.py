@@ -29,9 +29,9 @@ import span.api.lattice as lattice
 from span.api.lattice import ChangeL, Changed, NoChange
 import span.api.dfv as dfv
 from span.api.dfv import NodeDfvL
-from span.api.sim import SimFailed, SimPending, ValueTypeT,\
-  NumValue, NameValue, BoolValue, SimAT
 import span.api.analysis as analysis
+from span.api.analysis import SimFailed, SimPending, ValueTypeT, \
+  NumValue, NameValue, BoolValue, AnalysisAT
 
 ################################################
 # BOUND START: Points-to lattice.
@@ -205,9 +205,9 @@ class PointsToA(analysis.ValueAnalysisAT):
 
   L: type = OverallL
   D: type = analysis.ForwardD
-  simNeeded: List[Callable] = [SimAT.Deref__to__Vars,
-                               SimAT.Cond__to__UnCond,
-                               SimAT.LhsVar__to__Nil,
+  simNeeded: List[Callable] = [AnalysisAT.Deref__to__Vars,
+                               AnalysisAT.Cond__to__UnCond,
+                               AnalysisAT.LhsVar__to__Nil,
                               ]
 
 

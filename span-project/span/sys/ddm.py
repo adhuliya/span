@@ -33,13 +33,11 @@ from span.ir.expr import (VAR_EXPR_EC, LIT_EXPR_EC, UNARY_EXPR_EC,
 from span.api.dfv import NodeDfvL, NewOldL, OLD_INOUT
 import span.api.lattice as lattice
 from span.api.lattice import LatticeLT, DataLT
-import span.api.sim as sim
 import span.ir.graph as graph
 import span.ir.tunit as irTUnit
 import span.ir.constructs as constructs
 import span.ir.ir as ir
 from span.ir.ir import inferTypeOfVal
-import span.api.sim as simApi
 import span as span
 import span.util.common_util as cutil
 
@@ -50,12 +48,12 @@ IsNopT = bool
 
 # BOUND START: Module_Storage__for__Optimization
 
-Node__to__Nil__Name: str = sim.SimAT.Node__to__Nil.__name__
-LhsVar__to__Nil__Name: str = sim.SimAT.LhsVar__to__Nil.__name__
-Num_Var__to__Num_Lit__Name: str = sim.SimAT.Num_Var__to__Num_Lit.__name__
-Cond__to__UnCond__Name: str = sim.SimAT.Cond__to__UnCond.__name__
-Num_Bin__to__Num_Lit__Name: str = sim.SimAT.Num_Bin__to__Num_Lit.__name__
-Deref__to__Vars__Name: str = sim.SimAT.Deref__to__Vars.__name__
+Node__to__Nil__Name: str = analysis.AnalysisAT.Node__to__Nil.__name__
+LhsVar__to__Nil__Name: str = analysis.AnalysisAT.LhsVar__to__Nil.__name__
+Num_Var__to__Num_Lit__Name: str = analysis.AnalysisAT.Num_Var__to__Num_Lit.__name__
+Cond__to__UnCond__Name: str = analysis.AnalysisAT.Cond__to__UnCond.__name__
+Num_Bin__to__Num_Lit__Name: str = analysis.AnalysisAT.Num_Bin__to__Num_Lit.__name__
+Deref__to__Vars__Name: str = analysis.AnalysisAT.Deref__to__Vars.__name__
 
 ExRead_Instr__Name: str = analysis.AnalysisAT.ExRead_Instr.__name__
 CondRead_Instr__Name: str = analysis.AnalysisAT.CondRead_Instr.__name__
@@ -672,7 +670,7 @@ class DdMethod:
   def getDemandForExprSim(self,
       func: constructs.Func,
       node: graph.CfgNode,
-      simName: simApi.SimNameT,
+      simName: analysis.SimNameT,
       e: expr.ExprET,
   ) -> List[AtomicDemand]:
     """Only covers backward simplifications. TODO: make simName sensitive."""

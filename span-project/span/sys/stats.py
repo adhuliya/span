@@ -17,17 +17,17 @@ import io
 
 import span.ir.types as types
 import span.ir.expr as expr
-import span.api.sim as simApi
+import span.api.analysis as analysis
 from span.api.analysis import AnalysisNameT
 import span.util.common_util as cutil
 
 # simplification names
-Node__to__Nil__Name: str = simApi.SimAT.Node__to__Nil.__name__
-LhsVar__to__Nil__Name: str = simApi.SimAT.LhsVar__to__Nil.__name__
-Num_Var__to__Num_Lit__Name: str = simApi.SimAT.Num_Var__to__Num_Lit.__name__
-Cond__to__UnCond__Name: str = simApi.SimAT.Cond__to__UnCond.__name__
-Num_Bin__to__Num_Lit__Name: str = simApi.SimAT.Num_Bin__to__Num_Lit.__name__
-Deref__to__Vars__Name: str = simApi.SimAT.Deref__to__Vars.__name__
+Node__to__Nil__Name: str = analysis.AnalysisAT.Node__to__Nil.__name__
+LhsVar__to__Nil__Name: str = analysis.AnalysisAT.LhsVar__to__Nil.__name__
+Num_Var__to__Num_Lit__Name: str = analysis.AnalysisAT.Num_Var__to__Num_Lit.__name__
+Cond__to__UnCond__Name: str = analysis.AnalysisAT.Cond__to__UnCond.__name__
+Num_Bin__to__Num_Lit__Name: str = analysis.AnalysisAT.Num_Bin__to__Num_Lit.__name__
+Deref__to__Vars__Name: str = analysis.AnalysisAT.Deref__to__Vars.__name__
 
 
 class HostStat:

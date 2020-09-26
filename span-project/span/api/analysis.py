@@ -23,7 +23,6 @@ from span.ir.ir import \
   (getExprRValueNames, getExprLValueNames, getNamesEnv,
    filterNames, nameHasArray, getNamesPossiblyModifiedInCallExpr)
 
-import span.api.sim as sim
 from span.api.dfv import OLD_INOUT, NEW_IN, NodeDfvL, NewOldL
 import span.api.dfv as dfv
 from span.api.lattice import NoChange, DataLT, mergeAll
@@ -686,7 +685,7 @@ class ForwBackDT(DirectionDT):
 # BOUND START: AnalysisAT_The_Base_Class.
 ################################################
 
-class AnalysisAT(sim.SimAT):
+class AnalysisAT:
   # For bi-directional analyses, subclass AnalysisAT directly.
 
   __slots__ : List[str] = ["func", "overallTop", "overallBot"]
@@ -1680,12 +1679,12 @@ class ValueAnalysisAT(AnalysisAT):
   # redefine these variables as needed (see ConstA, IntervalA for examples)
   L: Type[dfv.OverallL] = dfv.OverallL  # the OverallL lattice used
   D: Type[DirectionDT]  = ForwardD  # its a forward flow analysis
-  simNeeded: List[Callable] = [sim.SimAT.Num_Var__to__Num_Lit,
-                               sim.SimAT.Deref__to__Vars,
-                               sim.SimAT.Num_Bin__to__Num_Lit,
-                               sim.SimAT.LhsVar__to__Nil,
-                               sim.SimAT.Cond__to__UnCond,
-                               #sim.SimAT.Node__to__Nil,
+  simNeeded: List[Callable] = [AnalysisAT.Num_Var__to__Num_Lit,
+                               AnalysisAT.Deref__to__Vars,
+                               AnalysisAT.Num_Bin__to__Num_Lit,
+                               AnalysisAT.LhsVar__to__Nil,
+                               AnalysisAT.Cond__to__UnCond,
+                               #AnalysisAT.Node__to__Nil,
                                ]
 
 
@@ -2094,7 +2093,7 @@ class ValueAnalysisAT(AnalysisAT):
       e: expr.ExprET,
       values: Set[types.T],
       dfvIn: dfv.OverallL,
-      valueType: sim.ValueTypeT = sim.NumValue,
+      valueType: ValueTypeT = NumValue,
   ) -> Set[types.T]:
     """Depends on `self.filterTest`."""
     if not values:
@@ -2103,7 +2102,7 @@ class ValueAnalysisAT(AnalysisAT):
     if exprVal.bot:
       return values
     elif exprVal.top:
-      return sim.SimPending
+      return SimPending
     else:
       assert exprVal.val is not None, f"{e}, {exprVal}, {dfvIn}"
       return set(filter(self.filterTest(exprVal, valueType), values))
@@ -2111,7 +2110,7 @@ class ValueAnalysisAT(AnalysisAT):
 
   def filterTest(self,
       exprVal: dfv.ComponentL,
-      valueType: sim.ValueTypeT = sim.NumValue,
+      valueType: ValueTypeT = NumValue,
   ) -> Callable[[types.T], bool]:
     return lambda x: True
 

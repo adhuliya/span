@@ -25,9 +25,9 @@ from span.api.lattice import DataLT, ChangeL, Changed,\
   NoChange, basicMeetOp, basicLessThanTest, basicEqualTest, getBasicString
 import span.api.dfv as dfv
 from span.api.dfv import NodeDfvL
-from span.api.sim import SimFailed, SimPending, SimAT,\
-  NumValue, BoolValue
 import span.api.analysis as analysis
+from span.api.analysis import SimFailed, SimPending, BoolValue, \
+  NumValue, ValueTypeT, AnalysisAT
 
 Even = True
 Odd = False
@@ -132,11 +132,11 @@ class EvenOddA(analysis.ValueAnalysisAT):
   __slots__ : List[str] = ["componentEven", "componentOdd"]
   L: type = OverallL
   D: type = analysis.ForwardD
-  simNeeded: List[Callable] = [SimAT.Num_Var__to__Num_Lit,
-                               SimAT.Num_Bin__to__Num_Lit,
-                               SimAT.Deref__to__Vars,
-                               SimAT.LhsVar__to__Nil,
-                               SimAT.Cond__to__UnCond
+  simNeeded: List[Callable] = [AnalysisAT.Num_Var__to__Num_Lit,
+                               AnalysisAT.Num_Bin__to__Num_Lit,
+                               AnalysisAT.Deref__to__Vars,
+                               AnalysisAT.LhsVar__to__Nil,
+                               AnalysisAT.Cond__to__UnCond
                                ]
 
 

@@ -35,7 +35,7 @@ from span.ir.expr import (VAR_EXPR_EC, FUNC_EXPR_EC, LIT_EXPR_EC, UNARY_EXPR_EC,
                           CAST_EXPR_EC, DEREF_EXPR_EC, )
 
 from span.api.dfv import NodeDfvL, NewOldL, OLD_INOUT
-from span.api.sim import SimNameT, simDirnMap, SimAT, SimFailed, SimPending
+from span.api.analysis import SimNameT, simDirnMap, SimFailed, SimPending
 from span.api.lattice import mergeAll, DataLT
 from span.api.analysis import AnalysisAT, AnalysisNameT as AnNameT,\
   ForwardD, BackwardD, DirectionDT
@@ -54,12 +54,12 @@ NotReachable: Reachability = False
 
 # BOUND START: Module_Storage__for__Optimization
 
-Node__to__Nil__Name: str = SimAT.Node__to__Nil.__name__
-LhsVar__to__Nil__Name: str = SimAT.LhsVar__to__Nil.__name__
-Num_Var__to__Num_Lit__Name: str = SimAT.Num_Var__to__Num_Lit.__name__
-Cond__to__UnCond__Name: str = SimAT.Cond__to__UnCond.__name__
-Num_Bin__to__Num_Lit__Name: str = SimAT.Num_Bin__to__Num_Lit.__name__
-Deref__to__Vars__Name: str = SimAT.Deref__to__Vars.__name__
+Node__to__Nil__Name: str = AnalysisAT.Node__to__Nil.__name__
+LhsVar__to__Nil__Name: str = AnalysisAT.LhsVar__to__Nil.__name__
+Num_Var__to__Num_Lit__Name: str = AnalysisAT.Num_Var__to__Num_Lit.__name__
+Cond__to__UnCond__Name: str = AnalysisAT.Cond__to__UnCond.__name__
+Num_Bin__to__Num_Lit__Name: str = AnalysisAT.Num_Bin__to__Num_Lit.__name__
+Deref__to__Vars__Name: str = AnalysisAT.Deref__to__Vars.__name__
 
 ExRead_Instr__Name: str = AnalysisAT.ExRead_Instr.__name__
 CondRead_Instr__Name: str = AnalysisAT.CondRead_Instr.__name__
