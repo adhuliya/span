@@ -21,9 +21,9 @@ from span.api.lattice import ChangeL, Changed, NoChange
 import span.api.dfv as dfv
 import span.api.lattice as lattice
 from span.api.dfv import NodeDfvL
-from span.api.sim import SimFailed, SimPending, BoolValue,\
-  NumValue, ValueTypeT, SimAT
 import span.api.analysis as analysis
+from span.api.analysis import SimFailed, SimPending, BoolValue, \
+  NumValue, ValueTypeT, AnalysisAT
 
 from span.util.util import LS
 
@@ -331,11 +331,11 @@ class IntervalA(analysis.ValueAnalysisAT):
   L: Opt[Type[dfv.DataLT]] = OverallL
   # concrete direction class of the analysis
   D: Opt[Type[analysis.DirectionDT]] = analysis.ForwardD
-  simNeeded: List[Callable] = [SimAT.Num_Var__to__Num_Lit,
-                               SimAT.Num_Bin__to__Num_Lit,
-                               SimAT.Deref__to__Vars,
-                               SimAT.LhsVar__to__Nil,
-                               SimAT.Cond__to__UnCond
+  simNeeded: List[Callable] = [AnalysisAT.Num_Var__to__Num_Lit,
+                               AnalysisAT.Num_Bin__to__Num_Lit,
+                               AnalysisAT.Deref__to__Vars,
+                               AnalysisAT.LhsVar__to__Nil,
+                               AnalysisAT.Cond__to__UnCond
                                ]
 
   def __init__(self,

@@ -26,8 +26,7 @@ from span.api.lattice import \
   (ChangeL, Changed, NoChange, DataLT, basicEqualTest, basicLessThanTest,
    getBasicString)
 from span.api.dfv import NodeDfvL
-from span.api.sim import SimFailed, SimPending, SimAT
-from span.api.analysis import AnalysisAT, BackwardD
+from span.api.analysis import AnalysisAT, BackwardD, SimFailed, SimPending
 
 ################################################
 # BOUND START: StrongLiveVars lattice
@@ -171,9 +170,9 @@ class StrongLiveVarsA(AnalysisAT):
   # liveness lattice
   L: type = OverallL
   D: type = BackwardD
-  simNeeded: List[Callable] = [SimAT.Deref__to__Vars,
-                               SimAT.Cond__to__UnCond,
-                               SimAT.Node__to__Nil,
+  simNeeded: List[Callable] = [AnalysisAT.Deref__to__Vars,
+                               AnalysisAT.Cond__to__UnCond,
+                               AnalysisAT.Node__to__Nil,
                               ]
 
 

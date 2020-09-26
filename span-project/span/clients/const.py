@@ -30,10 +30,10 @@ import span.ir.ir as ir
 from span.api.lattice import ChangeL, Changed, NoChange, DataLT
 import span.api.dfv as dfv
 from span.api.dfv import NodeDfvL
-from span.api.sim import SimFailed, SimPending, BoolValue, \
-  NumValue, ValueTypeT, SimAT
 import span.api.lattice as lattice
 import span.api.analysis as analysis
+from span.api.analysis import SimFailed, SimPending, BoolValue, \
+  NumValue, ValueTypeT, AnalysisAT
 
 ################################################
 # BOUND START: Const_lattice
@@ -141,12 +141,12 @@ class ConstA(analysis.ValueAnalysisAT):
   __slots__ : List[str] = []
   L: type = OverallL  # the lattice ConstA uses
   D: type = analysis.ForwardD  # its a forward flow analysis
-  simNeeded: List[Callable] = [SimAT.Num_Var__to__Num_Lit,
-                               SimAT.Deref__to__Vars,
-                               SimAT.Num_Bin__to__Num_Lit,
-                               SimAT.LhsVar__to__Nil,
-                               SimAT.Cond__to__UnCond,
-                               #SimAT.Node__to__Nil,
+  simNeeded: List[Callable] = [AnalysisAT.Num_Var__to__Num_Lit,
+                               AnalysisAT.Deref__to__Vars,
+                               AnalysisAT.Num_Bin__to__Num_Lit,
+                               AnalysisAT.LhsVar__to__Nil,
+                               AnalysisAT.Cond__to__UnCond,
+                               #AnalysisAT.Node__to__Nil,
                                ]
 
 
