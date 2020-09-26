@@ -45,8 +45,13 @@ FAIL_NO_CLANG_IN_PATH = "`clang` compiler not in path"
 CMD_F_GEN_SPANIR = ("clang --analyze -Xanalyzer"
                    " -analyzer-checker=core.span.SlangGenAst {cFileName}")
 
+CMD_F_SLANG_BUG = ("scan-build -V"
+                   # " -analyzer-disable-all-checks"
+                   # " -disable-checker security.insecureAPI.vfork"
+                   " -enable-checker core.span.SlangBug "
+                   " clang -c -std=c99 {includesString} {cFileName}")
 ################################################
 # BOUND END  : for_span_testing_module
 ################################################
 
-# DISABLE_CHECKER_STRING = "-disable-checker security.insecureAPI.vfork "
+# DISABLE_CHECKER_STRING =

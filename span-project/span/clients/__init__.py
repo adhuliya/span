@@ -6,6 +6,6 @@
 """The client analyses using the SPAN system."""
 
 __all__ = ["const", "evenodd", "pointsto",
-           "reach", "register", "simplelive",
+           "register", "simplelive",
            "stronglive"
            ]

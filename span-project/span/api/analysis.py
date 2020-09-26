@@ -30,6 +30,26 @@ from span.api.lattice import NoChange, DataLT, mergeAll
 
 AnalysisNameT = str
 
+################################################
+# BOUND START: sim_related 1/3
+################################################
+
+# simplification function names (that contain '__to__' in their name)
+SimNameT = str
+SimT = Opt[Set]
+SimFailed: SimT = None  # None represents a simplification failure
+SimPending: SimT = set()  # an empty set represents sim is pending
+
+ValueTypeT = str
+NumValue: ValueTypeT = "Num"
+BoolValue: ValueTypeT = "Bool"
+NameValue: ValueTypeT = "VarName"
+
+################################################
+# BOUND END  : sim_related 1/3
+################################################
+
+
 
 ################################################
 # BOUND START: worklist_related
@@ -1531,8 +1551,121 @@ class AnalysisAT(sim.SimAT):
   # BOUND END  : regular_insn__other
   # BOUND END  : regular_instructions
 
+  ################################################
+  # BOUND START: sim_related 2/3
+  ################################################
+
+  """Simplification functions to be (optionally) overridden.
+
+  For convenience, analysis.AnalysisAT inherits this class.
+  So the user may only inherit AnalysisAT class, and
+  override functions in this class only if the
+  analysis works as a simplifier too.
+
+  The second argument, nodeDfv, if its None,
+  means that the return value should be either
+  Pending if the expression provided
+  can be possibly simplified by the analysis,
+  or Failed if the expression cannot be simplified
+  given any data flow value.
+  """
+
+  def Node__to__Nil(self,
+      node: types.NodeIdT,
+      nodeDfv: Opt[NodeDfvL] = None,
+      values: Opt[bool] = None,
+  ) -> Opt[bool]:
+    """Node is simplified to Nil if its basically unreachable."""
+    raise NotImplementedError()
+
+
+  def LhsVar__to__Nil(self,
+      e: expr.VarE,
+      nodeDfv: Opt[NodeDfvL] = None,
+      values: Opt[List[bool]] = None,
+  ) -> Opt[List[bool]]:
+    """Returns a set of live variables at out of the node."""
+    raise NotImplementedError()
+
+
+  def Num_Bin__to__Num_Lit(self,
+      e: expr.BinaryE,
+      nodeDfv: Opt[NodeDfvL] = None,
+      values: Opt[List[types.NumericT]] = None,
+  ) -> Opt[List[types.NumericT]]:
+    """Simplify to a single literal if the expr can take that value."""
+    raise NotImplementedError()
+
+
+  def Num_Var__to__Num_Lit(self,
+      e: expr.VarE,
+      nodeDfv: Opt[NodeDfvL] = None,
+      values: Opt[List[types.NumericT]] = None,
+  ) -> Opt[List[types.NumericT]]:
+    """Simplify to a single literal if the variable can take that value."""
+    raise NotImplementedError()
+
+
+  def Cond__to__UnCond(self,
+      e: expr.VarE,
+      nodeDfv: Opt[NodeDfvL] = None,
+      values: Opt[bool] = None,
+  ) -> Opt[bool]:
+    """Simplify conditional jump to unconditional jump."""
+    raise NotImplementedError()
+
+
+  def Deref__to__Vars(self,
+      e: expr.VarE,
+      nodeDfv: Opt[NodeDfvL] = None,
+      values: Opt[List[types.VarNameT]] = None
+  ) -> Opt[List[types.VarNameT]]:
+    """Simplify a deref expr de-referencing varName
+    to a set of var pointees."""
+    raise NotImplementedError()
+
+  ################################################
+  # BOUND END  : sim_related 2/3
+  ################################################
+
 ################################################
 # BOUND END  : AnalysisAT_The_Base_Class.
+################################################
+
+################################################
+# BOUND START: sim_related 3/3
+################################################
+
+def extractSimNames() -> Set[str]:
+  """returns set of expr simplification func names
+   (these names have `__to__` in them)."""
+  tmp = set()
+  for memberName in AnalysisAT.__dict__:
+    if memberName.find("__to__") >= 0:
+      tmp.add(memberName)
+  return tmp
+
+
+simNames: Set[str] = extractSimNames()
+
+Node__to__Nil__Name: str = AnalysisAT.Node__to__Nil.__name__
+LhsVar__to__Nil__Name: str = AnalysisAT.LhsVar__to__Nil.__name__
+Num_Var__to__Num_Lit__Name: str = AnalysisAT.Num_Var__to__Num_Lit.__name__
+Cond__to__UnCond__Name: str = AnalysisAT.Cond__to__UnCond.__name__
+Num_Bin__to__Num_Lit__Name: str = AnalysisAT.Num_Bin__to__Num_Lit.__name__
+Deref__to__Vars__Name: str = AnalysisAT.Deref__to__Vars.__name__
+
+simDirnMap = {  # the IN/OUT information needed for the sim
+  Node__to__Nil__Name:        conv.Forward,  # means dfv at IN is needed
+  Num_Var__to__Num_Lit__Name: conv.Forward,
+  Cond__to__UnCond__Name:     conv.Forward,
+  Num_Bin__to__Num_Lit__Name: conv.Forward,
+  Deref__to__Vars__Name:      conv.Forward,
+  LhsVar__to__Nil__Name:      conv.Backward,  # means dfv at OUT is needed
+}
+
+################################################
+# BOUND END  : sim_related 3/3
 ################################################
 
 

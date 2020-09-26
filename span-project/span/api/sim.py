@@ -15,6 +15,7 @@ from span.ir.types import VarNameT, NumericT, NodeIdT
 from span.ir.conv import Forward, Backward
 import span.ir.expr as expr
 from span.api.dfv import NodeDfvL
+import span.ir.conv as conv
 
 # simplification function names (that contain '__to__' in their name)
 SimNameT = str
@@ -129,10 +130,10 @@ Num_Bin__to__Num_Lit__Name: str = SimAT.Num_Bin__to__Num_Lit.__name__
 Deref__to__Vars__Name: str = SimAT.Deref__to__Vars.__name__
 
 simDirnMap = {  # the IN/OUT information needed for the sim
-  Node__to__Nil__Name:        Forward,  # means dfv at IN is needed
-  Num_Var__to__Num_Lit__Name: Forward,
-  Cond__to__UnCond__Name:     Forward,
-  Num_Bin__to__Num_Lit__Name: Forward,
-  Deref__to__Vars__Name:      Forward,
-  LhsVar__to__Nil__Name:      Backward,  # means dfv at OUT is needed
+  Node__to__Nil__Name:        conv.Forward,  # means dfv at IN is needed
+  Num_Var__to__Num_Lit__Name: conv.Forward,
+  Cond__to__UnCond__Name:     conv.Forward,
+  Num_Bin__to__Num_Lit__Name: conv.Forward,
+  Deref__to__Vars__Name:      conv.Forward,
+  LhsVar__to__Nil__Name:      conv.Backward,  # means dfv at OUT is needed
 }

@@ -32,6 +32,7 @@ import span.util.common_util as cutil
 import span.ir.types as types
 import span.ir.conv as irConv
 import span.sys.ddm as ddm
+import span.util.data as data
 
 # Initialize -- logger, etc.
 if __name__ == "__main__":
@@ -213,10 +214,7 @@ def diagnoseSpanIr(args: argparse.Namespace) -> None:
 
   includesString = getIncludesString()
   cFileName = ".".join(spanirFileName.split(".")[:-1]) # remove .spanir extension
-  # -analyzer-disable-all-checks"
-  cmd = f"scan-build -V" \
-        f" -enable-checker core.span.SlangBug " \
-        f" clang -c -std=c99 {includesString} {cFileName}"
+  cmd = data.CMD_F_SLANG_BUG.format(includesString=includesString, cFileName=cFileName)
   completed = subp.run(cmd, shell=True)
   print("Return Code:", completed.returncode)
   if completed.returncode != 0:
