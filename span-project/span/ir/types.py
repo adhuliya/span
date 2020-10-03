@@ -3,7 +3,8 @@
 # MIT License
 # Copyright (c) 2020 Anshuman Dhuliya
 
-"""All value types available in the IR.
+"""All types available in the IR and many other places.
+Some types are defined in other modules where they make more sense.
 This module is imported by almost all
 other modules in the source. Hence this
 module shouldn't import any other source
@@ -17,11 +18,10 @@ import logging
 LOG = logging.getLogger("span")
 from typing import TypeVar, List, Optional as Opt, Tuple, Dict,\
   Set, Union as TypingUnion
-import re
 import traceback
 import functools
 
-from span.util.util import LS, AS
+from span.util.util import LS
 from span.util.data import PTR_INDLEV_INVALID
 
 ################################################
@@ -33,7 +33,7 @@ T = TypeVar("T")
 FileNameT = str
 
 VarNameT = str  # names like x, x.y.z etc.
-FuncNameT = str
+FuncNameT = str # function names can also be VarNameT type
 TUnitNameT = str
 LabelNameT = str
 RecordNameT = str  # Record = Struct/Union
@@ -50,21 +50,21 @@ OpNameT = str  # operator name
 NumericT = TypingUnion[int, float]
 LitT = TypingUnion[int, float, str]
 
-NodeIdT = int  # Node id (CFG) (32 bit)
-FuncIdT = int  # Function id (32 bit)
-FuncNodeIdT = int # FuncId || NodeId
+NodeIdT = int  # Node id (CFG) (18 bit) (>=0,<2^18)
+FuncIdT = int  # Function id (14 bit) (>=0,<2^14)
+FuncNodeIdT = int # FuncId || NodeId (32 bit)
 BasicBlockIdT = int
 
 LineNumT = int
 ColumnNumT = int
 
-EdgeLabelT = str  # edge labels
+EdgeLabelT = str  # edge labels (see span.ir.conv)
 
 OpCodeT = int  # operator codes type
 ExprCodeT = int  # expression codes type
 InstrCodeT = int  # instruction codes type
 
-DirectionT = str
+DirectionT = str  # analysis direction (see span.ir.conv)
 
 ################################################
 # BOUND END  : useful_types
@@ -97,10 +97,11 @@ FLOAT64_TC: TypeCodeT = 52  # double
 FLOAT80_TC: TypeCodeT = 53  # ??
 FLOAT128_TC: TypeCodeT = 54  # ??
 
-PTR_TC: TypeCodeT = 100  # pointer type code
+# PTR_TC: TypeCodeT = 100  # pointer type code (assumes 64 bit)
 PTR32_TC: TypeCodeT = 101  # pointer type code 32 bit
 PTR64_TC: TypeCodeT = 102  # pointer type code 64 bit
 PTR128_TC: TypeCodeT = 103  # pointer type code 128 bit
+PTR_TC = PTR64_TC  # default pointer type code (assumes 64 bit)
 ARR_TC: TypeCodeT = 105  # array type code
 CONST_ARR_TC: TypeCodeT = 106  # const size array type code
 VAR_ARR_TC: TypeCodeT = 107  # variable array type code
@@ -259,7 +260,7 @@ class ConstructT:
 
 
 class Type:
-  """Class to represent types and super class for all compound types.
+  """Class to represent types. It is super class for all compound types.
   It is directly used to represent the basic types.
   """
 
@@ -285,6 +286,10 @@ class Type:
 
 
   def isNumeric(self) -> bool:
+    """Returns bool(isInteger() or isFloat()).
+    Note: ArrayT overrides this functions and returns
+    True if the element type is numeric (this applies
+    to other meaningful is<Type>() checks as well)."""
     return INT1_TC <= self.typeCode <= FLOAT128_TC
 
 
@@ -317,10 +322,20 @@ class Type:
     return False
 
 
+  functools.lru_cache(200)
   def getNamesOfType(self,
       givenType: Opt['Type'],
       prefix: str,  # the name of the array
   ) -> Set['VarNameInfo']:
+    """Returns the fully qualified (with prefix) member names
+    if the type is a record, or an array with record elements.
+    This method must be appropriately overridden
+    by ArrayT and RecordT classes.
+
+    In the default implementation it returns the prefix as it is
+    if the givenType is None or matches this type or else
+    an empty set.
+    """
     if givenType is None or self == givenType:
       return {VarNameInfo(prefix, self, False)}
     else:
@@ -396,8 +411,8 @@ class Type:
       minValue = - self.getMaxValue()
     elif tc == FLOAT128_TC:
       minValue = - self.getMaxValue()
-    elif tc == PTR_TC:
-      minValue = 0  # FIXME: assumes 64bit machine
+    elif tc in (PTR32_TC, PTR64_TC, PTR128_TC):
+      minValue = 0
 
     return minValue
 
@@ -432,15 +447,19 @@ class Type:
     elif tc == FLOAT16_TC:
       maxValue = 65504
     elif tc == FLOAT32_TC:
-      maxValue = 3.4028234664e+38
+      maxValue = 3.4028234664e+38   # approximate
     elif tc == FLOAT64_TC:
-      maxValue = 1.797693e+308
+      maxValue = 1.797693e+308      # approximate
     elif tc == FLOAT80_TC:
-      maxValue = 1.797693e+308  # FIXME: same as 64 bit
+      maxValue = 1.797693e+308      # approximate (FIXME: same as 64 bit)
     elif tc == FLOAT128_TC:
-      maxValue = 1.18973149535723176502e+4932  # FIXME: confirm it
-    elif tc == PTR_TC:
-      maxValue = (1 << (64 - 1)) - 1  # FIXME: assumes 64bit machine
+      maxValue = 1.18973149535723176502e+4932  # approximate (FIXME: confirm it)
+    elif tc == PTR32_TC:
+      maxValue = (1 << 32) - 1
+    elif tc == PTR64_TC:
+      maxValue = (1 << 64) - 1
+    elif tc == PTR128_TC:
+      maxValue = (1 << 128) - 1
 
     return maxValue
 
@@ -490,8 +509,12 @@ class Type:
       size = 80
     elif tc == FLOAT128_TC:
       size = 128
-    elif tc == PTR_TC:
-      size = 64  # FIXME: assumes 64bit machine
+    elif tc == PTR32_TC:
+      size = 32
+    elif tc == PTR64_TC:
+      size = 64
+    elif tc == PTR128_TC:
+      size = 128
 
     return size
 
@@ -672,7 +695,7 @@ class VarNameInfo:  # IMPORTANT: don't change its position
   """Holds the information of all names,
   including compound names
   like x.y.z, x[].y.z etc. (which don't have any pointer dereference)
-  Note name of an object is absolute, i.e. it cannot contain
+  Note that name of an object is absolute, i.e. it cannot contain
   a pointer dereference.
   """
 
@@ -836,11 +859,11 @@ class Ptr(Type):
 
 
   def __hash__(self):
-    return hash(self.to) * self.indlev
+    return hash((self.to, self.indlev))
 
 
   def __str__(self):
-    return self.__repr__()
+    return f"Ptr({str(self.to)}, {self.indlev})"
 
 
   def __repr__(self):
@@ -883,7 +906,7 @@ class ArrayT(Type):
     """If givenType is None, return all possible names.
     For e.g., if its an array of records.
     `prefix` should be the array name in the source or
-    in the record element.
+    an array record element.
     """
     assert prefix, f"{givenType}, {prefix} and {self}"
 
@@ -1027,7 +1050,7 @@ class ConstSizeArray(ArrayT):
 
 
   def __hash__(self):
-    return hash(self.typeCode) + (hash(self.of) * self.size)
+    return hash((self.typeCode, self.of, self.size))
 
 
   def __str__(self):
@@ -1389,7 +1412,7 @@ class Union(RecordT):
     for memberName, memberType in self.members:
       assert memberType.hasKnownBitSize()
       memberBitSize = memberType.bitSize()
-      size = size if size > memberBitSize else memberBitSize
+      size = memberBitSize if size < memberBitSize else size
     return size
 
 

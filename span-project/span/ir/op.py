@@ -34,7 +34,7 @@ OpCodeT = types.OpCodeT
 UO_PLUS_OC: OpCodeT = 101  # +
 UO_MINUS_OC: OpCodeT = 102  # -
 
-# unary pointer_ops
+# unary pointer_ops (not needed as each has a different expression type)
 # UO_ADDROF_OC: OpCodeT = 103  # &
 # UO_DEREF_OC: OpCodeT = 104  # *
 # UO_SIZEOF_OC: OpCodeT = 105  # sizeof()
@@ -172,10 +172,10 @@ class OpT:
     such that at all places it should be the same object.
     This is efficient.
     """
-    if not isinstance(other, OpT):
-      return NotImplemented
     if self is other:
       return True
+    if not isinstance(other, OpT):
+      return NotImplemented
     return False
 
 
@@ -220,6 +220,7 @@ class BinaryOp(OpT):
   def __init__(self,
       opCode: OpCodeT
   ) -> None:
+    assert opCode > BO_NUM_START_OC, f"{opCode}"
     super().__init__(opCode)
 
 
@@ -229,6 +230,7 @@ class UnaryOp(OpT):
   def __init__(self,
       opCode: OpCodeT
   ) -> None:
+    assert opCode < BO_NUM_START_OC, f"{opCode}"
     super().__init__(opCode)
 
 
@@ -277,23 +279,21 @@ BO_RRSHIFT: BinaryOp = BinaryOp(BO_RRSHIFT_OC)
 
 # When left and right operands are flipped, operator also flips.
 flippedRelOps = {
-  BO_EQ_OC: BO_EQ,
-  BO_NE_OC: BO_NE,
-  BO_LT_OC: BO_GT,
-  BO_LE_OC: BO_GE,
-  BO_GT_OC: BO_LT,
-  BO_GE_OC: BO_LE,
+  BO_EQ: BO_EQ,
+  BO_NE: BO_NE,
+  BO_LT: BO_GT,
+  BO_LE: BO_GE,
+  BO_GT: BO_LT,
+  BO_GE: BO_LE,
 }
 
 
-def getFlippedRelOp(relOp: OpT) -> OpT:
+def getFlippedRelOp(relOp: BinaryOp) -> BinaryOp:
   """Returns the flipped equivalent to the given operator.
-  It is generally called when operators of the operand are swapped.
+  It is generally called when operands of the operator are swapped.
   """
-  opCode = relOp.opCode
-  if opCode in flippedRelOps:
-    return flippedRelOps[opCode]
-  else:
-    raise ValueError()
+  assert relOp.isRelationalOp(), f"{relOp}"
+  assert relOp in flippedRelOps, f"{relOp}, {flippedRelOps.keys()}"
+  return flippedRelOps[relOp]
 
 
