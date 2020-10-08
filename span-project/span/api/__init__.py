@@ -5,4 +5,4 @@
 
 """The API/source needed to develop clients and diagnoses."""
 
-__all__ = ["analysis", "dfv", "diagnosis", "lattice", "sim"]
+__all__ = ["analysis", "diagnosis", "dfv", "lattice"]

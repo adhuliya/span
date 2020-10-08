@@ -8,10 +8,9 @@ All possible expressions used in an instruction.
 """
 
 import logging
-
 LOG = logging.getLogger("span")
-from typing import List, Set, Any
-from typing import Optional as Opt
+
+from typing import List, Set, Any, Optional as Opt
 
 from span.util.logger import LS
 import span.ir.types as types
@@ -28,7 +27,6 @@ ExprCodeT = types.ExprCodeT
 VAR_EXPR_EC: ExprCodeT = 11
 LIT_EXPR_EC: ExprCodeT = 12
 FUNC_EXPR_EC: ExprCodeT = 13
-OBJ_EXPR_EC: ExprCodeT = 14
 
 UNARY_EXPR_EC: ExprCodeT = 20
 CAST_EXPR_EC: ExprCodeT = 21
@@ -98,6 +96,10 @@ class ExprET:
     return equal
 
 
+  def __hash__(self) -> int:
+    return hash((self.exprCode, self.type))
+
+
   def isEqual(self,
       other: 'ExprET'
   ) -> bool:
@@ -119,10 +121,6 @@ class ExprET:
       LOG.error("ObjectsDiffer: %s, %s", self, other)
 
     return equal
-
-
-  def __hash__(self) -> int:
-    return hash((self.exprCode, self.type))
 
 
 class SimpleET(ExprET):
@@ -153,9 +151,9 @@ class LitE(SimpleET):
   ) -> None:
     super().__init__(LIT_EXPR_EC, info)
     self.val: types.LitT = val
-    # String literals are given special (constant) variable names
+    # String literals are given special (constant) variable names.
     # its type is ConstantArray of characters
-    # name of the string literal (set in tunit.processStringLiteral())
+    # name of the string literal is set in tunit.processStringLiteral()
     self.name: types.VarNameT = ""
 
 
@@ -330,7 +328,7 @@ class VarE(LocationET, SimpleET):
 
 
   def __hash__(self):
-    return hash((self.name, self.exprCode))
+    return hash(self.name)
 
 
   def __str__(self):
@@ -404,7 +402,7 @@ class PseudoVarE(VarE):
 
 
   def __hash__(self):
-    return hash((self.name, self.exprCode))
+    return hash(self.name)
 
 
   def __str__(self):
@@ -699,8 +697,7 @@ class MemberE(DerefET):
 
 
   def __str__(self):
-    sep = "."
-    if self.hasDereference(): sep = "->"
+    sep = "->" if self.hasDereference() else "."
     return f"{self.of}{sep}{self.name}"
 
 
@@ -1181,6 +1178,13 @@ class CallE(ExprET):
     return isinstance(self.callee, types.Ptr)
 
 
+  def getCalleeFuncName(self) -> Opt[types.FuncNameT]:
+    """Get the callee name if its a proper function."""
+    if not self.isPointerCall():
+      return self.callee.name
+    return None
+
+
   def __eq__(self, other) -> bool:
     if self is other:
       return True
@@ -1249,6 +1253,9 @@ class SelectE(ExprET):
       info: Opt[types.Info] = None,
   ) -> None:
     super().__init__(SELECT_EXPR_EC, info)
+    assert isinstance(cond, VarE), f"{cond}"
+    assert isinstance(arg1, SimpleET), f"{arg1}"
+    assert isinstance(arg2, SimpleET), f"{arg2}"
     self.cond = cond
     self.arg1 = arg1
     self.arg2 = arg2
@@ -1269,6 +1276,10 @@ class SelectE(ExprET):
     elif not self.info == other.info:
       equal = False
     return equal
+
+
+  def __hash__(self) -> int:
+    return hash((self.cond, self.arg1, self.arg2))
 
 
   def isEqual(self,
@@ -1293,10 +1304,6 @@ class SelectE(ExprET):
       LOG.error("ObjectsDiffer: %s, %s", self, other)
 
     return equal
-
-
-  def __hash__(self) -> int:
-    return hash((self.cond, self.arg1, self.arg2))
 
 
   def __str__(self):
@@ -1335,6 +1342,10 @@ class PhiE(ExprET):
     return equal
 
 
+  def __hash__(self) -> int:
+    return hash((self.args, self.exprCode))
+
+
   def isEqual(self,
       other: 'ExprET'
   ) -> bool:
@@ -1354,10 +1365,6 @@ class PhiE(ExprET):
       LOG.error("ObjectsDiffer: %s, %s", self, other)
 
     return equal
-
-
-  def __hash__(self) -> int:
-    return hash((self.args, self.exprCode))
 
 
   def __str__(self):

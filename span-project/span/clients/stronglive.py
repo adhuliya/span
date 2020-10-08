@@ -23,7 +23,7 @@ from span.ir.ir import \
    getExprLValueNames, getNamesUsedInExprSyntactically,
    getNamesUsedInExprNonSyntactically, inferTypeOfVal)
 from span.api.lattice import \
-  (ChangeL, Changed, NoChange, DataLT, basicEqualTest, basicLessThanTest,
+  (ChangedT, Changed, DataLT, basicEqualTest, basicLessThanTest,
    getBasicString)
 from span.api.dfv import NodeDfvL
 from span.api.analysis import AnalysisAT, BackwardD, SimFailed, SimPending
@@ -54,11 +54,11 @@ class OverallL(DataLT):
       self.val, self.top, self.bot = None, False, True
 
 
-  def meet(self, other) -> Tuple['OverallL', ChangeL]:
+  def meet(self, other) -> Tuple['OverallL', ChangedT]:
     """Returns glb of self and other, WITHOUT MODIFYING EITHER."""
     assert isinstance(other, OverallL), f"{other}"
-    if self is other: return self, NoChange
-    if self < other: return self, NoChange
+    if self is other: return self, not Changed
+    if self < other: return self, not Changed
     if other < self: return other, Changed
 
     # if here, elements are incomparable, and neither is top/bot.

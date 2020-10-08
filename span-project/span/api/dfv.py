@@ -14,7 +14,7 @@ LOG = logging.getLogger("span")
 
 from span.util.logger import LS
 from span.api.lattice import\
-  (LatticeLT, DataLT, ChangeL, Changed, NoChange,
+  (LatticeLT, DataLT, ChangedT, Changed,
    BoundLatticeLT, basicMeetOp, basicLessThanTest,
    basicEqualTest, getBasicString)
 from span.util.util import AS
@@ -38,24 +38,24 @@ class NewOldL(LatticeLT):
   __slots__ : List[str] = ["_newIn", "_newOut"]
 
   def __init__(self,
-      newIn: ChangeL,
-      newOut: ChangeL
+      newIn: ChangedT,
+      newOut: ChangedT
   ) -> None:
     top = not (newIn or newOut)
-    bot = bool(newIn and newOut)
+    bot = newIn and newOut
     super().__init__(top=top, bot=bot)
 
     self._newIn = newIn
     self._newOut = newOut
 
 
-  def meet(self, other) -> Tuple['NewOldL', ChangeL]:
+  def meet(self, other) -> Tuple['NewOldL', ChangedT]:
     assert isinstance(other, NewOldL), f"{other}"
-    if self.bot: return self, NoChange
+    if self.bot: return self, not Changed
     if other.bot: return other, Changed
-    if other.top: return self, NoChange
+    if other.top: return self, not Changed
     if self.top: return other, Changed
-    if self == other: return self, NoChange
+    if self == other: return self, not Changed
 
     return self.getNewInOut(), Changed
 
@@ -100,17 +100,17 @@ class NewOldL(LatticeLT):
 
   @property
   def isNewIn(self) -> bool:
-    return bool(self._newIn)
+    return self._newIn
 
 
   @property
   def isNewOut(self) -> bool:
-    return bool(self._newOut)
+    return self._newOut
 
 
   @property
   def isNewInOut(self) -> bool:
-    return bool(self._newIn and self._newIn)
+    return self._newIn and self._newOut
 
 
   @property
@@ -119,20 +119,20 @@ class NewOldL(LatticeLT):
 
 
   def __bool__(self) -> bool:
-    return bool(self._newIn or self._newOut)
+    return self._newIn or self._newOut
 
 
   @classmethod
   def getNewIn(cls) -> 'NewOldL':
     if not cls._new_in_obj:
-      cls._new_in_obj = NewOldL(Changed, NoChange)
+      cls._new_in_obj = NewOldL(Changed, not Changed)
     return cls._new_in_obj
 
 
   @classmethod
   def getNewOut(cls) -> 'NewOldL':
     if not cls._new_out_obj:
-      cls._new_out_obj = NewOldL(NoChange, Changed)
+      cls._new_out_obj = NewOldL(not Changed, Changed)
     return cls._new_out_obj
 
 
@@ -149,14 +149,14 @@ class NewOldL(LatticeLT):
   @classmethod
   def getOldInOut(cls) -> 'NewOldL':
     if not cls._old_inout_obj:
-      cls._old_inout_obj = NewOldL(NoChange, NoChange)
+      cls._old_inout_obj = NewOldL(not Changed, not Changed)
     return cls._old_inout_obj
 
 
   @classmethod
   def make(cls,
-      new_in: ChangeL,
-      new_out: ChangeL
+      new_in: ChangedT,
+      new_out: ChangedT
   ) -> 'NewOldL':
     if new_in:
       if new_out:
@@ -214,13 +214,13 @@ class NodeDfvL(LatticeLT):
                      bot=bool(self.dfvIn.bot and self.dfvOut.bot))
 
 
-  def meet(self, other) -> Tuple['NodeDfvL', ChangeL]:
+  def meet(self, other) -> Tuple['NodeDfvL', ChangedT]:
     assert isinstance(other, NodeDfvL), f"{other}"
     if self is other:
-      return self, NoChange
+      return self, not Changed
 
-    chOut = NoChange
-    chIn = NoChange
+    chOut = not Changed
+    chIn = not Changed
 
     if self.dfvIn is other.dfvIn:  # since data flow values are treated immutable
       dfvIn = self.dfvIn
@@ -233,22 +233,22 @@ class NodeDfvL(LatticeLT):
       dfvOut = self.dfvOut
     else:
       dfvOut, chOutTmp = self.dfvOut.meet(other.dfvOut)
-      chOut, _ = chOut.meet(chOutTmp)
+      chOut = chOut or chOutTmp
 
     if other.dfvOut is other.dfvOutTrue:
       dfvOutTrue = dfvOut
     else:
       dfvOutTrue, chOutTmp = self.dfvOutTrue.meet(other.dfvOutTrue)
-      chOut, _ = chOut.meet(chOutTmp)
+      chOut = chOut or chOutTmp
 
     if other.dfvOut is other.dfvOutFalse:
       dfvOutFalse = dfvOut
     else:
       dfvOutFalse, chOutTmp = self.dfvOutFalse.meet(other.dfvOutFalse)
-      chOut, _ = chOut.meet(chOutTmp)
+      chOut = chOut or chOutTmp
 
     if LS: LOG.debug("NodeDfv (meet with prev nodeDfv): In: %s, Out: %s.", chIn, chOut)
-    return NodeDfvL(dfvIn, dfvOut, dfvOutTrue, dfvOutFalse), chIn.meet(chOut)[0]
+    return NodeDfvL(dfvIn, dfvOut, dfvOutTrue, dfvOutFalse), chIn or chOut
 
 
   def getCopy(self):
@@ -316,7 +316,7 @@ class ComponentL(DataLT):
     super().__init__(func, val, top, bot)
     self.val: Opt[Any] = val
 
-  def meet(self, other) -> Tuple['ComponentL', ChangeL]:
+  def meet(self, other) -> Tuple['ComponentL', ChangedT]:
     raise NotImplementedError()
 
 
@@ -341,14 +341,14 @@ class OverallL(DataLT):
     self.name = name
 
 
-  def meet(self, other) -> Tuple['OverallL', ChangeL]:
+  def meet(self, other) -> Tuple['OverallL', ChangedT]:
     assert isinstance(other, OverallL), f"{other}"
 
     tup = basicMeetOp(self, other)
     if tup:
       return tup
     elif self.val == other.val:
-      return self, NoChange
+      return self, not Changed
     else:
       # take meet of individual entities (variables)
       meet_val: Dict[types.VarNameT, ComponentL] = {}

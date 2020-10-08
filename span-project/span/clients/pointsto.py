@@ -26,7 +26,7 @@ import span.ir.instr as instr
 import span.ir.constructs as constructs
 
 import span.api.lattice as lattice
-from span.api.lattice import ChangeL, Changed, NoChange
+from span.api.lattice import ChangedT, Changed
 import span.api.dfv as dfv
 from span.api.dfv import NodeDfvL
 import span.api.analysis as analysis
@@ -60,13 +60,13 @@ class ComponentL(dfv.ComponentL):
       raise ValueError(f"{self}")
 
 
-  def meet(self, other) -> Tuple['ComponentL', ChangeL]:
+  def meet(self, other) -> Tuple['ComponentL', ChangedT]:
     assert isinstance(other, ComponentL), f"{other}"
     tup = lattice.basicMeetOp(self, other)
     if tup:
       return tup
     elif self < other:
-      return self, NoChange
+      return self, not Changed
     elif other < self:
       return other, Changed
     else:

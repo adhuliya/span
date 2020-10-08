@@ -944,16 +944,12 @@ def getCallExpr(insn: InstrIT) -> Opt[expr.CallE]:
 def getCalleeFuncName(insn: InstrIT) -> Opt[types.FuncNameT]:
   """Get the callee name if its a proper function."""
   callE = getCallExpr(insn)
-
-  if callE and not callE.isPointerCall():
-    return callE.callee.name
-  return None
+  return callE.getCalleeFuncName() if callE else None
 
 
 def getDerefExpr(insn: InstrIT) -> Opt[expr.ExprET]:
   if not isinstance(insn, AssignI):
-    return None
-
+    return None  # DerefE can occur only in AssignI instructions
   return expr.getDerefExpr(insn.lhs) or expr.getDerefExpr(insn.rhs)
 
 

@@ -25,7 +25,7 @@ from span.ir.ir import \
 
 from span.api.dfv import OLD_INOUT, NEW_IN, NodeDfvL, NewOldL
 import span.api.dfv as dfv
-from span.api.lattice import NoChange, DataLT, mergeAll
+from span.api.lattice import ChangedT, Changed, DataLT, mergeAll
 
 AnalysisNameT = str
 
@@ -536,7 +536,6 @@ class ForwardDT(DirectionDT):
 
     # newIn = oldIn  # enforce_monotonicity
     newIn = None  # don't enforce_monotonicity
-    changed = NoChange
     for predEdge in predEdges:
       f = fcfg.isFeasibleEdge(predEdge)
       if LS: LOG.debug("Edge: %s, Feasible: %s", predEdge, f)
@@ -554,8 +553,7 @@ class ForwardDT(DirectionDT):
         if newIn is None:
           newIn = predOut
         else:
-          newIn, ch = newIn.meet(predOut)
-          changed, _ = changed.meet(ch)  # old code TODO remove it
+          newIn, _ = newIn.meet(predOut)
 
     if newIn == ndfv.dfvIn: return ndfv, OLD_INOUT
 
@@ -639,7 +637,7 @@ class BackwardDT(DirectionDT):
     oldOut = ndfv.dfvOut
 
     newOut = oldOut  # enforce_monotonicity
-    changed = NoChange
+    changed: ChangedT = not Changed
     for succEdge in succEdges:
       f = fcfg.isFeasibleEdge(succEdge)  # TODO: succEdge in fcfg.fEdges (for speed)
       if LS: LOG.debug("Edge: %s, Feasible: %s", succEdge, f)
@@ -647,7 +645,7 @@ class BackwardDT(DirectionDT):
         succIn = self.nidNdfvMap.get(succEdge.dest.id, self.topNdfv).dfvIn
         if not succIn.top:
           newOut, ch = newOut.meet(succIn)  # enforce_monotonicity
-          changed, _ = changed.meet(ch)
+          changed = changed or ch
 
     if not changed: return ndfv, OLD_INOUT
 
@@ -914,7 +912,7 @@ class AnalysisAT:
   ) -> NodeDfvL:
     """Instr_Form: numeric: a = b.
     Convention:
-      a is variable.
+      a is a variable.
       b is a literal.
     """
     return self.Num_Assign_Instr(nodeId, insn, nodeDfv)

@@ -51,7 +51,7 @@ LOG_FORMAT_1: str = (">>> %(asctime)s : %(levelname)8s : %(filename)s\n"
                      "    Line %(lineno)4s : %(funcName)s()\n"
                      "%(message)s\n")
 
-LOG_FORMAT_2: str = ("   [%(asctime)s : %(levelname)8s : %(name)s"
+LOG_FORMAT_2: str = ("   [%(asctime)s : %(levelname)8s : %(name)s : %(filename)s"
                      "    Line %(lineno)4s : %(funcName)s()]\n"
                      "%(message)s")
 

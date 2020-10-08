@@ -2,9 +2,21 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="33a5c68d-3b8a-4f86-8470-06eab99970cb" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/../.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/../.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/span/ir/op.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/ir/op.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/span/ir/types.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/ir/types.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/api/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/api/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/api/analysis.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/api/analysis.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/api/dfv.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/api/dfv.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/api/lattice.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/api/lattice.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/clients/const.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/clients/const.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/clients/evenodd.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/clients/evenodd.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/clients/interval.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/clients/interval.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/clients/pointsto.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/clients/pointsto.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/clients/stronglive.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/clients/stronglive.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/ir/expr.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/ir/expr.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/ir/instr.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/ir/instr.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/util/logger.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/util/logger.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/span/util/util.py" beforeDir="false" afterPath="$PROJECT_DIR$/span/util/util.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -67,6 +79,7 @@
     <property name="node.js.selected.package.tslint" value="(autodetect)" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
+    <property name="run.code.analysis.last.selected.profile" value="pProject Default" />
     <property name="settings.editor.selected.configurable" value="reference.settings.ide.settings.spelling" />
   </component>
   <component name="RecentsManager">
@@ -396,6 +409,9 @@
       <workItem from="1601124852512" duration="3211000" />
       <workItem from="1601539017439" duration="883000" />
       <workItem from="1601621092820" duration="7164000" />
+      <workItem from="1601725788965" duration="1097000" />
+      <workItem from="1601881943159" duration="6281000" />
+      <workItem from="1602132351410" duration="2847000" />
     </task>
     <servers />
   </component>
@@ -436,6 +452,10 @@
       <screen x="0" y="0" width="1366" height="744" />
     </state>
     <state x="278" y="33" width="802" height="677" key="#Custom_Plugin_Repositories/0.0.1366.744@0.0.1366.744" timestamp="1596724891176" />
+    <state x="419" y="228" width="520" height="288" key="ANALYSIS_DLG_com.intellij.analysis.BaseAnalysisAction$1" timestamp="1601894000959">
+      <screen x="0" y="0" width="1366" height="744" />
+    </state>
+    <state x="419" y="228" width="520" height="288" key="ANALYSIS_DLG_com.intellij.analysis.BaseAnalysisAction$1/0.0.1366.744@0.0.1366.744" timestamp="1601894000959" />
     <state x="186" y="0" width="985" height="744" key="CommitChangelistDialog2" timestamp="1601124962618">
       <screen x="0" y="0" width="1366" height="744" />
     </state>
@@ -464,22 +484,18 @@
       <screen x="0" y="0" width="1366" height="744" />
     </state>
     <state x="0" y="0" width="1366" height="744" key="SettingsEditor/0.0.1366.744@0.0.1366.744" timestamp="1598366834659" />
-    <state x="417" y="106" width="639" height="524" key="StructurePopup" timestamp="1601634877081">
+    <state x="417" y="106" width="639" height="524" key="StructurePopup" timestamp="1602145269689">
       <screen x="0" y="0" width="1366" height="744" />
     </state>
-    <state x="417" y="106" width="639" height="524" key="StructurePopup/0.0.1366.744@0.0.1366.744" timestamp="1601634877081" />
-    <state x="339" y="199" key="com.intellij.ide.util.TipDialog" timestamp="1601725809253">
+    <state x="417" y="106" width="639" height="524" key="StructurePopup/0.0.1366.744@0.0.1366.744" timestamp="1602145269689" />
+    <state x="339" y="199" key="com.intellij.ide.util.TipDialog" timestamp="1602132357495">
       <screen x="0" y="0" width="1366" height="744" />
     </state>
-    <state x="339" y="199" key="com.intellij.ide.util.TipDialog/0.0.1366.744@0.0.1366.744" timestamp="1601725809253" />
+    <state x="339" y="199" key="com.intellij.ide.util.TipDialog/0.0.1366.744@0.0.1366.744" timestamp="1602132357495" />
     <state x="0" y="0" width="866" height="744" key="find.popup" timestamp="1597916625815">
       <screen x="0" y="0" width="1366" height="744" />
     </state>
     <state x="0" y="0" width="866" height="744" key="find.popup/0.0.1366.744@0.0.1366.744" timestamp="1597916625815" />
-    <state x="331" y="92" width="700" height="530" key="recent.locations.popup" timestamp="1593252298138">
-      <screen x="0" y="0" width="1366" height="744" />
-    </state>
-    <state x="331" y="92" width="700" height="530" key="recent.locations.popup/0.0.1366.744@0.0.1366.744" timestamp="1593252298138" />
     <state x="427" y="0" width="503" height="702" key="refactoring.ChangeSignatureDialog" timestamp="1598695132255">
       <screen x="0" y="0" width="1366" height="744" />
     </state>

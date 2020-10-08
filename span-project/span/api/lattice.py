@@ -15,103 +15,14 @@ import span.ir.constructs as obj
 
 import span.ir.types as types
 
-
-# This class cannot subclass LatticeT (since LatticeT uses it),
-# but it is a proper lattice.
-class ChangeL:
-  """
-  Lattice with two elements only.
-  top: change = False, signifies NoChange in value.
-  bot: change = True, signifies Change in value.
-  """
-  _top: Opt['ChangeL'] = None
-  _bot: Opt['ChangeL'] = None
-  __slots__ : List[str] = ["_change"]
-
-
-  def __init__(self,
-      change: bool = False
-  ) -> None:
-    self._change = change
-
-
-  @property
-  def bot(self) -> bool:
-    return self._change
-
-
-  @property
-  def top(self) -> bool:
-    return not self._change
-
-
-  @classmethod
-  def getTop(cls):
-    top = cls._top
-    if top is not None: return top
-
-    top = ChangeL(False)
-    cls._top = top
-    return top
-
-
-  @classmethod
-  def getBot(cls):
-    bot = cls._bot
-    if bot is not None: return bot
-
-    bot = ChangeL(True)
-    cls._bot = bot
-    return bot
-
-
-  @classmethod
-  def make(cls, change: bool):
-    """Create object of this class (avoids creation of redundant objects)."""
-    if change: return cls.getBot()
-    return cls.getTop()
-
-
-  def __eq__(self, other) -> bool:
-    if self is other:
-      return True
-    if not isinstance(other, ChangeL):
-      return NotImplemented
-    return self._change == other._change
-
-
-  def meet(self,
-      other: 'ChangeL'
-  ) -> Tuple['ChangeL', 'ChangeL']:
-    """change == True is bot."""
-    if self is other: return self, NoChange
-    if self.bot: return self, NoChange
-    if other.bot: return other, Changed
-    return self, NoChange
-
-
-  def __bool__(self) -> bool:
-    return self._change
-
-
-  def __str__(self):
-    if self._change: return "Changed"
-    return "NoChange"
-
-
-  def __repr__(self):
-    return self.__str__()
-
-
-NoChange: ChangeL = ChangeL.getTop()
-Changed: ChangeL = ChangeL.getBot()
-
+ChangedT = bool  # is the value changed?
+Changed: ChangedT = True
 
 BoundLatticeLT = TypeVar('BoundLatticeLT', bound='LatticeLT')
 
 
 class LatticeLT:
-  """Base class for all Lattice except for lattice.ChangeL."""
+  """Base class for all Lattices."""
 
   __slots__ : List[str] = ["top", "bot"]
 
@@ -126,7 +37,7 @@ class LatticeLT:
     self.bot = bot
 
 
-  def meet(self, other) -> Tuple['LatticeLT', ChangeL]:
+  def meet(self, other) -> Tuple['LatticeLT', ChangedT]:
     """Calculates glb of the self and the other data flow value.
 
     Default implementation, assuming only top and bot exist (binary lattice).
@@ -156,9 +67,9 @@ class LatticeLT:
     for all other cases,
     not x <= y should-be-equal-to y <= x.
     """
-    if self.bot: return True
-    if other.bot: return False
-    return True  # both are top
+    res = basicLessThanTest(self, other)
+    assert res is not None, f"{res}, {self}, {other}"
+    return res
 
 
   def __eq__(self, other) -> bool:
@@ -166,13 +77,11 @@ class LatticeLT:
 
     Default implementation, assuming only top and bot exist (binary lattice).
     """
-    if self is other:
-      return True
     if not isinstance(other, LatticeLT):
       return NotImplemented
-    if self.top and other.top: return True
-    if self.bot and other.bot: return True
-    return False
+    res = basicEqualTest(self, other)
+    assert res is not None, f"{res}, {self}, {other}"
+    return res
 
 
   def __gt__(self, other):
@@ -209,7 +118,7 @@ class DataLT(LatticeLT):
       self.val = None
 
 
-  def meet(self, other) -> Tuple['DataLT', ChangeL]:
+  def meet(self, other) -> Tuple['DataLT', ChangedT]:
     """Calculates glb of the self and the other data flow value.
 
     Note: It never modifies the 'self' or the 'other' data flow value.
@@ -218,7 +127,7 @@ class DataLT(LatticeLT):
       other: the data flow value to calculate `meet` with.
 
     Returns:
-      (Lattice, ChangeL): glb of self and dfv, and 'Changed' if glb != self
+      (Lattice, ChangedT): glb of self and dfv, and 'Changed' if glb != self
     """
     raise NotImplementedError()
 
@@ -263,13 +172,13 @@ def mergeAll(values: Iterable[BoundLatticeLT]) -> BoundLatticeLT:
   return result  # type: ignore
 
 
-def basicMeetOp(first: types.T, second: types.T) -> Opt[Tuple[types.T, ChangeL]]:
+def basicMeetOp(first: types.T, second: types.T) -> Opt[Tuple[types.T, ChangedT]]:
   """A basic meet operation common to all lattices.
   If this fails the lattices can do more complicated operations.
   """
-  if first is second: return first, NoChange
-  if first.bot: return first, NoChange
-  if second.top: return first, NoChange
+  if first is second: return first, not Changed
+  if first.bot: return first, not Changed
+  if second.top: return first, not Changed
   if second.bot: return second, Changed
   if first.top: return second, Changed
   return None  # i.e. can't compute
@@ -301,6 +210,7 @@ def basicEqualTest(first: LatticeLT, second: LatticeLT) -> Opt[bool]:
 
 
 def getBasicString(obj: LatticeLT) -> Opt[str]:
+  """Utility function to convert Top/Bot lattice values to a readable string."""
   if obj.bot: return "Bot"
   if obj.top: return "Top"
   return None

@@ -17,7 +17,7 @@ import span.ir.instr as instr
 import span.ir.constructs as constructs
 import span.ir.ir as ir
 
-from span.api.lattice import ChangeL, Changed, NoChange
+from span.api.lattice import ChangedT, Changed
 import span.api.dfv as dfv
 import span.api.lattice as lattice
 from span.api.dfv import NodeDfvL
@@ -48,12 +48,12 @@ class ComponentL(dfv.ComponentL):
 
   def meet(self,
       other: 'ComponentL'
-  ) -> Tuple['ComponentL', ChangeL]:
+  ) -> Tuple['ComponentL', ChangedT]:
     tup = lattice.basicMeetOp(self, other)
     if tup:
       return tup
     elif self.val == other.val:
-      return self, NoChange
+      return self, not Changed
     else:
       assert self.val and other.val, f"{self}, {other}"
       lowerLim = min(self.val[0], other.val[0])

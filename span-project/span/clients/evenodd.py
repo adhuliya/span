@@ -21,8 +21,8 @@ import span.ir.expr as expr
 import span.ir.instr as instr
 import span.ir.constructs as constructs
 
-from span.api.lattice import DataLT, ChangeL, Changed,\
-  NoChange, basicMeetOp, basicLessThanTest, basicEqualTest, getBasicString
+from span.api.lattice import DataLT, ChangedT, Changed,\
+  basicMeetOp, basicLessThanTest, basicEqualTest, getBasicString
 import span.api.dfv as dfv
 from span.api.dfv import NodeDfvL
 import span.api.analysis as analysis
@@ -60,12 +60,12 @@ class ComponentL(dfv.ComponentL):
 
   def meet(self,
       other: 'ComponentL'
-  ) -> Tuple['ComponentL', ChangeL]:
+  ) -> Tuple['ComponentL', ChangedT]:
     tup = basicMeetOp(self, other)
     if tup:
       return tup
     elif self.val == other.val:
-      return self, NoChange
+      return self, not Changed
     else:
       return ComponentL(self.func, bot=True), Changed
 

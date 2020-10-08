@@ -27,7 +27,7 @@ import span.ir.instr as instr
 import span.ir.constructs as constructs
 import span.ir.ir as ir
 
-from span.api.lattice import ChangeL, Changed, NoChange, DataLT
+from span.api.lattice import ChangedT, Changed, DataLT
 import span.api.dfv as dfv
 from span.api.dfv import NodeDfvL
 import span.api.lattice as lattice
@@ -56,13 +56,13 @@ class ComponentL(dfv.ComponentL):
 
   def meet(self,
       other: 'ComponentL'
-  ) -> Tuple['ComponentL', ChangeL]:
+  ) -> Tuple['ComponentL', ChangedT]:
     """For documentation see: `span.api.lattice.LatticeLT.meet`"""
     tup = lattice.basicMeetOp(self, other)
     if tup:
       return tup
     elif self.val == other.val:
-      return self, NoChange
+      return self, not Changed
     else:
       return ComponentL(self.func, bot=True), Changed
 
