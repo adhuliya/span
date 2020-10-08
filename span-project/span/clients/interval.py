@@ -523,7 +523,8 @@ class IntervalA(analysis.ValueAnalysisAT):
       newOut = cast(dfv.OverallL, dfvIn.getCopy())
       newOutSetVal = newOut.setVal
       for name, value in outDfvValues.items():
-        if not dfvOutGetVal(name).top:
+        oldOutValue = dfvOutGetVal(name)
+        if not oldOutValue.top and oldOutValue != value:
           value = self.componentBot  # widening
         newOutSetVal(name, value)
     return NodeDfvL(dfvIn, newOut)
