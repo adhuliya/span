@@ -29,6 +29,7 @@ RelFilePathT = str  # a relative file path (could be absolute too)
 AbsFilePathT = str  # an absolute file path
 TEXT_CHARS = bytearray({7, 8, 9, 10, 12, 13, 27} | set(range(0x20, 0x100)) - {0x7f})
 
+Verbosity = 0  # One of 0,1,2,3 (set via command line)
 
 ################################################
 # BLOCK START: FileSystem_Related

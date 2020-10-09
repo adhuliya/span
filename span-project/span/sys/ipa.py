@@ -378,9 +378,10 @@ class IpaHost:
 
     print(f"MergedSize: {len(self.finalResult)}") #, MemorySize: {cutil.getSize(self.finalResult)}")
     # print results if needed
-    print("\n\nFINAL RESULTS of IPA:")
-    print("=" * 48)
-    #self.printFinalResults()
+    if cutil.Verbosity >= 1:
+      print("\n\nFINAL RESULTS of IPA:")
+      print("=" * 48)
+      self.printFinalResults()
 
 
   def printFinalResults(self):

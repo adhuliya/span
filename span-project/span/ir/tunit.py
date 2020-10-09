@@ -534,6 +534,25 @@ class TranslationUnit:
         yield func
 
 
+  def yieldFunctionsForAnalysis(self):
+    """Yields all the functions in the TUnit with body
+    that can be analyzed."""
+    for func in self.yieldFunctions():
+      if self.canTheFunctionBeAnalyzed(func):
+        yield func
+
+
+  @staticmethod
+  def canTheFunctionBeAnalyzed(func: constructs.Func) -> bool:
+    """Returns True if the function can be analyzed by the system."""
+    result = True
+    if not func.hasBody():
+      result = False
+    elif not func.sig.variadic:
+      result = False
+    return result
+
+
   def yieldRecords(self, rType=types.RecordT):
     """Yields all the records in the TUnit"""
     assert rType in (types.RecordT, types.Struct, types.Union), f"{rType}"
