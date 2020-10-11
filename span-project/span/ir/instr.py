@@ -7,6 +7,7 @@
 
 Note: use names in this module with module name: e.g. instr.UseI...
 """
+import functools
 import logging
 
 LOG = logging.getLogger("span")
@@ -14,6 +15,7 @@ from typing import Set, List
 from typing import Optional as Opt
 
 from span.util.logger import LS
+import span.util.data as data
 import span.ir.expr as expr
 import span.ir.types as types
 import span.util.util as util
@@ -65,7 +67,7 @@ class InstrIT:
       info: Opt[types.Info] = None,
   ) -> None:
     if self.__class__ is InstrIT: raise TypeError()
-    self.type = types.Void  # default instruction type
+    self.type: types.Type = types.Void  # default instruction type
     self.instrCode = instrCode
     self.info = info
 
@@ -83,6 +85,36 @@ class InstrIT:
   def isArtificial(self) -> bool:
     """Returns True if the instruction is artificial."""
     return self.instrCode in ARTIFICIAL_INSTR_CODES
+
+
+  def needsLhsVarSim(self) -> bool: return False
+
+  def needsRhsNumVarSim(self) -> bool: return False
+
+  def needsLhsDerefSim(self) -> bool: return False
+
+  def needsRhsDerefSim(self) -> bool: return False
+
+  def needsLhsMemDerefSim(self) -> bool: return False
+
+  def needsRhsMemDerefSim(self) -> bool: return False
+
+  def needsRhsNumBinaryExprSim(self) -> bool: return False
+
+  def needsRhsNumUnaryExprSim(self) -> bool: return False
+
+  def needsRhsPtrCallSim(self) -> bool: return False
+
+  def needsPtrCallSim(self) -> bool: return False
+
+  def needsCondInstrSim(self) -> bool: return False
+
+
+  def getFormalStr(self) -> types.FormalStrT:
+    """Returns the formal name of this instruction.
+    These names should have corresponding function in
+    AnalysisAT class."""
+    raise NotImplementedError()
 
 
   def isEqual(self,
@@ -135,6 +167,33 @@ class AssignI(InstrIT):
     super().__init__(ASSIGN_INSTR_IC, info)
     self.lhs = lhs
     self.rhs = rhs
+
+
+  def needsLhsVarSim(self) -> bool: return self.lhs.needsVarSim()
+
+  def needsRhsNumVarSim(self) -> bool: return self.rhs.needsNumVarSim()
+
+  def needsLhsDerefSim(self) -> bool: return self.lhs.needsDerefSim()
+
+  def needsRhsDerefSim(self) -> bool: return self.rhs.needsDerefSim()
+
+  def needsLhsMemDerefSim(self) -> bool: return self.lhs.needsMemDerefSim()
+
+  def needsRhsMemDerefSim(self) -> bool: return self.rhs.needsMemDerefSim()
+
+  def needsRhsNumBinaryExprSim(self) -> bool: return self.rhs.needsNumBinarySim()
+
+  def needsRhsNumUnaryExprSim(self) -> bool: return self.rhs.needsNumBinarySim()
+
+  def needsRhsPtrCallSim(self) -> bool: return self.rhs.needsPtrCallSim()
+
+
+  def getFormalStr(self) -> types.FormalStrT:
+    typeStr = self.type.getFormalStr()
+    lhsStr = self.lhs.getFormalStr()
+    rhsStr = self.rhs.getFormalStr()
+    formalStr = f"{typeStr}_Assign_{lhsStr}_{rhsStr}_Instr"
+    return formalStr
 
 
   def checkInvariants(self, level: int = 0):
@@ -221,6 +280,10 @@ class GotoI(InstrIT):
     self.label = label
 
 
+  def getFormalStr(self) -> types.FormalStrT:
+    return data.GOTO_I_STR
+
+
   def __eq__(self, other) -> bool:
     if self is other:
       return True
@@ -281,6 +344,10 @@ class LabelI(InstrIT):
       raise ValueError(f"{label}")
     super().__init__(GOTO_INSTR_IC, info)
     self.label = label
+
+
+  def getFormalStr(self) -> types.FormalStrT:
+    return data.LABEL_I_STR
 
 
   def __eq__(self, other) -> bool:
@@ -347,6 +414,13 @@ class CondI(InstrIT):
     self.arg = arg
     self.trueLabel = trueLabel
     self.falseLabel = falseLabel
+
+
+  def getFormalStr(self) -> types.FormalStrT:
+    return data.COND_I_STR
+
+
+  def needsCondInstrSim(self) -> bool: return True
 
 
   def checkInvariants(self, level: int = 0):
@@ -420,6 +494,10 @@ class ReturnI(InstrIT):
       raise ValueError(f"{arg}")
     super().__init__(RETURN_INSTR_IC, info)
     self.arg = arg
+
+
+  def getFormalStr(self) -> types.FormalStrT:
+    return data.RETURN_I_STR
 
 
   def checkInvariants(self, level: int = 0):
@@ -501,6 +579,13 @@ class CallI(InstrIT):
     self.arg = arg
 
 
+  def getFormalStr(self) -> types.FormalStrT:
+    return data.CALL_I_STR
+
+
+  def needsPtrCallSim(self) -> bool: return self.arg.needsPtrCallSim()
+
+
   def checkInvariants(self, level: int = 0):
     super().checkInvariants(level)
     if level == 0:
@@ -578,6 +663,10 @@ class ParallelI(InstrIT):
           raise ValueError(f"{insn} in {insns}")
     super().__init__(PAR_INSTR_IC, info)
     self.insns = insns
+
+
+  def getFormalStr(self) -> types.FormalStrT:
+    return data.PARALLEL_I_STR
 
 
   def yieldInstructions(self):
@@ -678,6 +767,10 @@ class UseI(InstrIT):
     self.vars: Set[types.VarNameT] = vars
 
 
+  def getFormalStr(self) -> types.FormalStrT:
+    return data.USE_STR
+
+
   def __eq__(self, other) -> bool:
     if self is other:
       return True
@@ -714,6 +807,10 @@ class ExReadI(InstrIT):
   ) -> None:
     super().__init__(EX_READ_INSTR_IC, info)
     self.vars: Set[types.VarNameT] = vars
+
+
+  def getFormalStr(self) -> types.FormalStrT:
+    return data.EXREAD_I_STR
 
 
   def __eq__(self, other) -> bool:
@@ -757,6 +854,10 @@ class CondReadI(InstrIT):
     self.rhs = rhs
 
 
+  def getFormalStr(self) -> types.FormalStrT:
+    return data.CONDREAD_I_STR
+
+
   def __eq__(self, other) -> bool:
     if self is other:
       return True
@@ -798,6 +899,10 @@ class FilterI(InstrIT):
     self.varNames = varNames
 
 
+  def getFormalStr(self) -> types.FormalStrT:
+    return data.FILTER_I_STR
+
+
   def __eq__(self, other) -> bool:
     if self is other:
       return True
@@ -837,6 +942,13 @@ class UnDefValI(InstrIT):
     self.lhsName: types.VarNameT = lhsName  # deliberately named lhs
 
 
+  def getFormalStr(self) -> types.FormalStrT:
+    return data.UNDEFVAL_I_STR
+
+
+  def needsLhsVarSim(self) -> bool: return True
+
+
   def __eq__(self, other) -> bool:
     if self is other:
       return True
@@ -871,6 +983,10 @@ class BarrierI(InstrIT):
     super().__init__(BARRIER_INSTR_IC, info)
 
 
+  def getFormalStr(self) -> types.FormalStrT:
+    return data.BARRIER_I_STR
+
+
   def __eq__(self, other) -> bool:
     if self is other:
       return True
@@ -901,6 +1017,10 @@ class NopI(InstrIT):
       info: Opt[types.Info] = None
   ) -> None:
     super().__init__(NOP_INSTR_IC, info)
+
+
+  def getFormalStr(self) -> types.FormalStrT:
+    return data.NOP_I_STR
 
 
   def __eq__(self, other) -> bool:
@@ -953,3 +1073,6 @@ def getDerefExpr(insn: InstrIT) -> Opt[expr.ExprET]:
   return expr.getDerefExpr(insn.lhs) or expr.getDerefExpr(insn.rhs)
 
 
+@functools.lru_cache(512)
+def getFormalStr(insn: InstrIT) -> types.FormalStrT:
+  return f"{insn.getFormalStr()}_Instr"

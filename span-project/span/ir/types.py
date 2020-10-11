@@ -66,6 +66,8 @@ InstrCodeT = int  # instruction codes type
 
 DirectionT = str  # analysis direction (see span.ir.conv)
 
+FormalStrT = str
+
 ################################################
 # BOUND END  : useful_types
 ################################################
@@ -320,6 +322,18 @@ class Type:
   def isArray(self) -> bool:
     """This function is appropriately overridden by `ArrayT`."""
     return False
+
+
+  def getFormalStr(self) -> FormalStrT:
+    if self.isNumeric():
+      fstr = "Num"
+    elif self.isPointer():
+      fstr = "Ptr"
+    elif self.isRecord():
+      fstr = "Record"
+    else:
+      assert False, f"{self}"
+    return fstr
 
 
   functools.lru_cache(200)
