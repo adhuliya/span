@@ -1,0 +1,15 @@
+VALUE 10
+LINE 10
+COL 11
+TRTYPE Num_Var__to__Num_Lit
+
+VALUE 1
+LINE 11
+COL 11
+TRTYPE Num_Bin__to__Num_Lit
+
+VALUE True
+LINE 12
+COL 7
+TRTYPE Cond__to__UnCond
+

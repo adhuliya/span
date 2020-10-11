@@ -7,6 +7,8 @@ int foo() {
 
 int main() {
   int a = foo();
+  int c = a;
+  int b = a > 5;
   if (a) {
     return 0;
   } else {

@@ -2095,7 +2095,7 @@ class ValueAnalysisAT(AnalysisAT):
   ) -> Set[types.T]:
     """Depends on `self.filterTest`."""
     if not values:
-      return values  # returns an empty list
+      return values  # returns an empty set
     exprVal = self.getExprDfv(e, dfvIn)
     if exprVal.bot:
       return values

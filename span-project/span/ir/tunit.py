@@ -21,6 +21,8 @@ Following important things are available here,
 
 import logging
 
+from span.ir.conv import GLOBAL_INITS_FUNC_NAME
+
 LOG = logging.getLogger("span")
 from typing import Dict, Set, Tuple, List, Callable, Any
 from typing import Optional as Opt
@@ -539,7 +541,7 @@ class TranslationUnit:
     """Yields all the functions in the TUnit with body
     that can be analyzed."""
     for func in self.yieldFunctions():
-      if func.canBeAnalyzed():
+      if func.canBeAnalyzed() and func.name != GLOBAL_INITS_FUNC_NAME:
         yield func
 
 

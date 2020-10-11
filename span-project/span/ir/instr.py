@@ -192,7 +192,7 @@ class AssignI(InstrIT):
     typeStr = self.type.getFormalStr()
     lhsStr = self.lhs.getFormalStr()
     rhsStr = self.rhs.getFormalStr()
-    formalStr = f"{typeStr}_Assign_{lhsStr}_{rhsStr}_Instr"
+    formalStr = f"{typeStr}_Assign_{lhsStr}_{rhsStr}"
     return formalStr
 
 
@@ -497,7 +497,8 @@ class ReturnI(InstrIT):
 
 
   def getFormalStr(self) -> types.FormalStrT:
-    return data.RETURN_I_STR
+    argStr = self.arg.getFormalStr() if self.arg else "Void"
+    return f"{data.RETURN_I_STR}_{argStr}"
 
 
   def checkInvariants(self, level: int = 0):

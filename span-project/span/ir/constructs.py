@@ -88,7 +88,7 @@ class Func(ConstructT):
     result = True
     if not self.hasBody():
       result = False
-    elif not self.sig.variadic:
+    elif self.sig.variadic:
       result = False
     return result
 

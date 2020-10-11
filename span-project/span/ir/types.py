@@ -178,6 +178,14 @@ class Loc:
     return equal
 
 
+  def __lt__(self, other):
+    return self.line <= other.line and self.col <= other.col
+
+
+  def __le__(self, other):
+    return self.line <= other.line and self.col <= other.col
+
+
   def __str__(self):
     return f"Loc({self.line},{self.col})"
 

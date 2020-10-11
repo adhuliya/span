@@ -99,6 +99,8 @@ memAllocFunctions = {
   # void free (void* ptr); // real declaration
 }
 
+TRANSFORM_INFO_FILE_NAME = "{cFileName}.span.trinfo"
+
 GLOBAL_INITS_FUNC_NAME = "f:1_global_inits"
 """All global declarations go into this special function."""
 

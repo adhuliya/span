@@ -213,6 +213,12 @@ See the list of checkers available:
     clang -cc1 -analyzer-checker-help-developer | less    
 
 
+## Transformations Possible
+1. `if` statement simplification (`&& 0`, `|| 1`)
+2. Dead code elimination (`x = ...` to NopI)
+3. Relational expressions to `0` of `1`
+4. Pointer based function call to direct function call.
+5. Use Reaching Definitions to replace a variable with another.
 
 <br /> <br /> <br />
 &copy; 2020 Anshuman Dhuliya

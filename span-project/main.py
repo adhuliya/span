@@ -57,6 +57,7 @@ import span.sys.ipa       as sysIpa
 import span.sys.clients   as clients
 import span.sys.diagnosis as sysDiagnosis
 import span.api.diagnosis as apiDiagnosis
+import span.sys.optimize  as sysOpt
 sysDiagnosis.init()  # IMPORTANT
 
 installDotMsg = """
@@ -180,6 +181,16 @@ def ipaDiagnoseSpanIr(args: argparse.Namespace) -> None:
   else:
     raise ValueError(f"Unknown diagnosis name: {diName}")
 
+
+def optimizeSpanIr(args: argparse.Namespace) -> None:
+  optName = args.optName
+  cutil.Verbosity = args.verbose
+
+  currTUnit = parseTUnitObject(args.fileName, ipa=True)
+
+  if optName == "all":
+    trCodeObj = sysOpt.TransformCode(currTUnit, ipaEnabled=True)
+    trCodeObj.transform()
 
 def diagnoseSpanIr(args: argparse.Namespace) -> None:
   """Runs the given diagnosis on the spanir file for each function."""
@@ -803,6 +814,22 @@ if __name__ == "__main__":
                               help="Diagnosis to run",
                               choices=["interval"])
   ipaDiagnoseParser.add_argument("fileName", help=cOrSpanirFile)
+
+  # subcommand: optimize
+  optParser = subParser.add_parser("opt", help="Optimize the program")
+  optParser.set_defaults(func=optimizeSpanIr)
+  optParser.add_argument("optName",
+                         choices=["all"],
+                         default="all",
+                         nargs="?",
+                         help="Optimization to run (default is 'all')")
+  optParser.add_argument("optStyle",
+                         choices=["cascade","lerner","span"],
+                         default="span",
+                         nargs="?",
+                         help="The algorithm to use. (default is 'span')")
+  optParser.add_argument('-v', '--verbose', action='count', default=0)
+  optParser.add_argument("fileName", help=cOrSpanirFile)
 
   try: # TODO: add auto completion if present
     # ref: https://stackoverflow.com/questions/14597466/custom-tab-completion-in-python-argparse

@@ -92,7 +92,7 @@ ADDROFVAR_E_STR = "AddrOfVar"
 ADDROFARRAY_E_STR = "AddrOfArray"
 ADDROFMEMBER_E_STR = "AddrOfMember"
 ADDROFDEREF_E_STR = "AddrOfDeref"
-ADDROFDEREF_E_STR = "AddrOfFunc"
+ADDROFFUNC_E_STR = "AddrOfFunc"
 ALLOC_E_STR = "Alloc"  # added for completeness
 PHI_E_STR = "Phi"  # added for completeness
 

@@ -371,6 +371,33 @@ class IntervalA(analysis.ValueAnalysisAT):
   # BOUND START: simplifiers
   ################################################
 
+  def Num_Var__to__Num_Lit(self,
+      e: expr.VarE,
+      nodeDfv: Opt[NodeDfvL] = None,
+      values: Opt[Set[types.NumericT]] = None,
+  ) -> Opt[Set[types.NumericT]]:
+    # STEP 1: tell the system if the expression can be evaluated
+    if not e.type.isNumeric():
+      return SimFailed
+
+    # STEP 2: If here, eval may be possible, hence attempt eval
+    if nodeDfv is None:
+      return SimPending # tell that sim my be possible if nodeDfv given
+
+    # STEP 3: If here, either eval or filter the values
+    dfvIn = cast(OverallL, nodeDfv.dfvIn)
+    if values is not None:
+      assert len(values), f"{e}, {values}"
+      return self.filterValues(e, values, dfvIn, NumValue) # filter the values
+
+    # STEP 4: If here, eval the expression
+    exprVal = self.getExprDfv(e, dfvIn)
+    if exprVal.top: return SimPending  # can be evaluated, needs more info
+    if exprVal.bot: return SimFailed  # cannot be evaluated
+    if exprVal.val[0] != exprVal.val[1]: return SimFailed  # cannot be evaluated
+    return {exprVal.val[0]}
+
+
   def Num_Bin__to__Num_Lit(self,
       e: expr.BinaryE,
       nodeDfv: Opt[NodeDfvL] = None,

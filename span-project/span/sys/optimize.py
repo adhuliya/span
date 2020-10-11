@@ -8,16 +8,19 @@
 import logging
 
 from itertools import chain
-from span.api.analysis import SimNameT, AnalysisNameT, SimFailed, SimPending
+from span.api.analysis import SimNameT, AnalysisNameT, SimFailed, SimPending, AnalysisAT
 from span.api.dfv import NodeDfvL
-from span.ir import graph, expr
+from span.ir import graph, expr, instr
 from span.ir.constructs import Func
-from span.ir.types import FuncNameT
+from span.ir.conv import TRANSFORM_INFO_FILE_NAME
+from span.ir.types import FuncNameT, Loc
 from span.sys import clients
+from span.util.common_util import Verbosity
 from span.util.util import LS
 
+
 LOG = logging.getLogger("span")
-from typing import Optional as Opt, Dict, Set
+from typing import Optional as Opt, Dict, Set, List
 
 from span.ir.tunit import TranslationUnit
 from span.sys.host import Host
@@ -26,10 +29,22 @@ from span.sys.ipa import IpaHost
 
 class TrInfo: # TransformationInfo
   """This class represents the transformation information."""
-  def __init__(self, value):
-    self.trType = None # transformation type
-    self.loc = None
-    self.value = value
+  __slots__ = ["value", "loc", "trType"]
+
+  def __init__(self, value, loc: Loc, trType: SimNameT):
+    self.value: str = str(value)
+    self.loc: Loc = loc
+    self.trType: SimNameT = trType # transformation type
+
+
+  def dumpStr(self):
+    return f"VALUE {self.value}\nLINE {self.loc.line}" \
+           f"\nCOL {self.loc.col}\nTRTYPE {self.trType}"
+
+
+  def __lt__(self, other):
+    """To sort objects based on the location in the source code."""
+    return self.loc <= other.loc
 
 
   def __str__(self):
@@ -52,12 +67,14 @@ class TransformCode:
     self.analyses = ["IntervalA", "PointsToA"]
     self.ipaHost: Opt[IpaHost] = None
     self.intraHosts: Opt[Dict[Func, Host]] = None
+    self.trInfoList: List[TrInfo] = [] # all results accumulated here
 
 
   # mainentry
   def transform(self):
+    """Invoke this function to do all things necessary."""
     self.analyze()
-    self.genTransformInfoAll()
+    self.genTransformInfo_All()
     self.dumpTransformInfo()
 
 
@@ -74,9 +91,11 @@ class TransformCode:
                           )
     ipaHostSpan.analyze()
     self.ipaHost = ipaHostSpan
+    if Verbosity >= 2:
+      ipaHostSpan.printFinalResults()
 
 
-  def genTransformInfoAll(self) -> None:
+  def genTransformInfo_All(self) -> None:
     """Generate the whole transformation information."""
     assert self.ipaHost or self.intraHosts, f"No analysis results"
     if self.ipaEnabled:
@@ -87,37 +106,110 @@ class TransformCode:
     host = self.ipaHost if self.ipaEnabled else self.intraHosts
     for func in self.tUnit.yieldFunctionsForAnalysis():
       funcResults = host.finalResult[func.name]
-      self.genTransformInfoFunc(func, funcResults)
+      self.genTransformInfo_Func(func, funcResults)
 
 
-  def genTransformInfoFunc(self, func: Func, funcResults: Dict) -> None:
+  def genTransformInfo_Func(self, func: Func, funcResults: Dict) -> None:
     """Generate the transformation information for a function."""
-    intervalRes = funcResults["IntervalA"]
     for node in func.cfg.yieldNodes():
-      nid, insn = node.id, node.insn
-      pass #TODO
+      trInfo = self.genTransformInfo_Instr(node, func, funcResults)
+      if trInfo: self.trInfoList.append(trInfo)
 
 
-  def dumpTransformInfo(self):
+  def genTransformInfo_Instr(self,
+      node: graph.CfgNode,
+      func: Func,
+      funcResults: Dict[AnalysisNameT, Dict[graph.CfgNodeId, NodeDfvL]],
+  ) -> Opt[TrInfo]:
+    """Generate the transformation info for a statement."""
+    nid, insn = node.id, node.insn
+    if insn.needsCondInstrSim():
+      trInfo = self.genTransformInfo_CondInstr(insn, node, func, funcResults)
+    elif insn.needsRhsNumVarSim():
+      print("here: RhsNumVarSim", insn) #delit
+      trInfo = self.genTransformInfo_RhsVar(insn, node, func, funcResults)
+    elif insn.needsRhsNumBinaryExprSim():
+      trInfo = self.genTransformInfo_RhsNumBinary(insn, node, func, funcResults)
+    else:
+      trInfo = None
+
+    return trInfo
+
+
+  def genTransformInfo_CondInstr(self,
+      insn: instr.CondI,
+      node: graph.CfgNode,
+      func: Func,
+      funcResults: Dict[AnalysisNameT, Dict[graph.CfgNodeId, NodeDfvL]],
+  ) -> Opt[TrInfo]:
+    assert insn.needsCondInstrSim(), f"{insn}, {node}, {func}"
+    simName = AnalysisAT.Cond__to__UnCond.__name__
+    res = collectAndMergeResults(simName, insn.arg, node, func, funcResults)
+    if res and len(res) == 1:
+      for value in res: # this loop runs only once
+        return TrInfo(value, insn.arg.info.loc, simName)
+    return None
+
+
+  def genTransformInfo_RhsVar(self,
+      insn: instr.AssignI,
+      node: graph.CfgNode,
+      func: Func,
+      funcResults: Dict[AnalysisNameT, Dict[graph.CfgNodeId, NodeDfvL]],
+  ) -> Opt[TrInfo]:
+    assert insn.needsRhsNumVarSim(), f"{insn}, {node}, {func}"
+    simName = AnalysisAT.Num_Var__to__Num_Lit.__name__
+    res = collectAndMergeResults(simName, insn.rhs, node, func, funcResults)
+    print(res)  #delit
+    if res and len(res) == 1:
+      for value in res: # this loop runs only once
+        return TrInfo(value, insn.rhs.info.loc, simName)
+    return None
+
+
+  def genTransformInfo_RhsNumBinary(self,
+      insn: instr.AssignI,
+      node: graph.CfgNode,
+      func: Func,
+      funcResults: Dict[AnalysisNameT, Dict[graph.CfgNodeId, NodeDfvL]],
+  ) -> Opt[TrInfo]:
+    assert insn.needsRhsNumBinaryExprSim(), f"{insn}, {node}, {func}"
+    simName = AnalysisAT.Num_Bin__to__Num_Lit.__name__
+    res = collectAndMergeResults(simName, insn.rhs, node, func, funcResults)
+    if res and len(res) == 1:
+      for value in res: # this loop runs only once
+        return TrInfo(value, insn.rhs.info.loc, simName)
+    return None
+
+
+  def dumpTransformInfo(self) -> None:
     """Output the transform info to a file."""
-    pass
+    fileName = TRANSFORM_INFO_FILE_NAME.format(cFileName=self.tUnit.name)
+    with open(fileName, "w") as fw:
+      for trInfo in sorted(self.trInfoList):
+        fw.write(trInfo.dumpStr())
+        fw.write("\n\n")
 
 
 def collectAndMergeResults(
     simName: SimNameT,
-    func: Func,
-    node: graph.CfgNode,
     e: Opt[expr.ExprET],
-    dfvMap: Dict[AnalysisNameT, Dict[graph.CfgNodeId, NodeDfvL]],
+    node: graph.CfgNode,
+    func: Func,
+    funcResults: Dict[AnalysisNameT, Dict[graph.CfgNodeId, NodeDfvL]],
 ) -> Opt[Set]:  # A None value indicates failed sim
   """Collects and merges the simplification by various analyses.
   Step 1: Select one working simplification from any one analysis.
   Step 2: Refine the simplification.
   """
-  anNames = set(dfvMap.keys())
+  anNames = set(funcResults.keys())
+  print("here3:", anNames, clients.simSrcMap[simName])
   anNames = anNames & clients.simSrcMap[simName]
+  print("here4:", anNames)
 
-  if not anNames: return SimFailed  # no sim analyses -- hence fail
+  if not anNames:
+    print("here2:") #delit
+    return SimFailed  # no sim analyses -- hence fail
 
   # Step 0: Get analyses objects.
   anObjs = {anName: clients.analyses[anName](func) for anName in anNames}
@@ -126,20 +218,22 @@ def collectAndMergeResults(
   values: Opt[Set] = SimFailed
   if LS: LOG.debug("SimAnalyses for %s: %s", simName, anNames)
   for anName in anNames:    # loop to select the first working sim
-    nDfv = dfvMap[anName][node.id]
+    nDfv = funcResults[anName][node.id]
     values = calculateSimValue(anObjs[anName], anName, simName, node, nDfv, e)
-    if len(values) >= 1:
+    if values:
       break  # break at the first useful value
   if values in (SimPending, SimFailed):
+    print("here1:", values) #delit
     return values  # failed/pending values can never be refined
 
   # Step 2: Refine the simplification
+  print("here:", values) #delit
   assert values not in (SimPending, SimFailed), f"{values}"
   if LS: LOG.debug("Refining(Start): %s", values)
   for anName in anNames:
-    nDfv = dfvMap[anName][node.id]
-    values = calculateSimValue(anObjs[anName], anName, simName, node, nDfv, e, values)
-    assert values != SimFailed, f"{anName}, {simName}, {node}, {e}, {values}"
+    nDfv = funcResults[anName][node.id]
+    tmpValues = calculateSimValue(anObjs[anName], anName, simName, node, nDfv, e, values)
+    values = values if tmpValues is SimFailed else tmpValues
     if values == SimPending:
       break  # no use to continue
   if LS: LOG.debug("Refining(End): Refined value is %s", values)
@@ -161,8 +255,8 @@ def calculateSimValue(
 
   if LS: LOG.debug("SimOfExpr: '%s' isAttemptedBy %s withDfv %s.", e, simAnName, nDfv)
   # Note: if e is None, it assumes sim works on node id
-  value = simFunction(e if e else nid, nDfv, values)
-  if LS: LOG.debug("SimOfExpr: '%s' is %s, by %s.", e, value, simAnName)
-  return value
+  newValues = simFunction(e if e else nid, nDfv, values)
+  if LS: LOG.debug("SimOfExpr: '%s' is %s, by %s.", e, newValues, simAnName)
+  return newValues
 
 
