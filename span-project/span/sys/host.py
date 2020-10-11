@@ -924,8 +924,8 @@ class Host:
     if self.ipa:  #IPA
       callE = instr.getCallExpr(insn)
       if callE and not callE.isPointerCall():
-        func = self.tUnit.getFunctionObj(callE.callee.name)
-        if func.hasBody() and not func.sig.variadic:
+        func = self.tUnit.getFunctionObj(callE.getCalleeFuncName())
+        if func.canBeAnalyzed():
           # Inter-procedural analysis does not process the instructions with call
           # currently: function pointer based calls are handled intra-procedurally
           #            func with no body are handled intra-procedurally

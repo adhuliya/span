@@ -18,15 +18,25 @@ from span.sys.host import Host
 from span.sys.ipa import IpaHost
 
 
-class TransformInfo:
+class TrInfo: # TransformationInfo
   """This class represents the transformation information."""
   def __init__(self, value):
-    self.value = value
+    self.trType = None # transformation type
     self.loc = None
-    self.tType = None # transformation type
+    self.value = value
+
+
+  def __str__(self):
+    return f"TrInfo({self.trType}, {self.value}, {self.loc})"
+
+
+  def __repr__(self):
+    return self.__str__()
 
 
 class TransformCode:
+  """This class analyzes the TranslationUnit and transforms it
+  to optimize"""
   def __init__(self,
       tUnit: TranslationUnit,
       ipaEnabled: bool = True
@@ -38,7 +48,8 @@ class TransformCode:
     self.intraHosts: Opt[Dict[Func, Host]] = None
 
 
-  def main(self):
+  # mainentry
+  def transform(self):
     self.analyze()
     self.genTransformInfoAll()
     self.dumpTransformInfo()
@@ -75,7 +86,11 @@ class TransformCode:
 
   def genTransformInfoFunc(self, func: Func, funcResults: Dict) -> None:
     """Generate the transformation information for a function."""
-    pass
+    intervalRes = funcResults["IntervalA"]
+    for node in func.cfg.yieldNodes():
+      nid, insn = node.id, node.insn
+      pass #TODO
+
 
 
   def dumpTransformInfo(self):

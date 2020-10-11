@@ -75,10 +75,22 @@ class Func(ConstructT):
       level: An argument to help invoke specific checks in future.
     """
     if self.hasBody():
-      assert self.cfg and self.cfg.start and self.cfg.end, f"{self}"
+      assert self.cfg and \
+             self.cfg.start is not None and \
+             self.cfg.end is not None, f"{self}"
     # Assertion check on self.tUnit cannot be done here.
     # Hence, do it in span.ir.tunit module.
     return self
+
+
+  def canBeAnalyzed(self) -> bool:
+    """Returns True if the function can be analyzed by the system."""
+    result = True
+    if not self.hasBody():
+      result = False
+    elif not self.sig.variadic:
+      result = False
+    return result
 
 
   @staticmethod

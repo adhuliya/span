@@ -352,6 +352,10 @@ class Cfg(object):
       yield cfgNode.insn
 
 
+  def yieldNodes(self):
+    yield from self.nodeMap.values()
+
+
   def getNodesWithNonPtrCallExpr(self,
       filterAwayFuncPtrCalls=True
   ) -> Opt[List[CfgNode]]:
