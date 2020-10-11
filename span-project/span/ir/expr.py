@@ -13,6 +13,7 @@ LOG = logging.getLogger("span")
 from typing import List, Set, Any, Optional as Opt
 
 from span.util.logger import LS
+import span.util.data as data
 import span.ir.types as types
 import span.ir.conv as irConv
 import span.ir.op as op
@@ -69,6 +70,10 @@ class ExprET:
     return False
 
 
+  def getFormalStr(self) -> types.FormalStrT:
+    raise NotImplementedError()
+
+
   def checkInvariants(self, level: int = 0):
     """Runs some invariant checks on self.
     Args:
@@ -123,6 +128,21 @@ class ExprET:
     return equal
 
 
+  def needsVarSim(self) -> bool: return False
+
+  def needsNumVarSim(self) -> bool: return False
+
+  def needsDerefSim(self) -> bool: return False
+
+  def needsMemDerefSim(self) -> bool: return False
+
+  def needsNumBinarySim(self) -> bool: return False
+
+  def needsNumUnarySim(self) -> bool: return False
+
+  def needsPtrCallSim(self) -> bool: return False
+
+
 class SimpleET(ExprET):
   """A simple (non-divisible) expressions.
   Like, var 'x',
@@ -155,6 +175,10 @@ class LitE(SimpleET):
     # its type is ConstantArray of characters
     # name of the string literal is set in tunit.processStringLiteral()
     self.name: types.VarNameT = ""
+
+
+  def getFormalStr(self) -> types.FormalStrT:
+    return data.LIT_E_STR
 
 
   def checkInvariants(self, level: int = 0):
@@ -275,6 +299,10 @@ class VarE(LocationET, SimpleET):
       self.exprCode = FUNC_EXPR_EC
 
 
+  def getFormalStr(self) -> types.FormalStrT:
+    return data.VAR_E_STR
+
+
   def checkInvariants(self, level: int = 0):
     super().checkInvariants(level)
     assert self.name, f"{self}"
@@ -289,6 +317,11 @@ class VarE(LocationET, SimpleET):
 
   def isFunctionVar(self):
     return isinstance(self.type, types.FuncSig)
+
+
+  def needsVarSim(self) -> bool: return True
+
+  def needsNumVarSim(self) -> bool: return self.type.isNumeric()
 
 
   def __eq__(self, other) -> bool:
@@ -454,6 +487,13 @@ class DerefE(UnaryET, DerefET):
     self.arg = arg
 
 
+  def needsDerefSim(self) -> bool: return True
+
+
+  def getFormalStr(self) -> types.FormalStrT:
+    return data.DEREF_E_STR
+
+
   def __eq__(self, other) -> bool:
     if self is other:
       return True
@@ -518,6 +558,10 @@ class ArrayE(DerefET):
     self.index = index
     self.of = of
     self._hasPtrDeref: Opt[bool] = None
+
+
+  def getFormalStr(self) -> types.FormalStrT:
+    return data.ARRAY_E_STR
 
 
   def getArrayName(self) -> types.VarNameT:
@@ -630,6 +674,15 @@ class MemberE(DerefET):
     self.of = of
 
 
+  def getFormalStr(self) -> types.FormalStrT:
+    return data.MEMBER_E_STR
+
+
+  def needsMemDerefSim(self) -> bool:
+    assert isinstance(self.of.type, types.Ptr), f"{self}, {self.of.type}"
+    return True
+
+
   def checkInvariants(self, level: int = 0):
     super().checkInvariants(level)
     assert self.hasDereference(), f"{self}"
@@ -723,6 +776,14 @@ class BinaryE(ExprET):
     self.arg2 = arg2
 
 
+  def getFormalStr(self) -> types.FormalStrT:
+    return data.BINARYARITH_E_STR
+
+
+  def needsNumBinarySim(self) -> bool:
+    return self.type.isNumeric()
+
+
   def __eq__(self, other) -> bool:
     if self is other:
       return True
@@ -797,6 +858,14 @@ class UnaryE(UnaryET):
     super().__init__(UNARY_EXPR_EC, info)
     self.opr = opr
     self.arg = arg
+
+
+  def getFormalStr(self) -> types.FormalStrT:
+    return data.UNARYARITH_E_STR
+
+
+  def needsNumUnarySim(self) -> bool:
+    return self.type.isNumeric()
 
 
   def checkInvariants(self, level: int = 0):
@@ -888,6 +957,20 @@ class AddrOfE(UnaryET):
     self.arg = arg
 
 
+  def getFormalStr(self) -> types.FormalStrT:
+    if isinstance(self.arg, VarE):
+      fstr = data.ADDROFVAR_E_STR
+    elif isinstance(self.arg, DerefE):
+      fstr = data.ADDROFDEREF_E_STR
+    elif isinstance(self.arg, MemberE):
+      fstr = data.ADDROFMEMBER_E_STR
+    elif isinstance(self.arg, ArrayE):
+      fstr = data.ADDROFARRAY_E_STR
+    else:
+      assert False, f"{self}, {self.arg}"
+    return fstr
+
+
   def __eq__(self, other) -> bool:
     if self is other:
       return True
@@ -953,6 +1036,16 @@ class CastE(UnaryET):
     super().__init__(CAST_EXPR_EC, info)
     self.arg = arg
     self.to = self.type = to  # it is same as self.type
+
+
+  def getFormalStr(self) -> types.FormalStrT:
+    if isinstance(self.arg, VarE):
+      fstr = data.CASTVAR_E_STR
+    elif isinstance(self.arg, ArrayE):
+      fstr = data.CASTARR_E_STR
+    else:
+      assert False, f"{self}"
+    return fstr
 
 
   def checkInvariants(self, level: int = 0):
@@ -1026,6 +1119,10 @@ class AllocE(UnaryET):
     self.arg = arg
 
 
+  def getFormalStr(self) -> types.FormalStrT:
+    return data.ALLOC_E_STR
+
+
   def __eq__(self, other) -> bool:
     if self is other:
       return True
@@ -1083,6 +1180,10 @@ class SizeOfE(UnaryET):
   ) -> None:
     super().__init__(SIZEOF_EXPR_EC, info)
     self.arg = arg
+
+
+  def getFormalStr(self) -> types.FormalStrT:
+    return data.SIZEOF_E_STR
 
 
   def __eq__(self, other) -> bool:
@@ -1146,6 +1247,14 @@ class CallE(ExprET):
     super().__init__(CALL_EXPR_EC, info)
     self.callee = callee
     self.args: List[SimpleET] = [] if args is None else args
+
+
+  def getFormalStr(self) -> types.FormalStrT:
+    return data.CALL_E_STR
+
+
+  def needsPtrCallSim(self) -> bool:
+    return self.hasDereference()
 
 
   def checkInvariants(self, level: int = 0):
@@ -1261,6 +1370,10 @@ class SelectE(ExprET):
     self.arg2 = arg2
 
 
+  def getFormalStr(self) -> types.FormalStrT:
+    return data.SELECT_E_STR
+
+
   def __eq__(self, other) -> bool:
     if self is other:
       return True
@@ -1327,6 +1440,10 @@ class PhiE(ExprET):
   ) -> None:
     super().__init__(PHI_EXPR_EC, info)
     self.args = args
+
+
+  def getFormalStr(self) -> types.FormalStrT:
+    return data.PHI_E_STR
 
 
   def __eq__(self, other) -> bool:

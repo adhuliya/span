@@ -327,7 +327,7 @@ class Host:
       maxNumOfAnalyses: int = 1024,
       analysisSeq: Opt[List[List[AnNameT]]] = None,  # for cascading/lerner
       disableAllSim: bool = False,
-      ipa: bool = False,
+      ipaEnabled: bool = False,
       biDfv: Opt[Dict[AnNameT, NodeDfvL]] = None,  # call site BI
       useDdm: bool = False,  # use demand driven approach
   ) -> None:
@@ -352,9 +352,9 @@ class Host:
                    expr.ExprET], Set[ddm.AtomicDemand]] = dict()
 
     #IPA inter-procedural analysis?
-    self.ipa: bool = ipa
+    self.ipaEnabled: bool = ipaEnabled
     self.biDfv: Opt[Dict[AnNameT, NodeDfvL]] = biDfv  #IPA
-    if self.ipa: assert biDfv, f"{biDfv}"  #IPA
+    if self.ipaEnabled: assert biDfv, f"{biDfv}"  #IPA
 
     self.disableAllSim: bool = disableAllSim
     self.tUnit: irTUnit.TranslationUnit = func.tUnit
@@ -745,7 +745,7 @@ class Host:
       assert dirn.cfg and dirn.cfg.start and dirn.cfg.end, f"{dirn}"
       startNodeId = dirn.cfg.start.id
       endNodeId = dirn.cfg.end.id
-      if self.ipa:  #IPA
+      if self.ipaEnabled:  #IPA
         assert self.biDfv, f"{self.biDfv}"
         if self.activeAnName in self.biDfv:
           nDfv = self.biDfv[self.activeAnName]
@@ -912,6 +912,34 @@ class Host:
     return mergeAll(ai(ins) for ins in insn.insns)
 
 
+  def handleCallsForIpa(self,
+      node: graph.CfgNode,
+      insn: instr.InstrIT,
+      nodeDfv: NodeDfvL,
+  ) -> Opt[NodeDfvL]:
+    callE = instr.getCallExpr(insn)
+    calleeFuncName = callE.getCalleeFuncName() if callE else None
+    if calleeFuncName:
+      func = self.tUnit.getFunctionObj(calleeFuncName)
+      if func.canBeAnalyzed():
+        # Inter-procedural analysis does not process the instructions with call
+        # currently: function pointer based calls are handled intra-procedurally
+        #            func with no body are handled intra-procedurally
+        #            func with variadic arguments are handled intra-procedurally
+        if LS: LOG.debug("IPA: SkippingFunctionCallForIpa"
+                          " (Nid %s) Insn: %s", node.id, insn)
+        return nodeDfv
+    return None
+
+
+  def handleNodeReachability(self, node, insn, nodeDfv) -> Opt[NodeDfvL]:
+    nilSim = self.getSim(node, Node__to__Nil__Name)
+    if nilSim is not None:
+      if LS: LOG.debug("Unreachable_Node: %s: %s", node.id, insn)
+      return self.Barrier_Instr(node, node.insn, nodeDfv)
+    return None
+
+
   def _analyzeInstr(self,
       node: graph.CfgNode,
       insn: instr.InstrIT,  # could be a simplified form of node.insn
@@ -921,335 +949,59 @@ class Host:
     if LLS: LOG.debug("Analyzing_Instr (Node %s): %s, iType: %s",
                       node.id, insn, insn.type)
 
-    if self.ipa:  #IPA
-      callE = instr.getCallExpr(insn)
-      if callE and not callE.isPointerCall():
-        func = self.tUnit.getFunctionObj(callE.getCalleeFuncName())
-        if func.canBeAnalyzed():
-          # Inter-procedural analysis does not process the instructions with call
-          # currently: function pointer based calls are handled intra-procedurally
-          #            func with no body are handled intra-procedurally
-          #            func with variadic arguments are handled intra-procedurally
-          if LLS: LOG.debug("IPA: SkippingFunctionCallForIpa"
-                            " (Nid %s) Insn: %s", node.id, insn)
-          return nodeDfv
-
-    activeAnObj = self.activeAnObj
-    assert activeAnObj, f"{self.activeAnName}"
-    transferFunc: Callable[[Any, Any, Any], NodeDfvL]\
-      = activeAnObj.Nop_Instr  # default is NOP
+    if self.ipaEnabled:  #IPA
+      res = self.handleCallsForIpa(node, insn, nodeDfv)
+      if res: return res
 
     # is reachable (vs feasible) ?
     if Node__to__Nil__Name in self.activeAnSimNeeds:
-      nilSim = self.getSim(node, Node__to__Nil__Name)
-      if nilSim is not None:
-        if LLS: LOG.debug("Unreachable_Node: %s: %s", node.id, insn)
-        # return nodeDfv  # i.e. Barrier_Instr
-        return self.Barrier_Instr(node, node.insn, nodeDfv)
+      res = self.handleNodeReachability(node, insn, nodeDfv)
+      if res: return res
+
+    # if here, node is reachable (or no analysis provides that information)
+    activeAnObj = self.activeAnObj
+    assert activeAnObj, f"{self.activeAnName}"
 
     self.stats.funcSelectionTimer.start()
-    # if here, node is reachable (or no analysis provides that information)
-    iType = insn.type
-    iTypeCode = iType.typeCode
-    numericInstrType: bool = iType.isNumeric()
-    ptrInstrType: bool = iType.isPointer()
-    recordInstrType: bool = iType.isRecord()
-    instrCode = insn.instrCode
-
-    lhsVarSim = False
-    rhsDerefSim = False
-    lhsDerefSim = False
-    rhsMemDerefSim = False
-    lhsMemDerefSim = False
-    rhsNumBinaryExprSim = False
-    rhsNumUnaryExprSim = False
-    rhsNumVarSim = False
-    condInstr = False
-    assignInstr = False
-
-    # BOUND START: transfer_function_selection_process.
-    if instrCode == NOP_INSTR_IC:
-      transferFunc = activeAnObj.Nop_Instr
-
-    elif instrCode == USE_INSTR_IC:
-      transferFunc = activeAnObj.Use_Instr
-
-    elif instrCode == EX_READ_INSTR_IC:
-      transferFunc = activeAnObj.ExRead_Instr
-
-    elif instrCode == COND_READ_INSTR_IC:
-      transferFunc = activeAnObj.CondRead_Instr
-
-    elif instrCode == UNDEF_VAL_INSTR_IC:
-      transferFunc = activeAnObj.UnDefVal_Instr
-
-    elif instrCode == FILTER_INSTR_IC:
-      transferFunc = activeAnObj.Filter_Instr
-
-    elif isinstance(insn, instr.ReturnI):
-      if insn.arg is None:
-        transferFunc = activeAnObj.Return_Void_Instr
-      elif insn.arg.exprCode == VAR_EXPR_EC:
-        transferFunc = activeAnObj.Return_Var_Instr
-      else:
-        transferFunc = activeAnObj.Return_Lit_Instr
-
-    elif instrCode == COND_INSTR_IC:
-      transferFunc = activeAnObj.Conditional_Instr
-      condInstr = True
-
-    elif instrCode == CALL_INSTR_IC:
-      transferFunc = activeAnObj.Call_Instr
-
-    elif isinstance(insn, instr.AssignI):
-      lhs, rhs = insn.lhs, insn.rhs
-      lhsExprCode, rhsExprCode = lhs.exprCode, rhs.exprCode
-      if lhsExprCode == VAR_EXPR_EC:
-        lhsVarSim = True
-        if rhsExprCode == VAR_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
-          if numericInstrType:
-            transferFunc = activeAnObj.Num_Assign_Var_Var_Instr
-            rhsNumVarSim = True
-          elif ptrInstrType:
-            transferFunc = activeAnObj.Ptr_Assign_Var_Var_Instr
-          elif recordInstrType:
-            transferFunc = activeAnObj.Record_Assign_Var_Var_Instr
-
-        elif rhsExprCode == LIT_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
-          if numericInstrType:
-            transferFunc = activeAnObj.Num_Assign_Var_Lit_Instr
-
-          elif ptrInstrType:
-            transferFunc = activeAnObj.Ptr_Assign_Var_Lit_Instr
-
-        elif rhsExprCode == SIZEOF_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
-          # hence lhs, rhs are numeric
-          transferFunc = activeAnObj.Num_Assign_Var_SizeOf_Instr
-
-        elif isinstance(rhs, expr.UnaryE): # lhsExprCode == VAR_EXPR_EC
-          if numericInstrType:
-            transferFunc = activeAnObj.Num_Assign_Var_UnaryArith_Instr
-            rhsNumUnaryExprSim = True
-          else:
-            raise ValueError(f"{node}, {insn}, {insn.type}")
-
-        elif rhsExprCode == DEREF_EXPR_EC:
-          rhsDerefSim = True
-          if numericInstrType:
-            transferFunc = activeAnObj.Num_Assign_Var_Deref_Instr
-          elif ptrInstrType:
-            transferFunc = activeAnObj.Ptr_Assign_Var_Deref_Instr
-          elif recordInstrType:
-            transferFunc = activeAnObj.Record_Assign_Var_Deref_Instr
-          else:
-            raise ValueError(f"{node}, {insn}, {insn.type}")
-
-        elif rhsExprCode == BINARY_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
-          if numericInstrType:
-            transferFunc = activeAnObj.Num_Assign_Var_BinArith_Instr
-            rhsNumBinaryExprSim = True
-          elif ptrInstrType:  # must be a pointer instruction
-            transferFunc = activeAnObj.Ptr_Assign_Var_BinArith_Instr
-          else:
-            raise ValueError(f"{node}, {insn}, {insn.type}")
-
-        elif isinstance(rhs, expr.AddrOfE): # lhsExprCode == VAR_EXPR_EC
-          # iType must be a pointer
-          argExprCode = rhs.arg.exprCode
-          if argExprCode == VAR_EXPR_EC:
-            transferFunc = activeAnObj.Ptr_Assign_Var_AddrOfVar_Instr
-          elif argExprCode == ARR_EXPR_EC:
-            transferFunc = activeAnObj.Ptr_Assign_Var_AddrOfArray_Instr
-          elif argExprCode == MEMBER_EXPR_EC:
-            transferFunc = activeAnObj.Ptr_Assign_Var_AddrOfMember_Instr
-          elif isinstance(rhs.arg, expr.DerefE):
-            transferFunc = activeAnObj.Ptr_Assign_Var_AddrOfDeref_Instr
-          elif argExprCode == FUNC_EXPR_EC:
-            transferFunc = activeAnObj.Ptr_Assign_Var_AddrOfFunc_Instr
-          else:
-            raise ValueError(f"{node}, {insn}, {insn.type}")
-
-        elif rhsExprCode == ARR_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
-          if numericInstrType:
-            transferFunc = activeAnObj.Num_Assign_Var_Array_Instr
-
-          elif ptrInstrType:
-            transferFunc = activeAnObj.Ptr_Assign_Var_Array_Instr
-
-          elif recordInstrType:
-            transferFunc = activeAnObj.Record_Assign_Var_Array_Instr
-
-          else:
-            raise ValueError(f"{node}, {insn}, {insn.type}")
-
-        elif rhsExprCode == MEMBER_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
-          rhsMemDerefSim = insn.rhs.hasDereference()
-          if numericInstrType:
-            transferFunc = activeAnObj.Num_Assign_Var_Member_Instr
-
-          elif ptrInstrType:
-            transferFunc = activeAnObj.Ptr_Assign_Var_Member_Instr
-
-          elif recordInstrType:
-            transferFunc = activeAnObj.Record_Assign_Var_Member_Instr
-          else:
-            raise ValueError(f"{node}, {insn}, {insn.type}")
-
-        elif rhsExprCode == CALL_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
-          if numericInstrType:
-            transferFunc = activeAnObj.Num_Assign_Var_Call_Instr
-
-          elif ptrInstrType:
-            transferFunc = activeAnObj.Ptr_Assign_Var_Call_Instr
-
-          elif recordInstrType:
-            transferFunc = activeAnObj.Record_Assign_Var_Call_Instr
-
-          else:
-            raise ValueError(f"{node}, {insn}, {insn.type}")
-
-        elif rhsExprCode == FUNC_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
-          if ptrInstrType:  # has to be
-            transferFunc = activeAnObj.Ptr_Assign_Var_FuncName_Instr
-          else:
-            raise ValueError(f"{node}, {insn}, {insn.type}")
-
-        elif rhsExprCode == SELECT_EXPR_EC:  # lhsExprCode == VAR_EXPR_EC
-          if numericInstrType:
-            transferFunc = activeAnObj.Num_Assign_Var_Select_Instr
-          elif ptrInstrType:
-            transferFunc = activeAnObj.Ptr_Assign_Var_Select_Instr
-          elif recordInstrType:
-            transferFunc = activeAnObj.Record_Assign_Var_Select_Instr
-          else:
-            raise ValueError(f"{node}, {insn}, {insn.type}")
-
-        elif isinstance(rhs, expr.CastE):  # lhsExprCode == VAR_EXPR_EC
-          if rhs.arg.exprCode == VAR_EXPR_EC:
-            if numericInstrType:
-              transferFunc = activeAnObj.Num_Assign_Var_CastVar_Instr
-            elif ptrInstrType:
-              transferFunc = activeAnObj.Ptr_Assign_Var_CastVar_Instr
-            else:
-              raise ValueError(f"{node}, {insn}, {insn.type}")
-
-          elif rhs.arg.exprCode == ARR_EXPR_EC:
-            if ptrInstrType:
-              transferFunc = activeAnObj.Ptr_Assign_Var_CastArr_Instr
-            else:
-              raise ValueError(f"{node}, {insn}, {insn.type}")
-
-      elif lhsExprCode == DEREF_EXPR_EC:
-        # lhs has to be a deref
-        lhsDerefSim = True
-        if rhsExprCode == VAR_EXPR_EC:  # lhs is a deref
-          if numericInstrType:
-            transferFunc = activeAnObj.Num_Assign_Deref_Var_Instr
-            rhsNumVarSim = True
-          elif ptrInstrType:
-            transferFunc = activeAnObj.Ptr_Assign_Deref_Var_Instr
-          elif recordInstrType:
-            transferFunc = activeAnObj.Record_Assign_Deref_Var_Instr
-          else:
-            raise ValueError(f"{node}, {insn}, {insn.type}")
-
-        elif rhsExprCode == LIT_EXPR_EC:  # lhs is a deref
-          if numericInstrType:
-            transferFunc = activeAnObj.Num_Assign_Deref_Lit_Instr
-          elif ptrInstrType:
-            transferFunc = activeAnObj.Ptr_Assign_Deref_Lit_Instr
-          else:
-            raise ValueError(f"{node}, {insn}, {insn.type}")
-
-      elif lhsExprCode == ARR_EXPR_EC:
-        if rhsExprCode == VAR_EXPR_EC:  # lhs is an array expr
-          if numericInstrType:
-            transferFunc = activeAnObj.Num_Assign_Array_Var_Instr
-            rhsNumVarSim = True
-          elif ptrInstrType:
-            transferFunc = activeAnObj.Ptr_Assign_Array_Var_Instr
-          elif recordInstrType:
-            transferFunc = activeAnObj.Record_Assign_Array_Var_Instr
-          else:
-            raise ValueError(f"{node}, {insn}, {insn.type}")
-
-        elif rhsExprCode == LIT_EXPR_EC:  # lhs is an array expr
-          if numericInstrType:
-            transferFunc = activeAnObj.Num_Assign_Array_Lit_Instr
-          elif ptrInstrType:
-            transferFunc = activeAnObj.Ptr_Assign_Array_Lit_Instr
-          else:
-            raise ValueError(f"{node}, {insn}, {insn.type}")
-
-      elif lhsExprCode == MEMBER_EXPR_EC:
-        lhsMemDerefSim = insn.lhs.hasDereference()
-        if rhsExprCode == VAR_EXPR_EC:  # lhs is a member expr
-          if numericInstrType:
-            transferFunc = activeAnObj.Num_Assign_Member_Var_Instr
-            rhsNumVarSim = True
-          elif ptrInstrType:
-            transferFunc = activeAnObj.Ptr_Assign_Member_Var_Instr
-          elif recordInstrType:
-            transferFunc = activeAnObj.Record_Assign_Member_Var_Instr
-          else:
-            raise ValueError(f"{node}, {insn}, {insn.type}")
-
-        elif rhsExprCode == LIT_EXPR_EC:  # lhs is a member expr
-          if numericInstrType:
-            transferFunc = activeAnObj.Num_Assign_Member_Lit_Instr
-          elif ptrInstrType:
-            transferFunc = activeAnObj.Ptr_Assign_Member_Lit_Instr
-          else:
-            raise ValueError(f"{node}, {insn}, {insn.type}")
-
-    elif isinstance(insn, instr.GotoI):
-      transferFunc = activeAnObj.Nop_Instr
-    else:
-      raise ValueError(f"{self.func}, {node}, {insn}, {insn.type}")
-
+    tFuncName = instr.getFormalStr(insn)
+    assert hasattr(AnalysisAT, tFuncName), f"{tFuncName}, {insn}"
+    transferFunc = getattr(activeAnObj, tFuncName, activeAnObj.Nop_Instr)
     self.stats.funcSelectionTimer.stop()
-    # BOUND END  : transfer_function_selection_process.
-    transferFunc = cast(Callable[[Any, Any, Any], NodeDfvL], transferFunc)
 
-    tFuncName = transferFunc.__name__  # needed
     if LLS: LOG.debug("Instr_identified_as: %s",
                       getattr(AnalysisAT, tFuncName).__doc__.strip())
     if not self.disableAllSim and transferFunc != activeAnObj.Nop_Instr:
-      if tFuncName == UnDefVal_Instr__Name:
-        # lhs is a var, hence could be dead code
-        nDfv = self.handleLivenessSim(node, insn, nodeDfv)
-        if nDfv is not None: return nDfv
-        # if nDfv is None then work on the original instruction
-
       # is the instr a var assignment (not deref etc)
-      if lhsVarSim:
-        # lhs is a var, hence could be dead code
+      if insn.needsLhsVarSim(): # check for dead assignment
         nDfv = self.handleLivenessSim(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
-      if lhsDerefSim:
-        # lhs is a dereference, hence could be simplified
+      if insn.needsLhsDerefSim(): # dereference can be simplified
         assert isinstance(insn, instr.AssignI), f"{node.id}: {insn}"
         nDfv = self.handleLhsDerefSim(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
-      if lhsMemDerefSim:
-        # lhs is a dereference, hence could be simplified
-        assert isinstance(insn, instr.AssignI), f"{node.id}: {insn}"
-        nDfv = self.handleLhsMemDerefSim(node, insn, nodeDfv)
-        if nDfv is not None: return nDfv
-        # if nDfv is None then work on the original instruction
-
-      if rhsDerefSim:
-        # rhs is a dereference, hence could be simplified
+      if insn.needsRhsDerefSim(): # dereference can be simplified
         assert isinstance(insn, instr.AssignI), f"{node.id}: {insn}"
         nDfv = self.handleRhsDerefSim(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
-      if rhsNumBinaryExprSim:
+      if insn.needsLhsMemDerefSim(): # dereference can be simplified
+        assert isinstance(insn, instr.AssignI), f"{node.id}: {insn}"
+        nDfv = self.handleLhsMemDerefSim(node, insn, nodeDfv)
+        if nDfv is not None: return nDfv
+        # if nDfv is None then work on the original instruction
+
+      if insn.needsRhsMemDerefSim(): # dereference can be simplified
+        assert isinstance(insn, instr.AssignI), f"{node.id}: {insn}"
+        nDfv = self.handleRhsMemDerefSim(node, insn, nodeDfv)
+        if nDfv is not None: return nDfv
+        # if nDfv is None then work on the original instruction
+
+      if insn.needsRhsNumBinaryExprSim():
         # rhs is a numeric bin expr, hence could be simplified
         assert isinstance(insn, instr.AssignI), f"{node.id}: {insn}"
         nDfv = self.handleRhsBinArith(node, insn, nodeDfv)
@@ -1260,14 +1012,14 @@ class Host:
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
-      if rhsNumUnaryExprSim:
+      if insn.needsRhsNumUnaryExprSim():
         # rhs is a numeric unary expr, hence could be simplified
         assert isinstance(insn, instr.AssignI), f"{node.id}: {insn}"
         nDfv = self.handleRhsUnaryArith(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
-      if rhsNumVarSim:
+      if insn.needsRhsNumVarSim():
         # rhs is a numeric var, hence could be simplified
         assert isinstance(insn, instr.AssignI), f"{node.id}: {insn}"
         nDfv = self.handleRhsNumVar(node, insn, nodeDfv)
@@ -1280,7 +1032,7 @@ class Host:
       else:
         self.nodeInsnDot[node.id].append(str(insn))
 
-    if condInstr:
+    if insn.needsCondInstrSim():
       assert isinstance(insn, instr.CondI), f"{node.id}, {insn}"
       return self.Conditional_Instr(node, insn, nodeDfv)  # type: ignore
     else:
@@ -2139,7 +1891,7 @@ class Host:
       demand: Opt[ddm.AtomicDemand] = None, #DDM
   ) -> Opt[Set[VarNameT]]:
     """
-    This function is basically a call to self.getSimplification()
+    This function is basically a call to self.getSim()
     with some checks.
     """
     res = cast(Opt[Set], self.getSim(node, Deref__to__Vars__Name, e, demand))

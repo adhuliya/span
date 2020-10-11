@@ -360,7 +360,7 @@ class IpaHost:
       maxNumOfAnalyses=self.maxNumOfAnalyses,
       analysisSeq=self.analysisSeq,
       disableAllSim=self.disableAllSim,
-      ipa=ipa,
+      ipaEnabled=ipa,
       biDfv=biDfv,
     )
 
