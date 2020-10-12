@@ -126,7 +126,6 @@ class TransformCode:
     if insn.needsCondInstrSim():
       trInfo = self.genTransformInfo_CondInstr(insn, node, func, funcResults)
     elif insn.needsRhsNumVarSim():
-      print("here: RhsNumVarSim", insn) #delit
       trInfo = self.genTransformInfo_RhsVar(insn, node, func, funcResults)
     elif insn.needsRhsNumBinaryExprSim():
       trInfo = self.genTransformInfo_RhsNumBinary(insn, node, func, funcResults)
@@ -160,7 +159,6 @@ class TransformCode:
     assert insn.needsRhsNumVarSim(), f"{insn}, {node}, {func}"
     simName = AnalysisAT.Num_Var__to__Num_Lit.__name__
     res = collectAndMergeResults(simName, insn.rhs, node, func, funcResults)
-    print(res)  #delit
     if res and len(res) == 1:
       for value in res: # this loop runs only once
         return TrInfo(value, insn.rhs.info.loc, simName)
@@ -203,12 +201,9 @@ def collectAndMergeResults(
   Step 2: Refine the simplification.
   """
   anNames = set(funcResults.keys())
-  print("here3:", anNames, clients.simSrcMap[simName])
   anNames = anNames & clients.simSrcMap[simName]
-  print("here4:", anNames)
 
   if not anNames:
-    print("here2:") #delit
     return SimFailed  # no sim analyses -- hence fail
 
   # Step 0: Get analyses objects.
@@ -223,11 +218,9 @@ def collectAndMergeResults(
     if values:
       break  # break at the first useful value
   if values in (SimPending, SimFailed):
-    print("here1:", values) #delit
     return values  # failed/pending values can never be refined
 
   # Step 2: Refine the simplification
-  print("here:", values) #delit
   assert values not in (SimPending, SimFailed), f"{values}"
   if LS: LOG.debug("Refining(Start): %s", values)
   for anName in anNames:
