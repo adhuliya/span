@@ -353,7 +353,12 @@ class Cfg(object):
 
 
   def yieldNodes(self):
-    yield from self.nodeMap.values()
+    for nodeId in sorted(self.nodeMap.keys()):
+      yield from self.nodeMap[nodeId]
+
+
+  def getTotalNodes(self):
+    return len(self.nodeMap)
 
 
   def getNodesWithNonPtrCallExpr(self,

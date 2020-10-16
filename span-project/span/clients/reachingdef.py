@@ -6,7 +6,7 @@
 """Reaching Def Analysis
 
 This (and every) analysis subclasses,
-* span.sys.lattice.LatticeLT (to define its lattice)
+* span.sys.lattice.DataLT (to define its lattice)
 * span.sys.analysis.AnalysisAT (to define the analysis)
 """
 
@@ -18,7 +18,7 @@ import io
 
 import span.util.util as util
 from span.util.util import LS, AS
-import span.util.messages as msg
+import span.util.data as data
 
 import span.ir.ir as ir
 import span.ir.types as types
@@ -26,11 +26,9 @@ import span.ir.op as op
 import span.ir.expr as expr
 import span.ir.instr as instr
 import span.ir.constructs as constructs
-import span.api.sim as sim
 
-from span.api.lattice import ChangeL, Changed, NoChange, DataLT
+from span.api.lattice import Changed, DataLT
 from span.api.dfv import NodeDfvL
-import span.api.sim as ev
 import span.api.analysis as analysis
 
 
@@ -721,7 +719,7 @@ class ReachingDefA(analysis.AnalysisAT):
       return NodeDfvL(dfvIn, dfvIn)
 
     lhsvarNames = ir.getExprLValueNames(self.func, lhs)
-    assert len(lhsvarNames) >= 1, msg.INVARIANT_VIOLATED
+    assert len(lhsvarNames) >= 1, data.INVARIANT_VIOLATED
 
     # Yet another Very Special Case
     if dfvIn.bot and len(lhsvarNames) > 1:
@@ -849,7 +847,7 @@ class ReachingDefA(analysis.AnalysisAT):
     elif isinstance(rhs, expr.CallE):
       return self.componentBot
 
-    assert False, msg.CONTROL_HERE_ERROR
+    assert False, data.CONTROL_HERE_ERROR
 
 
   def processCallE(self,

@@ -530,7 +530,7 @@ def sliceDemand(args: argparse.Namespace):
   assert func.cfg, f"{func}"
   node = func.cfg.nodeMap[nid]
   atIn = True if not m.group(2) else m.group(2).lower() == "in"
-  varSet = frozenset(irConv.constructLocalName(func.name, var) for var in vars.split(","))
+  varSet = frozenset(irConv.genLocalName(func.name, var) for var in vars.split(","))
 
   print("Note: Assuming all nodes are feasible.")
   ddMethod = ddm.DdMethod(func)

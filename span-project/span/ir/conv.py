@@ -27,6 +27,10 @@ Forward: types.DirectionT = "Forward"
 Backward: types.DirectionT = "Backward"
 ForwBack: types.DirectionT = "ForwBack"
 
+# these values change dynamically see (setNodeSiteBits())
+NodeSiteTotalBitLen   = 32
+NodeSiteFuncIdBitLen  = 14
+NodeSiteNodeIdBitLen  = 18
 
 class Site:
   """Represents a 'site' in the CFG of a function.
@@ -324,7 +328,7 @@ def extractFuncName(varName: types.VarNameT) -> Opt[types.FuncNameT]:
   return funcName
 
 
-def constructLocalName(funcName: str, varName: str):
+def genLocalName(funcName: str, varName: str):
   if ":" in varName:
     return varName
   simpleFuncName = simplifyName(funcName)
@@ -332,21 +336,39 @@ def constructLocalName(funcName: str, varName: str):
   return f"v:{simpleFuncName}:{simpleVarName}"
 
 
-def constructGlobalName(varName: str):
+def genGlobalName(varName: str):
   if ":" in varName:
     return varName
   return f"g:{varName}"
 
 
-def extractFunctionId(funcNodeId: types.FuncNodeIdT):
-  return funcNodeId >> 32
+def setNodeSiteBits(totalFuncs: int, maxCfgNodesInAFunction: int):
+  global NodeSiteTotalBitLen, NodeSiteFuncIdBitLen, NodeSiteNodeIdBitLen
+  NodeSiteFuncIdBitLen = totalFuncs.bit_length()
+  # add some room for nodeid bits (might help when adding nodes)
+  NodeSiteNodeIdBitLen = maxCfgNodesInAFunction.bit_length() + 2 # extra bits
+  NodeSiteTotalBitLen = NodeSiteFuncIdBitLen + NodeSiteNodeIdBitLen
+  if LS and NodeSiteTotalBitLen > 32:
+    LOG.info("WARN: NodeSiteTotalBitLen > 32 bits: %s bits.",
+             NodeSiteTotalBitLen)
 
 
-def createFuncNodeId(
+def genFuncNodeId(
     funcId: types.FuncIdT,
     nid: types.NodeIdT,
 ) -> types.FuncNodeIdT:
-  return (funcId << 32) | nid
+  assert funcId.bit_length() <= NodeSiteFuncIdBitLen, f"{nid}, {NodeSiteFuncIdBitLen}"
+  assert nid.bit_length() <= NodeSiteNodeIdBitLen, f"{nid}, {NodeSiteNodeIdBitLen}"
+  return (funcId << NodeSiteNodeIdBitLen) | nid
+
+
+def getFuncId(funcNodeId: types.FuncNodeIdT):
+  return funcNodeId >> NodeSiteNodeIdBitLen
+
+
+def getNodeId(funcNodeId: types.FuncNodeIdT):
+  return funcNodeId & ((1 << NodeSiteNodeIdBitLen) - 1)
+
 
 ################################################
 # BOUND END  : system_wide_assumption_based_utilities

@@ -21,6 +21,7 @@ Following important things are available here,
 
 import logging
 
+from span.ir import conv
 from span.ir.conv import GLOBAL_INITS_FUNC_NAME
 
 LOG = logging.getLogger("span")
@@ -150,7 +151,7 @@ class TranslationUnit:
       Dict[types.Type, Set[types.VarNameT]] = dict()
 
     # function id list: id is the index in the list
-    self._funcIdToFuncList: List[constructs.Func] = []
+    self._indexedFuncList: List[constructs.Func] = []
 
     if preProcess:
       self.preProcess()
@@ -211,8 +212,25 @@ class TranslationUnit:
     funcId: types.FuncIdT = 0
     for func in self.yieldFunctions():
       func.id = funcId
-      self._funcIdToFuncList.append(func)
+      self._indexedFuncList.append(func)
       funcId += 1
+    self.calcNodeSiteBits() # IMPORTANT
+
+
+  def calcNodeSiteBits(self):
+    assert self._indexedFuncList, f"{self._indexedFuncList}"
+    totalFuncs = len(self._indexedFuncList)
+    maxCfgNodes = self.maxCfgNodesInAFunction()
+    conv.setNodeSiteBits(totalFuncs, maxCfgNodes)
+
+
+  def maxCfgNodesInAFunction(self):
+    """Returns the maximum cfg node count among all functions present."""
+    maxNodes: int = 0
+    for func in self.yieldFunctionsWithBody():
+      nodesCount = func.cfg.getTotalNodes()
+      maxNodes = nodesCount if nodesCount > maxNodes else maxNodes
+    return maxNodes
 
 
   def collectAddrTakenVars(self):  # MUST
@@ -526,7 +544,7 @@ class TranslationUnit:
 
   def yieldFunctions(self):
     """Yields all the functions in the TUnit."""
-    for _, func in self.allFunctions.items():
+    for func in sorted(self.allFunctions.values(), key=lambda x: x.name):
       yield func
 
 
@@ -2024,13 +2042,13 @@ class TranslationUnit:
   ) -> constructs.Func:
     """Returns the function object either using the name or id."""
     assert funcName or funcId is not None, f"{funcName}, {funcId}"
-    assert self._funcIdToFuncList, f"{self._funcIdToFuncList}"
+    assert self._indexedFuncList, f"{self._indexedFuncList}"
 
     if funcName:
       if funcName in self.allFunctions:
         return self.allFunctions[funcName]
-    elif funcId < len(self._funcIdToFuncList):
-      return self._funcIdToFuncList[funcId]
+    elif funcId < len(self._indexedFuncList):
+      return self._indexedFuncList[funcId]
     raise ValueError(f"{funcName}, {funcId}")
 
 
