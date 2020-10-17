@@ -22,6 +22,7 @@ import span.ir.constructs as constructs
 import span.ir.types as types
 import span.ir.conv as irConv
 import span.ir.ir as ir
+import itertools
 
 
 ################################################
@@ -335,7 +336,7 @@ class OverallL(DataLT):
   ) -> None:
     super().__init__(func, val, top, bot)
     if not (self.top or self.bot) and self.isDefaultValBot(): # safety check
-      assert val is not None
+      assert val is not None, f"{func}, {val}, {top}, {bot}"
     self.val: Opt[Dict[types.VarNameT, ComponentL]] = val
     assert componentL is not ComponentL,\
       f"Analysis should subclass dfv.ComponentL. Details: {func} {name}"
@@ -381,10 +382,10 @@ class OverallL(DataLT):
 
     vNames = set(self.val.keys())
     vNames.update(other.val.keys())
-    default = self.getDefaultVal()
+    defaultVal = self.getDefaultVal()
     selfValGet, otherValGet = self.val.get, other.val.get
     for vName in vNames:
-      dfv1, dfv2 = selfValGet(vName, default), otherValGet(vName, default)
+      dfv1, dfv2 = selfValGet(vName, defaultVal), otherValGet(vName, defaultVal)
       if not dfv1 < dfv2: return False
     return True
 
@@ -399,10 +400,10 @@ class OverallL(DataLT):
 
     vNames = set(self.val.keys())
     vNames.update(other.val.keys())
-    default = self.getDefaultVal()
+    defaultVal = self.getDefaultVal()
     selfGetVal, otherGetVal = self.val.get, other.val.get
     for vName in vNames:
-      dfv1, dfv2 = selfGetVal(vName, default), otherGetVal(vName, default)
+      dfv1, dfv2 = selfGetVal(vName, defaultVal), otherGetVal(vName, defaultVal)
       if not dfv1 == dfv2: return False
     return True
 
@@ -414,6 +415,10 @@ class OverallL(DataLT):
 
   def isDefaultValBot(self):
     return self.componentBot == self.getDefaultVal()
+
+
+  def isDefaultValTop(self):
+    return self.componentTop == self.getDefaultVal()
 
 
   def getDefaultVal(self,
@@ -443,36 +448,70 @@ class OverallL(DataLT):
 
 
   def setVal(self,
-      vName: types.VarNameT,
+      varName: types.VarNameT,
       val: ComponentL
   ) -> None:
     """Mutates current object."""
     if self.top and val.top: return
     if self.bot and val.bot: return
 
-    if self.val is None: self.val = {}
-    if self.top:
-      for varName in self.getAllVars():
-        self.val[varName] = self.componentTop
+    if self.val is None:
+      if not (self.top or self.bot) and val == self.getDefaultVal(varName):
+        return
+      self.val = {}
+    defaultVal = self.getDefaultVal()
+    if self.top and defaultVal != self.componentTop:
+      top = self.componentTop
+      self.val = {vName: top for vName in self.getAllVars()}
+    if self.bot and defaultVal != self.componentBot:
+      bot = self.componentBot
+      self.val = {vName: bot for vName in self.getAllVars()}
 
     self.top = self.bot = False  # if it was top/bot, then certainly its no more.
-    if val.bot:
-      if vName in self.val:
-        del self.val[vName]  # since default is bot
+    topDefVal, botDefVal = self.isDefaultValTop(), self.isDefaultValBot()
+    if self.isDefaultVal(val, varName):
+      if varName in self.val:
+        del self.val[varName]  # since default value
         if not self.val:
-          self.top, self.bot, self.val = False, True, None
+          self.val = None
+          self.top, self.bot = topDefVal, botDefVal
     else:
-      self.val[vName] = val
+      self.val[varName] = val
+
+    if not (topDefVal or botDefVal): # important optimization check
+      self.explicateTopBot()
+
+
+  def explicateTopBot(self):
+    """Checks if all values are Top or Bot.
+    Useful in cases where default value is not Top or Bot.
+    """
+    selfVal = self.val
+    if not selfVal: return  # nothing to do
+    allVars = self.getAllVars()
+    if len(selfVal) != len(allVars): return # nothing to do
+
+    top = bot = True
+    selfGetVal = self.getVal
+    for vName in allVars:
+      vVal = selfGetVal(vName)
+      top = top and vVal.top
+      bot = bot and vVal.bot
+      if not (top or bot): return # nothing to do
+
+    assert top != bot, f"{top}, {bot}, {selfVal}"
+    self.top, self.bot, self.val = top, bot, None
 
 
   def getCopy(self) -> 'OverallL':
-    if self.top:
-      return self.__class__(self.func, top=True)
-    if self.bot:
-      return self.__class__(self.func, bot=True)
+    if self.top: return self.__class__(self.func, top=True)
+    if self.bot: return self.__class__(self.func, bot=True)
 
-    assert self.val is not None, f"{self}"
-    return self.__class__(self.func, self.val.copy())
+    if not self.val:
+      assert not (self.isDefaultValTop() or self.isDefaultValBot()), f"{self}"
+      return self.__class__(self.func, val=None)
+    else:
+      return self.__class__(self.func, self.val.copy())
 
 
   def getAllVars(self) -> Set[types.VarNameT]:
@@ -495,12 +534,10 @@ class OverallL(DataLT):
       return None
 
     self.val = self.val if self.val else {}
-    if self.bot:
-      self.bot = False
-
-    val = self.val
+    self.bot = False
+    selfSetVal, cTop = self.setVal, self.componentTop
     for vName in varNames:
-      val[vName] = self.componentTop
+      selfSetVal(vName, cTop)
     return None
 
 
@@ -534,7 +571,6 @@ class OverallL(DataLT):
       string.write(f"{key!r}: {self.val[key]!r}")
     string.write("})")
     return string.getvalue()
-
 
 
 ################################################

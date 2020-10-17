@@ -164,6 +164,15 @@ class OverallL(dfv.OverallL):
     return ComponentL(self.func, val={fNid})
 
 
+  def getAllVars(self) -> Set[types.VarNameT]:
+    """Return a set of vars the analysis is tracking.
+    One must override this method if variables are other
+    than numeric.
+    """
+    return ir.getNamesEnv(self.func)
+
+
+
 ################################################
 # BOUND END  : ReachingDef lattice.
 ################################################
