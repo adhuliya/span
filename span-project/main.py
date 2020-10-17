@@ -522,7 +522,7 @@ def sliceDemand(args: argparse.Namespace):
   print("Using Function(s):", funcName if funcName else "ALL")
 
   currTUnit = parseTUnitObject(args.fileName)
-  func = currTUnit.getFunctionObj(funcName)
+  func = currTUnit.getFuncObj(funcName)
 
   m = ppPattern.match(programPoint)
   assert m, f"{programPoint}"

@@ -25,8 +25,8 @@ import span.ir.expr as expr
 import span.ir.instr as instr
 import span.ir.constructs as constructs
 
-import span.api.lattice as lattice
-from span.api.lattice import ChangedT, Changed
+from span.api.lattice import (ChangedT, Changed, basicLessThanTest,
+                              basicEqualTest, getBasicString)
 import span.api.dfv as dfv
 from span.api.dfv import NodeDfvL
 import span.api.analysis as analysis
@@ -62,13 +62,9 @@ class ComponentL(dfv.ComponentL):
 
   def meet(self, other) -> Tuple['ComponentL', ChangedT]:
     assert isinstance(other, ComponentL), f"{other}"
-    tup = lattice.basicMeetOp(self, other)
+    tup = self.basicMeetOp(other)
     if tup:
       return tup
-    elif self < other:
-      return self, not Changed
-    elif other < self:
-      return other, Changed
     else:
       assert self.val and other.val, f"{self}, {other}"
       new = self.getCopy()
@@ -151,24 +147,24 @@ class ComponentL(dfv.ComponentL):
 
   def __lt__(self, other) -> bool:
     assert isinstance(other, ComponentL), f"{other}"
-    lt = lattice.basicLessThanTest(self, other)
+    lt = basicLessThanTest(self, other)
     return self.val >= other.val if lt is None else lt  # other should be a subset
 
 
   def __eq__(self, other) -> bool:
     if not isinstance(other, ComponentL):
       return NotImplemented
-    equal = lattice.basicEqualTest(self, other)
+    equal = basicEqualTest(self, other)
     return self.val == other.val if equal is None else equal
 
 
   def __hash__(self):
     val = frozenset(self.val) if self.val else None
-    return hash(self.func.name) ^ hash((val, self.top, self.bot))
+    return hash((self.func.name, val, self.top, self.bot))
 
 
   def __str__(self):
-    s = lattice.getBasicString(self)
+    s = getBasicString(self)
     if s: return s
     simpleName = {irConv.simplifyName(name) for name in self.val}
     return f"{simpleName}"

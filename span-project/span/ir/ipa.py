@@ -46,7 +46,7 @@ def generateCallSiteParamAssigns(callE: expr.CallE,
   if callE.isPointerCall():
     return None  # IMPORTANT
 
-  func: constructs.Func = tUnit.getFunctionObj(callE.callee.name)
+  func: constructs.Func = tUnit.getFuncObj(callE.callee.name)
 
   if func.sig.variadic:
     return None  # FIXME: we don't handle variadic function calls
@@ -79,7 +79,7 @@ def generateCallSiteReturnAssigns(insn: instr.AssignI,
   if callE.isPointerCall():
     return None
 
-  func = tUnit.getFunctionObj(callE.callee.name)
+  func = tUnit.getFuncObj(callE.callee.name)
   returnExprs = getReturnExprList(func)
   if returnExprs is None:
     return None

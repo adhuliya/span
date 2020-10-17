@@ -23,10 +23,15 @@ from span.ir.tunit import TranslationUnit
 
 import span.ir.constructs as constructs
 
+FUNC_WITH_BODY = True
 
+################################################################
 # BLOCK START: queries_on_a_function
+################################################################
 
-# counting queries
+################################################
+# BLOCK START: counting_queries
+################################################
 
 #@functools.lru_cache(200)
 def countFunctionCalls(func: constructs.Func) -> int:
@@ -47,6 +52,26 @@ def countDerefsUsed(func: constructs.Func) -> int:
   derefs = 0
   for insn in func.yieldInstrSeq():
     if instr.getDerefExpr(insn):
+      derefs += 1
+  return derefs
+
+
+#@functools.lru_cache(200)
+def countDerefsUsedLhs(func: constructs.Func) -> int:
+  """Returns the number of deref expressions in a function."""
+  derefs = 0
+  for insn in func.yieldInstrSeq():
+    if insn.needsLhsDerefSim():
+      derefs += 1
+  return derefs
+
+
+#@functools.lru_cache(200)
+def countDerefsUsedRhs(func: constructs.Func) -> int:
+  """Returns the number of deref expressions in a function."""
+  derefs = 0
+  for insn in func.yieldInstrSeq():
+    if insn.needsRhsDerefSim():
       derefs += 1
   return derefs
 
@@ -78,17 +103,35 @@ def countNodes(func: constructs.Func) -> int:
     return len(func.cfg.nodeMap)
   return 0
 
+################################################
+# BLOCK END  : counting_queries
+################################################
+
+################################################
+# BLOCK START: boolean_queries
+################################################
+
 # boolean queries
 
 def hasDefinition(func: constructs.Func) -> bool:
   return func.hasBody()
 
 
+def isVariadic(func: constructs.Func) -> bool:
+  return func.sig.variadic
+
+
 def hasPointerReturnType(func: constructs.Func) -> bool:
   return isinstance(func.sig.returnType, types.Ptr)
 
 
-# other queries
+################################################
+# BLOCK END  : boolean_queries
+################################################
+
+################################################
+# BLOCK START: other_queries
+################################################
 
 def getPointerParameters(
     func: constructs.Func,
@@ -100,11 +143,18 @@ def getPointerParameters(
       ptrParams.append(paramName)
   return ptrParams
 
+################################################
+# BLOCK END  : other_queries
+################################################
 
+################################################################
 # BLOCK END  : queries_on_a_function
+################################################################
 
 
+################################################################
 # BLOCK START: queries_on_translation_unit
+################################################################
 
 def filterFunctions(
     tunit: TranslationUnit,
@@ -135,7 +185,9 @@ def totalCountOnFunctions(
     count += counter(func)
   return count
 
+################################################################
 # BLOCK END  : queries_on_translation_unit
+################################################################
 
 
 def executeAllQueries(tUnit: TranslationUnit):
@@ -143,6 +195,13 @@ def executeAllQueries(tUnit: TranslationUnit):
   p(f"Query Results on translation unit '{tUnit.name}'")
   p("TotalFunctions:", totalCountOnFunctions(tUnit, lambda _: 1))
   p("TotalFunctions(WithDef):", totalCountOnFunctions(tUnit, hasDefinition))
-  p("TotalNodes:", totalCountOnFunctions(tUnit, countNodes))
+  p("TotalFunctions(WithoutDef):",
+    totalCountOnFunctions(tUnit, lambda x: not hasDefinition(x)))
+  p("TotalFunctions(Variadic):", totalCountOnFunctions(tUnit, isVariadic, FUNC_WITH_BODY))
+  p("Nodes(total):", totalCountOnFunctions(tUnit, countNodes, FUNC_WITH_BODY))
+  p("Nodes(maxInAFunc):", tUnit.maxCfgNodesInAFunction())
+  p("DerefsUsed(all):", totalCountOnFunctions(tUnit, countDerefsUsed, FUNC_WITH_BODY))
+  p("DerefsUsed(Lhs):", totalCountOnFunctions(tUnit, countDerefsUsedLhs, FUNC_WITH_BODY))
+  p("DerefsUsed(Rhs):", totalCountOnFunctions(tUnit, countDerefsUsedRhs, FUNC_WITH_BODY))
 
 

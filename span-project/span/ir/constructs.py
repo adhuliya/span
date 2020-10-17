@@ -7,6 +7,8 @@
 
 import logging
 
+from span.ir import conv
+
 LOG = logging.getLogger("span")
 from typing import List, Dict, Tuple, Optional as Opt, Set
 import io
@@ -17,7 +19,7 @@ from span.ir.types import (StructNameT, UnionNameT, MemberNameT, FuncNameT, VarN
                            Type, FuncSig, Info, Loc, LabelNameT, )
 import span.ir.instr as instr
 from span.ir.instr import InstrIT, LabelI, GotoI, CondI, NopI, ReturnI
-from span.ir.conv import FalseEdge, TrueEdge, UnCondEdge
+from span.ir.conv import FalseEdge, TrueEdge, UnCondEdge, GLOBAL_INITS_FUNC_NAME
 from span.ir.types import BasicBlockIdT, InstrIndexT, FuncNodeIdT
 import span.ir.expr as expr
 import span.ir.graph as graph
@@ -90,7 +92,18 @@ class Func(ConstructT):
       result = False
     elif self.sig.variadic:
       result = False
+    elif self.name != GLOBAL_INITS_FUNC_NAME:
+      # normally we don't analyze the artificial global function
+      result = False
     return result
+
+
+  def isLocalName(self,
+      varName: VarNameT
+  ) -> bool:
+    funcName = conv.extractFuncName(varName)
+    if not funcName: return False
+    return funcName == self.name
 
 
   @staticmethod

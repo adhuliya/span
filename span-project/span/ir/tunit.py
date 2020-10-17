@@ -21,8 +21,6 @@ Following important things are available here,
 
 import logging
 
-from span.ir import conv
-from span.ir.conv import GLOBAL_INITS_FUNC_NAME
 
 LOG = logging.getLogger("span")
 from typing import Dict, Set, Tuple, List, Callable, Any
@@ -209,7 +207,7 @@ class TranslationUnit:
 
   def assignFunctionIds(self):
     """Assigns a unique id to each function."""
-    funcId: types.FuncIdT = 0
+    funcId: types.FuncIdT = 1 # GLOBAL_INITS_FUNC_NAME has id 0
     for func in self.yieldFunctions():
       func.id = funcId
       self._indexedFuncList.append(func)
@@ -221,7 +219,7 @@ class TranslationUnit:
     assert self._indexedFuncList, f"{self._indexedFuncList}"
     totalFuncs = len(self._indexedFuncList)
     maxCfgNodes = self.maxCfgNodesInAFunction()
-    conv.setNodeSiteBits(totalFuncs, maxCfgNodes)
+    irConv.setNodeSiteBits(totalFuncs, maxCfgNodes)
 
 
   def maxCfgNodesInAFunction(self):
@@ -559,7 +557,7 @@ class TranslationUnit:
     """Yields all the functions in the TUnit with body
     that can be analyzed."""
     for func in self.yieldFunctions():
-      if func.canBeAnalyzed() and func.name != GLOBAL_INITS_FUNC_NAME:
+      if func.canBeAnalyzed():
         yield func
 
 
@@ -2036,20 +2034,31 @@ class TranslationUnit:
                   rhs.opr = op.getFlippedRelOp(rhs.opr)
 
 
-  def getFunctionObj(self,
+  def getFuncObj(self,
       funcName: Opt[types.FuncNameT] = None,
-      funcId: Opt[types.FuncIdT] = None
+      funcId: Opt[types.FuncIdT] = None,
+      varName: Opt[types.VarNameT] = None,
   ) -> constructs.Func:
-    """Returns the function object either using the name or id."""
+    """Returns the function object either using the name or id,
+    or the local var name."""
     assert funcName or funcId is not None, f"{funcName}, {funcId}"
     assert self._indexedFuncList, f"{self._indexedFuncList}"
 
     if funcName:
       if funcName in self.allFunctions:
         return self.allFunctions[funcName]
-    elif funcId < len(self._indexedFuncList):
+    elif funcId is not None and funcId == irConv.GLOBAL_INITS_FUNC_ID:
+      return self.getGlobalInitFunction()
+    elif funcId is not None:
+      assert funcId < len(self._indexedFuncList),\
+        f"{funcId}, {len(self._indexedFuncList)}"
       return self._indexedFuncList[funcId]
+    elif varName:
+      funcName = irConv.extractFuncName(varName)
+      assert funcName, f"{varName}"
+
     raise ValueError(f"{funcName}, {funcId}")
+
 
 
   def filterAwayCalleesWithNoBody(self,
@@ -2063,7 +2072,7 @@ class TranslationUnit:
     for node in callSiteNodes:
       callE = instr.getCallExpr(node.insn)
       assert callE is not None, f"{node}"
-      func = self.getFunctionObj(callE.callee.name)
+      func = self.getFuncObj(callE.callee.name)
       if func.hasBody():
         # only add nodes with calls to functions which have body!
         newNodeList.append(node)

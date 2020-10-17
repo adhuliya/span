@@ -334,8 +334,11 @@ class OverallL(DataLT):
       name: str = "",
   ) -> None:
     super().__init__(func, val, top, bot)
+    if not (self.top or self.bot) and self.isDefaultValBot(): # safety check
+      assert val is not None
     self.val: Opt[Dict[types.VarNameT, ComponentL]] = val
-    assert componentL is not ComponentL, f"{func} {name}"
+    assert componentL is not ComponentL,\
+      f"Analysis should subclass dfv.ComponentL. Details: {func} {name}"
     self.componentTop = componentL(self.func, top=True)
     self.componentBot = componentL(self.func, bot=True)
     self.name = name
@@ -344,49 +347,44 @@ class OverallL(DataLT):
   def meet(self, other) -> Tuple['OverallL', ChangedT]:
     assert isinstance(other, OverallL), f"{other}"
 
-    tup = basicMeetOp(self, other)
-    if tup:
-      return tup
-    elif self.val == other.val:
-      return self, not Changed
+    tup = self.basicMeetOp(other)
+    if tup: return tup
+
+    # take meet of individual entities (variables)
+    meet_val: Dict[types.VarNameT, ComponentL] = {}
+    vNames = set(self.val.keys())
+    vNames.update(other.val.keys())
+    selfValGet, otherValGet = self.val.get, other.val.get
+    for vName in vNames:
+      defaultVal = self.getDefaultVal(vName)
+      dfv1: ComponentL = selfValGet(vName, defaultVal)
+      dfv2: ComponentL = otherValGet(vName, defaultVal)
+      dfv3, _ = dfv1.meet(dfv2)
+      if not dfv3 == defaultVal:
+        meet_val[vName] = dfv3
+
+    if meet_val:
+      value = self.__class__(self.func, val=meet_val)
+    elif self.isDefaultValBot():
+      value = self.__class__(self.func, bot=True)
     else:
-      # take meet of individual entities (variables)
-      meet_val: Dict[types.VarNameT, ComponentL] = {}
-      vNames = set(self.val.keys())
-      vNames.update(other.val.keys())
-      bot = self.componentBot
-      selfValGet, otherValGet = self.val.get, other.val.get
-      for vName in vNames:
-        dfv1: ComponentL = selfValGet(vName, bot)
-        if dfv1.bot: continue  # do not store bot, as it is the default
-        dfv2: ComponentL = otherValGet(vName, bot)
-        if dfv2.bot: continue  # do not store bot, as it is the default
-        dfv3, _ = dfv1.meet(dfv2)
-        if not dfv3.bot:
-          meet_val[vName] = dfv3
+      value = self.__class__(self.func, val=None)
 
-      if meet_val:
-        value = self.__class__(self.func, val=meet_val)
-      else:
-        value = self.__class__(self.func, bot=True)
-
-      return value, Changed
+    return value, Changed
 
 
   def __lt__(self,
       other: 'OverallL'
   ) -> bool:
-    lt = basicLessThanTest(self, other)
+    lt = self.basicLessThanTest(other)
     if lt is not None: return lt
 
-    assert self.val and other.val, f"{self}, {other}"
     vNames = set(self.val.keys())
     vNames.update(other.val.keys())
-    bot = self.componentBot
+    default = self.getDefaultVal()
     selfValGet, otherValGet = self.val.get, other.val.get
     for vName in vNames:
-      dfv1 = selfValGet(vName, bot)
-      dfv2 = otherValGet(vName, bot)
+      dfv1, dfv2 = selfValGet(vName, default), otherValGet(vName, default)
       if not dfv1 < dfv2: return False
     return True
 
@@ -396,26 +394,42 @@ class OverallL(DataLT):
     if not isinstance(other, self.__class__):
       return NotImplemented
 
-    equal = basicEqualTest(self, other)
+    equal = self.basicEqualTest(other)
     if equal is not None: return equal
 
-    # self and other are proper values
-    assert self.val and other.val, f"{self.val}, {other.val}"
     vNames = set(self.val.keys())
     vNames.update(other.val.keys())
-    bot = self.componentBot
+    default = self.getDefaultVal()
     selfGetVal, otherGetVal = self.val.get, other.val.get
     for vName in vNames:
-      dfv1 = selfGetVal(vName, bot)
-      dfv2 = otherGetVal(vName, bot)
+      dfv1, dfv2 = selfGetVal(vName, default), otherGetVal(vName, default)
       if not dfv1 == dfv2: return False
     return True
 
 
   def __hash__(self):
-    val = {} if self.val is None else self.val
-    hashThisVal = frozenset(val.items())
-    return hash((self.func, hashThisVal, self.top, self.bot))
+    hashThisVal = None if self.val is None else frozenset(self.val.items())
+    return hash((self.func, hashThisVal, self.top)) # , self.bot))
+
+
+  def isDefaultValBot(self):
+    return self.componentBot == self.getDefaultVal()
+
+
+  def getDefaultVal(self,
+      varName: Opt[types.VarNameT] = None  # None default is important
+  ) -> Opt[ComponentL]:
+    """Default value when a variable is not present in the map.
+    Override this function if the default implementation is not suitable.
+    """
+    return self.componentBot
+
+
+  def isDefaultVal(self,
+      val: ComponentL,
+      varName: types.VarNameT,
+  ) -> bool:
+    return val == self.getDefaultVal(varName)
 
 
   def getVal(self,
@@ -425,7 +439,7 @@ class OverallL(DataLT):
     if self.top: return self.componentTop
     if self.bot: return self.componentBot
     assert self.val, f"{self}"
-    return self.val.get(varName, self.componentBot)
+    return self.val.get(varName, self.getDefaultVal(varName))
 
 
   def setVal(self,

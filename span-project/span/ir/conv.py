@@ -105,8 +105,11 @@ memAllocFunctions = {
 
 TRANSFORM_INFO_FILE_NAME = "{cFileName}.span.trinfo"
 
+GLOBAL_INITS_FUNC_ID = 0
+"""Function id of the artificial global inits function."""
+
 GLOBAL_INITS_FUNC_NAME = "f:1_global_inits"
-"""All global declarations go into this special function."""
+"""All global declarations go into this artificial function."""
 
 NAME_SEP = ":"
 """The top level separator used in object names."""
@@ -224,8 +227,49 @@ def getNullvarName() -> str:
   return NULL_OBJ_NAME
 
 
+def extractFuncName(varName: types.VarNameT) -> Opt[types.FuncNameT]:
+  assert isCorrectNameFormat(varName), f"Wrong variable name format: {varName}"
+  if isLocalVarName(varName):
+    bareFuncName = varName.split[:][1]
+    canonicalizeFuncName(bareFuncName)
+  return None
+
+
 def isGlobalName(name: str):
   return name.startswith("g:")
+
+
+def isCorrectNameFormat(name: str) -> bool:
+  """
+  Returns true if the name is a valid
+  1. Global Variable Name
+  2. Local Variable Name
+  3. Function Name
+  4. Record Name
+  """
+  colonCount = name.count(NAME_SEP)
+  colonCount3 = colonCount > 2
+  if colonCount3: return False  # no name has more than two colons
+
+  colonCount1 = colonCount == 1
+  if isGlobalName(name): return colonCount1
+  if isFuncName(name): return colonCount1
+  if isRecordName(name): return colonCount1
+  if isLocalVarName(name): return colonCount == 2
+
+  assert False, f"Unknown name: {name}"
+
+
+def isRecordName(recordName: types.RecordNameT) -> bool:
+  return bool(RECORD_NAME_REGEX.fullmatch(recordName))
+
+
+def isLocalVarName(varName: types.VarNameT) -> bool:
+  """Returns true if varName's format is valid for a local var."""
+  colonCount = varName.count(NAME_SEP)
+  if varName.startswith("v:"):
+    return colonCount == 2
+  return False
 
 
 def isNullvarName(name: str) -> bool:
@@ -317,19 +361,8 @@ def extractOriginalFuncName(funcName: str) -> types.FuncNameT:
   return simplifyName(funcName)
 
 
-def extractFuncName(varName: types.VarNameT) -> Opt[types.FuncNameT]:
-  """Given a name 'v:main:b' it returns just the function name.
-  For global variables it returns None."""
-  funcName: Opt[types.FuncNameT] = None
-  stringList = varName.split(NAME_SEP)
-  if len(stringList) == 3:
-    # thus the name is of type v:func:varname
-    funcName = canonicalizeFuncName(stringList[1])
-  return funcName
-
-
 def genLocalName(funcName: str, varName: str):
-  if ":" in varName:
+  if NAME_SEP in varName:
     return varName
   simpleFuncName = simplifyName(funcName)
   simpleVarName = simplifyName(varName)
@@ -337,7 +370,7 @@ def genLocalName(funcName: str, varName: str):
 
 
 def genGlobalName(varName: str):
-  if ":" in varName:
+  if NAME_SEP in varName:
     return varName
   return f"g:{varName}"
 
@@ -373,6 +406,5 @@ def getNodeId(funcNodeId: types.FuncNodeIdT):
 ################################################
 # BOUND END  : system_wide_assumption_based_utilities
 ################################################
-
 
 

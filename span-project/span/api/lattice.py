@@ -110,8 +110,8 @@ class DataLT(LatticeLT):
   ) -> None:
     if self.__class__.__name__.endswith("T"): raise TypeError()
     super().__init__(top, bot)
-    if not (self.top or self.bot):  # safety check
-      assert val is not None
+    # if not (self.top or self.bot):  # safety check (moved to subclasses)
+    #   assert val is not None
     self.func = func
     self.val = val
     if self.top or self.bot:  # top and bot get priority
@@ -130,6 +130,40 @@ class DataLT(LatticeLT):
       (Lattice, ChangedT): glb of self and dfv, and 'Changed' if glb != self
     """
     raise NotImplementedError()
+
+
+  def basicMeetOp(self, other: types.T) -> Opt[Tuple[types.T, ChangedT]]:
+    assert self.__class__ == other.__class__, f"{self}, {other}"
+    tup = basicMeetOp(self, other)
+    if tup: return tup
+
+    assert self.val and other.val, f"self: {self.val}, other: {other.val}"
+    return None  # can't compute
+
+
+  def basicLessThanTest(self, other: 'DataLT') -> Opt[bool]:
+    """A basic less than test common to all lattices.
+    If this fails the lattices can do more complicated tests.
+    This function does some common assertion tests to ensure correctness.
+    """
+    assert self.__class__ == other.__class__, f"{self}, {other}"
+    lt = basicLessThanTest(self, other)
+    if lt is not None: return lt
+
+    assert self.val and other.val, f"{self}, {other}"
+    return None  # i.e. can't decide
+
+
+  def basicEqualTest(self, other: 'DataLT') -> Opt[bool]:
+    """A basic equality test common to all lattices.
+    If this fails the lattices can do more complicated tests.
+    """
+    assert self.__class__ == other.__class__, f"{self}, {other}"
+    equal = basicEqualTest(self, other)
+    if equal is not None: return equal
+
+    assert self.val and other.val, f"{self}, {other}"
+    return None  # i.e. can't decide
 
 
   def __lt__(self, other):
@@ -181,6 +215,8 @@ def basicMeetOp(first: types.T, second: types.T) -> Opt[Tuple[types.T, ChangedT]
   if second.top: return first, not Changed
   if second.bot: return second, Changed
   if first.top: return second, Changed
+  if first < second: return first, not Changed
+  if second < first: return second, Changed
   return None  # i.e. can't compute
 
 

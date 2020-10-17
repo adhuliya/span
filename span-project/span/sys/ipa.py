@@ -134,7 +134,7 @@ class IpaHost:
       analysisSeq: Opt[List[List[AnalysisNameT]]] = None,  # for cascading/lerner
       disableAllSim: bool = False,
   ) -> None:
-    if tUnit is None or not tUnit.getFunctionObj(entryFunc):
+    if tUnit is None or not tUnit.getFuncObj(entryFunc):
       raise ValueError(f"No {entryFunc} in translation unit {tUnit.name}.")
 
     self.tUnit = tUnit
@@ -321,7 +321,7 @@ class IpaHost:
       funcName: FuncNameT,
       bi: Dict[AnalysisNameT, NodeDfvL],
   ) -> Dict[AnalysisNameT, NodeDfvL]:
-    func = self.tUnit.getFunctionObj(funcName)
+    func = self.tUnit.getFuncObj(funcName)
     newBi = {}
 
     for anName, nDfv in bi.items():
@@ -350,7 +350,7 @@ class IpaHost:
   ) -> Host:
     """Create an instance of Host for the given function"""
 
-    func = self.tUnit.getFunctionObj(funcName)
+    func = self.tUnit.getFuncObj(funcName)
 
     return Host(
       func=func,
@@ -386,7 +386,7 @@ class IpaHost:
 
   def printFinalResults(self):
     for funcName, res in self.finalResult.items():
-      func = self.tUnit.getFunctionObj(funcName)
+      func = self.tUnit.getFuncObj(funcName)
       print("\nFunction:", funcName, "TUnit:", self.tUnit.name, "*****")
       for anName, anRes in res.items():
         print(anName, ":")

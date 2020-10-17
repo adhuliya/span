@@ -920,7 +920,7 @@ class Host:
     callE = instr.getCallExpr(insn)
     calleeFuncName = callE.getCalleeFuncName() if callE else None
     if calleeFuncName:
-      func = self.tUnit.getFunctionObj(calleeFuncName)
+      func = self.tUnit.getFuncObj(calleeFuncName)
       if func.canBeAnalyzed():
         # Inter-procedural analysis does not process the instructions with call
         # currently: function pointer based calls are handled intra-procedurally

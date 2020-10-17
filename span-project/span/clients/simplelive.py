@@ -18,8 +18,7 @@ import span.ir.ir as ir
 
 from span.api.lattice import DataLT
 from span.api.dfv import NodeDfvL
-import span.api.sim as sim
-import span.api.analysis as analysis
+from span.api.analysis import AnalysisAT, BackwardD, SimPending, SimFailed
 
 ################################################
 # BOUND START: LiveVars lattice
@@ -37,16 +36,16 @@ from .stronglive import Live, Dead, OverallL
 # BOUND START: LiveVars analysis
 ################################################
 
-class LiveVarsA(analysis.AnalysisAT):
+class LiveVarsA(AnalysisAT):
   """Simple Live Variables Analysis."""
   # liveness lattice
   L: type = OverallL
-  D: type = analysis.BackwardD
+  D: type = BackwardD
   # blocking expression methods
-  simNeeded: List[Callable] = [sim.SimAT.Deref__to__Vars,
-                           sim.SimAT.Cond__to__UnCond,
-                           sim.SimAT.Node__to__Nil,
-                           ]
+  simNeeded: List[Callable] = [AnalysisAT.Deref__to__Vars,
+                               AnalysisAT.Cond__to__UnCond,
+                               AnalysisAT.Node__to__Nil,
+                              ]
 
 
   def __init__(self,
@@ -499,13 +498,15 @@ class LiveVarsA(analysis.AnalysisAT):
   def LhsVar__to__Nil(self,
       e: expr.VarE,
       nodeDfv: Opt[NodeDfvL] = None,
-  ) -> sim.SimToLiveL:
-    if not nodeDfv:
-      return sim.SimToLivePending
+      values: Opt[Set[types.VarNameT]] = None,
+  ) -> Opt[Set[types.VarNameT]]:
+    if nodeDfv is None:
+      return SimPending
+
     dfvOut = nodeDfv.dfvOut
-    if dfvOut.top: return sim.SimToLivePending
-    if dfvOut.bot: return sim.SimToLiveFailed
-    return sim.SimToLiveL(dfvOut.val)  # return the set of variables live
+    if dfvOut.top: return SimPending
+    if dfvOut.bot: return SimFailed
+    return dfvOut.val  # return the set of variables live
 
 
   def processLhsRhs(self,
