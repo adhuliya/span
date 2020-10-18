@@ -13,7 +13,7 @@ This (and every) analysis subclasses,
 import logging
 LOG = logging.getLogger("span")
 
-from typing import Tuple, Dict, List, Optional as Opt, Set
+from typing import Tuple, Dict, List, Optional as Opt, Set, Callable, cast
 import io
 
 import span.util.util as util
@@ -30,10 +30,13 @@ import span.ir.constructs as constructs
 from span.api.lattice import (ChangedT, Changed, DataLT,
                               basicLessThanTest, basicEqualTest)
 import span.api.dfv as dfv
+from span.api.dfv import NodeDfvL
 import span.api.analysis as analysis
+from span.api.analysis import AnalysisAT, ValueAnalysisAT, ForwardD
 from span.ir.conv import (simplifyName, isCorrectNameFormat, genFuncNodeId,
-                          GLOBAL_INITS_FUNC_ID)
+                          GLOBAL_INITS_FUNC_ID, isGlobalName, )
 
+GLOBAL_INITS_FNID = genFuncNodeId(GLOBAL_INITS_FUNC_ID, 1)  # initialized global
 
 ################################################
 # BOUND START: ReachingDef lattice.
@@ -148,20 +151,23 @@ class OverallL(dfv.OverallL):
   def getDefaultVal(self,
       varName: Opt[types.VarNameT] = None
   ) -> Opt[ComponentL]:
-    if varName is None: return None
+    if varName is None: return None # None tells default is not Top/Bot
 
     assert isCorrectNameFormat(varName), f"{varName}"
-    if self.func.isParamName(varName):
+    func = self.func
+    if func.isParamName(varName):
       # this default value is only used in intra-procedural analysis
       # in inter-procedural analysis, params are defined in the caller,
       # and only in case of main() function this is useful.
-      fNid = genFuncNodeId(self.func.id, 1)  # node 1 is always NopI()
-    elif self.func.isLocalName(varName):
-      fNid = genFuncNodeId(self.func.id, 0)  # i.e. uninitialized
-    else:
-      # assume a global variable ("g:..." or an address taken global)
-      fNid = genFuncNodeId(GLOBAL_INITS_FUNC_ID, 1)  # initialized global
-    return ComponentL(self.func, val={fNid})
+      fNid = genFuncNodeId(func.id, 1)  # as node 1 is always NopI()
+    elif func.isLocalName(varName):
+      fNid = genFuncNodeId(func.id, 0)  # i.e. uninitialized
+    elif isGlobalName(varName):
+      fNid = GLOBAL_INITS_FNID
+    else: # assume an address taken global
+      fNid = GLOBAL_INITS_FNID
+    return ComponentL(func, val={fNid})
+
 
 
   def getAllVars(self) -> Set[types.VarNameT]:
@@ -176,3 +182,231 @@ class OverallL(dfv.OverallL):
 # BOUND END  : ReachingDef lattice.
 ################################################
 
+################################################
+# BOUND START: ReachingDef_Analysis
+################################################
+
+class ReachingDefA(AnalysisAT):
+  """Constant Propagation Analysis."""
+  __slots__ : List[str] = []
+  L: type = OverallL  # the lattice used
+  D: type = ForwardD  # its a forward flow analysis
+  simNeeded: List[Callable] = [AnalysisAT.Deref__to__Vars,
+                               AnalysisAT.LhsVar__to__Nil,
+                               AnalysisAT.Cond__to__UnCond,
+                               #AnalysisAT.Node__to__Nil,
+                               ]
+
+
+  def __init__(self,
+      func: constructs.Func,
+  ) -> None:
+    super().__init__(func)
+    # self.componentTop: dfv.ComponentL = componentL(self.func, top=True)
+    # self.componentBot: dfv.ComponentL = componentL(self.func, bot=True)
+    self.overallTop: OverallL = OverallL(self.func, top=True)
+    self.overallBot: OverallL = OverallL(self.func, bot=True)
+
+
+  def needsRhsDerefSim(self):
+    """No need for rhs dereference simplification"""
+    return False
+
+
+  ################################################
+  # BOUND START: Special_Instructions
+  ################################################
+  def Filter_Instr(self,
+      nodeId: types.NodeIdT,
+      insn: instr.FilterI,
+      nodeDfv: NodeDfvL
+  ) -> NodeDfvL:
+    return dfv.Filter_Vars(self.func, insn.varNames, nodeDfv)
+
+
+  def UnDefVal_Instr(self,
+      nodeId: types.NodeIdT,
+      insn: instr.UnDefValI,
+      nodeDfv: NodeDfvL
+  ) -> NodeDfvL:
+    func = self.func
+    newOut = dfvIn = cast(OverallL, nodeDfv.dfvIn)
+    fNid = genFuncNodeId(func.id, nodeId)
+    val, varName = ComponentL(func, val={fNid}), insn.lhsName
+    if val != dfvIn.getVal(varName):
+      newOut = dfvIn.getCopy()
+      newOut.setVal(varName, val)
+    return NodeDfvL(dfvIn, newOut)
+
+
+  ################################################
+  # BOUND END  : Special_Instructions
+  ################################################
+
+  ################################################
+  # BOUND START: Normal_Instructions
+  ################################################
+
+  def Num_Assign_Instr(self,
+      nodeId: types.NodeIdT,
+      insn: instr.AssignI,
+      nodeDfv: NodeDfvL
+  ) -> NodeDfvL:
+    """Instr_Form: numeric: lhs = rhs.
+    Convention:
+      Type of lhs and rhs is numeric.
+    """
+    return self.processLhs(nodeId, insn, nodeDfv)
+
+
+  def Ptr_Assign_Instr(self,
+      nodeId: types.NodeIdT,
+      insn: instr.AssignI,
+      nodeDfv: NodeDfvL
+  ) -> NodeDfvL:
+    """Instr_Form: pointer: lhs = rhs.
+    Convention:
+      Type of lhs and rhs is a record.
+    """
+    return self.processLhs(nodeId, insn, nodeDfv)
+
+
+  def Record_Assign_Instr(self,
+      nodeId: types.NodeIdT,
+      insn: instr.AssignI,
+      nodeDfv: NodeDfvL
+  ) -> NodeDfvL:
+    """Instr_Form: record: lhs = rhs.
+    Convention:
+      Type of lhs and rhs is a record.
+    """
+    return self.processLhs(nodeId, insn, nodeDfv)
+
+
+  ################################################
+  # BOUND END  : Normal_Instructions
+  ################################################
+
+  ################################################
+  # BOUND START: Helper_Functions
+  ################################################
+
+  def processLhs(self,
+      nodeId: types.NodeIdT,
+      insn: instr.AssignI,
+      nodeDfv: NodeDfvL
+  ) -> NodeDfvL:
+    """A common function to handle various assignment instructions.
+    This is a common function to all the value analyses.
+    """
+    lhs, rhs = insn.lhs, insn.rhs
+    dfvIn = nodeDfv.dfvIn
+    assert isinstance(dfvIn, OverallL), f"{type(dfvIn)}"
+    if LS: LOG.debug("ProcessingAssignInstr: %s, iType: %s",
+                     insn, insn.type)
+
+    lhsType = lhs.type
+    dfvInGetVal = cast(Callable[[types.VarNameT], dfv.ComponentL], dfvIn.getVal)
+    outDfvValues: Dict[types.VarNameT, dfv.ComponentL] = {}
+
+    if isinstance(lhsType, types.RecordT):
+      outDfvValues = self.processLhsRecordType(nodeId, lhs, dfvInGetVal)
+    else:
+      func = self.func
+      lhsVarNames = ir.getExprLValueNames(func, lhs)
+      assert len(lhsVarNames) >= 1, f"{lhs}: {lhsVarNames}"
+      mustUpdate = len(lhsVarNames) == 1
+
+      rhsDfv = ComponentL(func, val={genFuncNodeId(func.id, nodeId)})
+      if LS: LOG.debug("RhsDfvOfExpr: '%s' is %s, lhsVarNames are %s",
+                       rhs, rhsDfv, lhsVarNames)
+
+      for name in lhsVarNames: # loop enters only once if mustUpdate == True
+        newVal, oldVal = rhsDfv, dfvInGetVal(name)
+        if not mustUpdate or ir.nameHasArray(func, name):
+          newVal, _ = oldVal.meet(newVal) # do a may update
+        if newVal != oldVal:
+          outDfvValues[name] = newVal
+
+    if isinstance(rhs, expr.CallE):
+      outDfvValues.update(self.processCallE(nodeId, rhs, dfvIn))
+    nDfv = self.genNodeDfvL(outDfvValues, nodeDfv)
+    return nDfv
+
+
+  def processLhsRecordType(self,
+      nodeId: types.NodeIdT,
+      insn: instr.AssignI,
+      dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
+  ) -> Dict[types.VarNameT, dfv.ComponentL]:
+    """Processes assignment instruction with RecordT"""
+    lhs, rhs, iType, func = insn.lhs, insn.rhs, insn.type, self.func
+    assert isinstance(iType, types.RecordT), f"{lhs}, {rhs}: {iType}"
+
+    allMemberInfo = iType.getNamesOfType(None)
+
+    lhsVarNames = ir.getExprLValueNames(func, lhs)
+    assert len(lhsVarNames) >= 1, f"{lhs}: {lhsVarNames}"
+    mustUpdate: bool = len(lhsVarNames) == 1
+
+    val = ComponentL(func, val={genFuncNodeId(func.id, nodeId)})
+
+    outDfvValues: Dict[types.VarNameT, dfv.ComponentL] = {}
+    for memberInfo in allMemberInfo:
+      memName = memberInfo.name
+      for lhsName in lhsVarNames:
+        fullMemName = f"{lhsName}.{memName}"
+        for name in (lhsName, fullMemName): # handle both names
+          newVal, oldVal = val, dfvInGetVal(name)
+          if not mustUpdate or ir.nameHasArray(func, name):
+            newVal, _ = oldVal.meet(newVal) # do a may update
+          if newVal != oldVal:
+            outDfvValues[name] = newVal
+
+    return outDfvValues
+
+
+  def genNodeDfvL(self,
+      outDfvValues: Dict[types.VarNameT, dfv.ComponentL],
+      nodeDfv: NodeDfvL,
+  ) -> NodeDfvL:
+    """A convenience function to create and return the NodeDfvL."""
+    dfvIn = newOut = nodeDfv.dfvIn
+    if outDfvValues:
+      newOut = cast(dfv.OverallL, dfvIn.getCopy())
+      newOutSetVal = newOut.setVal
+      for name, val in outDfvValues.items():
+        newOutSetVal(name, val)
+    return NodeDfvL(dfvIn, newOut)
+
+
+  def processCallE(self,
+      nodeId: types.NodeIdT,
+      e: expr.ExprET,
+      dfvIn: DataLT,
+  ) -> Dict[types.VarNameT, dfv.ComponentL]:
+    assert isinstance(e, expr.CallE), f"{e}"
+    assert isinstance(dfvIn, dfv.OverallL), f"{type(dfvIn)}"
+
+    func = self.func
+    names = ir.getNamesPossiblyModifiedInCallExpr(func, e)
+
+    val = ComponentL(func, val={genFuncNodeId(func.id, nodeId)})
+    dfvInGetVal = dfvIn.getVal
+    outDfvValues: Dict[types.VarNameT, dfv.ComponentL] = {}
+    for name in names:
+      oldVal = dfvInGetVal(name)
+      newVal, _ = oldVal.meet(val) # do a may update
+      if newVal != oldVal:
+        outDfvValues[name] = newVal
+
+    return outDfvValues
+
+
+  ################################################
+  # BOUND END  : Helper_Functions
+  ################################################
+
+################################################
+# BOUND END  : ReachingDef_Analysis
+################################################

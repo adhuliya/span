@@ -20,7 +20,7 @@ from span.api.lattice import\
 from span.util.util import AS
 import span.ir.constructs as constructs
 import span.ir.types as types
-import span.ir.conv as irConv
+from span.ir.conv import simplifyName
 import span.ir.ir as ir
 import itertools
 
@@ -552,8 +552,7 @@ class OverallL(DataLT):
     for key in self.val:
       if prefix: string.write(prefix)
       prefix = ", "
-      name = irConv.simplifyName(key)
-      string.write(f"{name}: {self.val[key]}")
+      string.write(f"{simplifyName(key)}: {self.val[key]}")
     string.write("}")
     return string.getvalue()
 
@@ -615,7 +614,7 @@ def getBoundaryInfoIpa(
 def Filter_Vars(
     func: constructs.Func,
     varNames: Set[types.VarNameT],
-    nodeDfv: NodeDfvL
+    nodeDfv: NodeDfvL  # must contain an OverallL
 ) -> NodeDfvL:
   dfvIn = cast(OverallL, nodeDfv.dfvIn)
 

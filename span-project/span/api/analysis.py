@@ -708,6 +708,16 @@ class AnalysisAT:
     self.overallBot = self.L(func, bot=True)  # L is callable. pylint: disable=E
 
 
+  def needsRhsDerefSim(self):
+    """Override this function if RHS deref is not needed."""
+    return True
+
+
+  def needsLhsDerefSim(self):
+    """Override this function if LHS deref is not needed."""
+    return True
+
+
   def Default_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.InstrIT,
@@ -1835,7 +1845,8 @@ class ValueAnalysisAT(AnalysisAT):
       outDfvValues = self.processLhsRhsRecordType(lhs, rhs, dfvInGetVal)
 
     elif self.isAcceptedType(lhsType):
-      lhsVarNames = getExprLValueNames(self.func, lhs)
+      func = self.func
+      lhsVarNames = getExprLValueNames(func, lhs)
       assert len(lhsVarNames) >= 1, f"{lhs}: {lhsVarNames}"
       mustUpdate = len(lhsVarNames) == 1
 
@@ -1843,14 +1854,11 @@ class ValueAnalysisAT(AnalysisAT):
       if LS: LOG.debug("RhsDfvOfExpr: '%s' is %s, lhsVarNames are %s",
                        rhs, rhsDfv, lhsVarNames)
 
-      for name in lhsVarNames:
-        # this loop enters only once if mustUpdate == True
-        newVal = rhsDfv
-        if not mustUpdate or nameHasArray(self.func, name):
-          # do may updates
-          oldVal = dfvInGetVal(name)
-          newVal, _ = oldVal.meet(newVal)
-        if dfvInGetVal(name) != newVal:
+      for name in lhsVarNames: # loop enters only once if mustUpdate == True
+        newVal, oldVal = rhsDfv, dfvInGetVal(name)
+        if not mustUpdate or nameHasArray(func, name):
+          newVal, _ = oldVal.meet(newVal) # do a may update
+        if newVal != oldVal:
           outDfvValues[name] = newVal
 
     if isinstance(rhs, expr.CallE):
@@ -1908,7 +1916,7 @@ class ValueAnalysisAT(AnalysisAT):
             rhsDfv = self.componentBot
           fullLhsVarName = f"{lhsName}.{memName}"
           oldLhsDfv = dfvInGetVal(fullLhsVarName)
-          if not strongUpdate:
+          if not strongUpdate or nameHasArray(self.func, fullLhsVarName):
             rhsDfv, _ = oldLhsDfv.meet(rhsDfv)
           if oldLhsDfv != rhsDfv:
             outDfvValues[fullLhsVarName] = rhsDfv

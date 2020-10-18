@@ -977,13 +977,13 @@ class Host:
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
-      if insn.needsLhsDerefSim(): # dereference can be simplified
+      if insn.needsLhsDerefSim() and activeAnObj.needsLhsDerefSim():
         assert isinstance(insn, instr.AssignI), f"{node.id}: {insn}"
         nDfv = self.handleLhsDerefSim(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
-      if insn.needsRhsDerefSim(): # dereference can be simplified
+      if insn.needsRhsDerefSim() and activeAnObj.needsRhsDerefSim():
         assert isinstance(insn, instr.AssignI), f"{node.id}: {insn}"
         nDfv = self.handleRhsDerefSim(node, insn, nodeDfv)
         if nDfv is not None: return nDfv

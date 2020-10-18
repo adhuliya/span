@@ -15,6 +15,7 @@ LOG = logging.getLogger("span")
 from typing import Optional as Opt, Set, List
 from span.util.util import LS
 import re
+import functools
 
 from . import types
 
@@ -386,6 +387,7 @@ def setNodeSiteBits(totalFuncs: int, maxCfgNodesInAFunction: int):
              NodeSiteTotalBitLen)
 
 
+#@functools.lru_cache(500)
 def genFuncNodeId(
     funcId: types.FuncIdT,
     nid: types.NodeIdT,
