@@ -335,13 +335,13 @@ class OverallL(DataLT):
       name: str = "",
   ) -> None:
     super().__init__(func, val, top, bot)
+    self.componentTop = componentL(self.func, top=True)
+    self.componentBot = componentL(self.func, bot=True)
     if not (self.top or self.bot) and self.isDefaultValBot(): # safety check
       assert val is not None, f"{func}, {val}, {top}, {bot}"
     self.val: Opt[Dict[types.VarNameT, ComponentL]] = val
     assert componentL is not ComponentL,\
       f"Analysis should subclass dfv.ComponentL. Details: {func} {name}"
-    self.componentTop = componentL(self.func, top=True)
-    self.componentBot = componentL(self.func, bot=True)
     self.name = name
 
 

@@ -31,8 +31,8 @@ from span.api.lattice import (ChangedT, Changed, DataLT,
                               basicLessThanTest, basicEqualTest)
 import span.api.dfv as dfv
 import span.api.analysis as analysis
-from span.ir.conv import simplifyName
-import span.ir.conv as irConv
+from span.ir.conv import (simplifyName, isCorrectNameFormat, genFuncNodeId,
+                          GLOBAL_INITS_FUNC_ID)
 
 
 ################################################
@@ -150,17 +150,17 @@ class OverallL(dfv.OverallL):
   ) -> Opt[ComponentL]:
     if varName is None: return None
 
-    assert irConv.isCorrectNameFormat(varName), f"{varName}"
+    assert isCorrectNameFormat(varName), f"{varName}"
     if self.func.isParamName(varName):
       # this default value is only used in intra-procedural analysis
       # in inter-procedural analysis, params are defined in the caller,
       # and only in case of main() function this is useful.
-      fNid = irConv.genFuncNodeId(self.func.id, 1)  # node 1 is always NopI()
+      fNid = genFuncNodeId(self.func.id, 1)  # node 1 is always NopI()
     elif self.func.isLocalName(varName):
-      fNid = irConv.genFuncNodeId(self.func.id, 0)  # i.e. uninitialized
+      fNid = genFuncNodeId(self.func.id, 0)  # i.e. uninitialized
     else:
-      # assume as a global variable (either "g:..." or address taken var)
-      fNid = irConv.genFuncNodeId(irConv.GLOBAL_INITS_FUNC_ID, 0)
+      # assume a global variable ("g:..." or an address taken global)
+      fNid = genFuncNodeId(GLOBAL_INITS_FUNC_ID, 1)  # initialized global
     return ComponentL(self.func, val={fNid})
 
 
@@ -170,7 +170,6 @@ class OverallL(dfv.OverallL):
     than numeric.
     """
     return ir.getNamesEnv(self.func)
-
 
 
 ################################################

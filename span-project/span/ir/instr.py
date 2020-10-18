@@ -141,7 +141,7 @@ class InstrIT:
 
 
   def __hash__(self) -> int:
-    return hash(self.instrCode) + hash(self.type)
+    return hash((self.instrCode, self.type))
 
 
 class AssignI(InstrIT):
@@ -183,7 +183,7 @@ class AssignI(InstrIT):
 
   def needsRhsNumBinaryExprSim(self) -> bool: return self.rhs.needsNumBinarySim()
 
-  def needsRhsNumUnaryExprSim(self) -> bool: return self.rhs.needsNumBinarySim()
+  def needsRhsNumUnaryExprSim(self) -> bool: return self.rhs.needsNumUnarySim()
 
   def needsRhsPtrCallSim(self) -> bool: return self.rhs.needsPtrCallSim()
 
@@ -825,6 +825,10 @@ class ExReadI(InstrIT):
     elif not self.info == other.info:
       equal = False
     return equal
+
+
+  def __hash__(self):
+    return hash((self.instrCode, frozenset(self.vars)))
 
 
   def __str__(self):
