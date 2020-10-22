@@ -443,8 +443,9 @@ class OverallL(DataLT):
     """returns entity lattice value."""
     if self.top: return self.componentTop
     if self.bot: return self.componentBot
-    assert self.val, f"{self}"
-    return self.val.get(varName, self.getDefaultVal(varName))
+    if self.getDefaultVal(): assert self.val, f"{self}"
+    defVal = self.getDefaultVal(varName)
+    return self.val.get(varName, defVal) if self.val else defVal
 
 
   def setVal(self,
@@ -545,15 +546,18 @@ class OverallL(DataLT):
     if self.top: return "Top"
     if self.bot: return "Bot"
 
-    assert self.val, f"{self.val}"
+    if self.getDefaultVal(): assert self.val, f"{self.val}"
     string = io.StringIO()
-    string.write("{")
-    prefix = None
-    for key in self.val:
-      if prefix: string.write(prefix)
-      prefix = ", "
-      string.write(f"{simplifyName(key)}: {self.val[key]}")
-    string.write("}")
+    if self.val:
+      string.write("{")
+      prefix = None
+      for key in self.val:
+        if prefix: string.write(prefix)
+        prefix = ", "
+        string.write(f"{simplifyName(key)}: {self.val[key]}")
+      string.write("}")
+    else:
+      string.write("Default")
     return string.getvalue()
 
 
@@ -583,7 +587,7 @@ class OverallL(DataLT):
 def getBoundaryInfoIpa(
     func: constructs.Func,
     nodeDfv: NodeDfvL,
-    componentBot: ComponentL,
+    getDefaultVal: Callable[[str], ComponentL],
     getAllVars: Callable[[], Set[types.VarNameT]],
 ) -> NodeDfvL:
   """Returns the IPA boundary info for the func.
@@ -600,13 +604,13 @@ def getBoundaryInfoIpa(
       value.func = func
     for key in list(dfvIn.val.keys()):
       if key not in vNames:
-        dfvIn.setVal(key, componentBot) # remove key
+        dfvIn.setVal(key, getDefaultVal(key)) # remove key
   if dfvOut.val:
     for value in dfvOut.val.values():
       value.func = func
     for key in list(dfvOut.val.keys()):
       if key not in vNames:
-        dfvOut.setVal(key, componentBot) # remove key
+        dfvOut.setVal(key, getDefaultVal(key)) # remove key
 
   return NodeDfvL(dfvIn, dfvOut)
 

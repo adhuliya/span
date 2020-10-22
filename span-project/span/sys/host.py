@@ -1039,7 +1039,7 @@ class Host:
       self.stats.instrAnTimer.start()
       if LS: LOG.debug("FinallyInvokingInstrFunc: %s.%s() on %s",
                        self.activeAnName, tFuncName, insn)
-      nDfv = transferFunc(node, insn, nodeDfv)  # type: ignore
+      nDfv = transferFunc(node.id, insn, nodeDfv)  # type: ignore
       self.stats.instrAnTimer.stop()
       return nDfv
 
@@ -1916,7 +1916,7 @@ class Host:
 
   def printOrLogResult(self):
     """prints the result of all analyses."""
-    print("Function:", self.func.name, "TUnit:", self.func.tUnit.name)
+    print(self.func, "TUnit:", self.func.tUnit.name)
     for anName, res in self.anWorkDict.items():
       print(anName, ":", self.anSimSuccessCount[anName])
 

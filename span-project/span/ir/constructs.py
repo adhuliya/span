@@ -16,7 +16,7 @@ import io
 from span.util.util import LS
 from span.ir.types import (StructNameT, UnionNameT, MemberNameT, FuncNameT, VarNameT,
                            EdgeLabelT, BasicBlockIdT, Void, ConstructT,
-                           Type, FuncSig, Info, Loc, LabelNameT, )
+                           Type, FuncSig, Info, Loc, LabelNameT, FuncIdT, )
 import span.ir.instr as instr
 from span.ir.instr import InstrIT, LabelI, GotoI, CondI, NopI, ReturnI
 from span.ir.conv import FalseEdge, TrueEdge, UnCondEdge, GLOBAL_INITS_FUNC_NAME
@@ -48,6 +48,7 @@ class Func(ConstructT):
       None,
       instrSeq: Opt[List[InstrIT]] = None,
       info: Opt[Info] = None,
+      id: FuncIdT = -1,
   ) -> None:
     self.name = name
     self.paramNames = paramNames if paramNames is not None else []
@@ -61,7 +62,7 @@ class Func(ConstructT):
     self.info = info
     self.cfg: Opt[graph.Cfg] = None  # initialized in TUnit class
     self.tUnit = None  # initialized to TranslationUnit object in span.ir.tunit
-    self.id: FuncNodeIdT = -1 # it is assigned a unique id
+    self.id: FuncNodeIdT = id # it is assigned a unique id
 
     if self.instrSeq:
       self.basicBlocks, self.bbEdges = self.genBasicBlocks(self.instrSeq)
@@ -104,6 +105,14 @@ class Func(ConstructT):
     funcName = conv.extractFuncName(varName)
     if not funcName: return False
     return funcName == self.name
+
+
+  def isParamName(self,
+      varName: VarNameT
+  ) -> bool:
+    if self.isLocalName(varName):
+      return varName in self.paramNames
+    return False
 
 
   @staticmethod
@@ -425,7 +434,7 @@ class Func(ConstructT):
 
 
   def __str__(self):
-    return f"constructs.Func({repr(self.name)})"
+    return f"Function({repr(self.name)}, id={self.id})"
 
 
   def __repr__(self):

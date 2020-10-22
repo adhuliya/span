@@ -19,6 +19,7 @@ from span.clients.evenodd import EvenOddA
 from span.clients.pointsto import PointsToA
 from span.clients.interval import IntervalA
 from span.clients.stronglive import StrongLiveVarsA
+from span.clients.reachingdef import ReachingDefA
 # from span.clients.simplelive import LiveVarsA
 # from span.clients.reach      import ReachA
 # from span.clients.range      import RangeA

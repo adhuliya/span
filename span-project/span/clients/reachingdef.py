@@ -33,8 +33,9 @@ import span.api.dfv as dfv
 from span.api.dfv import NodeDfvL
 import span.api.analysis as analysis
 from span.api.analysis import AnalysisAT, ValueAnalysisAT, ForwardD
-from span.ir.conv import (simplifyName, isCorrectNameFormat, genFuncNodeId,
-                          GLOBAL_INITS_FUNC_ID, isGlobalName, )
+from span.ir.conv import (simplifyName, isCorrectNameFormat, genFuncNodeId, getNodeId,
+                          GLOBAL_INITS_FUNC_ID, isGlobalName, getFuncNodeIdStr,
+                          getFuncId)
 
 GLOBAL_INITS_FNID = genFuncNodeId(GLOBAL_INITS_FUNC_ID, 1)  # initialized global
 
@@ -127,7 +128,18 @@ class ComponentL(DataLT):
   def __str__(self):
     if self.top: return "Top"
     if self.bot: return "Bot"
-    return f"{self.val}"
+    string = io.StringIO()
+    string.write("{")
+    prefix, funcId = "", self.func.id
+    for val in self.val:
+      # string.write(f"{getFuncNodeIdStr(val)}")
+      if getFuncId(val) == funcId:
+        string.write(f"{prefix}{getNodeId(val)}")
+      else:
+        string.write(f"{prefix}{getFuncNodeIdStr(val)}")
+      if not prefix: prefix = ", "
+    string.write("}")
+    return string.getvalue()
 
 
   def __repr__(self):
@@ -188,7 +200,7 @@ class OverallL(dfv.OverallL):
 
 class ReachingDefA(AnalysisAT):
   """Constant Propagation Analysis."""
-  __slots__ : List[str] = []
+  __slots__ : List[str] = ["defaultDfv"]
   L: type = OverallL  # the lattice used
   D: type = ForwardD  # its a forward flow analysis
   simNeeded: List[Callable] = [AnalysisAT.Deref__to__Vars,
@@ -206,12 +218,34 @@ class ReachingDefA(AnalysisAT):
     # self.componentBot: dfv.ComponentL = componentL(self.func, bot=True)
     self.overallTop: OverallL = OverallL(self.func, top=True)
     self.overallBot: OverallL = OverallL(self.func, bot=True)
+    self.defaultDfv: OverallL = OverallL(self.func, val=None)
 
 
   def needsRhsDerefSim(self):
     """No need for rhs dereference simplification"""
     return False
 
+
+  def getBoundaryInfo(self,
+      nodeDfv: Opt[NodeDfvL] = None,
+      ipa: bool = False,
+  ) -> NodeDfvL:
+    if ipa and not nodeDfv:
+      raise ValueError(f"{ipa}, {nodeDfv}")
+
+    inBi, outBi = self.defaultDfv, self.overallTop
+    getDefaultVal = self.overallTop.getDefaultVal
+    if ipa:
+      return dfv.getBoundaryInfoIpa(self.func, nodeDfv,
+                                    getDefaultVal, self.getAllVars)
+    if nodeDfv:
+      inBi, outBi = nodeDfv.dfvIn, nodeDfv.dfvOut
+    return NodeDfvL(inBi, outBi)  # good to create a copy
+
+
+  def getAllVars(self) -> Set[types.VarNameT]:
+    """Gets all the variables of the accepted type."""
+    return ir.getNamesEnv(self.func)
 
   ################################################
   # BOUND START: Special_Instructions

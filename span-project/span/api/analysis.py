@@ -1578,7 +1578,7 @@ class AnalysisAT:
   """
 
   def Node__to__Nil(self,
-      node: types.NodeIdT,
+      nodeId: types.NodeIdT,
       nodeDfv: Opt[NodeDfvL] = None,
       values: Opt[bool] = None,
   ) -> Opt[bool]:
@@ -1716,9 +1716,10 @@ class ValueAnalysisAT(AnalysisAT):
       raise ValueError(f"{ipa}, {nodeDfv}")
 
     inBi, outBi = self.overallBot, self.overallBot
+    getDefaultVal = self.overallTop.getDefaultVal
     if ipa:
       return dfv.getBoundaryInfoIpa(self.func, nodeDfv,
-                                    self.componentBot, self.getAllVars)
+                                    getDefaultVal, self.getAllVars)
     if nodeDfv:
       inBi, outBi = nodeDfv.dfvIn, nodeDfv.dfvOut
     return NodeDfvL(inBi, outBi)  # good to create a copy

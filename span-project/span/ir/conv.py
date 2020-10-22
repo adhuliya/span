@@ -231,7 +231,7 @@ def getNullvarName() -> str:
 def extractFuncName(varName: types.VarNameT) -> Opt[types.FuncNameT]:
   assert isCorrectNameFormat(varName), f"Wrong variable name format: {varName}"
   if isLocalVarName(varName):
-    bareFuncName = varName.split[:][1]
+    bareFuncName = varName.split(':')[1]
     canonicalizeFuncName(bareFuncName)
   return None
 
@@ -403,6 +403,12 @@ def getFuncId(funcNodeId: types.FuncNodeIdT):
 
 def getNodeId(funcNodeId: types.FuncNodeIdT):
   return funcNodeId & ((1 << NodeSiteNodeIdBitLen) - 1)
+
+
+def getFuncNodeIdStr(
+    fNid: types.FuncNodeIdT,
+) -> str:
+  return f"({getFuncId(fNid)}, {getNodeId(fNid)})"
 
 
 ################################################
