@@ -216,9 +216,19 @@ See the list of checkers available:
 ## Transformations Possible
 1. `if` statement simplification (`&& 0`, `|| 1`)
 2. Dead code elimination (`x = ...` to NopI)
-3. Relational expressions to `0` of `1`
+3. Relational expressions to `0` or `1`
 4. Pointer based function call to direct function call.
 5. Use Reaching Definitions to replace a variable with another.
+
+
+## TODOs
+0. Merged C files of all the (useful) benchmarks.
+1. List of (library) functions that don't result in over-approximation.
+2. improve malloc calls type approximation (DONE: needs testing)
+3. Cascading in IPA setting (for comparison).
+4. Transformation improvement.
+5. On-demand analysis invocation.
+
 
 <br /> <br /> <br />
 &copy; 2020 Anshuman Dhuliya

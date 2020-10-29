@@ -1259,13 +1259,8 @@ class TranslationUnit:
     self._funcPseudoCountMap[funcName] = currCount + 1
 
     nakedPvName = irConv.NAKED_PSEUDO_VAR_NAME.format(count=currCount)
-    pureFuncName = funcName.split(":")[1]
+    pureFuncName = irConv.simplifyName(funcName)
     pvName = f"v:{pureFuncName}:{nakedPvName}"
-
-    self.addVarNames(pvName, irConv.PSEUDO_VAR_TYPE(of=varType), True)
-
-    # self._nameInfoMap[pvName] = types.NameInfo(
-    #   pvName, types.PSEUDO_VAR_TYPE(of=varType))
 
     self._pseudoVars.add(pvName)
     if prevInsn is None:  # insn can never be None
@@ -1275,6 +1270,13 @@ class TranslationUnit:
       sizeExpr = self.getMemAllocSizeExpr(prevInsn)
       insns = [prevInsn, insn]
 
+    sizeVal = self.getMemAllocSizeExprValue(sizeExpr)
+    pvType = irConv.PSEUDO_VAR_TYPE(of=varType)
+    if sizeVal is not None:
+      if sizeVal == varType.bitSizeInBytes():
+        pvType = types.Ptr(varType)
+    self.addVarNames(pvName, pvType, True)
+
     pVarE = expr.PseudoVarE(pvName, info=info, insns=insns, sizeExpr=sizeExpr)
     pVarE.type = varType
 
@@ -1283,19 +1285,27 @@ class TranslationUnit:
 
   def getMemAllocSizeExpr(self, insn: instr.AssignI) -> expr.ExprET:
     """Returns the expression deciding the size of memory allocated."""
-    rhs = insn.rhs
-    assert isinstance(rhs, expr.CallE), f"{rhs}"
-    calleeName = rhs.callee.name
+    callE = instr.getCallExpr(insn)
+    assert callE, f"{insn}"
+    calleeName = callE.callee.name
 
     if calleeName == "f:malloc":
-      sizeExpr: expr.ExprET = rhs.args[0]  # the one and only argument is the size expr
+      sizeExpr: expr.ExprET = callE.args[0]  # the one and only argument is the size expr
     elif calleeName == "f:calloc":
-      sizeExpr = expr.BinaryE(rhs.args[0], op.BO_MUL, rhs.args[1], info=rhs.args[0].info)
+      sizeExpr = expr.BinaryE(callE.args[0], op.BO_MUL,
+                              callE.args[1], info=callE.args[0].info)
       self.inferTypeOfExpr(sizeExpr)
     else:
       raise ValueError()
 
     return sizeExpr
+
+
+  def getMemAllocSizeExprValue(self, sizeExpr: expr.ExprET) -> Opt[int]:
+    if isinstance(sizeExpr, expr.LitE):
+      assert isinstance(sizeExpr.val, int)
+      return sizeExpr.val
+    return None
 
 
   def isMemoryAllocationCall(self,

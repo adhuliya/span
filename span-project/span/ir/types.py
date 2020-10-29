@@ -492,6 +492,10 @@ class Type:
     return True
 
 
+  def bitSizeInBytes(self) -> int:
+    return self.bitSize() >> 3
+
+
   def bitSize(self) -> int:
     """Returns size in bits for builtin types.
     For other types, see respective overrides of this method.
