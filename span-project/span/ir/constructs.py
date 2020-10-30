@@ -93,9 +93,9 @@ class Func(ConstructT):
       result = False
     elif self.sig.variadic:
       result = False
-    elif self.name != GLOBAL_INITS_FUNC_NAME:
-      # normally we don't analyze the artificial global function
-      result = False
+    # elif self.name != GLOBAL_INITS_FUNC_NAME:
+    #   # normally we don't analyze the artificial global function
+    #   result = False
     return result
 
 

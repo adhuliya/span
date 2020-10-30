@@ -78,6 +78,12 @@ class NewOldL(LatticeLT):
     return self._newIn == other._newIn and self._newOut == other._newOut
 
 
+  def orWith(self, other: 'NewOldL'):
+    isNewIn = self.isNewIn or other.isNewIn
+    isNewOut = self.isNewOut or other.isNewOut
+    return self.getNewOldObj(isNewIn, isNewOut)
+
+
   def __str__(self):
     return f"(IN={self._newIn}, OUT={self._newOut})"
 

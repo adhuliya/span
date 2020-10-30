@@ -19,32 +19,38 @@ from typing import Optional as Opt
 import gc  # REF: https://rushter.com/blog/python-garbage-collector/
 # gc.set_debug(gc.DEBUG_SAVEALL)
 # print("_GC COUNT:", gc.get_count())
-# import tracemalloc # REF: https://docs.python.org/3/library/tracemalloc.html
-# tracemalloc.start()
+
+TRACE_MALLOC: bool = False
+
+if TRACE_MALLOC:
+  import tracemalloc # REF: https://docs.python.org/3/library/tracemalloc.html
+  tracemalloc.start()
 
 import span.sys.clients as clients
 from span.ir import expr, instr, constructs, tunit
 from span.ir import graph
-from span.ir.conv import Site, GLOBAL_INITS_FUNC_NAME, Forward, Backward
-from span.ir.types import FuncNameT
+import span.ir.conv as conv
+from span.ir.conv import GLOBAL_INITS_FUNC_NAME, Forward, Backward
+from span.ir.types import FuncNameT, FuncNodeIdT
 from span.ir.tunit import TranslationUnit
 from span.api.analysis import AnalysisNameT
 from span.api.dfv import NodeDfvL
 
-from span.sys.host import Host
+from span.sys.host import Host, MAX_ANALYSES
 # from span.util.util import LS  # ipa module uses its own LS
 LS = True
 import span.util.common_util as cutil
 
-recursionLimit = 100
-LIMIT = 100
-count = 0
+RECURSION_LIMIT = 100
+count: int = 0
 
-def tracemalloc_take_snapshot():
-  pass
-  # snapshot = tracemalloc.take_snapshot()
-  # top_stats = snapshot.statistics('lineno')
-  # for stat in top_stats: print(stat)
+
+def takeTracemallocSnapshot():
+  if TRACE_MALLOC:
+    snapshot = tracemalloc.take_snapshot()
+    top_stats = snapshot.statistics('lineno')
+    for stat in top_stats: print(stat)
+
 
 class ValueContext:
   __slots__ : List[str] = ["funcName", "dfvs"]
@@ -71,8 +77,8 @@ class ValueContext:
 
 
   def __eq__(self, other):
-    equal = True
     if self is other: return True
+    equal = True
     if not isinstance(other, ValueContext):
       equal = False
     elif not self.funcName == other.funcName:
@@ -103,9 +109,9 @@ class ValueContext:
       direction = clients.getDirection(anName)
       nDfvSelf = self.dfvs[anName]
       if direction == Forward:
-        theHash = hash((theHash, nDfvSelf.dfvIn))
+        theHash = hash((theHash, Forward, nDfvSelf.dfvIn))
       elif direction == Backward:
-        theHash = hash((theHash, nDfvSelf.dfvOut))
+        theHash = hash((theHash, Backward, nDfvSelf.dfvOut))
       else:  # bi-directional
         theHash = hash((theHash, nDfvSelf))
 
@@ -130,7 +136,7 @@ class IpaHost:
       otherAnalyses: Opt[List[AnalysisNameT]] = None,
       supportAnalyses: Opt[List[AnalysisNameT]] = None,
       avoidAnalyses: Opt[List[AnalysisNameT]] = None,
-      maxNumOfAnalyses: int = 1024,
+      maxNumOfAnalyses: int = MAX_ANALYSES,
       analysisSeq: Opt[List[List[AnalysisNameT]]] = None,  # for cascading/lerner
       disableAllSim: bool = False,
   ) -> None:
@@ -143,13 +149,12 @@ class IpaHost:
     self.otherAnalyses = otherAnalyses
     self.supportAnalyses = supportAnalyses  # TODO: pass it to span.sys.host.Host
     self.avoidAnalyses = avoidAnalyses
-    self.analyses = maxNumOfAnalyses
-    self.maxNumOfAnalyses = self.analyses
+    self.maxNumOfAnalyses = maxNumOfAnalyses
     self.analysisSeq = analysisSeq
     self.disableAllSim = disableAllSim
 
-    self.vContextMap: Dict[ValueContext, Tuple[Set[Site], Host]] = {}
-    self.callSiteVContextMap: Dict[Site, Dict[int, ValueContext]] = {}
+    self.vContextMap: Dict[ValueContext, Tuple[Set[FuncNodeIdT], Host]] = {}
+    self.callSiteVContextMap: Dict[FuncNodeIdT, Dict[int, ValueContext]] = {}
     self.finalResult: Dict[FuncNameT,
                            Dict[AnalysisNameT,
                                 Dict[graph.CfgNodeId, NodeDfvL]]] = {}
@@ -171,11 +176,10 @@ class IpaHost:
     print("GlobalBi:", globalBi)  # delit
 
     # STEP 2: start analyzing from the entry function
-    ipaBi = self.computeIpaBi(self.entryFunc, globalBi)
-    entryCallSite = Site(GLOBAL_INITS_FUNC_NAME, 0)
+    entryCallSite = conv.genFuncNodeId(conv.GLOBAL_INITS_FUNC_ID, 0)
     self.analyzeFunc(entryCallSite,
                      self.entryFunc,
-                     ipaBi,
+                     globalBi,
                      0)
 
     # STEP 3: finalize IPA results
@@ -191,23 +195,24 @@ class IpaHost:
 
 
   def analyzeFunc(self,
-      callSite: Site,
+      callSite: FuncNodeIdT,
       funcName: FuncNameT,
       funcBi: Dict[AnalysisNameT, NodeDfvL],
       recursionDepth: int,
       uniqueId: int = 0,
   ) -> Dict[AnalysisNameT, NodeDfvL]:
     newUniqueId = self.getUniqueId()
-    print("AnalyzingFunc:", funcName, f"{callSite} Depth: {recursionDepth},"
+    print("AnalyzingFunc:", funcName, f"{conv.getFuncNodeIdStr(callSite)}"
+                                      f" Depth: {recursionDepth},"
                                       f" VContextSize: {len(self.vContextMap)}"
                                       f" UniqueId: {uniqueId}")
                                       # f" FuncBi: {funcBi}")
-    funcBi = self.computeIpaBi(funcName, funcBi)
+    ipaFuncBi = self.computeIpaBi(funcName, funcBi)
 
-    if recursionDepth >= recursionLimit:
-      return self.analyzeFuncFinal(callSite, funcName, funcBi)
+    if recursionDepth >= RECURSION_LIMIT:
+      return self.analyzeFuncFinal(callSite, funcName, ipaFuncBi)
 
-    vContext = ValueContext(funcName, funcBi)
+    vContext = ValueContext(funcName, ipaFuncBi)
     host, preComputed = self.getComputedValue(callSite, uniqueId, vContext)
 
     if preComputed:
@@ -225,9 +230,8 @@ class IpaHost:
 
       callSiteDfvs = host.getCallSiteDfvs()
       if callSiteDfvs:  # check if call sites present
-        print("CallSiteNodes:", [node.id for node in callSiteDfvs.keys()]) #delit
         for node, dfvs in callSiteDfvs.items():
-          calleeSite = Site(funcName, node.id)
+          calleeSite = conv.genFuncNodeId(host.func.id, node.id)
           calleeName = instr.getCalleeFuncName(node.insn)
           assert calleeName, f"{node}"
           calleeBi = self.analyzeFunc(calleeSite, calleeName,
@@ -242,7 +246,7 @@ class IpaHost:
 
 
   def analyzeFuncFinal(self,
-      callSite: Site,
+      callSite: FuncNodeIdT,
       funcName: FuncNameT,
       funcBi: Dict[AnalysisNameT, NodeDfvL],
   ) -> Dict[AnalysisNameT, NodeDfvL]:
@@ -251,12 +255,12 @@ class IpaHost:
     For problems where Value Context may not terminate,
     do something here to approximate the solution.
     """
-    print(f"analyzeFuncFinal: {callSite}, {funcName}, {funcBi}")
+    print(f"analyzeFuncFinal: {conv.getFuncNodeIdStr(callSite)}, {funcName}, {funcBi}")
     raise NotImplementedError()
 
 
   def getComputedValue(self,
-      callSite: Site,
+      callSite: FuncNodeIdT,
       uniqueId: int,
       vContext: ValueContext,
   ) -> Tuple[Host, bool]:
@@ -277,7 +281,8 @@ class IpaHost:
           prevValueContext = None
 
     if prevValueContext is not None:
-      print(f"IPA:UsingPrevValueContext: at {callSite} (uniqueId: {uniqueId})")
+      print(f"IPA:UsingPrevValueContext: at"
+            f" {conv.getFuncNodeIdStr(callSite)} (uniqueId: {uniqueId})")
       if LS: LOG.debug("IPA:UsingPrevValueContext: at callsite %s", callSite)
       tup = self.vContextMap[prevValueContext]
       print("IPA:RemovingPrevValueContext:", id(vContext)) #delit
@@ -298,7 +303,7 @@ class IpaHost:
 
 
   def getPrevValueContext(self,
-      callSite: Site,
+      callSite: FuncNodeIdT,
       uniqueId: int,
       vContext: ValueContext,
   ) -> Opt[ValueContext]:
@@ -308,11 +313,10 @@ class IpaHost:
       if uniqueId in val:
         return val[uniqueId]
       else:
-
-        if LS: LOG.debug("IPA:SavingPrevValueContext1")
+        if LS: LOG.debug("IPA:SavingPrevValueContext 1")
         val[uniqueId] = vContext # save context 1
     else:
-      if LS: LOG.debug("IPA:SavingPrevValueContext2")
+      if LS: LOG.debug("IPA:SavingPrevValueContext 2")
       self.callSiteVContextMap[callSite] = {uniqueId: vContext} # save context 2
     return None
 
@@ -360,8 +364,7 @@ class IpaHost:
       maxNumOfAnalyses=self.maxNumOfAnalyses,
       analysisSeq=self.analysisSeq,
       disableAllSim=self.disableAllSim,
-      ipaEnabled=ipa,
-      biDfv=biDfv,
+      ipaBiDfv=biDfv,
     )
 
 
@@ -488,6 +491,6 @@ def diagnoseInterval(tUnit: TranslationUnit):
 
   print("\nTotalPPoints:", totalPPoints, "WeakPPoints:", weakPPoints)
 
-  tracemalloc_take_snapshot()
+  takeTracemallocSnapshot()
 
 

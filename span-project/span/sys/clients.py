@@ -38,10 +38,10 @@ simAnalyses: Set[analysis.AnalysisNameT] = set()
 # map analyses to the set of transfer functions it gives
 anTFuncMap: Dict[analysis.AnalysisNameT, Set[str]] = dict()
 # analyses which override FilterI instruction, and needs its simplification
-anNeedsFullLiveness: Set[analysis.AnalysisNameT] = set()
+anReadyForLivenessSim: Set[analysis.AnalysisNameT] = set()
 # analyses which override FilterI instruction,
 # and doesn't need its simplification
-anNeedsLiveness: Set[analysis.AnalysisNameT] = set()
+anAcceptingLivenessSim: Set[analysis.AnalysisNameT] = set()
 
 
 class Clients:
@@ -68,7 +68,7 @@ names = Clients()
 
 def initGlobals():
   global analyses, simSrcMap, simNeedMap, simAnalyses
-  global anTFuncMap, anNeedsLiveness, anNeedsFullLiveness
+  global anTFuncMap, anAcceptingLivenessSim, anReadyForLivenessSim
 
   # init analyses
   analyses = dict()
@@ -81,8 +81,8 @@ def initGlobals():
   simNeedMap = dict()
   simAnalyses = set()
   anTFuncMap = dict()
-  anNeedsLiveness = set()
-  anNeedsFullLiveness = set()
+  anAcceptingLivenessSim = set()
+  anReadyForLivenessSim = set()
 
 
 def recordTFunctions(anName: analysis.AnalysisNameT,
@@ -131,18 +131,18 @@ def recordLivenessInfoOfAn(anName: analysis.AnalysisNameT,
     anClass: Type[analysis.AnalysisAT],
 ) -> None:
   """Record the if analysis implements Live_Instr method"""
-  global anNeedsFullLiveness, anNeedsLiveness
+  global anReadyForLivenessSim, anAcceptingLivenessSim
   overridesLiveInstr = False
 
   liveInstrName = analysis.AnalysisAT.Filter_Instr.__name__
   anClassMembers = anClass.__dict__
   if liveInstrName in anClassMembers:
-    anNeedsLiveness.add(anName)
+    anAcceptingLivenessSim.add(anName)
     overridesLiveInstr = True
 
   for m in anClass.simNeeded:  # simNeeded field is runtime correct
     if m.__name__ == LhsVar__to__Nil__Name and overridesLiveInstr:
-      anNeedsFullLiveness.add(anName)
+      anReadyForLivenessSim.add(anName)
 
 
 def getDirection(anName: analysis.AnalysisNameT
@@ -185,4 +185,4 @@ if LS: LOG.debug("Analyses: %s", analyses)
 if LS: LOG.debug("SimSources: %s", simSrcMap)
 if LS: LOG.debug("SimNeeds: %s", simNeedMap)
 if LS: LOG.debug("SimAnalyses: %s", simAnalyses)
-if LS: LOG.debug("LivenessAwareAn: %s", anNeedsFullLiveness)
+if LS: LOG.debug("LivenessAwareAn: %s", anReadyForLivenessSim)
