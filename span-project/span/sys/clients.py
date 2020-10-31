@@ -122,8 +122,8 @@ def recordSimsNeeded(anName: analysis.AnalysisNameT,
   global simNeedMap
   tmp = set()
 
-  for m in anClass.simNeeded:  # simNeeded field is runtime correct
-    tmp.add(m.__name__)
+  for simName in getSimNamesNeeded(anClass):  # simNeeded field is runtime correct
+    tmp.add(simName)
   simNeedMap[anName] = tmp
 
 
@@ -140,9 +140,31 @@ def recordLivenessInfoOfAn(anName: analysis.AnalysisNameT,
     anAcceptingLivenessSim.add(anName)
     overridesLiveInstr = True
 
-  for m in anClass.simNeeded:  # simNeeded field is runtime correct
-    if m.__name__ == LhsVar__to__Nil__Name and overridesLiveInstr:
+  for simName in getSimNamesNeeded(anClass):  # simNeeded field is runtime correct
+    if simName == LhsVar__to__Nil__Name and overridesLiveInstr:
       anReadyForLivenessSim.add(anName)
+
+
+def getSimNamesNeeded(anClass: Type[analysis.AnalysisAT]) -> Set[str]:
+  """Returns the names of sim needed by the analyses."""
+  simNames = set()
+
+  if anClass.needsRhsDerefToVarsSim:
+    simNames.add(analysis.Deref__to__Vars__Name)
+  if anClass.needsLhsDerefToVarsSim:
+    simNames.add(analysis.Deref__to__Vars__Name)
+  if anClass.needsNumVarToNumLitSim:
+    simNames.add(analysis.Num_Var__to__Num_Lit__Name)
+  if anClass.needsNumBinToNumLitSim:
+    simNames.add(analysis.Num_Bin__to__Num_Lit__Name)
+  if anClass.needsCondToUnCondSim:
+    simNames.add(analysis.Cond__to__UnCond__Name)
+  if anClass.needsLhsVarToNilSim:
+    simNames.add(analysis.LhsVar__to__Nil__Name)
+  if anClass.needsNodeToNilSim:
+    simNames.add(analysis.Node__to__Nil__Name)
+
+  return simNames
 
 
 def getDirection(anName: analysis.AnalysisNameT

@@ -354,8 +354,8 @@ class Host:
                    expr.ExprET], Set[ddm.AtomicDemand]] = dict()
 
     #IPA inter-procedural analysis?
-    self.ipaEnabled: bool = bool(self.ipaBiDfv)
     self.ipaBiDfv: Opt[Dict[AnNameT, NodeDfvL]] = ipaBiDfv  #IPA
+    self.ipaEnabled: bool = bool(ipaBiDfv) #IPA
     if self.ipaEnabled: assert ipaBiDfv, f"{ipaBiDfv}"  #IPA
 
     self.disableAllSim: bool = disableAllSim
@@ -977,36 +977,36 @@ class Host:
                       getattr(AnalysisAT, tFuncName).__doc__.strip())
     if not self.disableAllSim and transferFunc != activeAnObj.Nop_Instr:
       # is the instr a var assignment (not deref etc)
-      if insn.needsLhsVarSim(): # check for dead assignment
+      if activeAnObj.needsLhsVarToNilSim and insn.needsLhsVarSim():
         nDfv = self.handleLivenessSim(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
-      if insn.needsLhsDerefSim() and activeAnObj.needsLhsDerefSim():
+      if activeAnObj.needsLhsDerefToVarsSim and insn.needsLhsDerefSim():
         assert isinstance(insn, instr.AssignI), f"{node.id}: {insn}"
         nDfv = self.handleLhsDerefSim(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
-      if insn.needsRhsDerefSim() and activeAnObj.needsRhsDerefSim():
+      if activeAnObj.needsRhsDerefToVarsSim and insn.needsRhsDerefSim():
         assert isinstance(insn, instr.AssignI), f"{node.id}: {insn}"
         nDfv = self.handleRhsDerefSim(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
-      if insn.needsLhsMemDerefSim(): # dereference can be simplified
+      if activeAnObj.needsLhsDerefToVarsSim and insn.needsLhsMemDerefSim():
         assert isinstance(insn, instr.AssignI), f"{node.id}: {insn}"
         nDfv = self.handleLhsMemDerefSim(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
-      if insn.needsRhsMemDerefSim(): # dereference can be simplified
+      if activeAnObj.needsRhsDerefToVarsSim and insn.needsRhsMemDerefSim():
         assert isinstance(insn, instr.AssignI), f"{node.id}: {insn}"
         nDfv = self.handleRhsMemDerefSim(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
-      if insn.needsRhsNumBinaryExprSim():
+      if activeAnObj.needsNumBinToNumLitSim and insn.needsRhsNumBinaryExprSim():
         # rhs is a numeric bin expr, hence could be simplified
         assert isinstance(insn, instr.AssignI), f"{node.id}: {insn}"
         nDfv = self.handleRhsBinArith(node, insn, nodeDfv)
@@ -1017,14 +1017,14 @@ class Host:
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
-      if insn.needsRhsNumUnaryExprSim():
+      if activeAnObj.needsNumVarToNumLitSim and insn.needsRhsNumUnaryExprSim():
         # rhs is a numeric unary expr, hence could be simplified
         assert isinstance(insn, instr.AssignI), f"{node.id}: {insn}"
         nDfv = self.handleRhsUnaryArith(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
-      if insn.needsRhsNumVarSim():
+      if activeAnObj.needsNumVarToNumLitSim and insn.needsRhsNumVarSim():
         # rhs is a numeric var, hence could be simplified
         assert isinstance(insn, instr.AssignI), f"{node.id}: {insn}"
         nDfv = self.handleRhsNumVar(node, insn, nodeDfv)
@@ -1101,6 +1101,8 @@ class Host:
     client = anName if demand is None else demand
     if client not in depSet:
       depSet.add(client)
+      if simName == Num_Var__to__Num_Lit__Name and anName == "PointsToA":
+        assert False, f"{nid}, {client}, {self.activeAnName}"
       if LS: LOG.debug("AddedSimDependence: (changed) (Node %s), %s, %s, Set: %s",
                        nid, simName, client, depSet)
     else:
@@ -1127,7 +1129,7 @@ class Host:
     TODO: check the logic.
     """
     needed = True
-    if LhsVar__to__Nil__Name not in self.activeAnSimNeeds:
+    if not self.activeAnObj.needsLhsVarToNilSim:
       needed = False
       enableLivenessSupport = False
     else:
@@ -1495,7 +1497,7 @@ class Host:
     nodes = None
     if self.disableAllSim:
       nodes = self.ef.setAllSuccEdgesFeasible(node)
-    elif Cond__to__UnCond__Name in self.activeAnSimNeeds:
+    elif self.activeAnObj.needsCondToUnCondSim:
       boolSim = self.getSim(node, Cond__to__UnCond__Name, arg)
       if boolSim is SimFailed:
         nodes = self.ef.setAllSuccEdgesFeasible(node)

@@ -331,12 +331,7 @@ class IntervalA(analysis.ValueAnalysisAT):
   L: Opt[Type[dfv.DataLT]] = OverallL
   # concrete direction class of the analysis
   D: Opt[Type[analysis.DirectionDT]] = analysis.ForwardD
-  simNeeded: List[Callable] = [AnalysisAT.Num_Var__to__Num_Lit,
-                               AnalysisAT.Num_Bin__to__Num_Lit,
-                               AnalysisAT.Deref__to__Vars,
-                               AnalysisAT.LhsVar__to__Nil,
-                               AnalysisAT.Cond__to__UnCond
-                               ]
+
 
   def __init__(self,
       func: constructs.Func,

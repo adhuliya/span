@@ -76,7 +76,7 @@ class FastNodeWorkList:
     self.frozenSet = set(nodes.keys())  # the set of nodes on which to work
 
     # seq of nodes visited from start to end of the analysis
-    self.fullSequence: List[str] = []
+    self.fullSequence: List[int] = []
 
 
   def clear(self):
@@ -88,10 +88,12 @@ class FastNodeWorkList:
 
   def pop(self) -> Tuple[Opt[graph.CfgNode], Opt[bool], Opt[Any]]:
     """Pops and returns next node id on top of queue, None otherwise."""
-    if not self.wl: return None, None, None
+    if not self.wl:
+      self.fullSequence.append(0) # special value to denote wl consumed
+      return None, None, None
 
     nid = self.wl.pop()
-    self.fullSequence.append(f"{nid}{'.' if self.isNop[nid-1] else ''}")
+    self.fullSequence.append(nid * -1 if self.isNop[nid-1] else nid)
 
     self.wlNodeSet.remove(nid)
     return self.nodes[nid], self.isNop[nid-1], self.valueFilter[nid-1]
@@ -692,9 +694,16 @@ class AnalysisAT:
   L: Opt[Type[dfv.DataLT]] = None
   # concrete direction class of the analysis
   D: Opt[Type[DirectionDT]] = None
+
   # Simplification needed: methods simplifying (blocking) exprs of this analysis
   # list required sim function objects here (functions with '__to__' in their name)
-  simNeeded: List[Callable] = []
+  needsRhsDerefToVarsSim: bool = False
+  needsLhsDerefToVarsSim: bool = False
+  needsNumVarToNumLitSim: bool = False
+  needsNumBinToNumLitSim: bool = False
+  needsCondToUnCondSim: bool = False
+  needsLhsVarToNilSim: bool = False
+  needsNodeToNilSim: bool = False
 
 
   def __init__(self,
@@ -706,16 +715,6 @@ class AnalysisAT:
     self.func = func
     self.overallTop = self.L(func, top=True)  # L is callable. pylint: disable=E
     self.overallBot = self.L(func, bot=True)  # L is callable. pylint: disable=E
-
-
-  def needsRhsDerefSim(self):
-    """Override this function if RHS deref is not needed."""
-    return True
-
-
-  def needsLhsDerefSim(self):
-    """Override this function if LHS deref is not needed."""
-    return True
 
 
   def Default_Instr(self,
@@ -1635,6 +1634,13 @@ class AnalysisAT:
   # BOUND END  : sim_related 2/3
   ################################################
 
+Node__to__Nil__Name: str = AnalysisAT.Node__to__Nil.__name__
+LhsVar__to__Nil__Name: str = AnalysisAT.LhsVar__to__Nil.__name__
+Num_Var__to__Num_Lit__Name: str = AnalysisAT.Num_Var__to__Num_Lit.__name__
+Cond__to__UnCond__Name: str = AnalysisAT.Cond__to__UnCond.__name__
+Num_Bin__to__Num_Lit__Name: str = AnalysisAT.Num_Bin__to__Num_Lit.__name__
+Deref__to__Vars__Name: str = AnalysisAT.Deref__to__Vars.__name__
+
 ################################################
 # BOUND END  : AnalysisAT_The_Base_Class.
 ################################################
@@ -1687,13 +1693,15 @@ class ValueAnalysisAT(AnalysisAT):
   # redefine these variables as needed (see ConstA, IntervalA for examples)
   L: Type[dfv.OverallL] = dfv.OverallL  # the OverallL lattice used
   D: Type[DirectionDT]  = ForwardD  # its a forward flow analysis
-  simNeeded: List[Callable] = [AnalysisAT.Num_Var__to__Num_Lit,
-                               AnalysisAT.Deref__to__Vars,
-                               AnalysisAT.Num_Bin__to__Num_Lit,
-                               AnalysisAT.LhsVar__to__Nil,
-                               AnalysisAT.Cond__to__UnCond,
-                               #AnalysisAT.Node__to__Nil,
-                               ]
+
+
+  needsRhsDerefToVarsSim: bool = True
+  needsLhsDerefToVarsSim: bool = True
+  needsNumVarToNumLitSim: bool = False
+  needsNumBinToNumLitSim: bool = True
+  needsCondToUnCondSim: bool = True
+  needsLhsVarToNilSim: bool = True
+  needsNodeToNilSim: bool = False
 
 
   def __init__(self,

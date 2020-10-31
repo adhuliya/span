@@ -41,11 +41,15 @@ class LiveVarsA(AnalysisAT):
   # liveness lattice
   L: type = OverallL
   D: type = BackwardD
-  # blocking expression methods
-  simNeeded: List[Callable] = [AnalysisAT.Deref__to__Vars,
-                               AnalysisAT.Cond__to__UnCond,
-                               AnalysisAT.Node__to__Nil,
-                              ]
+
+
+  needsRhsDerefToVarsSim: bool = True
+  needsLhsDerefToVarsSim: bool = True
+  needsNumVarToNumLitSim: bool = False
+  needsNumBinToNumLitSim: bool = False
+  needsCondToUnCondSim: bool = True
+  needsLhsVarToNilSim: bool = False
+  needsNodeToNilSim: bool = False
 
 
   def __init__(self,
@@ -82,6 +86,7 @@ class LiveVarsA(AnalysisAT):
 
   def Nop_Instr(self,
       nodeId: types.NodeIdT,
+      insn: instr.InstrIT,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
     """An identity backward transfer function."""

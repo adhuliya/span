@@ -132,12 +132,6 @@ class EvenOddA(analysis.ValueAnalysisAT):
   __slots__ : List[str] = ["componentEven", "componentOdd"]
   L: type = OverallL
   D: type = analysis.ForwardD
-  simNeeded: List[Callable] = [AnalysisAT.Num_Var__to__Num_Lit,
-                               AnalysisAT.Num_Bin__to__Num_Lit,
-                               AnalysisAT.Deref__to__Vars,
-                               AnalysisAT.LhsVar__to__Nil,
-                               AnalysisAT.Cond__to__UnCond
-                               ]
 
 
   def __init__(self,

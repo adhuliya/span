@@ -203,11 +203,16 @@ class ReachingDefA(AnalysisAT):
   __slots__ : List[str] = ["defaultDfv"]
   L: type = OverallL  # the lattice used
   D: type = ForwardD  # its a forward flow analysis
-  simNeeded: List[Callable] = [AnalysisAT.Deref__to__Vars,
-                               AnalysisAT.LhsVar__to__Nil,
-                               AnalysisAT.Cond__to__UnCond,
-                               #AnalysisAT.Node__to__Nil,
-                               ]
+
+
+  needsDerefToVarsSim: bool = True
+  needsRhsDerefToVarsSim: bool = False
+  needsLhsDerefToVarsSim: bool = True
+  needsNumVarToNumLitSim: bool = False
+  needsNumBinToNumLitSim: bool = True
+  needsCondToUnCondSim: bool = True
+  needsLhsVarToNilSim: bool = True
+  needsNodeToNilSim: bool = False
 
 
   def __init__(self,
@@ -219,11 +224,6 @@ class ReachingDefA(AnalysisAT):
     self.overallTop: OverallL = OverallL(self.func, top=True)
     self.overallBot: OverallL = OverallL(self.func, bot=True)
     self.defaultDfv: OverallL = OverallL(self.func, val=None)
-
-
-  def needsRhsDerefSim(self):
-    """No need for rhs dereference simplification"""
-    return False
 
 
   def getBoundaryInfo(self,

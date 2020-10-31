@@ -176,6 +176,15 @@ class StrongLiveVarsA(AnalysisAT):
                               ]
 
 
+  needsRhsDerefToVarsSim: bool = True
+  needsLhsDerefToVarsSim: bool = True
+  needsNumVarToNumLitSim: bool = False
+  needsNumBinToNumLitSim: bool = False
+  needsCondToUnCondSim: bool = True
+  needsLhsVarToNilSim: bool = False
+  needsNodeToNilSim: bool = False
+
+
   def __init__(self,
       func: obj.Func,
   ) -> None:

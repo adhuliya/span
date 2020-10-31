@@ -427,6 +427,7 @@ class IpaHost:
   def mergeAnalysisResult(result1: Dict[graph.CfgNodeId, NodeDfvL],
       result2: Dict[graph.CfgNodeId, NodeDfvL]
   ) -> Dict[graph.CfgNodeId, NodeDfvL]:
+    """Modifies `result1` argument (and returns it)."""
     cfgNodeIds = set(result1.keys())
     cfgNodeIds.update(result2.keys())
 

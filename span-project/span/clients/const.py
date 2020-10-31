@@ -141,13 +141,6 @@ class ConstA(analysis.ValueAnalysisAT):
   __slots__ : List[str] = []
   L: type = OverallL  # the lattice ConstA uses
   D: type = analysis.ForwardD  # its a forward flow analysis
-  simNeeded: List[Callable] = [AnalysisAT.Num_Var__to__Num_Lit,
-                               AnalysisAT.Deref__to__Vars,
-                               AnalysisAT.Num_Bin__to__Num_Lit,
-                               AnalysisAT.LhsVar__to__Nil,
-                               AnalysisAT.Cond__to__UnCond,
-                               #AnalysisAT.Node__to__Nil,
-                               ]
 
 
   def __init__(self,

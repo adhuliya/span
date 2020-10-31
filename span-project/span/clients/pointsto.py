@@ -201,10 +201,15 @@ class PointsToA(analysis.ValueAnalysisAT):
 
   L: type = OverallL
   D: type = analysis.ForwardD
-  simNeeded: List[Callable] = [AnalysisAT.Deref__to__Vars,
-                               AnalysisAT.Cond__to__UnCond,
-                               AnalysisAT.LhsVar__to__Nil,
-                              ]
+
+
+  needsRhsDerefToVarsSim: bool = False
+  needsLhsDerefToVarsSim: bool = False
+  needsNumVarToNumLitSim: bool = False
+  needsNumBinToNumLitSim: bool = True
+  needsCondToUnCondSim: bool = True
+  needsLhsVarToNilSim: bool = True
+  needsNodeToNilSim: bool = False
 
 
   def __init__(self,
