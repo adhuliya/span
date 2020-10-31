@@ -456,7 +456,8 @@ class Host:
     self.filteredSimSrcs: \
       Dict[Tuple[SimNameT, expr.ExprET, NodeIdT], Set[AnNameT]] = dict()
 
-    # counts the net useful simplifications by a (supporting) analysis
+    # counts the net useful simplifications by an analysis
+    # If a supporting analysis's count goes zero, it is not run anymore.
     self.anSimSuccessCount: Dict[AnNameT, int] = dict()
 
     # records sequence in which analyses have run.
@@ -500,7 +501,7 @@ class Host:
     timer.stopAndLog()
 
 
-  def addNodes(self, nodes: List[graph.CfgNode]) -> None:
+  def addNodes(self, nodes: Opt[List[graph.CfgNode]]) -> None:
     """Add nodes to worklist of all analyses that have freshly become feasible."""
     if not nodes: return
 
@@ -865,7 +866,7 @@ class Host:
         if not treatAsNop: self.stats.incrementNodeVisitCount()
         if GD: self.nodeInsnDot[nid] = []
 
-        #beLazy: self.addDepAnToWorklist(node, inOutChange1)
+        self.addDepAnToWorklist(node, inOutChange1)
 
         if LS: LOG.debug("Curr_Node_Dfv (Before) (Node %s): %s.", nid, nodeDfv)
         nodeDfv = self.analyzeInstr(node, node.insn, nodeDfv, treatAsNop)
@@ -875,7 +876,7 @@ class Host:
 
         if LS: LOG.debug("Curr_Node_Dfv (AfterUpdate) (Node %s): %s, change: %s.",
                          nid, nodeDfv, inOutChange2)
-        self.addDepAnToWorklist(node, inOutChange1.orWith(inOutChange2))
+        self.addDepAnToWorklist(node, inOutChange2)
       else:
         if LS: LOG.debug("Infeasible_Node: Func: %s, Node: %s.", self.func.name, node)
         continue
@@ -1486,9 +1487,8 @@ class Host:
     if LS: LOG.debug("FinallyInvokingInstrFunc: Conditional_Instr() on %s", insn)
     self.stats.instrAnTimer.stop() # okay - excluding edge feasibility computation
     nodes = self.setEdgeFeasibility(node, insn.arg)
+    self.addNodes(nodes)
     self.stats.instrAnTimer.start() # okay
-    if nodes:
-      self.addNodes(nodes)
 
     return self.activeAnObj.Conditional_Instr(node.id, insn, nodeDfv)
 

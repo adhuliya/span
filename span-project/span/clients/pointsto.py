@@ -206,7 +206,7 @@ class PointsToA(analysis.ValueAnalysisAT):
   needsRhsDerefToVarsSim: bool = False
   needsLhsDerefToVarsSim: bool = False
   needsNumVarToNumLitSim: bool = False
-  needsNumBinToNumLitSim: bool = True
+  needsNumBinToNumLitSim: bool = False
   needsCondToUnCondSim: bool = True
   needsLhsVarToNilSim: bool = True
   needsNodeToNilSim: bool = False
@@ -564,6 +564,19 @@ class PointsToA(analysis.ValueAnalysisAT):
     raise ValueError(f"{e}")
 
 
+  def getExprLValueNames(self,
+      func: constructs.Func,
+      lhs: expr.ExprET,
+      dfvIn: dfv.OverallL
+  ) -> Set[types.VarNameT]:
+    """Points-to analysis overrides this function."""
+    names = PointsToA.getNamesUsedInExprNonSyntactically(func, lhs, dfvIn)
+    if not names:
+      return super().getExprLValueNames(func, lhs, dfvIn)
+    else:
+      return names
+
+
   @staticmethod
   def getNamesUsedInExprNonSyntactically(
       func: constructs.Func,
@@ -589,6 +602,7 @@ class PointsToA(analysis.ValueAnalysisAT):
     elif isinstance(e, expr.DerefE):
       assert isinstance(e.arg, expr.VarE), f"{e}"
       varNames.update(PointsToA.getNamesOfPointees(func, e.arg.name, dfvIn))
+      print(f"{e}: {varNames}") #delit
       return varNames
 
     elif isinstance(e, expr.ArrayE):

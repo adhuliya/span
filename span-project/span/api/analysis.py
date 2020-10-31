@@ -1851,11 +1851,11 @@ class ValueAnalysisAT(AnalysisAT):
     outDfvValues: Dict[types.VarNameT, dfv.ComponentL] = {}
 
     if isinstance(lhsType, types.RecordT):
-      outDfvValues = self.processLhsRhsRecordType(lhs, rhs, dfvInGetVal)
+      outDfvValues = self.processLhsRhsRecordType(lhs, rhs, dfvIn)
 
     elif self.isAcceptedType(lhsType):
       func = self.func
-      lhsVarNames = getExprLValueNames(func, lhs)
+      lhsVarNames = self.getExprLValueNames(func, lhs, dfvIn)
       assert len(lhsVarNames) >= 1, f"{lhs}: {lhsVarNames}"
       mustUpdate = len(lhsVarNames) == 1
 
@@ -1876,6 +1876,15 @@ class ValueAnalysisAT(AnalysisAT):
     return nDfv
 
 
+  def getExprLValueNames(self,
+      func: constructs.Func,
+      lhs: expr.ExprET,
+      dfvIn: dfv.OverallL
+  ) -> Set[types.VarNameT]:
+    """Points-to analysis overrides this function."""
+    return getExprLValueNames(func, lhs)
+
+
   def genNodeDfvL(self,
       outDfvValues: Dict[types.VarNameT, dfv.ComponentL],
       nodeDfv: NodeDfvL,
@@ -1893,15 +1902,16 @@ class ValueAnalysisAT(AnalysisAT):
   def processLhsRhsRecordType(self,
       lhs: expr.ExprET,
       rhs: expr.ExprET,
-      dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
+      dfvIn: dfv.OverallL,
   ) -> Dict[types.VarNameT, dfv.ComponentL]:
     """Processes assignment instruction with RecordT"""
     instrType = lhs.type
     assert isinstance(instrType, types.RecordT), f"{lhs}, {rhs}: {instrType}"
 
+    dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL] = dfvIn.getVal
     allMemberInfo = instrType.getNamesOfType(None)
 
-    lhsVarNames = getExprLValueNames(self.func, lhs)
+    lhsVarNames = self.getExprLValueNames(self.func, lhs, dfvIn)
     assert len(lhsVarNames) >= 1, f"{lhs}: {lhsVarNames}"
     strongUpdate: bool = len(lhsVarNames) == 1
 
