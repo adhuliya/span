@@ -6,8 +6,9 @@
 """Optimize C program."""
 
 import logging
+LOG = logging.getLogger("span")
+from typing import Optional as Opt, Dict, Set, List
 
-from itertools import chain
 from span.api.analysis import SimNameT, AnalysisNameT, SimFailed, SimPending, AnalysisAT
 from span.api.dfv import NodeDfvL
 from span.ir import graph, expr, instr
@@ -17,10 +18,6 @@ from span.ir.types import FuncNameT, Loc
 from span.sys import clients
 from span.util.common_util import Verbosity
 from span.util.util import LS
-
-
-LOG = logging.getLogger("span")
-from typing import Optional as Opt, Dict, Set, List
 
 from span.ir.tunit import TranslationUnit
 from span.sys.host import Host
@@ -34,7 +31,7 @@ class TrInfo: # TransformationInfo
   def __init__(self, value, loc: Loc, trType: SimNameT):
     self.value: str = str(value)
     self.loc: Loc = loc
-    self.trType: SimNameT = trType # transformation type
+    self.trType: SimNameT = trType # transformation type (sim name)
 
 
   def dumpStr(self):
