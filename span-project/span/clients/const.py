@@ -82,7 +82,7 @@ class ComponentL(dfv.ComponentL):
 
 
   def __hash__(self):
-    return hash((self.func.name, self.val, self.top, self.bot))
+    return hash((self.val, self.top, self.bot))
 
 
   def getCopy(self) -> 'ComponentL':
@@ -116,7 +116,7 @@ class OverallL(dfv.OverallL):
       top: bool = False,
       bot: bool = False
   ) -> None:
-    super().__init__(func, val, top, bot, ComponentL, "const")
+    super().__init__(func, val, top, bot, ComponentL, "ConstA")
     # self.componentTop = ComponentL(self.func, top=True)
     # self.componentBot = ComponentL(self.func, bot=True)
 

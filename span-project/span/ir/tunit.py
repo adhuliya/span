@@ -358,8 +358,8 @@ class TranslationUnit:
       cond = self.findAndConvertExpr(e.cond, exprPredicate, convertExpr)
       arg1 = self.findAndConvertExpr(e.arg1, exprPredicate, convertExpr)
       arg2 = self.findAndConvertExpr(e.arg2, exprPredicate, convertExpr)
-      assert isinstance(cond, expr.VarE) and isinstance(arg1, expr.SimpleET) \
-             and isinstance(arg2, expr.SimpleET)
+      assert isinstance(arg1, expr.SimpleET) and isinstance(arg2, expr.SimpleET),\
+        f"{cond}, {arg1}, {arg2}"
       e.cond, e.arg1, e.arg2 = cond, arg1, arg2
     else:
       assert False, f"{e}"
@@ -480,9 +480,8 @@ class TranslationUnit:
     """Add the varName into self._nameInfoMap along
     with all its sub-names if its an array or a record."""
     nameInfos = objType.getNamesOfType(None, varName)
-    if varName == "v:BZ2_bzWriteOpen:1p":  #delit
-      print("NameInfosOf", varName, objType, nameInfos)  #delit
-
+    if varName == "v:read_min:3p":  #delit
+      print(f"NameInfos: {varName}, {nameInfos}")  #delit
     for nameInfo in nameInfos:
       self._nameInfoMap[nameInfo.name] = nameInfo   # cache the results
       if new:
@@ -617,6 +616,11 @@ class TranslationUnit:
         func: constructs.Func = self.allFunctions[val]
         return func.sig
 
+      if val == irConv.DUMMY_VAR_NAME.format(id=0):  # FIXME: for varargs
+        return irConv.DUMMY_VAR_TYPE  # FIXME: for varargs
+
+      # return types.Void # FIXME: to avoid ValueError
+
     raise ValueError(f"{val}")
 
 
@@ -729,8 +733,10 @@ class TranslationUnit:
         eType = argType.getPointeeType()
       elif isinstance(argType, types.ArrayT):
         eType = argType.getElementType()
+      elif isinstance(e.arg, expr.VarE) and e.arg.name == "g:0d": # FIXME: for varargs
+        eType = irConv.DUMMY_VAR_TYPE  # FIXME: for varargs
       else:
-        raise ValueError(f"{e}, {argType}")
+        raise ValueError(f"{e}, {type(e)}, {argType}")
 
     elif isinstance(e, lExpr.MemberE):
       fieldName = e.name
@@ -1261,6 +1267,7 @@ class TranslationUnit:
     nakedPvName = irConv.NAKED_PSEUDO_VAR_NAME.format(count=currCount)
     pureFuncName = irConv.simplifyName(funcName)
     pvName = f"v:{pureFuncName}:{nakedPvName}"
+    if pvName == "v:read_min:3p": print(f"{insn}, {prevInsn}, {insn.info}")  #delit
 
     self._pseudoVars.add(pvName)
     if prevInsn is None:  # insn can never be None
@@ -1366,7 +1373,11 @@ class TranslationUnit:
     """Returns true if the name contains array access"""
     if name in self._nameInfoMap:
       return self._nameInfoMap[name].hasArray
-    raise ValueError(f"{name}, {self._nameInfoMap}")
+    # return types.Void  #default #FIXME
+    varType = None
+    if irConv.getPrefixShortest(name) in self._nameInfoMap:
+      varType = self._nameInfoMap[irConv.getPrefixShortest(name)]
+    raise ValueError(f"{name}, {varType}, {self._nameInfoMap}")
 
 
   def getNamesLocal(self,
@@ -1481,7 +1492,7 @@ class TranslationUnit:
   def createAndAddGlobalDummyVar(self,
       givenType: types.Type
   ) -> types.VarNameT:
-    newDummyName = f"g:{self._dummyVarCount}d"
+    newDummyName = irConv.DUMMY_VAR_NAME.format(id=self._dummyVarCount)
     # self.allVars[newDummyName] = givenType
     self.addVarNames(newDummyName, givenType, True)
     self._globalsAndAddrTakenSet.add(newDummyName)
@@ -1768,9 +1779,12 @@ class TranslationUnit:
       return names
 
     elif isinstance(e, expr.MemberE):
+      print("hereMemberE", e) #delit
       of, memName = e.of, e.name
       assert isinstance(of.type, types.Ptr), f"{e}: {of.type}"
       for name in self.getNamesOfPointees(func, of.name, pointeeMap):
+        if 'newnode' in of.name: #delit
+          print("PointeeNames:newnode:", name, self.inferTypeOfVal(name)) #delit
         names.add(f"{name}.{memName}")
       return names
 

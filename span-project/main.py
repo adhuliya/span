@@ -99,10 +99,10 @@ and **not** add any other analysis **even if needed**.
 CASC_AN_SPEC_REGEX = r"(?P<analyses>/([+]\w+)+/)+"
 """Analysis spec regex for cascading/lerner."""
 
-C_FILENAME_REGEX = re.compile(r"^\d*\w+?\.c")
+C_FILENAME_REGEX = re.compile(r"^.*\.c")
 """A C file should always have a `.c` suffix."""
 
-SPANIR_FILENAME_REGEX = re.compile(r"^\d*\w+?\.c.spanir")
+SPANIR_FILENAME_REGEX = re.compile(r"^.*\.c.spanir")
 """A C file's SPAN IR file should always have a `.c.spanir` suffix."""
 
 
@@ -172,9 +172,12 @@ def c2spanir(cFileName: str = None) -> int:
 
 def ipaDiagnoseSpanIr(args: argparse.Namespace) -> None:
   diName    = args.diagnosisName
+  fileName = args.fileName
   cutil.Verbosity = args.verbose
 
-  currTUnit = parseTUnitObject(args.fileName, ipa=True)
+  spanirFileName = convertIfCFile(fileName)
+  print("Filename:", fileName, spanirFileName)
+  currTUnit = parseTUnitObject(spanirFileName, ipa=True)
 
   if diName == "interval":
     sysIpa.diagnoseInterval(currTUnit)
@@ -656,7 +659,7 @@ def cascAnSpecRegex(argValue, pat=re.compile(CASC_AN_SPEC_REGEX)):
 # mainentry - when this module is run
 if __name__ == "__main__":
   print("SPAN is:", os.path.realpath(__file__))
-  sys.setrecursionlimit(20000) # FIXME: It is needed in some cases. But why exactly?
+  sys.setrecursionlimit(1000000) # FIXME: It is needed in some cases. But why exactly?
   print("RotatingLogFile: file://", logger.ABS_LOG_FILE_NAME, sep="")
 
   analysisSpecString = f"Specification of analyses" \

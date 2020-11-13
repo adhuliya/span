@@ -44,6 +44,7 @@ import span.util.common_util as cutil
 RECURSION_LIMIT = 100
 count: int = 0
 
+delThisVar = None  #delit
 
 def takeTracemallocSnapshot():
   if TRACE_MALLOC:
@@ -109,17 +110,22 @@ class ValueContext:
       direction = clients.getDirection(anName)
       nDfvSelf = self.dfvs[anName]
       if direction == Forward:
-        theHash = hash((theHash, Forward, nDfvSelf.dfvIn))
+        theHash = hash((theHash, nDfvSelf.dfvIn))
       elif direction == Backward:
-        theHash = hash((theHash, Backward, nDfvSelf.dfvOut))
+        theHash = hash((theHash, nDfvSelf.dfvOut))
       else:  # bi-directional
         theHash = hash((theHash, nDfvSelf))
+      if self.funcName == "f:StoreTT":
+        print("IPA:StoreTT:hash:", anName, theHash)  #delit
+        if anName == "IntervalA":
+          print("IPA:StoreTT:hash:IntervalA", anName,
+                hash(nDfvSelf.dfvIn), nDfvSelf.dfvIn)  #delit
 
     return theHash
 
 
   def __str__(self):
-    return f"ValueContext: {self.funcName}, {self.dfvs}"
+    return f"ValueContext({self.funcName}, {self.dfvs})"
 
 
   def __repr__(self):
@@ -274,7 +280,22 @@ class IpaHost:
     else:  # look for previous value context
       prevValueContext = self.getPrevValueContext(callSite, uniqueId, vContext)
       if prevValueContext is not None:
-        tup = self.vContextMap[prevValueContext]
+        try:
+          tup = self.vContextMap[prevValueContext]
+        except Exception as e:
+          for key in self.vContextMap.keys():
+            if key.funcName == prevValueContext.funcName:
+              ptaV, ptaP = key.dfvs["PointsToA"], prevValueContext.dfvs["PointsToA"]
+              intV, intP = key.dfvs["IntervalA"], prevValueContext.dfvs["IntervalA"]
+              print("IPA:KEY:", key.funcName, ptaV == ptaP, intV == intP,
+                    ptaV.dfvIn.func.name,
+                    key == prevValueContext,
+                    hash(key),
+                    id(key), id(prevValueContext),
+                    len(key.dfvs) == len(prevValueContext.dfvs),
+                    hash(ptaV) == hash(ptaP), hash(intV) == hash(intP))
+          print("IPA:ERROR:", len(self.vContextMap))
+          raise e
         allCallSites = tup[0]
         if len(allCallSites) > 1:
           # since more than one callSite needs the vContext we cannot modify it
@@ -287,7 +308,9 @@ class IpaHost:
       tup = self.vContextMap[prevValueContext]
       print("IPA:RemovingPrevValueContext:", id(vContext)) #delit
       del self.vContextMap[prevValueContext] # remove the old one
-      self.callSiteVContextMap[callSite][uniqueId] = vContext # remove the old one
+      self.callSiteVContextMap[callSite][uniqueId] = vContext # replace the old one
+      if vContext.funcName == "f:StoreTT":  #delit
+        print("IPA:StoreTT:1:", vContext, hash(vContext))  #delit
       self.vContextMap[vContext] = tup
       hostInstance = tup[1]
       hostInstance.setBoundaryResult(vContext.getCopy().dfvs)
@@ -297,6 +320,8 @@ class IpaHost:
       hostInstance = self.createHostInstance(vContext.funcName,
                                              biDfv=vContext.getCopy().dfvs)
       print("IPA:AddingNewValueContext:", id(vContext)) #delit
+      if vContext.funcName == "f:StoreTT":  #delit
+        print("IPA:StoreTT:2:", vContext, hash(vContext))  #delit
       self.vContextMap[vContext] = ({callSite}, hostInstance)  # save the instance
 
     return hostInstance, False
@@ -307,7 +332,7 @@ class IpaHost:
       uniqueId: int,
       vContext: ValueContext,
   ) -> Opt[ValueContext]:
-    print("IPA:getPrevValueContext", callSite, uniqueId) #delit
+    print("IPA:getPrevValueContext", callSite, uniqueId, id(vContext)) #delit
     if callSite in self.callSiteVContextMap:
       val = self.callSiteVContextMap[callSite]
       if uniqueId in val:

@@ -145,7 +145,7 @@ class OverallL(DataLT):
   def __hash__(self):
     val = set() if self.val is None else self.val
     hashThisVal = frozenset(val)
-    return hash(self.func) ^ hash((hashThisVal, self.top, self.bot))
+    return hash((hashThisVal, self.top, self.bot))
 
 
   def __str__(self):

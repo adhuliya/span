@@ -872,6 +872,12 @@ class Host:
         nodeDfv = self.analyzeInstr(node, node.insn, nodeDfv, treatAsNop)
         if LS: LOG.debug("Curr_Node_Dfv (AnalysisResult) (Node %s): %s", nid, nodeDfv)
 
+        if self.activeAnName == "PointsToA" and \
+            not nodeDfv.dfvOut.getVal("v:develop_node:newnode").bot and \
+            "v:proofnumbercheck:2p" in nodeDfv.dfvOut.getVal("v:develop_node:newnode"): #delit
+          print(f"HOST: {self.func.name}: {node.insn} {node.insn.info}"
+                f"{nodeDfv.dfvOut.getVal('v:develop_node:newnode')}") #delit
+
         inOutChange2 = dirn.update(node, nodeDfv)
 
         if LS: LOG.debug("Curr_Node_Dfv (AfterUpdate) (Node %s): %s, change: %s.",

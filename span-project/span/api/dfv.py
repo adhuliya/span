@@ -416,7 +416,11 @@ class OverallL(DataLT):
 
   def __hash__(self):
     hashThisVal = None if self.val is None else frozenset(self.val.items())
-    return hash((self.func, hashThisVal, self.top)) # , self.bot))
+    if self.func.name == "f:make_gather" and self.name == "IntervalA": #delit
+      if hashThisVal:
+        print("IPA:make_gather:hashThisVal:IntervalA", hash(hashThisVal),
+              "\n", hashThisVal, self.val) #delit
+    return hash((hashThisVal, self.top)) # , self.bot))
 
 
   def isDefaultValBot(self):
@@ -483,6 +487,10 @@ class OverallL(DataLT):
           self.val = None
           self.top, self.bot = topDefVal, botDefVal
     else:
+      if self.name == "IntervalA" and varName in self.val: #delit FIXME: used for debugging
+        oldVal = self.val[varName]
+        if varName == "v:StoreTT:best":
+          print(f"ProbablyUnsafeMutation: {id(self)}, {oldVal}, {val}")  #delit
       self.val[varName] = val
 
     if not (topDefVal or botDefVal): # important optimization check
@@ -560,7 +568,8 @@ class OverallL(DataLT):
       for key in self.val:
         if prefix: string.write(prefix)
         prefix = ", "
-        string.write(f"{simplifyName(key)}: {self.val[key]}")
+        #string.write(f"{simplifyName(key)}: {self.val[key]}")
+        string.write(f"{key}: {self.val[key]}")
       string.write("}")
     else:
       string.write("Default")

@@ -483,7 +483,7 @@ class DerefE(UnaryET, DerefET):
       info: Opt[types.Info] = None
   ) -> None:
     super().__init__(DEREF_EXPR_EC, info)
-    assert isinstance(arg, VarE), f"{arg}"
+    assert isinstance(arg, VarE), f"{arg}, {info}"
     self.arg = arg
 
 
@@ -1362,7 +1362,7 @@ class SelectE(ExprET):
       info: Opt[types.Info] = None,
   ) -> None:
     super().__init__(SELECT_EXPR_EC, info)
-    assert isinstance(cond, VarE), f"{cond}"
+    # assert isinstance(cond, VarE), f"{cond}" # FIXME
     assert isinstance(arg1, SimpleET), f"{arg1}"
     assert isinstance(arg2, SimpleET), f"{arg2}"
     self.cond = cond

@@ -112,6 +112,7 @@ NULL_OBJ_NAME = "g:00"
 NULL_OBJ_TYPE = types.Void  ## Null object type is Void
 NULL_OBJ_PTR_TYPE = types.Ptr(NULL_OBJ_TYPE)
 
+DUMMY_VAR_NAME = "g:{id}d"
 DUMMY_VAR_REGEX = re.compile(r"^(.*:|)\d+d$")
 """A dummy var name regex. Also see: `span.ir.tunit.addDummyObjects(self)`"""
 DUMMY_VAR_TYPE = types.Void
@@ -278,6 +279,15 @@ def getPrefixes(varName: types.VarNameT) -> Set[types.VarNameT]:
     start = f"{start}{dot}{s}"
     names.add(start)
   return names  # all non-empty prefixes
+
+
+def getPrefixShortest(varName: types.VarNameT) -> types.VarNameT:
+  """If names has as dot, create its shortest prefix.
+  E.g: If input is 'x.y.z', it returns 'x'.
+  See also: getSuffixes()
+  """
+  split = varName.split(".")
+  return split[0]  # its a normal name
 
 
 def getSuffixes(

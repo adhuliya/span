@@ -214,7 +214,8 @@ class Func(ConstructT):
         if isinstance(lastInstr, GotoI):
           toBbId = labelMap[lastInstr.label]
           bbEdges.append((fromBbId, toBbId, UnCondEdge))
-          bbInstrSeq.pop()  # Remove GotoI
+          while len(bbInstrSeq) and isinstance(bbInstrSeq[-1], GotoI):
+            bbInstrSeq.pop()  # Remove GotoI
         elif isinstance(lastInstr, ReturnI):
           toBbId = 0  # end bb id
           bbEdges.append((fromBbId, toBbId, UnCondEdge))

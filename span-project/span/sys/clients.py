@@ -14,6 +14,7 @@ import logging
 LOG = logging.getLogger("span")
 from typing import Dict, Set, Optional as Opt, cast, Type
 import io
+import functools
 
 from span.util.logger import LS
 import span.clients.register as register
@@ -166,7 +167,7 @@ def getSimNamesNeeded(anClass: Type[analysis.AnalysisAT]) -> Set[str]:
 
   return simNames
 
-
+@functools.lru_cache(50)
 def getDirection(anName: analysis.AnalysisNameT
 ) -> Opt[types.DirectionT]:
   direction = None

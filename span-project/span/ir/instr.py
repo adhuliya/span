@@ -318,6 +318,10 @@ class GotoI(InstrIT):
     return equal
 
 
+  def __hash__(self):
+    return hash(self.label)
+
+
   def __str__(self):
     return f"goto {self.label}"
 

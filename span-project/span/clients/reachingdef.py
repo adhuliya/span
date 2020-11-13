@@ -122,7 +122,7 @@ class ComponentL(DataLT):
 
   def __hash__(self):
     val = frozenset(self.val) if self.val else None
-    return hash((self.func.name, val, self.top, self.bot))
+    return hash((val, self.top, self.bot))
 
 
   def __str__(self):
@@ -155,7 +155,7 @@ class OverallL(dfv.OverallL):
       top: bool = False,
       bot: bool = False
   ) -> None:
-    super().__init__(func, val, top, bot, ComponentL, "const")
+    super().__init__(func, val, top, bot, ComponentL, "ReachingDefA")
     # self.componentTop = ComponentL(self.func, top=True)
     # self.componentBot = ComponentL(self.func, bot=True)
 

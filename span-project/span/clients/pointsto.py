@@ -160,7 +160,7 @@ class ComponentL(dfv.ComponentL):
 
   def __hash__(self):
     val = frozenset(self.val) if self.val else None
-    return hash((self.func.name, val, self.top, self.bot))
+    return hash((val, self.top, self.bot))
 
 
   def __str__(self):
@@ -183,7 +183,7 @@ class OverallL(dfv.OverallL):
       top: bool = False,
       bot: bool = False
   ) -> None:
-    super().__init__(func, val, top, bot, ComponentL, "interval")  # type: ignore
+    super().__init__(func, val, top, bot, ComponentL, "PointsToA")  # type: ignore
     self.val: Opt[Dict[types.VarNameT, ComponentL]] = val  # type: ignore
 
 
@@ -406,8 +406,10 @@ class PointsToA(analysis.ValueAnalysisAT):
     It expects the rhs to be pointer type or an array type."""
     value: dfv.ComponentL = self.componentTop
     rhsType = rhs.type
-    assert isinstance(rhsType, (types.Ptr, types.ArrayT, types.FuncSig)), \
-      f"{type(rhs)}: {rhsType}, {rhs}"
+    # assert isinstance(rhsType, (types.Ptr, types.ArrayT, types.FuncSig)), \
+    #   f"{type(rhs)}: {rhsType}, {rhs}"
+    if not isinstance(rhsType, (types.Ptr, types.ArrayT, types.FuncSig)): # FIXME
+      return self.componentBot  #FIXME: safe approximation
 
     if isinstance(rhs, expr.LitE):
       if rhs.isString():
@@ -438,10 +440,11 @@ class PointsToA(analysis.ValueAnalysisAT):
       return self.componentBot
 
     elif isinstance(rhs, expr.CastE):
-      if isinstance(rhsType, types.Ptr):
-        return self.getExprDfv(rhs.arg, dfvIn)
-      else:
-        return self.componentBot
+      return self.componentBot
+      # if isinstance(rhsType, types.Ptr):
+      #   return self.getExprDfv(rhs.arg, dfvIn)
+      # else:
+      #   return self.componentBot
 
     elif isinstance(rhs, expr.DerefE):
       names = PointsToA.getNamesUsedInExprNonSyntactically(self.func, rhs, dfvIn)

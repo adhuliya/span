@@ -78,7 +78,7 @@ class ComponentL(dfv.ComponentL):
 
 
   def __hash__(self):
-    return hash((self.func.name, self.val, self.top, self.bot))
+    return hash((self.val, self.top, self.bot))
 
 
   def getCopy(self) -> 'ComponentL':
@@ -304,7 +304,7 @@ class OverallL(dfv.OverallL):
       top: bool = False,
       bot: bool = False
   ) -> None:
-    super().__init__(func, val, top, bot, ComponentL, "interval")
+    super().__init__(func, val, top, bot, ComponentL, "IntervalA")
     # self.componentTop = ComponentL(self.func, top=True)
     # self.componentBot = ComponentL(self.func, bot=True)
 
@@ -565,7 +565,6 @@ class IntervalA(analysis.ValueAnalysisAT):
       e: expr.CastE,
       dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
   ) -> dfv.ComponentL:
-    """A default implementation (assuming Constant Propagation)."""
     assert isinstance(e.arg, expr.VarE), f"{e}"
     if self.isAcceptedType(e.arg.type):
       value = dfvInGetVal(e.arg.name)
@@ -574,8 +573,11 @@ class IntervalA(analysis.ValueAnalysisAT):
       else:
         eTo, val = e.to, value.val
         assert self.isAcceptedType(eTo) and value.val, f"{e}, {value}"
-        value.val = eTo.castValue(val[0]), eTo.castValue(val[1])
-        return value
+        newValue = ComponentL(self.func,
+                              val=(eTo.castValue(val[0]), eTo.castValue(val[1])))
+        #value.val = eTo.castValue(val[0]), eTo.castValue(val[1])
+        #print("herehereherehere234", val, value.val) #delit
+        return newValue
     else:
       return self.componentBot
 
