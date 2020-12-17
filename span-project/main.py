@@ -14,7 +14,7 @@ This module is supposed to be aliased as `span`.
 
 Once aliased, invoke `span -h` to get help with the command line options.
 """
-
+import span.ir.callgraph
 import span.util.logger as logger
 import logging
 
@@ -32,7 +32,7 @@ import span.util.common_util as cutil
 import span.ir.types as types
 import span.ir.conv as irConv
 import span.sys.ddm as ddm
-import span.util.data as data
+import span.util.consts as consts
 
 # Initialize -- logger, etc.
 if __name__ == "__main__":
@@ -232,7 +232,7 @@ def diagnoseSpanIr(args: argparse.Namespace) -> None:
 
   includesString = getIncludesString()
   cFileName = ".".join(spanirFileName.split(".")[:-1]) # remove .spanir extension
-  cmd = data.CMD_F_SLANG_BUG.format(includesString=includesString, cFileName=cFileName)
+  cmd = consts.CMD_F_SLANG_BUG.format(includesString=includesString, cFileName=cFileName)
   completed = subp.run(cmd, shell=True)
   print("Return Code:", completed.returncode)
   if completed.returncode != 0:
@@ -452,9 +452,10 @@ def viewDotFile(args: argparse.Namespace):
 
   if graphType == "callgraph":
     currTUnit = parseTUnitObject(fileName)
-    dotGraph = irUtil.getCallGraphDot(irUtil.generateCallGraph(currTUnit))
+    callGraph = span.ir.callgraph.generateCallGraph(currTUnit)
+    callGraphDot = callGraph.getCallGraphDot()
     dotFileName = f"{fileName}.{graphType}.dot"
-    util.writeToFile(dotFileName, dotGraph)
+    util.writeToFile(dotFileName, callGraphDot)
     showDotGraph(dotFileName)
   else:
     currTUnit = parseTUnitObject(fileName, ipa=(graphType=="ipa-cfg"))
@@ -463,14 +464,14 @@ def viewDotFile(args: argparse.Namespace):
       if funcName and not func.name == funcName:
         continue
       if graphType in {"cfg", "ipa-cfg"}:
-        dotGraph = func.cfg.genBbDotGraph()
+        callGraphDot = func.cfg.genBbDotGraph()
       elif graphType == "cfg_node":
-        dotGraph = func.cfg.genDotGraph()
+        callGraphDot = func.cfg.genDotGraph()
       else:
         assert False
 
       dotFileName = f"{fileName}.{irConv.simplifyName(func.name)}.{graphType}.dot"
-      util.writeToFile(dotFileName, dotGraph)
+      util.writeToFile(dotFileName, callGraphDot)
       showDotGraph(dotFileName)
 
 

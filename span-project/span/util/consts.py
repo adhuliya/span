@@ -3,7 +3,7 @@
 # MIT License
 # Copyright (c) 2020 Anshuman Dhuliya
 
-"""Project wide messages / strings.."""
+"""Project wide constants (e.g. messages / strings)."""
 
 START_BB_ID_NOT_MINUS_ONE = (
   "Start BB id is not -1 in the given input"

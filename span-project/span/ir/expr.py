@@ -13,7 +13,7 @@ LOG = logging.getLogger("span")
 from typing import List, Set, Any, Optional as Opt
 
 from span.util.logger import LS
-import span.util.data as data
+import span.util.consts as consts
 import span.ir.types as types
 import span.ir.conv as irConv
 import span.ir.op as op
@@ -178,7 +178,7 @@ class LitE(SimpleET):
 
 
   def getFormalStr(self) -> types.FormalStrT:
-    return data.LIT_E_STR
+    return consts.LIT_E_STR
 
 
   def checkInvariants(self, level: int = 0):
@@ -300,7 +300,7 @@ class VarE(LocationET, SimpleET):
 
 
   def getFormalStr(self) -> types.FormalStrT:
-    return data.VAR_E_STR
+    return consts.VAR_E_STR
 
 
   def checkInvariants(self, level: int = 0):
@@ -491,7 +491,7 @@ class DerefE(UnaryET, DerefET):
 
 
   def getFormalStr(self) -> types.FormalStrT:
-    return data.DEREF_E_STR
+    return consts.DEREF_E_STR
 
 
   def __eq__(self, other) -> bool:
@@ -561,7 +561,7 @@ class ArrayE(DerefET):
 
 
   def getFormalStr(self) -> types.FormalStrT:
-    return data.ARRAY_E_STR
+    return consts.ARRAY_E_STR
 
 
   def getArrayName(self) -> types.VarNameT:
@@ -675,7 +675,7 @@ class MemberE(DerefET):
 
 
   def getFormalStr(self) -> types.FormalStrT:
-    return data.MEMBER_E_STR
+    return consts.MEMBER_E_STR
 
 
   def needsMemDerefSim(self) -> bool:
@@ -777,7 +777,7 @@ class BinaryE(ExprET):
 
 
   def getFormalStr(self) -> types.FormalStrT:
-    return data.BINARYARITH_E_STR
+    return consts.BINARYARITH_E_STR
 
 
   def needsNumBinarySim(self) -> bool:
@@ -861,7 +861,7 @@ class UnaryE(UnaryET):
 
 
   def getFormalStr(self) -> types.FormalStrT:
-    return data.UNARYARITH_E_STR
+    return consts.UNARYARITH_E_STR
 
 
   def needsNumUnarySim(self) -> bool:
@@ -959,13 +959,13 @@ class AddrOfE(UnaryET):
 
   def getFormalStr(self) -> types.FormalStrT:
     if isinstance(self.arg, VarE):
-      fstr = data.ADDROFVAR_E_STR
+      fstr = consts.ADDROFVAR_E_STR
     elif isinstance(self.arg, DerefE):
-      fstr = data.ADDROFDEREF_E_STR
+      fstr = consts.ADDROFDEREF_E_STR
     elif isinstance(self.arg, MemberE):
-      fstr = data.ADDROFMEMBER_E_STR
+      fstr = consts.ADDROFMEMBER_E_STR
     elif isinstance(self.arg, ArrayE):
-      fstr = data.ADDROFARRAY_E_STR
+      fstr = consts.ADDROFARRAY_E_STR
     else:
       assert False, f"{self}, {self.arg}"
     return fstr
@@ -1040,9 +1040,9 @@ class CastE(UnaryET):
 
   def getFormalStr(self) -> types.FormalStrT:
     if isinstance(self.arg, VarE):
-      fstr = data.CASTVAR_E_STR
+      fstr = consts.CASTVAR_E_STR
     elif isinstance(self.arg, ArrayE):
-      fstr = data.CASTARR_E_STR
+      fstr = consts.CASTARR_E_STR
     else:
       assert False, f"{self}"
     return fstr
@@ -1120,7 +1120,7 @@ class AllocE(UnaryET):
 
 
   def getFormalStr(self) -> types.FormalStrT:
-    return data.ALLOC_E_STR
+    return consts.ALLOC_E_STR
 
 
   def __eq__(self, other) -> bool:
@@ -1183,7 +1183,7 @@ class SizeOfE(UnaryET):
 
 
   def getFormalStr(self) -> types.FormalStrT:
-    return data.SIZEOF_E_STR
+    return consts.SIZEOF_E_STR
 
 
   def __eq__(self, other) -> bool:
@@ -1250,7 +1250,7 @@ class CallE(ExprET):
 
 
   def getFormalStr(self) -> types.FormalStrT:
-    return data.CALL_E_STR
+    return consts.CALL_E_STR
 
 
   def needsPtrCallSim(self) -> bool:
@@ -1284,7 +1284,7 @@ class CallE(ExprET):
 
 
   def hasDereference(self) -> bool:
-    return isinstance(self.callee, types.Ptr)
+    return isinstance(self.callee.type, types.Ptr)
 
 
   def getCalleeFuncName(self) -> Opt[types.FuncNameT]:
@@ -1371,7 +1371,7 @@ class SelectE(ExprET):
 
 
   def getFormalStr(self) -> types.FormalStrT:
-    return data.SELECT_E_STR
+    return consts.SELECT_E_STR
 
 
   def __eq__(self, other) -> bool:
@@ -1443,7 +1443,7 @@ class PhiE(ExprET):
 
 
   def getFormalStr(self) -> types.FormalStrT:
-    return data.PHI_E_STR
+    return consts.PHI_E_STR
 
 
   def __eq__(self, other) -> bool:

@@ -18,7 +18,6 @@ import io
 
 import span.util.util as util
 from span.util.util import LS, AS
-import span.util.data as data
 
 import span.ir.ir as ir
 import span.ir.types as types

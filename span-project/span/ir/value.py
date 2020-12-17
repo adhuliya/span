@@ -4,7 +4,7 @@
 # Copyright (c) 2020 Anshuman Dhuliya
 
 """
-This is new concept under development.
+This is a new concept under development.
 This module defines the Value class and its subclasses.
 """
 

@@ -28,7 +28,7 @@ if TRACE_MALLOC:
 
 import span.sys.clients as clients
 from span.ir import expr, instr, constructs, tunit
-from span.ir import graph
+from span.ir import cfg
 import span.ir.conv as conv
 from span.ir.conv import GLOBAL_INITS_FUNC_NAME, Forward, Backward
 from span.ir.types import FuncNameT, FuncNodeIdT
@@ -163,7 +163,7 @@ class IpaHost:
     self.callSiteVContextMap: Dict[FuncNodeIdT, Dict[int, ValueContext]] = {}
     self.finalResult: Dict[FuncNameT,
                            Dict[AnalysisNameT,
-                                Dict[graph.CfgNodeId, NodeDfvL]]] = {}
+                                Dict[cfg.CfgNodeId, NodeDfvL]]] = {}
     self.uniqueId = 0
 
 
@@ -449,9 +449,9 @@ class IpaHost:
 
 
   @staticmethod
-  def mergeAnalysisResult(result1: Dict[graph.CfgNodeId, NodeDfvL],
-      result2: Dict[graph.CfgNodeId, NodeDfvL]
-  ) -> Dict[graph.CfgNodeId, NodeDfvL]:
+  def mergeAnalysisResult(result1: Dict[cfg.CfgNodeId, NodeDfvL],
+      result2: Dict[cfg.CfgNodeId, NodeDfvL]
+  ) -> Dict[cfg.CfgNodeId, NodeDfvL]:
     """Modifies `result1` argument (and returns it)."""
     cfgNodeIds = set(result1.keys())
     cfgNodeIds.update(result2.keys())

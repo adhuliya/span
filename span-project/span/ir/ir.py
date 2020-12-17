@@ -30,7 +30,7 @@ import span.ir.constructs as constructs
 import span.ir.tunit as tunit
 
 import span.util.util as util
-import span.util.data as data
+import span.util.consts as consts
 from span.util.util import LS
 
 """
@@ -61,7 +61,7 @@ from span.ir.tunit import \
 from span.ir.constructs import \
   Func
 
-from span.ir.graph import \
+from span.ir.cfg import \
   (EdgeLabelT,
    FalseEdge,
    TrueEdge,
@@ -73,7 +73,13 @@ from span.ir.graph import \
    CfgEdge,
    CfgNode,
    Cfg,
-   CallGraph, )
+   )
+
+from span.ir.callgraph import \
+  (CallGraph,
+   CallGraphNode,
+  )
+
 
 # try:
 #   # some machines may not have proto library
@@ -335,11 +341,11 @@ def convertCFile(cFileName: str) -> str:
   in the current directory.
   It returns the SpanIr File name.
   """
-  cmd = data.CMD_F_GEN_SPANIR.format(cFileName=cFileName)
+  cmd = consts.CMD_F_GEN_SPANIR.format(cFileName=cFileName)
   status, output = subp.getstatusoutput(cmd)
   if status != 0:
     print(output)
-    print(data.MSG_C2SPANIR_FAILED.format(cFileName=cFileName, cmd=cmd))
+    print(consts.MSG_C2SPANIR_FAILED.format(cFileName=cFileName, cmd=cmd))
     raise IOError()
   return f"{cFileName}.spanir"
 

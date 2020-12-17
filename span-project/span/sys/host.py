@@ -43,7 +43,7 @@ import span.sys.clients as clients
 import span.sys.ddm as ddm
 import span.sys.stats as stats
 from span.sys.sim import SimRecord
-import span.ir.graph as graph
+import span.ir.cfg as cfg
 import span.ir.tunit as irTUnit
 import span.ir.constructs as constructs
 import span.ir.ir as ir
@@ -337,9 +337,9 @@ class Host:
 
     assert func.cfg and func.tUnit, f"{func}: {func.cfg}, {func.tUnit}"
     # function's cfg
-    self.funcCfg: graph.Cfg = func.cfg
+    self.funcCfg: cfg.Cfg = func.cfg
     # cfg's edge feasibility information
-    self.ef: graph.FeasibleEdges = graph.FeasibleEdges(self.funcCfg)
+    self.ef: cfg.FeasibleEdges = cfg.FeasibleEdges(self.funcCfg)
 
     #DDM demand driven method?
     self.useDdm: bool = useDdm
@@ -350,7 +350,7 @@ class Host:
       self.anDemandDep: Dict[ddm.AtomicDemand, Set[AnNameT]] = dict()
       # map of (nid, simName, expr) --to-> set of demands affected
       self.nodeInstrDemandSimDep: \
-        Dict[Tuple[graph.CfgNodeId, SimNameT,
+        Dict[Tuple[cfg.CfgNodeId, SimNameT,
                    expr.ExprET], Set[ddm.AtomicDemand]] = dict()
 
     #IPA inter-procedural analysis?
@@ -427,7 +427,7 @@ class Host:
     self.anWorkListDot: List[str] = []
     self.simplificationDot: List[str] = []
     # stores the insn seen by the analysis for the node
-    self.nodeInsnDot: Dict[graph.CfgNodeId, List[str]] = {}
+    self.nodeInsnDot: Dict[cfg.CfgNodeId, List[str]] = {}
 
     # participant names, with their analysis instance (for curr function)
     self.anParticipating: Dict[AnNameT, AnalysisAT] = dict()
@@ -438,10 +438,10 @@ class Host:
     self.anWorkDict: Dict[AnNameT, DirectionDT] = dict()
     # map of (nid, simName, expr) --to-> set of analyses affected
     self.nodeInstrSimDep:\
-      Dict[Tuple[graph.CfgNodeId, SimNameT, expr.ExprET], Set[AnNameT]] = dict()
+      Dict[Tuple[cfg.CfgNodeId, SimNameT, expr.ExprET], Set[AnNameT]] = dict()
     # simplifications that depend on the given analysis (active analysis)
     self.anRevNodeDep: \
-      Dict[Tuple[AnNameT, graph.CfgNodeId],
+      Dict[Tuple[AnNameT, cfg.CfgNodeId],
            Dict[Tuple[Opt[expr.ExprET], SimNameT], Opt[SimRecord]]] = dict()
     # sim instruction cache: cache the instruction computed for a sim
     self.instrSimCache: \
@@ -501,7 +501,7 @@ class Host:
     timer.stopAndLog()
 
 
-  def addNodes(self, nodes: Opt[List[graph.CfgNode]]) -> None:
+  def addNodes(self, nodes: Opt[List[cfg.CfgNode]]) -> None:
     """Add nodes to worklist of all analyses that have freshly become feasible."""
     if not nodes: return
 
@@ -512,7 +512,7 @@ class Host:
       self.addAnToWorklist(anName)
 
 
-  def addDepAnToWorklist(self, node: graph.CfgNode, inOutChange: NewOldL) -> None:
+  def addDepAnToWorklist(self, node: cfg.CfgNode, inOutChange: NewOldL) -> None:
     """Add analyses dependent on active analysis (wrt given node) to worklist."""
     if not self.activeAnIsSimAn: return
     if not self.doesChangeMatchAnDirection(inOutChange): return
@@ -547,7 +547,7 @@ class Host:
 
 
   def recomputeDemands(self, #DDM dedicated method
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       simName: SimNameT,
       e: expr.ExprET,
   ) -> None:
@@ -610,7 +610,7 @@ class Host:
 
 
   def reAddAnalyses(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       simName: SimNameT,
       e: expr.ExprET,
   ) -> None:
@@ -709,7 +709,7 @@ class Host:
 
 
   def calcInOut(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       dirn: DirectionDT
   ) -> Tuple[NodeDfvL, NewOldL, Reachability]:
     """Merge info at IN and OUT of a node."""
@@ -827,7 +827,7 @@ class Host:
       self.addParticipantAn(anName)
 
     # cfg's edge feasibility information
-    self.ef = graph.FeasibleEdges(self.funcCfg)
+    self.ef = cfg.FeasibleEdges(self.funcCfg)
     nodes = self.ef.initFeasibility()
     # add nodes that have feasible pred edges
     self.addNodes(nodes)
@@ -897,7 +897,7 @@ class Host:
 
 
   def analyzeInstr(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       insn: instr.InstrIT,
       nodeDfv: NodeDfvL,
       treatAsNop: Opt[bool] = False,
@@ -924,7 +924,7 @@ class Host:
 
 
   def handleCallsForIpa(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       insn: instr.InstrIT,
       nodeDfv: NodeDfvL,
   ) -> Opt[NodeDfvL]:
@@ -952,7 +952,7 @@ class Host:
 
 
   def _analyzeInstr(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       insn: instr.InstrIT,  # could be a simplified form of node.insn
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -1057,7 +1057,7 @@ class Host:
 
 
   def getCachedInstrSimResult(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       simName: SimNameT,
       insn: instr.InstrIT,
       e: expr.ExprET,
@@ -1118,7 +1118,7 @@ class Host:
 
 
   def handleNewInstr(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       simName: SimNameT,
       insn: instr.InstrIT,
       e: expr.ExprET,
@@ -1148,7 +1148,7 @@ class Host:
 
 
   def handleLivenessSim(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> Opt[NodeDfvL]:
@@ -1188,7 +1188,7 @@ class Host:
 
 
   def handleLhsDerefSim(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       insn: instr.AssignI,  # lhs is expr.DerefE
       nodeDfv: NodeDfvL
   ) -> Opt[NodeDfvL]:
@@ -1200,7 +1200,7 @@ class Host:
 
 
   def getLhsDerefSimInstr(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       insn: instr.AssignI,  # lhs is expr.DerefE
       demand: Opt[ddm.AtomicDemand] = None, #DDM
   ) -> Opt[instr.InstrIT]:
@@ -1228,7 +1228,7 @@ class Host:
 
 
   def handleRhsDerefSim(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> Opt[NodeDfvL]:
@@ -1240,7 +1240,7 @@ class Host:
 
 
   def getRhsDerefSimInstr(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       insn: instr.AssignI,
       demand: Opt[ddm.AtomicDemand] = None, #DDM
   ) -> Opt[instr.InstrIT]:
@@ -1270,7 +1270,7 @@ class Host:
 
 
   def handleLhsMemDerefSim(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> Opt[NodeDfvL]:
@@ -1282,7 +1282,7 @@ class Host:
 
 
   def getLhsMemDerefSimInstr(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       insn: instr.AssignI,
       demand: Opt[ddm.AtomicDemand] = None, #DDM
   ) -> Opt[instr.InstrIT]:
@@ -1312,7 +1312,7 @@ class Host:
 
 
   def handleRhsMemDerefSim(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> Opt[NodeDfvL]:
@@ -1324,7 +1324,7 @@ class Host:
 
 
   def getRhsMemDerefSimInstr(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       insn: instr.AssignI,
       demand: Opt[ddm.AtomicDemand] = None, #DDM
   ) -> Opt[instr.InstrIT]:
@@ -1354,7 +1354,7 @@ class Host:
 
 
   def handleRhsNumVar(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> Opt[NodeDfvL]:
@@ -1394,7 +1394,7 @@ class Host:
 
 
   def handleRhsUnaryArith(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> Opt[NodeDfvL]:
@@ -1421,7 +1421,7 @@ class Host:
 
 
   def handleRhsBinArith(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL
   ) -> Opt[NodeDfvL]:
@@ -1446,7 +1446,7 @@ class Host:
 
 
   def handleRhsBinArithArgs(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
       argPos: int,  # 1 or 2 only
@@ -1485,7 +1485,7 @@ class Host:
   # BOUND START: RegularInstructions
 
   def Conditional_Instr(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       insn: instr.CondI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -1499,7 +1499,7 @@ class Host:
     return self.activeAnObj.Conditional_Instr(node.id, insn, nodeDfv)
 
 
-  def setEdgeFeasibility(self, node, arg) -> Opt[List[graph.CfgNode]]:
+  def setEdgeFeasibility(self, node, arg) -> Opt[List[cfg.CfgNode]]:
     nodes = None
     if self.disableAllSim:
       nodes = self.ef.setAllSuccEdgesFeasible(node)
@@ -1529,7 +1529,7 @@ class Host:
   # BOUND START: SpecialInstructions
 
   def Filter_Instr(self,
-      node: graph.CfgNode,  # redundant but needed
+      node: cfg.CfgNode,  # redundant but needed
       insn: instr.FilterI,  # redundant but needed
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -1540,7 +1540,7 @@ class Host:
 
 
   def Barrier_Instr(self,
-      node: graph.CfgNode,  # redundant but needed
+      node: cfg.CfgNode,  # redundant but needed
       insn: instr.InstrIT,  # redundant but needed
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -1552,7 +1552,7 @@ class Host:
 
 
   def Use_Instr(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       insn: instr.UseI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -1562,7 +1562,7 @@ class Host:
 
 
   def ExRead_Instr(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       insn: instr.ExReadI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -1573,7 +1573,7 @@ class Host:
 
 
   def CondRead_Instr(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       insn: instr.CondReadI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -1583,7 +1583,7 @@ class Host:
 
 
   def UnDefVal_Instr(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       insn: instr.UnDefValI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -1593,7 +1593,7 @@ class Host:
 
 
   def Nop_Instr(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       insn: instr.InstrIT,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
@@ -1646,7 +1646,7 @@ class Host:
 
 
   def setupSimSourcesDep(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       simAnNames: Set[SimNameT],
       simName: SimNameT,
       e: Opt[expr.ExprET] = None,  # None is a special case (Node__to__Nil)
@@ -1697,7 +1697,7 @@ class Host:
   def calculateSimValue(self,
       simAnName: str,
       simName: SimNameT,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       e: Opt[expr.ExprET] = None,
       values: Opt[Set] = None,
   ) -> Opt[Set]:
@@ -1720,7 +1720,7 @@ class Host:
 
   #@functools.lru_cache(500)
   def fetchAndSetupSimSrcs(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       simName: SimNameT,
       e: Opt[expr.ExprET] = None,
       demand: Opt[ddm.AtomicDemand] = None,  #DDM
@@ -1739,7 +1739,7 @@ class Host:
 
 
   def initializeAnalysisForDdm(self, #DDM dedicated method
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       simName: SimNameT,
       anName: AnNameT,
       e: Opt[expr.ExprET] = None,
@@ -1757,7 +1757,7 @@ class Host:
 
 
   def attachDemandToSimAnalysis(self, #DDM dedicated method
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       simName: SimNameT,
       anName: AnNameT,
       e: Opt[expr.ExprET] = None,
@@ -1830,7 +1830,7 @@ class Host:
   # BOUND START: Simplification_Methods
 
   def getSim(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       simName: SimNameT,
       e: Opt[expr.ExprET] = None,  # could be None (in case of Node__to__Nil)
       demand: Opt[ddm.AtomicDemand] = None,  #DDM exclusive argument
@@ -1863,7 +1863,7 @@ class Host:
   def collectAndMergeResults(self,
       anNames: Set[AnNameT],
       simName: SimNameT,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       e: Opt[expr.ExprET],
   ) -> Opt[Set]:  # A None value indicates failed sim
     """Collects and merges the simplification by various analyses.
@@ -1900,7 +1900,7 @@ class Host:
 
 
   def Calc_Deref__to__Vars(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       e: expr.VarE,
       demand: Opt[ddm.AtomicDemand] = None, #DDM
   ) -> Opt[Set[VarNameT]]:
@@ -2031,7 +2031,7 @@ class Host:
 
 
   def getCallSiteDfvs(self
-  ) -> Opt[Dict[graph.CfgNode, Dict[AnNameT, NodeDfvL]]]:
+  ) -> Opt[Dict[cfg.CfgNode, Dict[AnNameT, NodeDfvL]]]:
     """
     Returns the NodeDfvL objects at the call site nodes.
     """
@@ -2068,7 +2068,7 @@ class Host:
 
   def getAnalysisResults(self,
       anName: AnNameT,
-  ) -> Opt[Dict[graph.CfgNodeId, NodeDfvL]]:
+  ) -> Opt[Dict[cfg.CfgNodeId, NodeDfvL]]:
     """Returns the analysis results of the given analysis.
 
     Returns None if no information present.

@@ -15,7 +15,7 @@ import io
 from span.util.util import LS, AS
 import span.ir.types as types
 import span.ir.conv as conv
-import span.ir.graph as graph
+import span.ir.cfg as cfg
 import span.ir.expr as expr
 import span.ir.instr as instr
 import span.ir.constructs as constructs
@@ -60,7 +60,7 @@ class FastNodeWorkList:
                "valueFilter", "wlNodeSet", "frozenSet", "fullSequence"]
 
   def __init__(self,
-      nodes: Dict[graph.CfgNodeId, graph.CfgNode],
+      nodes: Dict[cfg.CfgNodeId, cfg.CfgNode],
       postOrder: bool = False,  # True = revPostOrder
       frozen: bool = False,  # True restricts addition of new nodes
   ):
@@ -68,7 +68,7 @@ class FastNodeWorkList:
     self.postOrder = postOrder
     self.frozen = frozen
 
-    self.wl: List[graph.CfgNodeId] = list(nodes.keys())
+    self.wl: List[cfg.CfgNodeId] = list(nodes.keys())
     self.wl.sort(key=lambda x: x if self.postOrder else -x)
     self.isNop = [frozen for i in range(len(nodes.keys()))]
     self.valueFilter = [None for i in range(len(nodes.keys()))]
@@ -86,7 +86,7 @@ class FastNodeWorkList:
     self.frozenSet.clear()
 
 
-  def pop(self) -> Tuple[Opt[graph.CfgNode], Opt[bool], Opt[Any]]:
+  def pop(self) -> Tuple[Opt[cfg.CfgNode], Opt[bool], Opt[Any]]:
     """Pops and returns next node id on top of queue, None otherwise."""
     if not self.wl:
       self.fullSequence.append(0) # special value to denote wl consumed
@@ -100,7 +100,7 @@ class FastNodeWorkList:
 
 
   def add(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
   ) -> bool:
     """Add a node to the queue."""
     frozen, nid = self.frozen, node.id
@@ -125,7 +125,7 @@ class FastNodeWorkList:
 
 
   def updateNodeMap(self,
-      nodeMap: Opt[Dict[graph.CfgNode, Any]]  # node -> span.sys.ddm.NodeInfo
+      nodeMap: Opt[Dict[cfg.CfgNode, Any]]  # node -> span.sys.ddm.NodeInfo
   ) -> bool:
     """Used by #DDM"""
     if not nodeMap: return False  # i.e. no change
@@ -200,25 +200,25 @@ class NodeWorkList(object):
 
 
   def __init__(self,
-      nodes: Opt[List[graph.CfgNode]] = None,
+      nodes: Opt[List[cfg.CfgNode]] = None,
       frozen: bool = False,  # True restricts addition of new nodes
   ) -> None:
     # list to remember the order of each node initially given for the first time
-    self.sequence: List[graph.CfgNode] = []
+    self.sequence: List[cfg.CfgNode] = []
     self.workque: List[bool] = []
     self.treatAsNop: List[bool] = []  # DDM used by demand driven technique
     # remembers the nodes already given
-    self.nodeMem: Set[graph.CfgNodeId] = set()
+    self.nodeMem: Set[cfg.CfgNodeId] = set()
     _ = [self.add(node, force=True) for node in nodes] if nodes else None
     # seq of nodes visited from start to end of the analysis
-    self.fullSequence: List[graph.CfgNode] = []
+    self.fullSequence: List[cfg.CfgNode] = []
     # seq of nodes visited till the analysis reaches intermediate FP
     # after each intermediate FP this is supposed to be cleared explicitly
-    self.tmpSequence: List[graph.CfgNode] = []
+    self.tmpSequence: List[cfg.CfgNode] = []
     self.frozen = frozen
 
 
-  def __contains__(self, node: graph.CfgNode):
+  def __contains__(self, node: cfg.CfgNode):
     nid = node.id
     for index, n in enumerate(self.sequence):
       if nid == n.id: return self.workque[index]
@@ -231,12 +231,12 @@ class NodeWorkList(object):
       self.workque[index] = False
 
 
-  def isNodePresent(self, nid: graph.CfgNodeId):
+  def isNodePresent(self, nid: cfg.CfgNodeId):
     return nid in self.nodeMem
 
 
   def add(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       treatAsNop: bool = False,
       force: bool = False,  # overrides the frozen property
   ) -> bool:
@@ -265,7 +265,7 @@ class NodeWorkList(object):
     return added  # possibly added
 
 
-  def pop(self) -> Tuple[Opt[graph.CfgNode], Opt[bool]]:
+  def pop(self) -> Tuple[Opt[cfg.CfgNode], Opt[bool]]:
     """Pops and returns next node id on top of queue, None otherwise."""
     for index, active in enumerate(self.workque):
       if active: break
@@ -279,7 +279,7 @@ class NodeWorkList(object):
     return node, self.treatAsNop[index]
 
 
-  def peek(self) -> Opt[graph.CfgNode]:
+  def peek(self) -> Opt[cfg.CfgNode]:
     """Returns next node id on top of queue, None otherwise."""
     for index, active in enumerate(self.workque):
       if active:
@@ -296,7 +296,7 @@ class NodeWorkList(object):
       self.treatAsNop[i] = True
 
 
-  def updateNodeMap(self, nodeMap: Opt[Dict[graph.CfgNode, bool]]) -> bool:
+  def updateNodeMap(self, nodeMap: Opt[Dict[cfg.CfgNode, bool]]) -> bool:
     """Used by #DDM"""
     if not nodeMap: return False  # i.e. no change
 
@@ -323,7 +323,7 @@ class NodeWorkList(object):
     return changed
 
 
-  def shouldTreatAsNop(self, node: graph.CfgNode):
+  def shouldTreatAsNop(self, node: cfg.CfgNode):
     """Should the current node be treated as containing NopI()? Used by #DDM"""
     nid = node.id
     for index, n in enumerate(self.sequence):
@@ -391,13 +391,13 @@ class DirectionDT:
 
 
   def __init__(self,
-      cfg: graph.Cfg,
+      cfg: cfg.Cfg,
       top: DataLT
   ) -> None:
     if type(self).__name__ == "DirectionT":
       super().__init__()
     self.cfg = cfg
-    self.nidNdfvMap: Dict[graph.CfgNodeId, NodeDfvL] = dict()
+    self.nidNdfvMap: Dict[cfg.CfgNodeId, NodeDfvL] = dict()
     self.topNdfv: NodeDfvL = NodeDfvL(top, top)
     for nid in self.cfg.nodeMap.keys():
       self.nidNdfvMap[nid] = self.topNdfv
@@ -413,7 +413,7 @@ class DirectionDT:
 
 
   def update(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       nodeDfv: NodeDfvL,
   ) -> NewOldL:
     """Update, the node dfv in wl if changed.
@@ -449,22 +449,22 @@ class DirectionDT:
     return NewOldL.getNewOldObj(isNewIn, isNewOut)
 
 
-  def add(self, node: graph.CfgNode):
+  def add(self, node: cfg.CfgNode):
     """Add node_id to the worklist."""
     assert self.wl is not None
     return self.wl.add(node)
 
 
   def calcInOut(self,
-      node: graph.CfgNode,
-      fcfg: graph.FeasibleEdges
+      node: cfg.CfgNode,
+      fcfg: cfg.FeasibleEdges
   ) -> Tuple[NodeDfvL, NewOldL]:
     """Merges dfv from feasible edges."""
     raise NotImplementedError()
 
 
   def getDfv(self,
-      nodeId: graph.CfgNodeId
+      nodeId: cfg.CfgNodeId
   ) -> NodeDfvL:
     return self.nidNdfvMap.get(nodeId, self.topNdfv)
 
@@ -482,9 +482,9 @@ class ForwardDT(DirectionDT):
 
 
   def __init__(self,
-      cfg: graph.Cfg,
+      cfg: cfg.Cfg,
       top: DataLT,
-      callCfg: Opt[graph.Cfg] = None,  # call parameter assignments
+      callCfg: Opt[cfg.Cfg] = None,  # call parameter assignments
   ) -> None:
     if type(self).__name__ == "ForwardDT":
       raise NotImplementedError()  # can't create direct object
@@ -500,7 +500,7 @@ class ForwardDT(DirectionDT):
 
 
   def update(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       nodeDfv: NodeDfvL,
   ) -> NewOldL:
     """Update, for forward direction.
@@ -521,8 +521,8 @@ class ForwardDT(DirectionDT):
 
 
   def calcInOut(self,
-      node: graph.CfgNode,
-      fcfg: graph.FeasibleEdges
+      node: cfg.CfgNode,
+      fcfg: cfg.FeasibleEdges
   ) -> Tuple[NodeDfvL, NewOldL]:
     """Forward: Merges OUT of feasible predecessors.
 
@@ -571,7 +571,7 @@ class ForwardD(ForwardDT):
 
 
   def __init__(self,
-      cfg: graph.Cfg,
+      cfg: cfg.Cfg,
       top: DataLT
   ) -> None:
     super().__init__(cfg, top)
@@ -582,7 +582,7 @@ class BackwardDT(DirectionDT):
 
 
   def __init__(self,
-      cfg: graph.Cfg,
+      cfg: cfg.Cfg,
       top: DataLT
   ) -> None:
     if type(self).__name__ == "BackwardDT":
@@ -599,7 +599,7 @@ class BackwardDT(DirectionDT):
 
 
   def update(self,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       nodeDfv: NodeDfvL,
   ) -> NewOldL:
     """Update, for backward direction.
@@ -623,8 +623,8 @@ class BackwardDT(DirectionDT):
 
 
   def calcInOut(self,
-      node: graph.CfgNode,
-      fcfg: graph.FeasibleEdges
+      node: cfg.CfgNode,
+      fcfg: cfg.FeasibleEdges
   ) -> Tuple[NodeDfvL, NewOldL]:
     """Backward: Merges IN of feasible successors.
 
@@ -663,7 +663,7 @@ class BackwardD(BackwardDT):
 
 
   def __init__(self,
-      cfg: graph.Cfg,
+      cfg: cfg.Cfg,
       top: DataLT
   ) -> None:
     super().__init__(cfg, top)

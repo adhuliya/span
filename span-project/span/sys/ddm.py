@@ -33,7 +33,7 @@ from span.ir.expr import (VAR_EXPR_EC, LIT_EXPR_EC, UNARY_EXPR_EC,
 from span.api.dfv import NodeDfvL, NewOldL, OLD_INOUT
 import span.api.lattice as lattice
 from span.api.lattice import LatticeLT, DataLT
-import span.ir.graph as graph
+import span.ir.cfg as cfg
 import span.ir.tunit as irTUnit
 import span.ir.constructs as constructs
 import span.ir.ir as ir
@@ -75,7 +75,7 @@ class AtomicDemand:
 
   def __init__(self,
       func: constructs.Func,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       atIn: bool, # True = at In, False = at Out
       demandVar: types.VarNameT,
       vType: types.Type,
@@ -143,7 +143,7 @@ class NodeInfo:
   __slots__ : List[str] = ["nid", "nop", "varNameSet", "atIn"]
 
   def __init__(self,
-      nid: graph.CfgNodeId,
+      nid: cfg.CfgNodeId,
       nop: bool = True,
       varNameSet: Opt[Set[types.VarNameT]] = None,
       atIn: bool = True, # varNameSet is needed at IN of the node
@@ -208,7 +208,7 @@ class NewSlice:
   __slots__ : List[str] = ['nodeMap']
 
   def __init__(self,
-      nodeMap: Opt[Dict[graph.CfgNode, NodeInfo]] = None,
+      nodeMap: Opt[Dict[cfg.CfgNode, NodeInfo]] = None,
   ):
     self.nodeMap = nodeMap if nodeMap else dict()
 
@@ -220,7 +220,7 @@ class NewSlice:
     return updated
 
 
-  def addNode(self, node: graph.CfgNode, nInfo: NodeInfo) -> bool:
+  def addNode(self, node: cfg.CfgNode, nInfo: NodeInfo) -> bool:
     if node in self.nodeMap:
       return self.nodeMap[node].update(nInfo)
     self.nodeMap[node] = nInfo.getCopy()
@@ -245,7 +245,7 @@ class Slice:
   __slots__ : List[str] = ['nodeMap']
 
   def __init__(self,
-      nodeMap: Opt[Dict[graph.CfgNode, bool]] = None,
+      nodeMap: Opt[Dict[cfg.CfgNode, bool]] = None,
   ):
     # nid ---> True   if nid has to be treated like a NopI()
     self.nodeMap = nodeMap if nodeMap else dict()
@@ -285,7 +285,7 @@ class Slice:
     return updated
 
 
-  def addNode(self, node: graph.CfgNode, nop: bool = False) -> bool:
+  def addNode(self, node: cfg.CfgNode, nop: bool = False) -> bool:
     if node in self.nodeMap:
       oldValue = self.nodeMap[node]
       newValue = oldValue and nop  # once not a nop, always the same
@@ -323,7 +323,7 @@ class DdMethod:
     self.host = host
     self.validHost = host is not None
     self.fe = self.host.ef if self.host\
-      else graph.FeasibleEdges(func.cfg, allFeasible=True)
+      else cfg.FeasibleEdges(func.cfg, allFeasible=True)
     if not self.validHost:
       self.fe.initFeasibility()  # initialize
 
@@ -629,7 +629,7 @@ class DdMethod:
     return propDemands, False
 
 
-  def updateInfNodeDepDemands(self, feasibleNodes: Opt[List[graph.CfgNode]]):
+  def updateInfNodeDepDemands(self, feasibleNodes: Opt[List[cfg.CfgNode]]):
     if not feasibleNodes: return None
 
     if LS: LOG.debug("AddingFeasibleNodes: %s", [n.id for n in feasibleNodes])
@@ -642,7 +642,7 @@ class DdMethod:
     self.cleanInfNodeDep(feasibleNodes)
 
 
-  def cleanInfNodeDep(self, feasibleNodes: Opt[List[graph.CfgNode]]):
+  def cleanInfNodeDep(self, feasibleNodes: Opt[List[cfg.CfgNode]]):
     """Removes the dependence information of feasible nodes
     from self.infNodeDep """
     if not feasibleNodes: return None
@@ -669,7 +669,7 @@ class DdMethod:
   #@functools.lru_cache(200)
   def getDemandForExprSim(self,
       func: constructs.Func,
-      node: graph.CfgNode,
+      node: cfg.CfgNode,
       simName: analysis.SimNameT,
       e: expr.ExprET,
   ) -> List[AtomicDemand]:

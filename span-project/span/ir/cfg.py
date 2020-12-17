@@ -18,9 +18,9 @@ import span.ir.expr as expr
 from span.ir.types import EdgeLabelT, BasicBlockIdT, FuncNameT
 from span.ir.conv import FalseEdge, TrueEdge, UnCondEdge
 import span.ir.types as types
-import span.util.data as data
+import span.util.consts as consts
 
-from span.util.data import START_BB_ID_NOT_MINUS_ONE, END_BB_ID_NOT_ZERO
+from span.util.consts import START_BB_ID_NOT_MINUS_ONE, END_BB_ID_NOT_ZERO
 import span.util.util as util
 
 # Type names to make code self documenting
@@ -193,7 +193,7 @@ class BB:
       edgeLabel: EdgeLabelT = UnCondEdge
   ) -> Opt[BbEdge]:
     """Returns the succ edge of the given label (if present)"""
-    assert len(self.succEdges) <= 2, data.INVARIANT_VIOLATED
+    assert len(self.succEdges) <= 2, consts.INVARIANT_VIOLATED
 
     if len(self.succEdges) == 1:
       if edgeLabel == UnCondEdge:
@@ -224,7 +224,7 @@ class BB:
       # create a space for two
       self.succEdges.extend([None,None])  # type: ignore
 
-    assert len(self.succEdges) == 2, data.INVARIANT_VIOLATED
+    assert len(self.succEdges) == 2, consts.INVARIANT_VIOLATED
 
     if bbEdge.label == TrueEdge:
       self.succEdges[0] = bbEdge
@@ -388,10 +388,10 @@ class Cfg(object):
   ) -> None:
     """Builds the complete Cfg structure."""
 
-    assert inputBbMap and inputBbEdges, data.INVARIANT_VIOLATED
+    assert inputBbMap and inputBbEdges, consts.INVARIANT_VIOLATED
     # -1 is start bb id, 0 is the end bb id (MUST)
-    assert -1 in inputBbMap, data.INVARIANT_VIOLATED
-    assert 0 in inputBbMap, data.INVARIANT_VIOLATED
+    assert -1 in inputBbMap, consts.INVARIANT_VIOLATED
+    assert 0 in inputBbMap, consts.INVARIANT_VIOLATED
 
     # STEP 1: Create BBs in their dict.
     for bbId, instrSeq in inputBbMap.items():
@@ -605,7 +605,7 @@ class Cfg(object):
       if len(bb.succEdges) > 1:  # bb ends with a conditional instruction
         # modify jump labels of the last instruction
         condInsn = bb.lastCfgNode.insn
-        assert isinstance(condInsn, instr.CondI), data.INVARIANT_VIOLATED
+        assert isinstance(condInsn, instr.CondI), consts.INVARIANT_VIOLATED
 
         trueEdge = bb.getSuccEdge(TrueEdge)
         assert trueEdge is not None
@@ -621,7 +621,7 @@ class Cfg(object):
           instrSeq.append(instr.GotoI(labelName.format(bbId=uncondEdge.dest.id)))
     else:
       # must be the end node
-      assert bb.id == 0, data.INVARIANT_VIOLATED
+      assert bb.id == 0, consts.INVARIANT_VIOLATED
 
     return instrSeq
 
@@ -792,9 +792,39 @@ class CalleeInfo:
     return not self.callExpr.callee.hasFunctionName()
 
 
+################################################################################
+# START: call_graph_related ####################################################
+################################################################################
+
+
+class CallGraphNode:
+  """A Node in the call graph representing a function."""
+
+  def __init__(self,
+      funcName: types.FuncNameT,
+      index: int,    # for Tarjan's Algo: https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
+      lowIndex: int, # for Tarjan's Algo
+      onStack: int,  # for Tarjan's Algo
+  ):
+    self.funcName = funcName
+    self.index = index
+    self.lowIndex = lowIndex
+    self.onStack = onStack
+
+
+  def __eq__(self, other):
+    if not isinstance(other, CallGraphNode):
+      return False
+    return self.funcName == other.funcName
+
+
+  def __hash__(self):
+    return hash(self.funcName)
+
+
 class CallGraph:
   """Call graph of the given translation unit.
-  This could work for inter-procedural level also.
+  This can work for inter-procedural level also.
   """
 
 
@@ -804,3 +834,6 @@ class CallGraph:
     self.entryFunctions: Opt[List[FuncNameT]] = None
 
 
+################################################################################
+# END  : call_graph_related ####################################################
+################################################################################

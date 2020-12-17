@@ -37,7 +37,7 @@ import span.ir.op as op
 import span.ir.expr as expr
 import span.ir.instr as instr
 import span.ir.constructs as constructs
-import span.ir.graph as graph
+import span.ir.cfg as cfg
 
 class Stats:
   def __init__(self, tunit: 'TranslationUnit', totalCfgNodes=0):
@@ -536,7 +536,7 @@ class TranslationUnit:
     Its done only for functions with body.
     """
     for func in self.yieldFunctionsWithBody():
-      func.cfg = graph.Cfg(func.name, func.basicBlocks, func.bbEdges)
+      func.cfg = cfg.Cfg(func.name, func.basicBlocks, func.bbEdges)
 
 
   def yieldFunctions(self):
@@ -2086,8 +2086,8 @@ class TranslationUnit:
 
 
   def filterAwayCalleesWithNoBody(self,
-      callSiteNodes: Opt[List[graph.CfgNode]],
-  ) -> Opt[List[graph.CfgNode]]:
+      callSiteNodes: Opt[List[cfg.CfgNode]],
+  ) -> Opt[List[cfg.CfgNode]]:
     """Filter away nodes with calls to functions with no body!"""
     if not callSiteNodes:
       return None

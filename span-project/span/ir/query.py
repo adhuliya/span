@@ -61,8 +61,8 @@ def countDerefsUsedLhs(func: constructs.Func) -> int:
   """Returns the number of deref expressions in a function."""
   derefs = 0
   for insn in func.yieldInstrSeq():
-    if insn.needsLhsDerefSim():
-      derefs += 1
+    if isinstance(insn, instr.AssignI):
+      derefs += int(insn.lhs.hasDereference())
   return derefs
 
 
@@ -71,12 +71,13 @@ def countDerefsUsedRhs(func: constructs.Func) -> int:
   """Returns the number of deref expressions in a function."""
   derefs = 0
   for insn in func.yieldInstrSeq():
-    if insn.needsRhsDerefSim():
-      derefs += 1
+    if isinstance(insn, instr.AssignI):
+      derefs += int(insn.rhs.hasDereference())
   return derefs
 
 
 def countModOperators(func: constructs.Func) -> int:
+  """Count of expressions with mod ("%") operator in them."""
   modCount = 0
   for insn in func.yieldInstrSeq():
     if isinstance(insn, instr.AssignI):
@@ -86,8 +87,34 @@ def countModOperators(func: constructs.Func) -> int:
   return modCount
 
 
+def countModByTwoOperators(func: constructs.Func) -> int:
+  """Count of expressions with mod by 2 ("% 2") in them."""
+  modCount = 0
+  for insn in func.yieldInstrSeq():
+    if isinstance(insn, instr.AssignI):
+      if isinstance(insn.rhs, expr.BinaryE):
+        if insn.rhs.opr == op.BO_MOD\
+            and isinstance(insn.rhs.arg2, expr.LitE)\
+            and insn.rhs.arg2.val == 2:
+          modCount += 1
+  return modCount
+
+
 def countMemoryAllocations(func: constructs.Func) -> int:
-  """Returns count of memory locations done in the function."""
+  """Returns count of memory allocations done in the function."""
+  memallocs = 0
+  for insn in func.yieldInstrSeq():
+    if isinstance(insn, instr.AssignI):
+      if isinstance(insn.rhs, expr.AddrOfE):
+        if isinstance(insn.rhs.arg, expr.PseudoVarE):
+          memallocs += 1
+      elif instr.getCalleeFuncName(insn) in ("f:calloc", "f:malloc"):
+        memallocs += 1
+  return memallocs
+
+
+def countMemoryAllocationsPseudoVar(func: constructs.Func) -> int:
+  """Returns count of memory allocations done with pseudo var."""
   memallocs = 0
   for insn in func.yieldInstrSeq():
     if isinstance(insn, instr.AssignI):
@@ -95,6 +122,17 @@ def countMemoryAllocations(func: constructs.Func) -> int:
         if isinstance(insn.rhs.arg, expr.PseudoVarE):
           memallocs += 1
   return memallocs
+
+
+def countMemoryAllocationsWithoutPseudoVar(func: constructs.Func) -> int:
+  """Returns count of memory allocations done without pseudo vars."""
+  memallocs = 0
+  for insn in func.yieldInstrSeq():
+    if isinstance(insn, instr.AssignI):
+      if instr.getCalleeFuncName(insn) in ("f:calloc", "f:malloc"):
+        memallocs += 1
+  return memallocs
+
 
 def countNodes(func: constructs.Func) -> int:
   """Returns the total number of nodes in the func cfg"""
@@ -164,7 +202,7 @@ def filterFunctions(
   return list(filter(predicate, tunit.yieldFunctions()))
 
 
-def totalCountOnFunctions(
+def countOnFunctions(
     tunit: TranslationUnit,
     counter: Callable,
     funcWithBody: bool = False, # True if the counter needs func with body only
@@ -178,12 +216,8 @@ def totalCountOnFunctions(
   Returns:
     The sum of all the return values of counter() on each function.
   """
-  count = 0
-  for func in tunit.yieldFunctions():
-    if funcWithBody and not func.hasBody():
-      continue
-    count += counter(func)
-  return count
+  lst = tunit.yieldFunctionsWithBody if funcWithBody else tunit.yieldFunctions
+  return sum(map(counter, lst()))
 
 ################################################################
 # BLOCK END  : queries_on_translation_unit
@@ -193,15 +227,27 @@ def totalCountOnFunctions(
 def executeAllQueries(tUnit: TranslationUnit):
   p = print
   p(f"Query Results on translation unit '{tUnit.name}'")
-  p("TotalFunctions:", totalCountOnFunctions(tUnit, lambda _: 1))
-  p("TotalFunctions(WithDef):", totalCountOnFunctions(tUnit, hasDefinition))
+  p("TotalFunctions:", countOnFunctions(tUnit, lambda _: 1))
+  p("TotalFunctions(WithDef):", countOnFunctions(tUnit, hasDefinition))
   p("TotalFunctions(WithoutDef):",
-    totalCountOnFunctions(tUnit, lambda x: not hasDefinition(x)))
-  p("TotalFunctions(Variadic):", totalCountOnFunctions(tUnit, isVariadic, FUNC_WITH_BODY))
-  p("Nodes(total):", totalCountOnFunctions(tUnit, countNodes, FUNC_WITH_BODY))
+    countOnFunctions(tUnit, lambda x: not hasDefinition(x)))
+  p("TotalFunctions(Variadic):", countOnFunctions(tUnit, isVariadic, FUNC_WITH_BODY))
+  p("Nodes(total):", countOnFunctions(tUnit, countNodes, FUNC_WITH_BODY))
   p("Nodes(maxInAFunc):", tUnit.maxCfgNodesInAFunction())
-  p("DerefsUsed(all):", totalCountOnFunctions(tUnit, countDerefsUsed, FUNC_WITH_BODY))
-  p("DerefsUsed(Lhs):", totalCountOnFunctions(tUnit, countDerefsUsedLhs, FUNC_WITH_BODY))
-  p("DerefsUsed(Rhs):", totalCountOnFunctions(tUnit, countDerefsUsedRhs, FUNC_WITH_BODY))
+  p("DerefsUsed(all):", countOnFunctions(tUnit, countDerefsUsed, FUNC_WITH_BODY))
+  p("DerefsUsed(Lhs):", countOnFunctions(tUnit, countDerefsUsedLhs, FUNC_WITH_BODY))
+  p("DerefsUsed(Rhs):", countOnFunctions(tUnit, countDerefsUsedRhs, FUNC_WITH_BODY))
+  p("TotalModOperations:", countOnFunctions(tUnit, countModOperators, FUNC_WITH_BODY))
+  p("TotalModByTwoOperations:", countOnFunctions(tUnit, countModByTwoOperators, FUNC_WITH_BODY))
+  p("TotalFuncWithModByTwoOperations:",
+    len(filterFunctions(tUnit, lambda x: bool(countModByTwoOperators(x)))))
+  p("TotalMemAllocations:", countOnFunctions(tUnit, countMemoryAllocations, FUNC_WITH_BODY))
+  p("TotalMemAllocationsPseudoVar:",
+    countOnFunctions(tUnit, countMemoryAllocationsPseudoVar, FUNC_WITH_BODY))
+  p("TotalMemAllocationsWithoutPseudoVar:",
+    countOnFunctions(tUnit, countMemoryAllocationsWithoutPseudoVar, FUNC_WITH_BODY))
+  p("TotalFuncWithMemAllocations:",
+    #len(filterFunctions(tUnit, lambda x: bool(countMemoryAllocations(x)))))
+    list(map(lambda x: x.name, filterFunctions(tUnit, lambda x: bool(countMemoryAllocations(x))))))
 
 

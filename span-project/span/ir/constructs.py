@@ -22,7 +22,7 @@ from span.ir.instr import InstrIT, LabelI, GotoI, CondI, NopI, ReturnI
 from span.ir.conv import FalseEdge, TrueEdge, UnCondEdge, GLOBAL_INITS_FUNC_NAME
 from span.ir.types import BasicBlockIdT, InstrIndexT, FuncNodeIdT
 import span.ir.expr as expr
-import span.ir.graph as graph
+import span.ir.cfg as graph
 
 
 class Func(ConstructT):
@@ -245,8 +245,7 @@ class Func(ConstructT):
 
 
   def __eq__(self, other) -> bool:
-    """For C programs, just the name of the function is enough
-    for equality."""
+    """The name of the function is enough for equality (C Language)."""
     if self is other:
       return True
     if not isinstance(other, Func):

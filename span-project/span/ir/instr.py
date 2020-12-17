@@ -15,7 +15,7 @@ from typing import Set, List
 from typing import Optional as Opt
 
 from span.util.logger import LS
-import span.util.data as data
+import span.util.consts as consts
 import span.ir.expr as expr
 import span.ir.types as types
 import span.util.util as util
@@ -281,7 +281,7 @@ class GotoI(InstrIT):
 
 
   def getFormalStr(self) -> types.FormalStrT:
-    return data.GOTO_I_STR
+    return consts.GOTO_I_STR
 
 
   def __eq__(self, other) -> bool:
@@ -351,7 +351,7 @@ class LabelI(InstrIT):
 
 
   def getFormalStr(self) -> types.FormalStrT:
-    return data.LABEL_I_STR
+    return consts.LABEL_I_STR
 
 
   def __eq__(self, other) -> bool:
@@ -421,7 +421,7 @@ class CondI(InstrIT):
 
 
   def getFormalStr(self) -> types.FormalStrT:
-    return data.COND_I_STR
+    return consts.COND_I_STR
 
 
   def needsCondInstrSim(self) -> bool: return True
@@ -502,7 +502,7 @@ class ReturnI(InstrIT):
 
   def getFormalStr(self) -> types.FormalStrT:
     argStr = self.arg.getFormalStr() if self.arg else "Void"
-    return f"{data.RETURN_I_STR}_{argStr}"
+    return f"{consts.RETURN_I_STR}_{argStr}"
 
 
   def checkInvariants(self, level: int = 0):
@@ -585,7 +585,7 @@ class CallI(InstrIT):
 
 
   def getFormalStr(self) -> types.FormalStrT:
-    return data.CALL_I_STR
+    return consts.CALL_I_STR
 
 
   def needsPtrCallSim(self) -> bool: return self.arg.needsPtrCallSim()
@@ -671,7 +671,7 @@ class ParallelI(InstrIT):
 
 
   def getFormalStr(self) -> types.FormalStrT:
-    return data.PARALLEL_I_STR
+    return consts.PARALLEL_I_STR
 
 
   def yieldInstructions(self):
@@ -773,7 +773,7 @@ class UseI(InstrIT):
 
 
   def getFormalStr(self) -> types.FormalStrT:
-    return data.USE_STR
+    return consts.USE_STR
 
 
   def __eq__(self, other) -> bool:
@@ -815,7 +815,7 @@ class ExReadI(InstrIT):
 
 
   def getFormalStr(self) -> types.FormalStrT:
-    return data.EXREAD_I_STR
+    return consts.EXREAD_I_STR
 
 
   def __eq__(self, other) -> bool:
@@ -864,7 +864,7 @@ class CondReadI(InstrIT):
 
 
   def getFormalStr(self) -> types.FormalStrT:
-    return data.CONDREAD_I_STR
+    return consts.CONDREAD_I_STR
 
 
   def __eq__(self, other) -> bool:
@@ -909,7 +909,7 @@ class FilterI(InstrIT):
 
 
   def getFormalStr(self) -> types.FormalStrT:
-    return data.FILTER_I_STR
+    return consts.FILTER_I_STR
 
 
   def __eq__(self, other) -> bool:
@@ -952,7 +952,7 @@ class UnDefValI(InstrIT):
 
 
   def getFormalStr(self) -> types.FormalStrT:
-    return data.UNDEFVAL_I_STR
+    return consts.UNDEFVAL_I_STR
 
 
   def needsLhsVarSim(self) -> bool: return True
@@ -993,7 +993,7 @@ class BarrierI(InstrIT):
 
 
   def getFormalStr(self) -> types.FormalStrT:
-    return data.BARRIER_I_STR
+    return consts.BARRIER_I_STR
 
 
   def __eq__(self, other) -> bool:
@@ -1029,7 +1029,7 @@ class NopI(InstrIT):
 
 
   def getFormalStr(self) -> types.FormalStrT:
-    return data.NOP_I_STR
+    return consts.NOP_I_STR
 
 
   def __eq__(self, other) -> bool:

@@ -22,7 +22,7 @@ import traceback
 import functools
 
 from span.util.util import LS
-from span.util.data import PTR_INDLEV_INVALID
+from span.util.consts import PTR_INDLEV_INVALID
 
 ################################################
 # BOUND START: useful_types

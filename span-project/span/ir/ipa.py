@@ -19,7 +19,7 @@ import time
 import io
 
 from span.ir import expr, instr, constructs, tunit
-from span.ir import graph
+from span.ir import cfg
 from span.ir import types
 
 
@@ -131,7 +131,7 @@ def prepareFunctionsForIpa(tUnit: tunit.TranslationUnit):
     print(func.name)  # delit
     changed = insertIpaInstructions(bbMap, tUnit)
     if changed:
-      func.cfg = graph.Cfg(func.name, bbMap, func.bbEdges)  # bbEdges dont change
+      func.cfg = cfg.Cfg(func.name, bbMap, func.bbEdges)  # bbEdges dont change
 
 
 def insertIpaInstructions(
