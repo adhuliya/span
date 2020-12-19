@@ -59,6 +59,6 @@ class HostStat:
     l1.append(f"{self.idInstrAnTimer}")
     l1.append(f"{self.funcSelectionTimer}")
     l1.append(f"{self.nodeMapUpdateTimer}")
-    l1.append(f"HostResultSize: {cutil.getSize(self.host.anWorkDict)}")
+    l1.append(f"HostResultSize: {cutil.getSize2(self.host.anWorkDict)}")
     return "\n".join(l1)
 

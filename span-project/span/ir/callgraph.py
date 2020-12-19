@@ -136,6 +136,7 @@ class CallGraph:
   def findSCCs(self) -> List[Set[CallGraphNode]]:
     """Finds the strongly connected components (SCCs) of the graph.
     This uses Tarjan's algo.
+    REF: https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
     output: list of strongly connected components (sets of vertices)
     """
     self.index = 0  # initial index

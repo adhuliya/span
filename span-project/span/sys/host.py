@@ -1920,6 +1920,7 @@ class Host:
     elif len(res) == 1 and NULL_OBJ_NAME in res:
       if LS: LOG.error("NullDerefEncountered (bad user program): %s, %s",
                        e.name, node)
+      print(f"NullDerefEncountered (bad user program): {self.func.name}, {e}, {e.info}")
       res = SimFailed  # i.e. process_the_original_insn
 
     if LS: LOG.debug("SimOfExpr (joined): '%s' is %s.", e.name, res)

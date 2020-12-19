@@ -1855,22 +1855,16 @@ class ValueAnalysisAT(AnalysisAT):
 
     elif self.isAcceptedType(lhsType):
       func = self.func
-      if isinstance(lhs, expr.MemberE) and lhs.name == "parent" and \
-          lhs.of.name == "v:develop_node:newnode": #delit
-        print("Start Debug") #delit
       lhsVarNames = self.getExprLValueNames(func, lhs, dfvIn)
       assert len(lhsVarNames) >= 1, f"{lhs}: {lhsVarNames}"
       mustUpdate = len(lhsVarNames) == 1
 
-      # print("Debug:", lhsType, f"{lhs} = {rhs}; {lhs.info} {lhsType} {rhs.type}") #delit
       rhsDfv = self.getExprDfv(rhs, dfvIn)
       if LS: LOG.debug("RhsDfvOfExpr: '%s' is %s, lhsVarNames are %s",
                        rhs, rhsDfv, lhsVarNames)
 
-      print(f"LHSVars: (LHS: {lhs}): {lhsVarNames}")  #delit
       for name in lhsVarNames: # loop enters only once if mustUpdate == True
         newVal, oldVal = rhsDfv, dfvInGetVal(name)
-        print(f"{func.name}: {lhs} = {rhs}, {lhs.info}, {rhs.info}, {lhs.type}") #delit
         if not mustUpdate or nameHasArray(func, name):
           newVal, _ = oldVal.meet(newVal) # do a may update
         if newVal != oldVal:
@@ -1888,7 +1882,6 @@ class ValueAnalysisAT(AnalysisAT):
       dfvIn: dfv.OverallL
   ) -> Set[types.VarNameT]:
     """Points-to analysis overrides this function."""
-    print("herehereAnalysis")  #delit
     return getExprLValueNames(func, lhs)
 
 

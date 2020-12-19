@@ -568,6 +568,7 @@ class IntervalA(analysis.ValueAnalysisAT):
     assert isinstance(e.arg, expr.VarE), f"{e}"
     if self.isAcceptedType(e.arg.type):
       value = dfvInGetVal(e.arg.name)
+      if value is None: print(f"{e}, {e.arg.name}, {e.info}, {e.arg.type}")  #delit
       if value.top or value.bot:
         return value
       else:
@@ -575,8 +576,6 @@ class IntervalA(analysis.ValueAnalysisAT):
         assert self.isAcceptedType(eTo) and value.val, f"{e}, {value}"
         newValue = ComponentL(self.func,
                               val=(eTo.castValue(val[0]), eTo.castValue(val[1])))
-        #value.val = eTo.castValue(val[0]), eTo.castValue(val[1])
-        #print("herehereherehere234", val, value.val) #delit
         return newValue
     else:
       return self.componentBot

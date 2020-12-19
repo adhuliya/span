@@ -102,8 +102,9 @@ class TransformCode:
 
     host = self.ipaHost if self.ipaEnabled else self.intraHosts
     for func in self.tUnit.yieldFunctionsForAnalysis():
-      funcResults = host.finalResult[func.name]
-      self.genTransformInfo_Func(func, funcResults)
+      if func.name in host.finalResult:
+        funcResults = host.finalResult[func.name]
+        self.genTransformInfo_Func(func, funcResults)
 
 
   def genTransformInfo_Func(self, func: Func, funcResults: Dict) -> None:

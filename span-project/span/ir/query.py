@@ -9,6 +9,8 @@ This file has utility functions for syntactic queries on the IR.
 
 import logging
 
+from span.ir import callgraph
+
 LOG = logging.getLogger("span")
 
 from typing import Dict, List, Callable, Any
@@ -141,6 +143,41 @@ def countNodes(func: constructs.Func) -> int:
     return len(func.cfg.nodeMap)
   return 0
 
+
+def countPtrFuncCalls(func: constructs.Func) -> int:
+  """Returns the total pointer based function calls."""
+  count = 0
+  if func.hasBody():
+    assert func.cfg is not None, f"{func}"
+    for insn in func.yieldInstrSeq():
+      callE = instr.getCallExpr(insn)
+      if callE and callE.getCalleeFuncName() is None:
+        count += 1
+  return count
+
+
+def countNonPtrFuncCalls(func: constructs.Func) -> int:
+  """Returns the total non-pointer based function calls."""
+  count = 0
+  if func.hasBody():
+    assert func.cfg is not None, f"{func}"
+    for insn in func.yieldInstrSeq():
+      callE = instr.getCallExpr(insn)
+      if callE and callE.getCalleeFuncName():
+        count += 1
+  return count
+
+
+def countAllFuncCalls(func: constructs.Func) -> int:
+  """Returns count of all the function calls."""
+  count = 0
+  if func.hasBody():
+    assert func.cfg is not None, f"{func}"
+    for insn in func.yieldInstrSeq():
+      if instr.getCallExpr(insn):
+        count += 1
+  return count
+
 ################################################
 # BLOCK END  : counting_queries
 ################################################
@@ -232,6 +269,9 @@ def executeAllQueries(tUnit: TranslationUnit):
   p("TotalFunctions(WithoutDef):",
     countOnFunctions(tUnit, lambda x: not hasDefinition(x)))
   p("TotalFunctions(Variadic):", countOnFunctions(tUnit, isVariadic, FUNC_WITH_BODY))
+  p("TotalFuncCalls(All):", countOnFunctions(tUnit, countAllFuncCalls, FUNC_WITH_BODY))
+  p("TotalFuncCalls(Non-Ptr):", countOnFunctions(tUnit, countNonPtrFuncCalls, FUNC_WITH_BODY))
+  p("TotalFuncCalls(Ptr):", countOnFunctions(tUnit, countPtrFuncCalls, FUNC_WITH_BODY))
   p("Nodes(total):", countOnFunctions(tUnit, countNodes, FUNC_WITH_BODY))
   p("Nodes(maxInAFunc):", tUnit.maxCfgNodesInAFunction())
   p("DerefsUsed(all):", countOnFunctions(tUnit, countDerefsUsed, FUNC_WITH_BODY))
@@ -249,5 +289,6 @@ def executeAllQueries(tUnit: TranslationUnit):
   p("TotalFuncWithMemAllocations:",
     #len(filterFunctions(tUnit, lambda x: bool(countMemoryAllocations(x)))))
     list(map(lambda x: x.name, filterFunctions(tUnit, lambda x: bool(countMemoryAllocations(x))))))
+  callgraph.generateCallGraph(tUnit).genAndPrintSCCs()
 
 

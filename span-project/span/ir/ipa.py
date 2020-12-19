@@ -128,7 +128,6 @@ def prepareFunctionsForIpa(tUnit: tunit.TranslationUnit):
 
   for func in tUnit.yieldFunctionsWithBody():
     bbMap = func.basicBlocks
-    print(func.name)  # delit
     changed = insertIpaInstructions(bbMap, tUnit)
     if changed:
       func.cfg = cfg.Cfg(func.name, bbMap, func.bbEdges)  # bbEdges dont change

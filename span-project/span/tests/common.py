@@ -16,7 +16,7 @@ from span.api.analysis import AnalysisNameT
 from span.api.diagnosis import DiagnosisNameT
 import span.util.common_util as cutil
 import span.ir.ir as ir
-import span.util.data as data
+import span.util.consts as consts
 
 # IMPORTANT imports for eval() to work
 from span.ir.types import Loc, Info
@@ -84,7 +84,7 @@ def genFileMap(testCase: unittest.TestCase) -> Dict[TestFileName, ResultFileName
 
   # get all the test c files
   status, cFiles = subp.getstatusoutput("ls spanTest[0-9][0-9][0-9].c")
-  testCase.assertEqual(status, 0, data.FAIL_C_TEST_FILES_NOT_PRESENT)
+  testCase.assertEqual(status, 0, consts.FAIL_C_TEST_FILES_NOT_PRESENT)
 
   fileMap: Dict[TestFileName, ResultFileName] = dict()
   cFileList = cFiles.split()
@@ -94,7 +94,7 @@ def genFileMap(testCase: unittest.TestCase) -> Dict[TestFileName, ResultFileName
   # get all result files
   suffix = ".results.py"
   status, pyFiles = subp.getstatusoutput(f"ls spanTest[0-9][0-9][0-9].c{suffix}")
-  testCase.assertEqual(status, 0, data.FAIL_C_RESULT_FILES_NOT_PRESENT)
+  testCase.assertEqual(status, 0, consts.FAIL_C_RESULT_FILES_NOT_PRESENT)
 
   pyFileList = pyFiles.split()
   for pyFile in pyFileList:

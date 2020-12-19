@@ -31,7 +31,7 @@ from span.tests.common import \
    TestActionAndResult,
    evalTestCaseFile, )
 import span.sys.host as host
-import span.ir.graph as graph
+import span.ir.cfg as cfg
 import span.api.dfv as dfv
 
 

@@ -18,7 +18,6 @@ import span.ir.expr as expr
 from span.ir.types import EdgeLabelT, BasicBlockIdT, FuncNameT
 from span.ir.conv import FalseEdge, TrueEdge, UnCondEdge
 import span.ir.types as types
-import span.util.consts as consts
 
 from span.util.consts import START_BB_ID_NOT_MINUS_ONE, END_BB_ID_NOT_ZERO
 import span.util.util as util
@@ -193,7 +192,7 @@ class BB:
       edgeLabel: EdgeLabelT = UnCondEdge
   ) -> Opt[BbEdge]:
     """Returns the succ edge of the given label (if present)"""
-    assert len(self.succEdges) <= 2, consts.INVARIANT_VIOLATED
+    assert len(self.succEdges) <= 2, f"{len(self.succEdges)}"
 
     if len(self.succEdges) == 1:
       if edgeLabel == UnCondEdge:
@@ -224,7 +223,7 @@ class BB:
       # create a space for two
       self.succEdges.extend([None,None])  # type: ignore
 
-    assert len(self.succEdges) == 2, consts.INVARIANT_VIOLATED
+    assert len(self.succEdges) == 2, f"{len(self.succEdges)}"
 
     if bbEdge.label == TrueEdge:
       self.succEdges[0] = bbEdge
@@ -320,7 +319,7 @@ class Cfg(object):
 
   __slots__ : List[str] = ["funcName", "inputBbMap", "inputBbEdges", "startBb",
                "endBb", "start", "end", "bbMap", "nodeMap", "revPostOrder",
-               "_nodesWithCall"]
+               "_nodesWithCall", "_delit"]
 
   def __init__(self,
       funcName: FuncNameT,
@@ -343,6 +342,7 @@ class Cfg(object):
 
     self._nodesWithCall: Opt[List[CfgNode]] = None
 
+    self._delit = 0
     # fills the variables above correctly.
     self.buildCfgStructure(inputBbMap, inputBbEdges)
 
@@ -354,7 +354,7 @@ class Cfg(object):
 
   def yieldNodes(self):
     for nodeId in sorted(self.nodeMap.keys()):
-      yield from self.nodeMap[nodeId]
+      yield self.nodeMap[nodeId]
 
 
   def getTotalNodes(self):
@@ -387,11 +387,10 @@ class Cfg(object):
       inputBbEdges: List[Tuple[BasicBlockIdT, BasicBlockIdT, EdgeLabelT]]
   ) -> None:
     """Builds the complete Cfg structure."""
-
-    assert inputBbMap and inputBbEdges, consts.INVARIANT_VIOLATED
+    assert inputBbMap and inputBbEdges, f"{len(inputBbMap)}, {len(inputBbEdges)}"
     # -1 is start bb id, 0 is the end bb id (MUST)
-    assert -1 in inputBbMap, consts.INVARIANT_VIOLATED
-    assert 0 in inputBbMap, consts.INVARIANT_VIOLATED
+    assert -1 in inputBbMap
+    assert 0 in inputBbMap
 
     # STEP 1: Create BBs in their dict.
     for bbId, instrSeq in inputBbMap.items():
@@ -445,6 +444,7 @@ class Cfg(object):
 
   def calcMinHeights(self, currNode: CfgNode):
     """Calculates and allocates min_height of each node."""
+    self._delit += 1
     newPredHeight = currNode.id + 1
     for predEdge in currNode.predEdges:
       pred = predEdge.src
@@ -454,15 +454,29 @@ class Cfg(object):
         self.calcMinHeights(pred)
 
 
+  def calcMinHeights2(self, currNode: CfgNode):
+    """Calculates and allocates min_height of each node."""
+    nodes = [currNode]
+    while len(nodes):
+      node = nodes.pop()
+      newPredHeight = node.id + 1
+      for predEdge in node.predEdges:
+        pred = predEdge.src
+        if pred.id > newPredHeight:
+          pred.id = newPredHeight
+          nodes.append(pred)
+
+
   def calcRevPostOrder(self) -> List[CfgNode]:
     if self.end is None or self.start is None:
       raise ValueError()
     self.end.id = 0
-    self.calcMinHeights(self.end)
+    self.calcMinHeights2(self.end)
     done = {id(self.start)}
     sequence: List[CfgNode] = []
     worklist: List[Tuple[CfgNodeId, CfgNode]] = [(self.start.id, self.start)]
-    return self.genRevPostOrderSeq(sequence, done, worklist)
+    nodeList = self.genRevPostOrderSeq2(sequence, done, worklist)
+    return nodeList
 
 
   def genRevPostOrderSeq(self,
@@ -482,6 +496,25 @@ class Cfg(object):
         worklist.append(tup)
     worklist.sort(key=lambda x: x[0])
     return self.genRevPostOrderSeq(seq, done, worklist)
+
+
+  def genRevPostOrderSeq2(self,
+      seq: List[CfgNode],
+      done: Set[CfgNodeId],
+      worklist: List[Tuple[MinHeightT, CfgNode]]
+  ) -> List[CfgNode]:
+    while len(worklist):
+      _, node = worklist.pop()  # get node with max height
+      seq.append(node)
+      for succEdge in node.succEdges:
+        destNode = succEdge.dest
+        if id(destNode) not in done:
+          destMinHeight = destNode.id
+          tup = (destMinHeight, destNode)
+          done.add(id(destNode))
+          worklist.append(tup)
+      worklist.sort(key=lambda x: x[0])
+    return seq
 
 
   def genDotBbLabel(self,
@@ -605,7 +638,7 @@ class Cfg(object):
       if len(bb.succEdges) > 1:  # bb ends with a conditional instruction
         # modify jump labels of the last instruction
         condInsn = bb.lastCfgNode.insn
-        assert isinstance(condInsn, instr.CondI), consts.INVARIANT_VIOLATED
+        assert isinstance(condInsn, instr.CondI), f"{condInsn}"
 
         trueEdge = bb.getSuccEdge(TrueEdge)
         assert trueEdge is not None
@@ -621,7 +654,7 @@ class Cfg(object):
           instrSeq.append(instr.GotoI(labelName.format(bbId=uncondEdge.dest.id)))
     else:
       # must be the end node
-      assert bb.id == 0, consts.INVARIANT_VIOLATED
+      assert bb.id == 0, f"{bb.id}"
 
     return instrSeq
 

@@ -17,7 +17,8 @@ from span.util.common_util import \
    appendToFile,
    getUniqueId,
    exitIfProgramDoesnotExist,
-   getSize, )
+   getSize2,
+   Timer)
 
 ################################################
 # BOUND START: SystemWideSwitches

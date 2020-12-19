@@ -423,7 +423,7 @@ def analyzeFunctions(
     )
     analysisTime = syn1.analyze() # do the analysis
     totalAnalysisTime += analysisTime
-    print("HostObjectSize (after  analysis):", cutil.getSize(syn1))
+    print("HostObjectSize (after  analysis):", cutil.getSize2(syn1))
     print("========================================")
     syn1.printOrLogResult() # print the result of each analysis
 
@@ -617,7 +617,7 @@ def parseTUnitObject(fileName: str, ipa=False) -> tunit.TranslationUnit:
   if ipa: irIpa.preProcess(currTUnit)
 
   timer.stopAndLog()
-  print("TUnitObjSize:", cutil.getSize(currTUnit))
+  print("TUnitObjSize:", cutil.getSize2(currTUnit))
   return currTUnit
 
 
@@ -660,7 +660,7 @@ def cascAnSpecRegex(argValue, pat=re.compile(CASC_AN_SPEC_REGEX)):
 # mainentry - when this module is run
 if __name__ == "__main__":
   print("SPAN is:", os.path.realpath(__file__))
-  sys.setrecursionlimit(1000000) # FIXME: It is needed in some cases. But why exactly?
+  # sys.setrecursionlimit(10000) # FIXME: It is needed in some cases. But why exactly?
   print("RotatingLogFile: file://", logger.ABS_LOG_FILE_NAME, sep="")
 
   analysisSpecString = f"Specification of analyses" \

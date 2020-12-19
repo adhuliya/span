@@ -18,7 +18,7 @@ from span.tests.common import \
    TestActionAndResult,
    evalTestCaseFile, )
 import span.sys.host as host
-import span.ir.graph as graph
+import span.ir.cfg as cfg
 import span.api.dfv as dfv
 from span.api.analysis import AnalysisNameT
 from span.sys.clients import analyses as AllAnalyses
@@ -94,8 +94,8 @@ class SpanAnalysisTests(unittest.TestCase):
 
 
   def compareAnalysisResults(self,
-      results: Dict[graph.CfgNodeId, dfv.NodeDfvL],
-      expectedResults: Dict[graph.CfgNodeId, dfv.NodeDfvL],
+      results: Dict[cfg.CfgNodeId, dfv.NodeDfvL],
+      expectedResults: Dict[cfg.CfgNodeId, dfv.NodeDfvL],
       cFileName: str,
   ) -> bool:
     nodeIds = set(results.keys())

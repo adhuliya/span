@@ -44,8 +44,6 @@ import span.util.common_util as cutil
 RECURSION_LIMIT = 100
 count: int = 0
 
-delThisVar = None  #delit
-
 def takeTracemallocSnapshot():
   if TRACE_MALLOC:
     snapshot = tracemalloc.take_snapshot()
@@ -115,11 +113,6 @@ class ValueContext:
         theHash = hash((theHash, nDfvSelf.dfvOut))
       else:  # bi-directional
         theHash = hash((theHash, nDfvSelf))
-      if self.funcName == "f:StoreTT":
-        print("IPA:StoreTT:hash:", anName, theHash)  #delit
-        if anName == "IntervalA":
-          print("IPA:StoreTT:hash:IntervalA", anName,
-                hash(nDfvSelf.dfvIn), nDfvSelf.dfvIn)  #delit
 
     return theHash
 
@@ -222,7 +215,7 @@ class IpaHost:
     host, preComputed = self.getComputedValue(callSite, uniqueId, vContext)
 
     if preComputed:
-      print("UsingPreComputedResult: ThanksToValueContext", callSite) #delit
+      # print("UsingPreComputedResult: ThanksToValueContext", callSite) #delit
       # if using a memoized result, no need for further computation
       return host.getBoundaryResult()
 
@@ -306,11 +299,8 @@ class IpaHost:
             f" {conv.getFuncNodeIdStr(callSite)} (uniqueId: {uniqueId})")
       if LS: LOG.debug("IPA:UsingPrevValueContext: at callsite %s", callSite)
       tup = self.vContextMap[prevValueContext]
-      print("IPA:RemovingPrevValueContext:", id(vContext)) #delit
       del self.vContextMap[prevValueContext] # remove the old one
       self.callSiteVContextMap[callSite][uniqueId] = vContext # replace the old one
-      if vContext.funcName == "f:StoreTT":  #delit
-        print("IPA:StoreTT:1:", vContext, hash(vContext))  #delit
       self.vContextMap[vContext] = tup
       hostInstance = tup[1]
       hostInstance.setBoundaryResult(vContext.getCopy().dfvs)
@@ -319,9 +309,6 @@ class IpaHost:
       if LS: LOG.debug("IPA:NewValueContext: %s", vContext)
       hostInstance = self.createHostInstance(vContext.funcName,
                                              biDfv=vContext.getCopy().dfvs)
-      print("IPA:AddingNewValueContext:", id(vContext)) #delit
-      if vContext.funcName == "f:StoreTT":  #delit
-        print("IPA:StoreTT:2:", vContext, hash(vContext))  #delit
       self.vContextMap[vContext] = ({callSite}, hostInstance)  # save the instance
 
     return hostInstance, False
@@ -332,7 +319,6 @@ class IpaHost:
       uniqueId: int,
       vContext: ValueContext,
   ) -> Opt[ValueContext]:
-    print("IPA:getPrevValueContext", callSite, uniqueId, id(vContext)) #delit
     if callSite in self.callSiteVContextMap:
       val = self.callSiteVContextMap[callSite]
       if uniqueId in val:
@@ -431,10 +417,11 @@ class IpaHost:
     It merges all the results of all the contexts of a function
     to get the static data flow information of that function."""
     self.finalResult = {}
-    allFuncNames = [vc.funcName for vc in self.vContextMap.keys()]
+    allFuncNames = list(set(vc.funcName for vc in self.vContextMap.keys()))
 
-    for funcName in allFuncNames:
+    for i, funcName in enumerate(sorted(allFuncNames)):
       funcResult = {}
+      print(f"Merging Results of Func: {funcName} ({i+1:>5}/{len(allFuncNames):<5})")
       for valContext, tup in self.vContextMap.items():
         host = tup[1]
         if valContext.funcName == funcName:
@@ -506,14 +493,10 @@ def diagnoseInterval(tUnit: TranslationUnit):
       if nDfvSpan.dfvIn != nDfvLern.dfvIn \
           and nDfvLern.dfvIn < nDfvSpan.dfvIn:
         weakPPoints += 1
-        # print(f"\n{funcName}:IN  of Node {nid}:{weakPPoints}:\n",
-        #       nDfvSpan.dfvIn, "\n", nDfvLern.dfvIn)  # delit
 
       if nDfvSpan.dfvOut != nDfvLern.dfvOut \
           and nDfvLern.dfvOut < nDfvSpan.dfvOut:
         weakPPoints += 1
-        # print(f"\n{funcName}:OUT of Node {nid}:{weakPPoints}:\n",
-        #       nDfvSpan.dfvOut, "\n", nDfvLern.dfvOut)  # delit
 
   print("\nTotalPPoints:", totalPPoints, "WeakPPoints:", weakPPoints)
 

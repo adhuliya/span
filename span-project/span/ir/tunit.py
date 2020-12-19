@@ -27,6 +27,7 @@ from typing import Dict, Set, Tuple, List, Callable, Any
 from typing import Optional as Opt
 import io
 import re
+import time
 
 from span.util.util import LS, AS
 import span.util.common_util as cutil
@@ -46,7 +47,7 @@ class Stats:
 
   def __str__(self):
     l1 = [f"{self.getNamesTimer}"]
-    l1.append(f"TUnitSize: {cutil.getSize(self.tunit)}")
+    l1.append(f"TUnitSize: {cutil.getSize2(self.tunit)}")
     return "\n".join(l1)
 
 
@@ -77,6 +78,7 @@ class TranslationUnit:
     self.allVars = allVars
     self.allRecords = allRecords
     self.allFunctions = allFunctions
+
     self.allFunctions[irConv.GLOBAL_INITS_FUNC_NAME] = constructs.Func(
       name=irConv.GLOBAL_INITS_FUNC_NAME,
       instrSeq=globalInits if globalInits else [instr.NopI()]
@@ -184,6 +186,7 @@ class TranslationUnit:
     # STEP 4: Misc
     self.fillGlobalInitsFunction()  # MUST
     self.collectAddrTakenVars()  # MUST
+    # FIXME: Don't add dummy vars: handle pointers with no possible pointees in the code.
     self.addDummyObjects()  # MUST (after extractAllVarNames())
     self.genCfgs()  # MUST
 
@@ -437,10 +440,29 @@ class TranslationUnit:
     """It adds dummy objects of the pointee type
     of pointer variables whose pointee type
     object doesn't exist in the tunit."""
+    # print("TotalVars:", len(self.allVars), len(self._globalsAndAddrTakenSet)) #delit
     for varName, objType in self.allVars.items():
       tmpType = objType
+      isFuncName, allFuncs = irConv.isFuncName, self.allFunctions
+      nameInfoMap = self._nameInfoMap
       while isinstance(tmpType, types.Ptr):
-        names = self.getPossiblePointees(tmpType, cache=False)
+        names = []
+        namesAppend= names.append
+        pointeeType = tmpType.getPointeeType()
+        for vName in self._globalsAndAddrTakenSet:
+          if isFuncName(vName):
+            nameType = allFuncs[vName].sig
+          else:
+            nameType = nameInfoMap[vName].type
+          if nameType == pointeeType:
+            namesAppend(vName)
+          elif isinstance(nameType, types.ArrayT) \
+              and nameType.getElementType() == pointeeType:
+            namesAppend(vName)
+          if len(names) >= 2:
+            break
+
+        # names = self.getPossiblePointees(tmp Type, cache=False)
         if len(names) < 2: # at least two names to point to
           self.createAndAddGlobalDummyVar(tmpType.getPointeeType())
           if not len(names):
@@ -1779,12 +1801,9 @@ class TranslationUnit:
       return names
 
     elif isinstance(e, expr.MemberE):
-      print("hereMemberE", e) #delit
       of, memName = e.of, e.name
       assert isinstance(of.type, types.Ptr), f"{e}: {of.type}"
       for name in self.getNamesOfPointees(func, of.name, pointeeMap):
-        if 'newnode' in of.name: #delit
-          print("PointeeNames:newnode:", name, self.inferTypeOfVal(name)) #delit
         names.add(f"{name}.{memName}")
       return names
 
