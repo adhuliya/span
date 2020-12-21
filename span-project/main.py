@@ -28,7 +28,6 @@ import re
 import argparse
 from typing import List, Tuple
 from typing import Optional as Opt
-import span.util.common_util as cutil
 import span.ir.types as types
 import span.ir.conv as irConv
 import span.sys.ddm as ddm
@@ -142,7 +141,7 @@ def getRegisteredDiagnoses() -> str:
 
 def c2spanirArgParse(args: argparse.Namespace) -> int:
   """Processes cmd line args and invokes `c2spanir()`."""
-  cutil.Verbosity = args.verbose
+  util.Verbosity = args.verbose
   return c2spanir(args.fileName)
 
 
@@ -173,7 +172,7 @@ def c2spanir(cFileName: str = None) -> int:
 def ipaDiagnoseSpanIr(args: argparse.Namespace) -> None:
   diName    = args.diagnosisName
   fileName = args.fileName
-  cutil.Verbosity = args.verbose
+  util.Verbosity = args.verbose
 
   spanirFileName = convertIfCFile(fileName)
   print("Filename:", fileName, spanirFileName)
@@ -187,7 +186,7 @@ def ipaDiagnoseSpanIr(args: argparse.Namespace) -> None:
 
 def optimizeSpanIr(args: argparse.Namespace) -> None:
   optName = args.optName
-  cutil.Verbosity = args.verbose
+  util.Verbosity = args.verbose
 
   currTUnit = parseTUnitObject(args.fileName, ipa=True)
 
@@ -202,7 +201,7 @@ def diagnoseSpanIr(args: argparse.Namespace) -> None:
   lerner  = args.diagnosisStyle == "lerner"
   span    = args.diagnosisStyle == "span" # default case too
   fileName = args.fileName
-  cutil.Verbosity = args.verbose
+  util.Verbosity = args.verbose
 
   spanirFileName = convertIfCFile(fileName)
   currTUnit: tunit.TranslationUnit = ir.readSpanIr(spanirFileName)
@@ -335,7 +334,7 @@ def parseCascadingAnalysisExpr(anNameExpr: str) -> Tuple[str, list, list, int]:
 def analyzeSpanIrIpa(args: argparse.Namespace) -> None:
   """Runs the given analyses on the whole spanir translation unit."""
   disableAllSim = True if args.subcommand == "ipa" else False
-  cutil.Verbosity = args.verbose
+  util.Verbosity = args.verbose
 
   mainAnalysis, otherAnalyses, supportAnalyses, avoidAnalyses, maxAnalysisCount = \
             parseSpanAnalysisExpr(args.analyses)
@@ -352,7 +351,7 @@ def analyzeSpanIrIpa(args: argparse.Namespace) -> None:
     disableAllSim   = disableAllSim,
   )
 
-  timer = cutil.Timer()
+  timer = util.Timer()
   ipa1.analyze()
   print("OnlyAnalysis:", timer.stop())
 
@@ -360,7 +359,7 @@ def analyzeSpanIrIpa(args: argparse.Namespace) -> None:
 def analyzeSpanIr(args: argparse.Namespace) -> None:
   """Runs the given analyses on the spanir file for each function."""
   disableAllSim = True if args.subcommand == "analyze" else False
-  cutil.Verbosity = args.verbose
+  util.Verbosity = args.verbose
   idemand = True if args.subcommand == "idemand" else False
 
   anNameExpr = args.analyses
@@ -378,7 +377,7 @@ def analyzeSpanIr(args: argparse.Namespace) -> None:
     print(f"SPAN: ERROR: {funcName} not found.", file=sys.stderr)
     exit(42)
 
-  timer = cutil.Timer("SpanAnalysis(with setups)")
+  timer = util.Timer("SpanAnalysis(with setups)")
   analysisTime = analyzeFunctions(currTUnit=currTUnit,
                                   funcName=funcName,
                                   mainAnName=mainAnalysis,
@@ -423,7 +422,7 @@ def analyzeFunctions(
     )
     analysisTime = syn1.analyze() # do the analysis
     totalAnalysisTime += analysisTime
-    print("HostObjectSize (after  analysis):", cutil.getSize2(syn1))
+    print("HostObjectSize (after  analysis):", util.getSize2(syn1))
     print("========================================")
     syn1.printOrLogResult() # print the result of each analysis
 
@@ -433,7 +432,7 @@ def analyzeFunctions(
 def queryTranslationUnit(args: argparse.Namespace):
   """Query predefined information on the translation unit."""
   fileName = args.fileName
-  cutil.Verbosity = args.verbose
+  util.Verbosity = args.verbose
   currTUnit = parseTUnitObject(fileName)
 
   irQuery.executeAllQueries(currTUnit)
@@ -443,7 +442,7 @@ def viewDotFile(args: argparse.Namespace):
   """Generates the dot files to view the IR better."""
   graphType = args.graphType
   fileName = args.fileName
-  cutil.Verbosity = args.verbose
+  util.Verbosity = args.verbose
 
   funcName = args.functionName
   funcName = None if not funcName else irConv.canonicalizeFuncName(funcName)
@@ -477,7 +476,7 @@ def viewDotFile(args: argparse.Namespace):
 
 def showDotGraph(dotFileName: str) -> bool:
   """Invokes the `xdot` program to show the given dotfile."""
-  if not cutil.programExists("xdot"):
+  if not util.programExists("xdot"):
     print(installDotMsg)
     return False
   else:
@@ -504,7 +503,7 @@ def testSpan(args: argparse.Namespace):
   It first checks if the current directory has test cases.
   """
   testType = args.testType
-  cutil.Verbosity = args.verbose
+  util.Verbosity = args.verbose
 
   import span.tests.run as run
   run.runTests(testType)
@@ -519,7 +518,7 @@ def sliceDemand(args: argparse.Namespace):
   ppPattern = re.compile(SLICE_POINT_REGEX)
   programPoint = args.programpoint
   vars = args.vars
-  cutil.Verbosity = args.verbose
+  util.Verbosity = args.verbose
 
   funcName = getCmdLineFuncName(args.functionName)
   assert funcName, f"{args.functionName}"
@@ -548,7 +547,7 @@ def sliceDemand(args: argparse.Namespace):
 def simulateCascading(args: argparse.Namespace):
   """Runs the cascaded analyses on the spanir file for each function."""
   anNameExpr = args.analyses
-  cutil.Verbosity = args.verbose
+  util.Verbosity = args.verbose
 
   funcName = getCmdLineFuncName(args.functionName)
   print("Analyzing Function(s):", funcName if funcName else "ALL")
@@ -564,7 +563,7 @@ def simulateCascading(args: argparse.Namespace):
 
   currTUnit = parseTUnitObject(args.fileName)
 
-  timer = cutil.Timer("CascadingAnalysis")
+  timer = util.Timer("CascadingAnalysis")
   analyzeFunctions(currTUnit=currTUnit,
                    funcName=funcName,
                    analysisSeq=analysisSeq)
@@ -579,7 +578,7 @@ def dumpSpanIr(args: argparse.Namespace):
   `test.c.spanir.processed`
   """
   fileName = args.fileName
-  cutil.Verbosity = args.verbose
+  util.Verbosity = args.verbose
 
   spanIrFileName = convertIfCFile(fileName)
   cFileName = extractCFileName(spanIrFileName)
@@ -608,7 +607,7 @@ def parseTUnitObject(fileName: str, ipa=False) -> tunit.TranslationUnit:
   """Evals the spanir translation unit from the given file.
   If the input file is a C file (detected by its extension)
   it is first converted to spanir."""
-  timer = cutil.Timer("ParseTranslationUnit")
+  timer = util.Timer("ParseTranslationUnit")
   spanIrFileName  = convertIfCFile(fileName)
   cFileName       = extractCFileName(spanIrFileName)
   if not cFileName: exit(19)
@@ -617,7 +616,7 @@ def parseTUnitObject(fileName: str, ipa=False) -> tunit.TranslationUnit:
   if ipa: irIpa.preProcess(currTUnit)
 
   timer.stopAndLog()
-  print("TUnitObjSize:", cutil.getSize2(currTUnit))
+  print("TUnitObjSize:", util.getSize2(currTUnit))
   return currTUnit
 
 
@@ -844,7 +843,7 @@ if __name__ == "__main__":
 
   args = parser.parse_args()  # parse command line
 
-  timer = cutil.Timer("TotalTimeTaken")
+  timer = util.Timer("TotalTimeTaken")
   args.func(args)             # take action
   timer.stopAndLog()
 

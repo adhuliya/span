@@ -96,7 +96,7 @@ PSEUDO_VAR_REGEX = re.compile(r"^(.*:|)\d+p$")
 """Regex to detect pseudo variable name."""
 PSEUDO_VAR_REGEX2 = re.compile(r"(:|^)\d+p(\.|$)")
 """Regex to detect pseudo variable name."""
-PSEUDO_VAR_TYPE = types.VarArray
+DEFAULT_PSEUDO_VAR_TYPE = types.VarArray
 """Default pseudo variable type."""
 
 # String literal name regex (they are globals)

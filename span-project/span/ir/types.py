@@ -7,20 +7,20 @@
 Some types are defined in other modules where they make more sense.
 This module is imported by almost all
 other modules in the source. Hence this
-module shouldn't import any other source
-modules except for the utility modules.
+module should only import third party modules or
+modules from SPAN's `span.util` package.
 """
 
 # FIXME: make all Type objects immutable. Till then assume immutable.
 
 import logging
-
 LOG = logging.getLogger("span")
+
 from typing import TypeVar, List, Optional as Opt, Tuple, Dict,\
   Set, Union as TypingUnion
-import traceback
 import functools
 
+from span.util import util
 from span.util.util import LS
 from span.util.consts import PTR_INDLEV_INVALID
 
@@ -40,6 +40,7 @@ RecordNameT = str  # Record = Struct/Union
 StructNameT = str
 UnionNameT = str
 MemberNameT = str  # a struct/union member name
+
 InstrIndexT = int
 
 TypeCodeT = int  # each type has a numeric code
@@ -127,7 +128,7 @@ POINTER_TC: TypeCodeT = 520
 ################################################
 # BOUND START: properties_associated_with_an_entity
 ################################################
-# These properties donot logically belong to 'types'
+# These properties don't logically belong to 'types'
 # module, but are needed for dependence purposes.
 
 class Loc:
@@ -260,15 +261,6 @@ class Info:
 
 
 
-class ConstructT:
-  """Represents IR constructs like functions, structs and unions"""
-
-  __slots__ : List[str] = []
-
-  def __init__(self):
-    super().__init__()
-
-
 class Type:
   """Class to represent types. It is super class for all compound types.
   It is directly used to represent the basic types.
@@ -279,12 +271,15 @@ class Type:
   def __init__(self,
       typeCode: TypeCodeT
   ) -> None:
-    super().__init__()
     self.typeCode = typeCode
 
 
   def isInteger(self) -> bool:
     return INT1_TC <= self.typeCode <= UINT128_TC
+
+
+  def isSigned(self) -> bool:
+    return INT1_TC <= self.typeCode <= INT128_TC
 
 
   def isUnsigned(self) -> bool:
@@ -296,15 +291,12 @@ class Type:
 
 
   def isNumeric(self) -> bool:
-    """Returns bool(isInteger() or isFloat()).
-    Note: ArrayT overrides this functions and returns
-    True if the element type is numeric (this applies
-    to other meaningful is<Type>() checks as well)."""
+    """Returns bool(isInteger() or isFloat())."""
     return INT1_TC <= self.typeCode <= FLOAT128_TC
 
 
   def isPointer(self) -> bool:
-    return PTR_TC <= self.typeCode <= PTR128_TC
+    return PTR32_TC <= self.typeCode <= PTR128_TC
 
 
   def isFunc(self) -> bool:
@@ -345,7 +337,7 @@ class Type:
     return fstr
 
 
-  functools.lru_cache(200)
+  @functools.lru_cache(256)
   def getNamesOfType(self,
       givenType: Opt['Type'],
       prefix: str,  # the name of the array
@@ -384,11 +376,11 @@ class Type:
       try:
         return int(value)
       except:  # possible if +inf/-inf
-        return value
+        return 0  # undefined behavior
     elif selfIsFloat and valueIsInteger:
-      return value
+      return float(value)
     elif selfIsFloat and valueIsFloat:
-      return value
+      return float(value)
 
 
   def isInRange(self, value: NumericT):
@@ -677,6 +669,17 @@ class Type:
     raise ValueError(f"{tc}")
 
 
+class ConstructT(Type):
+  """Represents IR constructs like functions, structs and unions
+  which can be their own types."""
+
+  __slots__ : List[str] = []
+
+  def __init__(self, typeCode: TypeCodeT):
+    super().__init__(typeCode)
+
+
+
 ################################################
 # BOUND START: basic_type_objects
 ################################################
@@ -722,8 +725,7 @@ class VarNameInfo:  # IMPORTANT: don't change its position
   """Holds the information of all names,
   including compound names
   like x.y.z, x[].y.z etc. (which don't have any pointer dereference)
-  Note that name of an object is absolute, i.e. it cannot contain
-  a pointer dereference.
+  The name of an object cannot contain a pointer dereference.
   """
 
   __slots__ : List[str] = ["name", "type", "hasArray"]
@@ -886,7 +888,7 @@ class Ptr(Type):
 
 
   def __hash__(self):
-    return hash((self.to, self.indlev))
+    return hash((self.typeCode, self.to, self.indlev))
 
 
   def __str__(self):
@@ -925,7 +927,7 @@ class ArrayT(Type):
     self.of = of
 
 
-  @functools.lru_cache(200)
+  @functools.lru_cache(256)
   def getNamesOfType(self,
       givenType: Opt[Type],
       prefix: Opt[str] = None,  # the name of the array
@@ -933,7 +935,7 @@ class ArrayT(Type):
     """If givenType is None, return all possible names.
     For e.g., if its an array of records.
     `prefix` should be the array name in the source or
-    an array record element.
+    record element which is an array.
     """
     assert prefix, f"{givenType}, {prefix} and {self}"
 
@@ -944,58 +946,74 @@ class ArrayT(Type):
       for nameInfo in nameInfos:
         nameInfo.hasArray = True  # the name has array!
 
-    if givenType is None or givenType == self:
+    if givenType in (None, self) and prefix:
       nameInfos.add(VarNameInfo(prefix, self, True))
 
+    assert nameInfos is not None, f"{givenType}, {prefix} and {self}"
     return nameInfos  # must not return None
 
 
-  def getElementType(self) -> Type:
+  def getElementTypeFinal(self) -> Type:
     """Returns the type of lowest elements this array holds.
     e.g. int a[4][5]; has leaf element of type int.
     """
     if isinstance(self.of, ArrayT):
-      return self.of.getElementType()
+      return self.of.getElementTypeFinal()
+    return self.of
+
+
+  def getElementType(self) -> Type:
+    """Returns the type of the array element."""
     return self.of
 
 
   def isInteger(self) -> bool:
+    """Checks the property of the array element."""
     return self.of.isInteger()
 
 
   def isUnsigned(self) -> bool:
+    """Checks the property of the array element."""
     return self.of.isUnsigned()
 
 
   def isFloat(self) -> bool:
+    """Checks the property of the array element."""
     return self.of.isFloat()
 
 
   def isNumeric(self) -> bool:
+    """Checks the property of the array element."""
     return self.of.isNumeric()
 
 
   def isPointer(self) -> bool:
+    """Checks the property of the array element."""
     return self.of.isPointer()
 
 
   def isFunc(self) -> bool:
+    """Checks the property of the array element."""
     return self.of.isFunc()
 
 
   def isRecord(self) -> bool:
+    """Checks the property of the array element."""
     return self.of.isRecord()
 
 
   def isStruct(self) -> bool:
+    """Checks the property of the array element."""
     return self.of.isStruct()
 
 
   def isUnion(self) -> bool:
+    """Checks the property of the array element."""
     return self.of.isUnion()
 
 
   def isArray(self):
+    """Checks the property of the array element."""
     return True
 
 
@@ -1017,8 +1035,8 @@ class ConstSizeArray(ArrayT):
   """Concrete array type.
 
   Instantiate this class to denote array types.
-  E.g. a 2x2 array of chars is,
-    types.ConstSizeArray(types.ConstSizeArray(types.Char, 2), 2)
+  E.g. a 2x3 array of chars is,
+    types.ConstSizeArray(types.ConstSizeArray(types.Char, 3), 2)
   """
 
   __slots__ : List[str] = ["size"]
@@ -1029,6 +1047,10 @@ class ConstSizeArray(ArrayT):
   ) -> None:
     super().__init__(of=of, typeCode=CONST_ARR_TC)
     self.size = size
+
+
+  def hasKnownBitSize(self) -> bool:
+    return True
 
 
   def bitSize(self) -> int:
@@ -1226,12 +1248,11 @@ class IncompleteArray(ArrayT):
     return f"types.IncompleteArray({repr(self.of)})"
 
 
-class RecordT(Type, ConstructT):
+class RecordT(ConstructT):
   """A record type (base class to Struct and Union types)
   Anonymous records are also given a unique name."""
 
-  __slots__ : List[str] = ["name", "members", "info",
-                           "_typeToMemberMap", "_nameCache"]
+  __slots__ : List[str] = ["name", "members", "info"]
 
   def __init__(self,
       name: RecordNameT,
@@ -1243,22 +1264,20 @@ class RecordT(Type, ConstructT):
     self.name = name
     self.members = members
     self.info = info
-    self._typeToMemberMap: Dict[Opt[Type], Set[VarNameInfo]] = {}
-    self._nameCache: Dict[Tuple[Opt[Type], str], Set[VarNameInfo]] = {}
 
 
   def getMemberType(self,
       memberName: MemberNameT
   ) -> Type:
     if not self.members:
-      return Void
+      raise ValueError(f"{memberName} not present in {self}")
     for mName, fType in self.members:
       if mName == memberName:
         return fType
     raise ValueError(f"{memberName} not present in {self}")
 
 
-  @functools.lru_cache(200)
+  @functools.lru_cache(256)
   def getNamesOfType(self,
       givenType: Opt[Type],
       prefix: Opt[str] = None,
@@ -1278,11 +1297,12 @@ class RecordT(Type, ConstructT):
                                        nameInfo.hasArray)
         prefixedNameInfos.add(prefixedNameInfo)
 
-    if prefix and (givenType is None or givenType == self):
+    if prefix and givenType in (None, self):
       prefixedNameInfos.add(VarNameInfo(prefix, self, False))
     return prefixedNameInfos
 
 
+  @functools.lru_cache(64)
   def _getNamesOfType(self,
       givenType: Opt[Type],
   ) -> Set[VarNameInfo]:
@@ -1290,25 +1310,17 @@ class RecordT(Type, ConstructT):
     This function caches the results.
     This method is private.
     """
-    if givenType in self._typeToMemberMap:
-      return self._typeToMemberMap[givenType]
-
     memberInfos: Set[VarNameInfo] = set()
     assert self.members is not None, f"{self}"
-    for member in self.members:
-      memberType = member[1]
-      memberName = member[0]
-
-      if memberType == givenType:
+    for memberName, memberType in self.members:
+      if givenType is None:  # then add all possible names
         memberInfos.add(VarNameInfo(memberName, memberType))
-      elif givenType is None:  # add all possible names
-        memberInfos.add(VarNameInfo(memberName, memberType))
-        if isinstance(memberType, (ArrayT, RecordT)):
+        if isinstance(memberType, (ArrayT, RecordT)):  # search deeper
           memberInfos.update(memberType.getNamesOfType(None, memberName))
+      elif givenType == memberType: # add the current member
+        memberInfos.add(VarNameInfo(memberName, memberType))
       elif isinstance(memberType, (ArrayT, RecordT)):  # search deeper
         memberInfos.update(memberType.getNamesOfType(givenType, memberName))
-
-    self._typeToMemberMap[givenType] = memberInfos
 
     assert memberInfos is not None, f"{memberInfos}: {self}"
     return memberInfos  # Should never be None

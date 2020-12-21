@@ -264,29 +264,19 @@ class LitE(SimpleET):
 
 class LocationET(ExprET):
   """Expressions (could be a compound expressions)
-  that represent a location (which can appear on the lhs)."""
-
-  __slots__: List[str] = ["name"]
-
-
-  def __init__(self,
-      exprCode: ExprCodeT,
-      info: Opt[types.Info] = None
-  ) -> None:
-    super().__init__(exprCode, info)
-    self.name: types.VarNameT = ""
+  that represent a location (which can appear on the lhs).
+  This is an empty class to make use of is-a relation,
+  and to also satisfy cython in the future.
+  """
+  pass
 
 
-  def getFullName(self) -> types.VarNameT:
-    return self.name
-
-
-class VarE(LocationET, SimpleET):
+class VarE(SimpleET, LocationET):
   """Holds a location name, that has no pointer dereference.
   E.g. x, x.y.z, ...
   """
 
-  __slots__: List[str] = []
+  __slots__: List[str] = ["name"]
 
 
   def __init__(self,
@@ -297,6 +287,10 @@ class VarE(LocationET, SimpleET):
     self.name: types.VarNameT = name
     if self.hasFunctionName():
       self.exprCode = FUNC_EXPR_EC
+
+
+  def getFullName(self) -> types.VarNameT:
+    return self.name
 
 
   def getFormalStr(self) -> types.FormalStrT:

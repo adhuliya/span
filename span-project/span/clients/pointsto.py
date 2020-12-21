@@ -624,7 +624,7 @@ class PointsToA(analysis.ValueAnalysisAT):
       for arg in e.args:  # iterate over the call arguments
         argType = arg.type
         if isinstance(argType, types.ArrayT):
-          argType = argType.getElementType()
+          argType = argType.getElementTypeFinal()
         if isinstance(argType, types.Ptr): # only ptr arguments matter
           if isinstance(arg, expr.AddrOfE):
             assert isinstance(arg.arg, expr.VarE), f"{arg}"
@@ -670,7 +670,7 @@ class PointsToA(analysis.ValueAnalysisAT):
     # Step 1: what type is the given name?
     varType = ir.inferTypeOfVal(func, varName)
     if isinstance(varType, types.ArrayT):
-      varType = varType.getElementType()
+      varType = varType.getElementTypeFinal()
 
     if not isinstance(varType, types.Ptr):
       raise ValueError(f"{varName}: {varType}")

@@ -427,7 +427,7 @@ class TranslationUnit:
       if nameType == pointeeType:
         names.append(varName)
       elif isinstance(nameType, types.ArrayT) \
-        and nameType.getElementType() == pointeeType:
+        and nameType.getElementTypeFinal() == pointeeType:
         names.append(varName)
 
     if cache:
@@ -457,7 +457,7 @@ class TranslationUnit:
           if nameType == pointeeType:
             namesAppend(vName)
           elif isinstance(nameType, types.ArrayT) \
-              and nameType.getElementType() == pointeeType:
+              and nameType.getElementTypeFinal() == pointeeType:
             namesAppend(vName)
           if len(names) >= 2:
             break
@@ -652,7 +652,7 @@ class TranslationUnit:
     currType = self.inferTypeOfVal(names[0])  # could be RecordT, ArrayT or Ptr
     # get the record type
     if isinstance(currType, types.ArrayT):
-      currType = currType.getElementType()
+      currType = currType.getElementTypeFinal()
     while not isinstance(currType, types.RecordT):
       if isinstance(currType, types.Ptr):
         currType = currType.getPointeeType()
@@ -754,7 +754,7 @@ class TranslationUnit:
       if isinstance(argType, types.Ptr):
         eType = argType.getPointeeType()
       elif isinstance(argType, types.ArrayT):
-        eType = argType.getElementType()
+        eType = argType.getElementTypeFinal()
       elif isinstance(e.arg, expr.VarE) and e.arg.name == "g:0d": # FIXME: for varargs
         eType = irConv.DUMMY_VAR_TYPE  # FIXME: for varargs
       else:
@@ -767,7 +767,7 @@ class TranslationUnit:
       if isinstance(ofType, types.Ptr):
         ofType = ofType.getPointeeType()
       elif isinstance(ofType, types.ArrayT):
-        ofType = ofType.getElementType()
+        ofType = ofType.getElementTypeFinal()
       assert isinstance(ofType, types.RecordT)
       eType = ofType.getMemberType(fieldName)
 
@@ -1289,7 +1289,6 @@ class TranslationUnit:
     nakedPvName = irConv.NAKED_PSEUDO_VAR_NAME.format(count=currCount)
     pureFuncName = irConv.simplifyName(funcName)
     pvName = f"v:{pureFuncName}:{nakedPvName}"
-    if pvName == "v:read_min:3p": print(f"{insn}, {prevInsn}, {insn.info}")  #delit
 
     self._pseudoVars.add(pvName)
     if prevInsn is None:  # insn can never be None
@@ -1300,7 +1299,7 @@ class TranslationUnit:
       insns = [prevInsn, insn]
 
     sizeVal = self.getMemAllocSizeExprValue(sizeExpr)
-    pvType = irConv.PSEUDO_VAR_TYPE(of=varType)
+    pvType = irConv.DEFAULT_PSEUDO_VAR_TYPE(of=varType)
     if sizeVal is not None:
       if sizeVal == varType.bitSizeInBytes():
         pvType = types.Ptr(varType)
@@ -1531,7 +1530,7 @@ class TranslationUnit:
       if givenType == objInfo.type:
         names.add(objInfo.name)
       elif isinstance(objInfo.type, types.ArrayT):
-        if givenType == objInfo.type.getElementType():
+        if givenType == objInfo.type.getElementTypeFinal():
           names.add(objInfo.name)
     return names
 
@@ -1725,7 +1724,7 @@ class TranslationUnit:
     assert varType.isPointer(), f"{varName}, {varType}, {func}"
 
     if isinstance(varType, types.ArrayT):
-      varType = varType.getElementType()
+      varType = varType.getElementTypeFinal()
 
     if not isinstance(varType, types.Ptr):
       raise ValueError(f"{varName}: {varType}")
@@ -1874,7 +1873,7 @@ class TranslationUnit:
       if objType.isNumeric():
         filteredNames.add(name)
       elif isinstance(objType, types.ArrayT):
-        arrayElementType = objType.getElementType()
+        arrayElementType = objType.getElementTypeFinal()
         if arrayElementType.isNumeric():
           filteredNames.add(name)
 
@@ -1891,7 +1890,7 @@ class TranslationUnit:
       if objType.isInteger():
         filteredNames.add(name)
       elif isinstance(objType, types.ArrayT):
-        arrayElementType = objType.getElementType()
+        arrayElementType = objType.getElementTypeFinal()
         if arrayElementType.isInteger():
           filteredNames.add(name)
 
@@ -1909,7 +1908,7 @@ class TranslationUnit:
       if nameType.isPointer():
         filteredNames.add(name)
       elif isinstance(nameType, types.ArrayT):
-        arrayElementType = nameType.getElementType()
+        arrayElementType = nameType.getElementTypeFinal()
         if arrayElementType.isPointer():
           filteredNames.add(name)
 

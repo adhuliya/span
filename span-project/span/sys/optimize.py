@@ -16,8 +16,7 @@ from span.ir.constructs import Func
 from span.ir.conv import TRANSFORM_INFO_FILE_NAME
 from span.ir.types import FuncNameT, Loc
 from span.sys import clients
-from span.util.common_util import Verbosity
-from span.util.util import LS
+from span.util.util import LS, Verbosity
 
 from span.ir.tunit import TranslationUnit
 from span.sys.host import Host

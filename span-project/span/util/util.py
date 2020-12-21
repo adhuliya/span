@@ -18,7 +18,8 @@ from span.util.common_util import \
    getUniqueId,
    exitIfProgramDoesnotExist,
    getSize2,
-   Timer)
+   Timer,
+   Verbosity)
 
 ################################################
 # BOUND START: SystemWideSwitches
