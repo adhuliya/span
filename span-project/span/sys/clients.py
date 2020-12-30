@@ -16,7 +16,7 @@ from typing import Dict, Set, Optional as Opt, cast, Type
 import io
 import functools
 
-from span.util.logger import LS
+from span.util.util import LS
 import span.clients.register as register
 
 import span.ir.conv as irConv

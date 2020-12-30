@@ -12,7 +12,7 @@ from typing import List, Dict, Set, Tuple
 from typing import Optional as Opt
 import io
 
-from span.util.logger import LS
+from span.util.util import LS
 import span.ir.instr as instr
 import span.ir.expr as expr
 from span.ir.types import EdgeLabelT, BasicBlockIdT, FuncNameT
@@ -542,6 +542,7 @@ class Cfg(object):
       for bbId, bb in self.bbMap.items():
         assert bb.cfgNodeSeq is not None
         nodeStrs = [f"{node.id}: {node.insn}" for node in bb.cfgNodeSeq]
+        nodeStrs = [s.replace('"', '\\"') for s in nodeStrs]
 
         bbLabel: str = self.genDotBbLabel(bbId)
         nodeStrs.insert(0, "[" + bbLabel + "]")

@@ -169,6 +169,29 @@ class EvenOddA(analysis.ValueAnalysisAT):
   # BOUND START: simplifiers
   ################################################
 
+  def Num_Var__to__Num_Lit(self,
+      e: expr.VarE,
+      nodeDfv: Opt[NodeDfvL] = None,
+      values: Opt[Set[types.NumericT]] = None,
+  ) -> Opt[Set[types.NumericT]]:
+    # STEP 1: tell the system if the expression can be evaluated
+    if not e.type.isNumeric() or e.type.isArray():
+      return SimFailed
+
+    # STEP 2: If here, eval may be possible, hence attempt eval
+    if nodeDfv is None:
+      return SimPending # tell that sim my be possible if nodeDfv given
+
+    # STEP 3: If here, either eval or filter the values
+    dfvIn = cast(OverallL, nodeDfv.dfvIn)
+    if values is not None:
+      assert len(values), f"{e}, {values}"
+      return self.filterValues(e, values, dfvIn, NumValue) # filter the values
+
+    # STEP 4: If here, eval the expression
+    return SimFailed  # even-odd cannot really simplify
+
+
   def Num_Bin__to__Num_Lit(self,
       e: expr.BinaryE,
       nodeDfv: Opt[NodeDfvL] = None,
@@ -229,6 +252,32 @@ class EvenOddA(analysis.ValueAnalysisAT):
     if val.val is Odd: return {True}  # take true edge
     return SimFailed
 
+
+  def filterTest(self,
+      exprVal: ComponentL,
+      valueType: ValueTypeT = NumValue,
+  ) -> Callable[[types.T], bool]:
+    if valueType == NumValue:
+      def valueTestNumeric(numVal: types.NumericT) -> bool:
+        if exprVal.top: return False
+        if exprVal.bot: return True
+        assert exprVal.val is not None, f"{exprVal}, {numVal}"
+        if exprVal.val: return not bool(numVal % 2) # even
+        if not exprVal.val: return bool(numVal % 2) # odd
+        assert False, f"{exprVal}, {numVal}"
+      return valueTestNumeric  # return the test function
+
+    elif valueType == BoolValue:
+      def valueTestBoolean(boolVal: bool) -> bool:
+        if exprVal.top: return False
+        if exprVal.bot: return True
+        assert exprVal.val, f"{exprVal}, {boolVal}"
+        if not boolVal: return exprVal.val # False i.e. 0 must be even
+        # True i.e. non-0 can be even or odd
+        return True # default fallback
+      return valueTestBoolean  # return the test function
+
+    raise ValueError(f"{exprVal}, {valueType}")
 
   ################################################
   # BOUND END  : simplifiers

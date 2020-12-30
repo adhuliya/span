@@ -6,8 +6,8 @@
 """Interval (Range) Analysis."""
 
 import logging
-
 LOG = logging.getLogger("span")
+
 from typing import Tuple, Dict, Set, List, Optional as Opt, cast, Callable, Type
 
 import span.ir.types as types
@@ -17,15 +17,21 @@ import span.ir.instr as instr
 import span.ir.constructs as constructs
 import span.ir.ir as ir
 
-from span.api.lattice import ChangedT, Changed
+from span.api.lattice import \
+  (ChangedT,
+   Changed,
+   basicEqualTest,
+   basicLessThanTest,
+   basicMeetOp,
+   getBasicString,
+   )
 import span.api.dfv as dfv
-import span.api.lattice as lattice
 from span.api.dfv import NodeDfvL
 import span.api.analysis as analysis
 from span.api.analysis import SimFailed, SimPending, BoolValue, \
   NumValue, ValueTypeT, AnalysisAT
 
-from span.util.util import LS
+from span.util.util import LS, Verbosity
 
 
 ################################################
@@ -49,11 +55,9 @@ class ComponentL(dfv.ComponentL):
   def meet(self,
       other: 'ComponentL'
   ) -> Tuple['ComponentL', ChangedT]:
-    tup = lattice.basicMeetOp(self, other)
+    tup = basicMeetOp(self, other)
     if tup:
       return tup
-    elif self.val == other.val:
-      return self, not Changed
     else:
       assert self.val and other.val, f"{self}, {other}"
       lowerLim = min(self.val[0], other.val[0])
@@ -65,20 +69,20 @@ class ComponentL(dfv.ComponentL):
       other: 'ComponentL'
   ) -> bool:
     """A non-strict weaker-than test. See doc of super class."""
-    lt = lattice.basicLessThanTest(self, other)
-    return (self.val[0] <= other.val[0] and self.val[1] >= other.val[1]) \
-             if lt is None else lt
+    lt = basicLessThanTest(self, other)
+    return lt if lt is not None else \
+      (self.val[0] <= other.val[0] and self.val[1] >= other.val[1])
 
 
   def __eq__(self, other) -> bool:
     if not isinstance(other, ComponentL):
       return NotImplemented
-    equal = lattice.basicEqualTest(self, other)
-    return self.val == other.val if equal is None else equal
+    equal = basicEqualTest(self, other)
+    return equal if equal is not None else self.val == other.val
 
 
   def __hash__(self):
-    return hash((self.val, self.top, self.bot))
+    return hash((self.val, self.top))
 
 
   def getCopy(self) -> 'ComponentL':
@@ -99,6 +103,7 @@ class ComponentL(dfv.ComponentL):
 
 
   def bitNotRange(self) -> 'ComponentL':
+    """Optimistically assumes bit-not is done on an integer."""
     if self.isConstant():
       assert self.val, f"{self}"
       bitNotValue = ~int(self.val[0])
@@ -150,7 +155,7 @@ class ComponentL(dfv.ComponentL):
     if other.bot: return other
     if other.top: return other
 
-    assert self.val and other.val , f"{self}, {other}"
+    assert self.val and other.val, f"{self}, {other}"
     v1 = self.val[0] * other.val[0]
     v2 = self.val[1] * other.val[1]
 
@@ -173,7 +178,7 @@ class ComponentL(dfv.ComponentL):
 
 
   def isNegative(self) -> bool:
-    return self.val and self.val[0] < 0
+    return self.val and self.val[1] < 0
 
 
   def isPositiveOrZero(self) -> bool:
@@ -181,7 +186,7 @@ class ComponentL(dfv.ComponentL):
 
 
   def isNegativeOrZero(self) -> bool:
-    return self.val and self.val[0] <= 0
+    return self.val and self.val[1] <= 0
 
 
   def overlaps(self, other: 'ComponentL') -> bool:
@@ -205,38 +210,78 @@ class ComponentL(dfv.ComponentL):
     return self.val and self.val[0] == self.val[1]
 
 
+  def getValuesSet(self,
+      intType: bool = False
+  ) -> Opt[Set[int]]:
+    """Returns a set of integer values if they can cover the range."""
+    if intType and self.val:
+      low, high = self.val
+      if high - low < 10: # FIXME: defined a named constant
+        return set(i for i in range(low, high+1))
+    return None
+
+
   def cutLimit(self,
       other: 'ComponentL',
-      upper: bool = True
+      lessThanOther: bool = True,
+      equalToOther: bool = True,
+      intType: bool = True,
   ) -> 'ComponentL':
-    """Limits the lower value if possible.
-    Limits the upper/lower value to max till the other's upper/lower value.
+    """Limits the upper/lower value w.r.t. the relation to 'other'.
     Returns Top value if the cut is non-meaningful.
     """
+    topVal = ComponentL(self.func, top=True) # can't compute
     if self.top: return self
     if other.bot: return self
-    if other.top: return ComponentL(self.func, top=True) # bad value
+    if other.top: return topVal
+
+    def newVal(val):
+      nonlocal self
+      return ComponentL(self.func, val=val)
 
     assert other.val, f"{other}"
     otherLower, otherUpper = other.val
     if self.bot:
-      if upper:
-        return ComponentL(self.func, val=(float("-inf"), otherUpper))
-      else:
-        return ComponentL(self.func, val=(otherLower, float("+inf")))
+      if lessThanOther:
+        upper = otherLower if equalToOther else \
+          (otherLower - 1 if intType else otherLower)
+        return newVal((float("-inf"), upper))
+      else: # greaterThanOther
+        lower = otherUpper if equalToOther else \
+          (otherUpper + 1 if intType else otherUpper)
+        return newVal((lower, float("+inf")))
 
     assert self.val, f"{self}"
     selfLower, selfUpper = self.val
 
-    if (upper and selfLower > otherUpper)\
-        or (not upper and selfUpper < otherLower):
-      return ComponentL(self.func, top=True)  # bad value
+    if lessThanOther:
+      if otherUpper < selfLower: return topVal
+      if selfUpper < otherLower: return self
+      if selfUpper == otherLower:
+        upper = otherLower if equalToOther else \
+          (otherLower - 1 if intType else otherLower)
+        return newVal((selfLower, upper)) if selfLower <= upper else topVal
+      if selfUpper >= otherUpper: # obviously selfUpper > otherLower
+        upper = otherUpper if equalToOther else \
+          (otherUpper - 1 if intType else otherUpper)
+        return newVal((selfLower, upper)) if selfLower <= upper else topVal
+      if selfUpper < otherUpper:
+        return self
+    else: # greaterThanOther
+      if otherLower > selfUpper: return topVal
+      if selfLower > otherUpper: return self
+      if selfLower == otherUpper:
+        lower = otherUpper if equalToOther else \
+          (otherUpper + 1 if intType else otherUpper)
+        return newVal((lower, selfUpper)) if lower <= selfUpper else topVal
+      if selfLower <= otherLower: # obviously otherUpper > selfLower
+        lower = otherLower if equalToOther else \
+          (otherUpper + 1 if intType else otherLower)
+        return newVal((lower, selfUpper)) if lower <= selfUpper else topVal
+      if selfLower > otherLower:
+        return self
 
-    if upper and selfUpper > otherUpper:
-      return ComponentL(self.func, val=(selfLower, otherUpper))
-    if not upper and selfLower < otherLower:
-      return ComponentL(self.func, val=(otherLower, selfUpper))
-    return self
+    assert False, f"{self}, {other}"
 
 
   def getIntersectRange(self, other: 'ComponentL') -> 'ComponentL':
@@ -253,7 +298,9 @@ class ComponentL(dfv.ComponentL):
     return ComponentL(self.func, val=(lower, upper))
 
 
-  def getDisjointRange(self, other: 'ComponentL'
+  def getDisjointRange(self,
+      other: 'ComponentL',
+      intType: bool = False,  # TODO: make use of
   ) -> Tuple['ComponentL', 'ComponentL']:
     """Returns two disjoint ranges with the given range.
     Its the opposite of the intersection of range.
@@ -277,17 +324,20 @@ class ComponentL(dfv.ComponentL):
     return (disjoint2, disjoint1) if swap else (disjoint1, disjoint2)
 
 
-  def isLowerRangeThan(self, other: 'ComponentL') -> bool:
-    """Self's complete range is lower than other (may be overlapped)"""
+  def isStrictlyLowerThan(self,
+      other: 'ComponentL',
+      intType: bool = False,  # TODO: make use of
+  ) -> bool:
+    """Self's complete range is strictly lower than other"""
     if self < other or other < self:
       return False
 
     assert self.val and other.val , f"{self}, {other}"
-    return self.val[0] < other.val[0] and self.val[1] < other.val[0]
+    return self.val[1] < other.val[0]
 
 
   def __str__(self):
-    s = lattice.getBasicString(self)
+    s = getBasicString(self)
     return s if s else f"{self.val}"
 
 
@@ -313,7 +363,7 @@ class OverallL(dfv.OverallL):
     """Gives the count of number of constant in the data flow value."""
     if self.top or self.bot: return 0
     assert self.val, f"{self}"
-    return sum(1 for val in self.val.values() if val.isConstant())  # type: ignore
+    return sum(1 for v in self.val.values() if v.isConstant())  # type: ignore
 
 
 ################################################
@@ -372,7 +422,7 @@ class IntervalA(analysis.ValueAnalysisAT):
       values: Opt[Set[types.NumericT]] = None,
   ) -> Opt[Set[types.NumericT]]:
     # STEP 1: tell the system if the expression can be evaluated
-    if not e.type.isNumeric():
+    if not e.type.isNumeric() or e.type.isArray():
       return SimFailed
 
     # STEP 2: If here, eval may be possible, hence attempt eval
@@ -389,8 +439,9 @@ class IntervalA(analysis.ValueAnalysisAT):
     exprVal = self.getExprDfv(e, dfvIn)
     if exprVal.top: return SimPending  # can be evaluated, needs more info
     if exprVal.bot: return SimFailed  # cannot be evaluated
-    if exprVal.val[0] != exprVal.val[1]: return SimFailed  # cannot be evaluated
-    return {exprVal.val[0]}
+    valsSet = exprVal.getValuesSet(e.type.isInteger()) # type: ignore
+    if valsSet: return valsSet
+    return SimFailed
 
 
   def Num_Bin__to__Num_Lit(self,
@@ -424,11 +475,12 @@ class IntervalA(analysis.ValueAnalysisAT):
     if arg1Val.top or arg2Val.top:
       return SimPending
 
+    arg1isInt, arg2isInt = arg1.type.isInteger(), arg2.type.isInteger()
     overlaps = arg1Val.overlaps(arg2Val)
     constArg1 = arg1Val.isConstant()
     constArg2 = arg2Val.isConstant()
-    lowerArg1 = arg1Val.isLowerRangeThan(arg2Val)
-    lowerArg2 = arg2Val.isLowerRangeThan(arg1Val)
+    lowerArg1 = arg1Val.isStrictlyLowerThan(arg2Val, arg1isInt)
+    lowerArg2 = arg2Val.isStrictlyLowerThan(arg1Val, arg2isInt)
 
     result: Opt[bool] = None  # None means don't know
     opCode = e.opr.opCode
@@ -450,27 +502,27 @@ class IntervalA(analysis.ValueAnalysisAT):
       elif not overlaps and lowerArg2:
         result = False
     elif opCode == op.BO_LT_OC:
-      if not overlaps and lowerArg1:
+      if lowerArg1:
         result = True
-      elif not overlaps and lowerArg2:
+      elif lowerArg2:
         result = False
     elif opCode == op.BO_GE_OC:
       if overlaps and constArg1 and constArg2:
         result = True
-      elif not overlaps and lowerArg2:
-        result = True
-      elif not overlaps and lowerArg1:
+      elif lowerArg1:
         result = False
+      elif lowerArg2:
+        result = True
     elif opCode == op.BO_GT_OC:
-      if not overlaps and lowerArg2:
-        result = True
-      elif not overlaps and lowerArg1:
+      if lowerArg1:
         result = False
+      elif lowerArg2:
+        result = True
 
     if result is not None:
       return {1 if result else 0}
     else:
-      return SimFailed
+      return {0, 1} # a better value than SimFailed
 
 
   def Cond__to__UnCond(self,
@@ -479,7 +531,7 @@ class IntervalA(analysis.ValueAnalysisAT):
       values: Opt[Set[bool]] = None,
   ) -> Opt[Set[bool]]:
     # STEP 1: tell the system if the expression can be evaluated
-    if not e.type.isNumeric():
+    if not e.type.isNumeric() or e.type.isArray():
       return SimFailed
 
     # STEP 2: If here, eval may be possible, hence attempt eval
@@ -500,7 +552,7 @@ class IntervalA(analysis.ValueAnalysisAT):
     if val.isExactZero():
       return {False}  # take false edge
     elif not val.inRange(0):
-      return {True}  # take true edge
+      return {True}   # take true edge
     else:
       return SimFailed  # both edges are possible
 
@@ -649,22 +701,39 @@ class IntervalA(analysis.ValueAnalysisAT):
     true1 = true2 = false1 = false2 = None
     if tmpExpr and isinstance(tmpExpr, expr.BinaryE):
       arg1, arg2 = tmpExpr.arg1, tmpExpr.arg2
+      arg1isInt, arg2isInt = arg1.type.isInteger(), arg2.type.isInteger()
       assert isinstance(arg1, expr.VarE), f"{tmpExpr}"
       dfv1, dfv2 = cast(ComponentL, self.getExprDfv(arg1, dfvIn)), \
                    cast(ComponentL, self.getExprDfv(arg2, dfvIn))
       opCode = tmpExpr.opr.opCode
       if opCode == op.BO_EQ_OC:
         true1 = true2 = dfv1.getIntersectRange(dfv2)  # equal dfv
-        false1, false2 = dfv1.getDisjointRange(dfv2)
+        false1, false2 = dfv1.getDisjointRange(dfv2, arg1isInt)
       elif opCode == op.BO_NE_OC:
-        true1, true2 = dfv1.getDisjointRange(dfv2)
+        true1, true2 = dfv1.getDisjointRange(dfv2, arg1isInt)
         false1 = false2 = dfv1.getIntersectRange(dfv2)  # equal dfv
-      elif opCode in (op.BO_LT_OC, op.BO_LE_OC):
-        true1, true2 = dfv1.cutLimit(dfv2, True), dfv2.cutLimit(dfv1, False)
-        false1, false2 = dfv1.cutLimit(dfv2, False), dfv2.cutLimit(dfv1, True)
-      elif opCode in (op.BO_GT_OC, op.BO_GE_OC):
-        true1, true2 = dfv1.cutLimit(dfv2, False), dfv2.cutLimit(dfv1, True)
-        false1, false2 = dfv1.cutLimit(dfv2, True), dfv2.cutLimit(dfv1, False)
+      else:
+        cutLimit1, cutLimit2 = dfv1.cutLimit, dfv2.cutLimit
+        if opCode == op.BO_LT_OC:
+          true1 = cutLimit1(dfv2, True, False, arg1isInt)
+          true2 = cutLimit2(dfv1, False, False, arg2isInt)
+          false1 = cutLimit1(dfv2, False, True, arg1isInt)
+          false2 = cutLimit2(dfv1, True, True, arg2isInt)
+        elif opCode == op.BO_LE_OC:
+          true1 = cutLimit1(dfv2, True, True, arg1isInt)
+          true2 = cutLimit2(dfv1, False, True, arg2isInt)
+          false1 = cutLimit1(dfv2, False, False, arg1isInt)
+          false2 = cutLimit2(dfv1, True, False, arg2isInt)
+        elif opCode == op.BO_GT_OC:
+          true1 = cutLimit1(dfv2, False, False, arg1isInt)
+          true2 = cutLimit2(dfv1, True, False, arg2isInt)
+          false1 = cutLimit1(dfv2, True, True, arg1isInt)
+          false2 = cutLimit2(dfv1, False, True, arg2isInt)
+        elif opCode == op.BO_GE_OC:
+          true1 = cutLimit1(dfv2, False, True, arg1isInt)
+          true2 = cutLimit2(dfv1, True, True, arg2isInt)
+          false1 = cutLimit1(dfv2, True, False, arg1isInt)
+          false2 = cutLimit2(dfv1, False, False, arg2isInt)
 
       arg2IsVarE = isinstance(arg2, expr.VarE)
       if true1 and true2:

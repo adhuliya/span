@@ -19,7 +19,7 @@ from typing import List, Dict, Set, Tuple
 from typing import Optional as Opt
 import io
 
-from span.util.logger import LS
+from span.util.util import LS
 from span.ir.types import EdgeLabelT, BasicBlockIdT, FuncNameT
 from span.ir.conv import FalseEdge, TrueEdge, UnCondEdge
 import span.ir.types as types

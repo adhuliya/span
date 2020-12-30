@@ -9,14 +9,14 @@ This file has utility functions for syntactic queries on the IR.
 
 import logging
 
-from span.ir import callgraph
+from span.ir import callgraph, tunit
 
 LOG = logging.getLogger("span")
 
 from typing import Dict, List, Callable, Any
 import functools
 
-from span.util.logger import LS
+from span.util.util import LS
 import span.ir.types as types
 import span.ir.instr as instr
 import span.ir.expr as expr
@@ -178,6 +178,62 @@ def countAllFuncCalls(func: constructs.Func) -> int:
         count += 1
   return count
 
+
+def countRelExpressions(func: constructs.Func) -> int:
+  """Counts relational expressions."""
+  count = 0
+  if func.hasBody():
+    assert func.cfg is not None, f"{func}"
+    for insn in func.yieldInstrSeq():
+      if isinstance(insn, instr.AssignI)\
+          and isinstance(insn.rhs, expr.BinaryE)\
+          and insn.rhs.opr.isRelationalOp():
+        count += 1
+  return count
+
+
+def countIfCond(func: constructs.Func) -> int:
+  """Counts if conditions."""
+  count = 0
+  if func.hasBody():
+    assert func.cfg is not None, f"{func}"
+    for insn in func.yieldInstrSeq():
+      if isinstance(insn, instr.CondI):
+        count += 1
+  return count
+
+
+def countIfCondWithComparison(func: constructs.Func) -> int:
+  """Counts if conditions with comparison."""
+  count = 0
+  if func.hasBody():
+    assert func.cfg is not None, f"{func}"
+    tUnit: tunit.TranslationUnit = func.tUnit
+    for insn in func.yieldInstrSeq():
+      if isinstance(insn, instr.CondI):
+        e = tUnit.getTmpVarExpr(insn.arg.name)
+        if isinstance(e, expr.BinaryE) \
+            and e.opr.isRelationalOp():
+          count += 1
+  return count
+
+
+def countIfCondWithConstComparison(func: constructs.Func) -> int:
+  """Counts if conditions with comparison with a constant value."""
+  count = 0
+  if func.hasBody():
+    assert func.cfg is not None, f"{func}"
+    tUnit: tunit.TranslationUnit = func.tUnit
+    for insn in func.yieldInstrSeq():
+      if isinstance(insn, instr.CondI):
+        e = tUnit.getTmpVarExpr(insn.arg.name)
+        if isinstance(e, expr.BinaryE) \
+            and e.opr.isRelationalOp() \
+            and (isinstance(e.arg1, expr.LitE)
+               or isinstance(e.arg2, expr.LitE)):
+          count += 1
+  return count
+
 ################################################
 # BLOCK END  : counting_queries
 ################################################
@@ -289,6 +345,16 @@ def executeAllQueries(tUnit: TranslationUnit):
   p("TotalFuncWithMemAllocations:",
     #len(filterFunctions(tUnit, lambda x: bool(countMemoryAllocations(x)))))
     list(map(lambda x: x.name, filterFunctions(tUnit, lambda x: bool(countMemoryAllocations(x))))))
+
+  p("TotalIfCondWithConstComparison:",
+    countOnFunctions(tUnit, countIfCondWithConstComparison, FUNC_WITH_BODY))
+  p("TotalIfCondWithComparison:",
+    countOnFunctions(tUnit, countIfCondWithComparison, FUNC_WITH_BODY))
+  p("TotalIfCond:",
+    countOnFunctions(tUnit, countIfCond, FUNC_WITH_BODY))
+  p("TotalRelationalExprs:",
+    countOnFunctions(tUnit, countRelExpressions, FUNC_WITH_BODY))
+
   callgraph.generateCallGraph(tUnit).genAndPrintSCCs()
 
 

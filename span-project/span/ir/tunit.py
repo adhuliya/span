@@ -407,6 +407,12 @@ class TranslationUnit:
     ld("TotalFunctions(total %s): Not printed.", len(self.allFunctions))
 
 
+  def canBeGloballyAccessed(self, name: str):
+    """Returns True (over-approximated) if a name can be
+    potentially accessed globally (either directly or by pointer deref)"""
+    return name in self._globalsAndAddrTakenSet
+
+
   def getPossiblePointees(self,
       t: Opt[types.Ptr] = None,
       cache: bool = True
@@ -440,7 +446,6 @@ class TranslationUnit:
     """It adds dummy objects of the pointee type
     of pointer variables whose pointee type
     object doesn't exist in the tunit."""
-    # print("TotalVars:", len(self.allVars), len(self._globalsAndAddrTakenSet)) #delit
     for varName, objType in self.allVars.items():
       tmpType = objType
       isFuncName, allFuncs = irConv.isFuncName, self.allFunctions
@@ -470,6 +475,18 @@ class TranslationUnit:
 
         tmpType = tmpType.getPointeeType()
         # end while
+
+
+  def getNode(self,
+      funcName: types.FuncNameT,
+      nid: types.NodeIdT
+  ) -> Opt[cfg.CfgNode]:
+    """Returns the node object."""
+    func = self.getFuncObj(funcName)
+    nodeMap = func.cfg.nodeMap
+    if nid in nodeMap:
+      return nodeMap[nid]
+    return None
 
 
   def getTheFunctionOfVar(self,
@@ -502,8 +519,6 @@ class TranslationUnit:
     """Add the varName into self._nameInfoMap along
     with all its sub-names if its an array or a record."""
     nameInfos = objType.getNamesOfType(None, varName)
-    if varName == "v:read_min:3p":  #delit
-      print(f"NameInfos: {varName}, {nameInfos}")  #delit
     for nameInfo in nameInfos:
       self._nameInfoMap[nameInfo.name] = nameInfo   # cache the results
       if new:
@@ -737,7 +752,7 @@ class TranslationUnit:
         else:
           eType = itype1
 
-      elif op.BO_REL_START_OC <= opCode <= op.BO_REL_END_OC:
+      elif op.BO_LT_OC <= opCode <= op.BO_GT_OC:
         etype1 = self.inferTypeOfExpr(e.arg1)
         etype2 = self.inferTypeOfExpr(e.arg2)
         eType = types.Int32

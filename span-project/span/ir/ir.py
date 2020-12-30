@@ -285,7 +285,7 @@ def filterNames(func: constructs.Func,
   return set(filter(augmentedTest,  names))
 
 
-@functools.lru_cache(1000)
+@functools.lru_cache(1024)
 def getNamesUsedInExprSyntactically(e: expr.ExprET
 ) -> Set[types.VarNameT]:
   return set(expr.getNamesUsedInExprSyntactically(e, forLiveness=True))

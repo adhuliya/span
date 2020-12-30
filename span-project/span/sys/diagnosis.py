@@ -13,8 +13,7 @@ from typing import List, Optional as Opt, Dict, Set
 import io
 
 import span.util.util as util
-from span.util.logger import LS
-from span.util.util import AS
+from span.util.util import LS
 
 import span.api.analysis as analysis
 import span.api.dfv as dfv

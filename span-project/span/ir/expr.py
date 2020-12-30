@@ -12,7 +12,7 @@ LOG = logging.getLogger("span")
 
 from typing import List, Set, Any, Optional as Opt
 
-from span.util.logger import LS
+from span.util.util import LS
 import span.util.consts as consts
 import span.ir.types as types
 import span.ir.conv as irConv
@@ -79,7 +79,7 @@ class ExprET:
     Args:
       level: An argument to help invoke specific checks in future.
     """
-    if level == 0:
+    if level >= 0:
       assert self.exprCode is not None
       assert self.type is not None
 
@@ -373,7 +373,7 @@ class PseudoVarE(VarE):
   and type based heap locations etc.
 
   Note: to avoid circular dependency avoid any operation on
-  instructions in this module.
+  SPAN IR instructions in this module.
   """
 
   __slots__: List[str] = ["name", "sizeExpr", "insns"]
@@ -579,7 +579,6 @@ class ArrayE(DerefET):
     """Is the array expression used on a pointer variable?"""
     if self._hasPtrDeref is None:
       self._hasPtrDeref = isinstance(self.of.type, types.Ptr)
-
     return self._hasPtrDeref
 
 
@@ -616,9 +615,6 @@ class ArrayE(DerefET):
     if not isinstance(other, ArrayE):
       if LS: LOG.error("ObjectsIncomparable: %s, %s", self, other)
       return False
-    if not self.name == other.name:
-      if LS: LOG.error("NamesDiffer: %s, %s", self.name, other.name)
-      equal = False
     if not self.index == other.index:
       if LS: LOG.error("IndicesDiffer: %s, %s", self.index, other.index)
       equal = False
@@ -1044,7 +1040,7 @@ class CastE(UnaryET):
 
   def checkInvariants(self, level: int = 0):
     super().checkInvariants()
-    if level == 0:
+    if level >= 0:
       assert isinstance(self.arg, LocationET), f"{self}"
 
 
@@ -1253,7 +1249,7 @@ class CallE(ExprET):
 
   def checkInvariants(self, level: int = 0):
     super().checkInvariants(level)
-    if level == 0:
+    if level >= 0:
       assert isinstance(self.callee, VarE), f"{self}"
       self.callee.checkInvariants(level)
       if self.args:
@@ -1533,9 +1529,9 @@ def getNamesUsedInExprSyntactically(
     forLiveness=True,
 ) -> Set[types.VarNameT]:
   """Returns the names syntactically present in the expression.
-  Note if forLiveness is False,
-    It will also return the function name in a call.
-    The name of variable whose address is taken.
+  If forLiveness is False, the return set will also include,
+    1. The function name in a call.
+    2. The name of variable whose address is taken.
   """
   thisFunction = getNamesUsedInExprSyntactically
 

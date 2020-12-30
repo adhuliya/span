@@ -11,8 +11,8 @@ This (and every) analysis subclasses,
 """
 
 import logging
-
 LOG = logging.getLogger("span")
+
 from typing import Tuple, Dict, List, Optional as Opt, Set, Callable, cast
 
 from span.util.util import LS
@@ -160,7 +160,7 @@ class ComponentL(dfv.ComponentL):
 
   def __hash__(self):
     val = frozenset(self.val) if self.val else None
-    return hash((val, self.top, self.bot))
+    return hash((val, self.top))
 
 
   def __str__(self):
@@ -207,9 +207,9 @@ class PointsToA(analysis.ValueAnalysisAT):
   needsLhsDerefToVarsSim: bool = False
   needsNumVarToNumLitSim: bool = False
   needsNumBinToNumLitSim: bool = False
-  needsCondToUnCondSim: bool = True
-  needsLhsVarToNilSim: bool = True
-  needsNodeToNilSim: bool = False
+  needsCondToUnCondSim:   bool = True
+  needsLhsVarToNilSim:    bool = True
+  needsNodeToNilSim:      bool = False
 
 
   def __init__(self,

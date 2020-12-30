@@ -10,7 +10,7 @@ import logging
 LOG = logging.getLogger("span")
 from typing import Optional as Opt, Set, Tuple, List, Callable, cast
 
-from span.util.logger import LS
+from span.util.util import LS
 
 import span.ir.types as types
 from span.ir.conv import getSuffixes, simplifyName

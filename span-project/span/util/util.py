@@ -19,6 +19,7 @@ from span.util.common_util import \
    exitIfProgramDoesnotExist,
    getSize2,
    Timer,
+   programExists,
    Verbosity)
 
 ################################################

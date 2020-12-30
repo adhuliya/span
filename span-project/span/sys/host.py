@@ -1931,7 +1931,10 @@ class Host:
 
   def printOrLogResult(self):
     """prints the result of all analyses."""
+    print("\n\n") # some blank lines for neatness
     print(self.func, "TUnit:", self.func.tUnit.name)
+    print(f"MODE: IPA: {self.ipaEnabled}, DDM: {self.useDdm},"
+          f" CASCADED: {self.cascade}")
     for anName, res in self.anWorkDict.items():
       print(f"{anName}:(SimCount: {self.anSimSuccessCount[anName]})")
 
@@ -2019,7 +2022,10 @@ class Host:
     for anName in results.keys():
       dirn = self.anWorkDict[anName]
       nDfv = results[anName]
-      inOutChange = dirn.update(node, nDfv)
+      if self.ipaEnabled:
+        inOutChange = self._doIpaUpdate(dirn, node, nDfv)
+      else:
+        inOutChange = dirn.update(node, nDfv)
       if inOutChange:
         if LS: LOG.debug("IPA_UpdatedWorklist: %s, %s", self.func.name, dirn.wl)
         self.addAnToWorklist(anName, ipa=True)
@@ -2029,6 +2035,15 @@ class Host:
       #   self.addDepAnToWorklist(node, inOutChange)
 
     return restart
+
+
+  def _doIpaUpdate(self,
+      dirn: DirectionDT,
+      node: cfg.CfgNode,
+      nDfv: NodeDfvL,
+  ) -> NewOldL:
+    """In an IPA update restore the dfvs of local variables."""
+    return dirn.update(node, nDfv)
 
 
   def getCallSiteDfvs(self

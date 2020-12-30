@@ -16,7 +16,7 @@ import span.ir.constructs as obj
 import span.ir.types as types
 
 ChangedT = bool  # is the value changed?
-Changed: ChangedT = True
+Changed: ChangedT = True  # for unchanged use `not Changed`
 
 BoundLatticeLT = TypeVar('BoundLatticeLT', bound='LatticeLT')
 
@@ -128,6 +128,24 @@ class DataLT(LatticeLT):
 
     Returns:
       (Lattice, ChangedT): glb of self and dfv, and 'Changed' if glb != self
+    """
+    raise NotImplementedError()
+
+
+  def separateLocalNonLocalDfvs(self
+  ) -> Tuple['DataLT', 'DataLT']:
+    """DFV with only the local variables of the current function,
+    and DFV without the local variables.
+    This is used in Value Context IPA analysis.
+    """
+    raise NotImplementedError()
+
+
+  def addLocalDfv(self,
+      localDfv: 'DataLT',
+  ) -> 'DataLT':
+    """Creates a new dfv object.
+    Assumes default value is bot.
     """
     raise NotImplementedError()
 

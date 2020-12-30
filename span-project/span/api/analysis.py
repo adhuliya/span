@@ -2124,10 +2124,8 @@ class ValueAnalysisAT(AnalysisAT):
     if not values:
       return values  # returns an empty set
     exprVal = self.getExprDfv(e, dfvIn)
-    if exprVal.bot:
-      return values
-    elif exprVal.top:
-      return SimPending
+    if exprVal.bot:   return values
+    elif exprVal.top: return SimPending
     else:
       assert exprVal.val is not None, f"{e}, {exprVal}, {dfvIn}"
       return set(filter(self.filterTest(exprVal, valueType), values))
@@ -2137,6 +2135,7 @@ class ValueAnalysisAT(AnalysisAT):
       exprVal: dfv.ComponentL,
       valueType: ValueTypeT = NumValue,
   ) -> Callable[[types.T], bool]:
+    """Filter out values that are not agreeable."""
     return lambda x: True
 
 

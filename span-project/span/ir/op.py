@@ -8,12 +8,11 @@ All operators used in expressions.
 """
 
 import logging
-
 LOG = logging.getLogger("span")
 
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, cast
 
-from span.util.logger import LS
+from span.util.util import LS
 import span.ir.types as types
 
 OpCodeT = types.OpCodeT
@@ -51,7 +50,7 @@ UO_CAST_OC: OpCodeT = 130  # e.g. (int)2.5
 # NOTE: all OpCodes less than 200 are unary.
 
 # numeric_ops
-BO_NUM_START_OC: OpCodeT = 200  # Numeric binary ops start
+BO_NUM_START_OC: OpCodeT = 200  # Numeric_binary_ops start
 BO_ADD_OC: OpCodeT = 201  # +
 BO_SUB_OC: OpCodeT = 202  # -
 BO_MUL_OC: OpCodeT = 203  # *
@@ -67,17 +66,15 @@ BO_BIT_XOR_OC: OpCodeT = 302  # ^
 BO_LSHIFT_OC: OpCodeT = 400  # <<
 BO_RSHIFT_OC: OpCodeT = 401  # >>
 BO_RRSHIFT_OC: OpCodeT = 402  # >>>
-BO_NUM_END_OC: OpCodeT = 499  # Numeric binary ops end
+BO_NUM_END_OC: OpCodeT = 499  # Numeric_binary_ops end
 
 # numeric relational_ops
-BO_REL_START_OC: OpCodeT = 500  # relational ops start
 BO_LT_OC: OpCodeT = 507  # <
 BO_LE_OC: OpCodeT = 508  # <=
 BO_EQ_OC: OpCodeT = 509  # ==
 BO_NE_OC: OpCodeT = 510  # !=
 BO_GE_OC: OpCodeT = 511  # >=
 BO_GT_OC: OpCodeT = 512  # >
-BO_REL_END_OC: OpCodeT = 520  # relational ops end
 
 
 # array_index
@@ -238,40 +235,69 @@ class UnaryOp(OpT):
 # BOUND START: operator_objects
 ################################################
 
-UO_PLUS: UnaryOp = UnaryOp(UO_PLUS_OC)
-UO_MINUS: UnaryOp = UnaryOp(UO_MINUS_OC)
+opMap: Dict[OpCodeT, OpT] = {
+  UO_PLUS_OC: UnaryOp(UO_PLUS_OC),
+  UO_MINUS_OC: UnaryOp(UO_MINUS_OC),
 
-# These operators are no more used.
-# There are dedicated expression types for these operations.
-# UO_ADDROF:    UnaryOp = UnaryOp(UO_ADDROF_OC)
-# UO_DEREF:     UnaryOp = UnaryOp(UO_DEREF_OC)
-# UO_SIZEOF: UnaryOp = UnaryOp(UO_SIZEOF_OC)
+  # These operators are no more used.
+  # There are dedicated expression types for these operations.
+  # UO_ADDROF: UnaryOp = UnaryOp(UO_ADDROF_OC)
+  # UO_DEREF:  UnaryOp = UnaryOp(UO_DEREF_OC)
+  # UO_SIZEOF: UnaryOp = UnaryOp(UO_SIZEOF_OC)
 
-UO_BIT_NOT: UnaryOp = UnaryOp(UO_BIT_NOT_OC)
-UO_LNOT: UnaryOp = UnaryOp(UO_LNOT_OC)
+  UO_BIT_NOT_OC: UnaryOp(UO_BIT_NOT_OC),
+  UO_LNOT_OC: UnaryOp(UO_LNOT_OC),
 
-BO_ADD: BinaryOp = BinaryOp(BO_ADD_OC)
-BO_SUB: BinaryOp = BinaryOp(BO_SUB_OC)
-BO_MUL: BinaryOp = BinaryOp(BO_MUL_OC)
-BO_DIV: BinaryOp = BinaryOp(BO_DIV_OC)
-BO_MOD: BinaryOp = BinaryOp(BO_MOD_OC)
+  BO_ADD_OC: BinaryOp(BO_ADD_OC),
+  BO_SUB_OC: BinaryOp(BO_SUB_OC),
+  BO_MUL_OC: BinaryOp(BO_MUL_OC),
+  BO_DIV_OC: BinaryOp(BO_DIV_OC),
+  BO_MOD_OC: BinaryOp(BO_MOD_OC),
 
-BO_LT: BinaryOp = BinaryOp(BO_LT_OC)
-BO_LE: BinaryOp = BinaryOp(BO_LE_OC)
-BO_EQ: BinaryOp = BinaryOp(BO_EQ_OC)
-BO_NE: BinaryOp = BinaryOp(BO_NE_OC)
-BO_GE: BinaryOp = BinaryOp(BO_GE_OC)
-BO_GT: BinaryOp = BinaryOp(BO_GT_OC)
+  BO_LT_OC: BinaryOp(BO_LT_OC),
+  BO_LE_OC: BinaryOp(BO_LE_OC),
+  BO_EQ_OC: BinaryOp(BO_EQ_OC),
+  BO_NE_OC: BinaryOp(BO_NE_OC),
+  BO_GE_OC: BinaryOp(BO_GE_OC),
+  BO_GT_OC: BinaryOp(BO_GT_OC),
 
-BO_BIT_AND: BinaryOp = BinaryOp(BO_BIT_AND_OC)
-BO_BIT_OR: BinaryOp = BinaryOp(BO_BIT_OR_OC)
-BO_BIT_XOR: BinaryOp = BinaryOp(BO_BIT_XOR_OC)
+  BO_BIT_AND_OC: BinaryOp(BO_BIT_AND_OC),
+  BO_BIT_OR_OC: BinaryOp(BO_BIT_OR_OC),
+  BO_BIT_XOR_OC: BinaryOp(BO_BIT_XOR_OC),
 
-BO_LSHIFT: BinaryOp = BinaryOp(BO_LSHIFT_OC)
-BO_RSHIFT: BinaryOp = BinaryOp(BO_RSHIFT_OC)
-BO_RRSHIFT: BinaryOp = BinaryOp(BO_RRSHIFT_OC)
+  BO_LSHIFT_OC: BinaryOp(BO_LSHIFT_OC),
+  BO_RSHIFT_OC: BinaryOp(BO_RSHIFT_OC),
+  BO_RRSHIFT_OC: BinaryOp(BO_RRSHIFT_OC),
 
-# BO_INDEX: UnaryOp = BinaryOp(BO_INDEX_OC)
+  # BO_INDEX_OC: BinaryOp(BO_INDEX_OC),
+}
+
+UO_PLUS: UnaryOp = cast(UnaryOp, opMap[UO_PLUS_OC])
+UO_MINUS: UnaryOp = cast(UnaryOp, opMap[UO_MINUS_OC])
+
+UO_BIT_NOT: UnaryOp = cast(UnaryOp, opMap[UO_BIT_NOT_OC])
+UO_LNOT: UnaryOp = cast(UnaryOp, opMap[UO_LNOT_OC])
+
+BO_ADD: BinaryOp = cast(BinaryOp, opMap[BO_ADD_OC])
+BO_SUB: BinaryOp = cast(BinaryOp, opMap[BO_SUB_OC])
+BO_MUL: BinaryOp = cast(BinaryOp, opMap[BO_MUL_OC])
+BO_DIV: BinaryOp = cast(BinaryOp, opMap[BO_DIV_OC])
+BO_MOD: BinaryOp = cast(BinaryOp, opMap[BO_MOD_OC])
+
+BO_LT: BinaryOp = cast(BinaryOp, opMap[BO_LT_OC])
+BO_LE: BinaryOp = cast(BinaryOp, opMap[BO_LE_OC])
+BO_EQ: BinaryOp = cast(BinaryOp, opMap[BO_EQ_OC])
+BO_NE: BinaryOp = cast(BinaryOp, opMap[BO_NE_OC])
+BO_GE: BinaryOp = cast(BinaryOp, opMap[BO_GE_OC])
+BO_GT: BinaryOp = cast(BinaryOp, opMap[BO_GT_OC])
+
+BO_BIT_AND: BinaryOp = cast(BinaryOp, opMap[BO_BIT_AND_OC])
+BO_BIT_OR: BinaryOp = cast(BinaryOp, opMap[BO_BIT_OR_OC])
+BO_BIT_XOR: BinaryOp = cast(BinaryOp, opMap[BO_BIT_XOR_OC])
+
+BO_LSHIFT: BinaryOp = cast(BinaryOp, opMap[BO_LSHIFT_OC])
+BO_RSHIFT: BinaryOp = cast(BinaryOp, opMap[BO_RSHIFT_OC])
+BO_RRSHIFT: BinaryOp = cast(BinaryOp, opMap[BO_RRSHIFT_OC])
 
 ################################################
 # BOUND END  : operator_objects
@@ -279,12 +305,12 @@ BO_RRSHIFT: BinaryOp = BinaryOp(BO_RRSHIFT_OC)
 
 # When left and right operands are flipped, operator also flips.
 flippedRelOps = {
-  BO_EQ: BO_EQ,
-  BO_NE: BO_NE,
   BO_LT: BO_GT,
   BO_LE: BO_GE,
-  BO_GT: BO_LT,
+  BO_EQ: BO_EQ,
+  BO_NE: BO_NE,
   BO_GE: BO_LE,
+  BO_GT: BO_LT,
 }
 
 

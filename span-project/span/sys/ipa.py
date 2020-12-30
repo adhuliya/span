@@ -13,7 +13,7 @@ Note: All IR related processing for IPA is done in span.ir.ipa module.
 import logging
 LOG = logging.getLogger("span")
 
-from typing import Dict, Tuple, Set, List
+from typing import Dict, Tuple, Set, List, cast
 from typing import Optional as Opt
 # import objgraph
 import gc  # REF: https://rushter.com/blog/python-garbage-collector/
@@ -38,6 +38,7 @@ from span.api.dfv import NodeDfvL
 
 from span.sys.host import Host, MAX_ANALYSES
 # from span.util.util import LS  # ipa module uses its own LS
+import span.util.util as util
 LS = True
 import span.util.common_util as cutil
 
@@ -195,8 +196,8 @@ class IpaHost:
 
   def analyzeFunc(self,
       callSite: FuncNodeIdT,
-      funcName: FuncNameT,
-      funcBi: Dict[AnalysisNameT, NodeDfvL],
+      funcName: FuncNameT,  # the function being analyzed (callee)
+      ipaFuncBi: Dict[AnalysisNameT, NodeDfvL],
       recursionDepth: int,
       uniqueId: int = 0,
   ) -> Dict[AnalysisNameT, NodeDfvL]:
@@ -206,7 +207,6 @@ class IpaHost:
                                       f" VContextSize: {len(self.vContextMap)}"
                                       f" UniqueId: {uniqueId}")
                                       # f" FuncBi: {funcBi}")
-    ipaFuncBi = self.computeIpaBi(funcName, funcBi)
 
     if recursionDepth >= RECURSION_LIMIT:
       return self.analyzeFuncFinal(callSite, funcName, ipaFuncBi)
@@ -219,6 +219,7 @@ class IpaHost:
       # if using a memoized result, no need for further computation
       return host.getBoundaryResult()
 
+    callerName = funcName  # now the current function is a 'caller'
     reAnalyze = True
     while reAnalyze:
       # sizeStr = f"vContextMap: ({len(self.vContextMap)},{cutil.getSize(self.vContextMap)})," \
@@ -233,15 +234,44 @@ class IpaHost:
           calleeSite = conv.genFuncNodeId(host.func.id, node.id)
           calleeName = instr.getCalleeFuncName(node.insn)
           assert calleeName, f"{node}"
-          calleeBi = self.analyzeFunc(calleeSite, calleeName,
-                                      dfvs, recursionDepth + 1,
-                                      newUniqueId)  # recursion
-          reAnalyze = host.setCallSiteDfv(node.id, calleeBi)
+          localDfvs, nonLocalDfvs = self.separateLocalNonLocalDfvs(dfvs) # w.r.t. caller
+          calleeBi = self.prepareIpaBi(calleeName, nonLocalDfvs)
+          newCalleeBi = self.analyzeFunc(calleeSite, calleeName,
+                                         calleeBi, recursionDepth + 1,
+                                         newUniqueId)  # recursion
+          newDfvs = self.localizeIpaBi(callerName, newCalleeBi, localDfvs)
+          reAnalyze = host.setCallSiteDfv(node.id, newDfvs)
           if reAnalyze:
             break  # first re-analyze then goto other call sites
 
       if LS: LOG.debug("ReAnalyzingFunction: %s", funcName) if reAnalyze else None
+    if funcName in ("f:spec_load", "f:main"):  #delit
+      host.printOrLogResult()  #delit
     return host.getBoundaryResult()
+
+
+  def separateLocalNonLocalDfvs(self,
+      dfvs: Dict[AnalysisNameT, NodeDfvL],
+  ) -> Tuple[Dict[AnalysisNameT, NodeDfvL], Dict[AnalysisNameT, NodeDfvL]]:
+    localDfvs, nonLocalDfvs = dict(), dict()
+    for aName, nDfv in dfvs.items():
+      l, nl = nDfv.separateLocalNonLocalDfvs()
+      localDfvs[aName], nonLocalDfvs[aName] = l, nl
+    return localDfvs, nonLocalDfvs
+
+
+  def localizeIpaBi(self,
+      funcName: FuncNameT,
+      newCalleeBi: Dict[AnalysisNameT, NodeDfvL],
+      localDfvs: Dict[AnalysisNameT, NodeDfvL],
+  ) -> Dict[AnalysisNameT, NodeDfvL]:
+    # TODO: complete the logic
+    localizedDfvs = dict()
+    for anName, localDfv in localDfvs.items():
+      newCalleeDfv = newCalleeBi[anName]
+      localizedDfv = newCalleeDfv.addLocalDfv(localDfv, clients.getDirection(anName))
+      localizedDfvs[anName] = localizedDfv
+    return localizedDfvs
 
 
   def analyzeFuncFinal(self,
@@ -332,7 +362,7 @@ class IpaHost:
     return None
 
 
-  def computeIpaBi(self,
+  def prepareIpaBi(self,
       funcName: FuncNameT,
       bi: Dict[AnalysisNameT, NodeDfvL],
   ) -> Dict[AnalysisNameT, NodeDfvL]:
@@ -477,6 +507,9 @@ def diagnoseInterval(tUnit: TranslationUnit):
 
   totalPPoints = 0  # total program points
   weakPPoints = 0  # weak program points
+  totalPreciseComparisons1 = 0
+  totalPreciseComparisons2 = 0
+  total1 = 0
 
   print("Weak points and the values.")
   print("=" * 48)
@@ -484,9 +517,17 @@ def diagnoseInterval(tUnit: TranslationUnit):
     interSpan = ipaHostSpan.finalResult[funcName][mainAnalysis]
     interLern = ipaHostLern.finalResult[funcName][mainAnalysis]
 
-    for nid in interSpan.keys():
+    #delit: the continuous bock below
+    debug1 = False
+    if funcName in ("f:spec_load", "f:main"):
+      debug1 = True
+      pass  # just start debugging from here
+
+    for nid in sorted(interSpan.keys()):
       nDfvSpan = interSpan[nid]
       nDfvLern = interLern[nid]
+
+      if debug1: print(f"{funcName},{nid}:\n{nDfvSpan}\n{nDfvLern}")
 
       totalPPoints += 2
 
@@ -498,7 +539,29 @@ def diagnoseInterval(tUnit: TranslationUnit):
           and nDfvLern.dfvOut < nDfvSpan.dfvOut:
         weakPPoints += 1
 
+      # some queries
+      node = tUnit.getNode(funcName, nid)
+      assert node, f"{funcName} {nid}"
+      if node:
+        insn = node.insn
+        if isinstance(insn, instr.AssignI)\
+            and isinstance(insn.rhs, expr.BinaryE):
+          rhs: expr.BinaryE = insn.rhs
+          if rhs.opr.isRelationalOp():
+            total1 += 1
+            lhs = cast(expr.VarE, insn.lhs)
+            name = lhs.name
+            # val1 = nDfvSpan.dfvOut.getVal(name)
+            # if not val1.bot:
+            #   totalPreciseComparisons1 += 1
+            # val2 = nDfvLern.dfvOut.getVal(name)
+            # if not val2.bot:
+            #   print(f"{name}: {val1}, {val2} ({insn.info})")
+            #   totalPreciseComparisons2 += 1
+
   print("\nTotalPPoints:", totalPPoints, "WeakPPoints:", weakPPoints)
+  print(f"TotalPreciseComparisons: {totalPreciseComparisons1}"
+        f" ({totalPreciseComparisons2}) / {total1}")
 
   takeTracemallocSnapshot()
 

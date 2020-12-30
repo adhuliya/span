@@ -170,7 +170,7 @@ levels to control logging, using this switch has shown to
 speed up production code by almost 30%. The recommended usage is,
 
 
-    from span.util.logger import LS
+    from span.util.util import LS
     ...
     if LS: _log.debug("your msg: %s, %s", param1, param2)
     

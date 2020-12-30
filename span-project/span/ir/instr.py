@@ -9,12 +9,12 @@ Note: use names in this module with module name: e.g. instr.UseI...
 """
 import functools
 import logging
-
 LOG = logging.getLogger("span")
+
 from typing import Set, List
 from typing import Optional as Opt
 
-from span.util.logger import LS
+from span.util.util import LS
 import span.util.consts as consts
 import span.ir.expr as expr
 import span.ir.types as types

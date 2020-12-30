@@ -10,19 +10,18 @@ from typing import Tuple, Optional as Opt, Dict, Any, Set,\
 import logging
 import io
 
+from span.ir import tunit, conv
+
 LOG = logging.getLogger("span")
 
-from span.util.logger import LS
+from span.util.util import LS
 from span.api.lattice import\
   (LatticeLT, DataLT, ChangedT, Changed,
    BoundLatticeLT, basicMeetOp, basicLessThanTest,
    basicEqualTest, getBasicString)
-from span.util.util import AS
 import span.ir.constructs as constructs
 import span.ir.types as types
-from span.ir.conv import simplifyName
 import span.ir.ir as ir
-import itertools
 
 
 ################################################
@@ -258,6 +257,30 @@ class NodeDfvL(LatticeLT):
     return NodeDfvL(dfvIn, dfvOut, dfvOutTrue, dfvOutFalse), chIn or chOut
 
 
+  def separateLocalNonLocalDfvs(self
+  ) -> Tuple['NodeDfvL', 'NodeDfvL']:
+    # since call nodes don't have true/false edge so the logic is simple
+    localDfvIn, nonLocalDfvIn = self.dfvIn.separateLocalNonLocalDfvs()
+    localDfvOut, nonLocalDfvOut = self.dfvIn.separateLocalNonLocalDfvs()
+    return NodeDfvL(localDfvIn, localDfvOut), NodeDfvL(nonLocalDfvIn, nonLocalDfvOut)
+
+
+  def addLocalDfv(self,
+      localDfv: 'NodeDfvL',
+      direction: types.DirectionT,
+  ) -> 'NodeDfvL':
+    """For IPA -- adding local dfvs of the caller."""
+    if direction == conv.Forward:
+      newIn = self.dfvIn.addLocalDfv(localDfv.dfvIn)
+      newOut = self.dfvOut.addLocalDfv(localDfv.dfvIn)
+    elif direction == conv.Backward:
+      newIn = self.dfvIn.addLocalDfv(localDfv.dfvOut)
+      newOut = self.dfvOut.addLocalDfv(localDfv.dfvOut)
+    else:
+      assert False, f"{direction}: {localDfv}"
+    return NodeDfvL(newIn, newOut)
+
+
   def getCopy(self):
     dfvInCopy = self.dfvIn.getCopy()
     dfvOutCopy = self.dfvOut.getCopy()
@@ -423,6 +446,62 @@ class OverallL(DataLT):
     return hash((hashThisVal, self.top)) # , self.bot))
 
 
+  def separateLocalNonLocalDfvs(self
+  ) -> Tuple['OverallL', 'OverallL']:
+    """DFV with only the local variables of the current function,
+    and DFV without the local variables.
+    This is used in Value Context IPA analysis.
+    """
+    if self.top or self.bot:
+      return self.getCopy(), self.getCopy()
+
+    assert self.val, f"{self.func}: {self.val}"
+    localVal, nonLocalVal = dict(), dict()
+
+    func: constructs.Func = self.func
+    tUnit: tunit.TranslationUnit =  func.tUnit
+    for k, v in self.val.items():
+      l, g = func.isLocalName(k), tUnit.canBeGloballyAccessed(k)
+      if l and not g: localVal[k] = v  # vars inaccessible outside the func
+      if not l or g: nonLocalVal[k] = v
+
+    return self.getCopy(localVal), self.getCopy(nonLocalVal)
+
+
+  def addLocalDfv(self,
+      localDfv: 'OverallL',  #IPA: From the caller function
+  ) -> 'OverallL':
+    """Creates a new dfv object for IPA to use.
+    Assumes default value is bot.
+    """
+    if self.top and localDfv.top: return localDfv.getCopy()
+    if self.bot and localDfv.bot: return localDfv.getCopy()
+
+    callerFunc = localDfv.func
+    tUnit: tunit.TranslationUnit = self.func.tUnit
+    if self.top:
+      val = {n: localDfv.componentTop for n in self.getAllVars()}
+      if localDfv.val: val.update(localDfv.val)
+      return self.__class__(callerFunc, val=val)
+    if self.val:
+      newDfv = self.getCopy()
+      for vName in newDfv.val.keys():
+        val = newDfv.val[vName].getCopy()
+        val.func = callerFunc
+        newDfv.val[vName] = val
+      if localDfv.val: newDfv.val.update(localDfv.val)
+      return newDfv
+    if localDfv.top:
+      val = {n: localDfv.componentTop
+             for n in localDfv.getAllVars()
+             if not tUnit.canBeGloballyAccessed(n)}
+      if self.val: val.update(self.val)
+      return self.__class__(callerFunc, val=val)
+
+    assert self.bot, f"{self}, {localDfv}"
+    return localDfv.getCopy()
+
+
   def isDefaultValBot(self):
     return self.componentBot == self.getDefaultVal()
 
@@ -518,9 +597,14 @@ class OverallL(DataLT):
     self.top, self.bot, self.val = top, bot, None
 
 
-  def getCopy(self) -> 'OverallL':
-    if self.top: return self.__class__(self.func, top=True)
-    if self.bot: return self.__class__(self.func, bot=True)
+  def getCopy(self, newVal: Opt[Dict] = None) -> 'OverallL':
+    if newVal: return self.__class__(self.func, val=newVal)
+    retTop, retBot = False, False
+    if newVal is not None: # empty dict means top/bot depending on the default value
+      retTop = bool(self.getDefaultVal().top)
+      retBot = bool(self.getDefaultVal().bot)
+    if self.top or retTop: return self.__class__(self.func, top=True)
+    if self.bot or retBot: return self.__class__(self.func, bot=True)
 
     if not self.val:
       assert not (self.isDefaultValTop() or self.isDefaultValBot()), f"{self}"
