@@ -131,7 +131,7 @@ class IpaHost:
 
   def __init__(self,
       tUnit: TranslationUnit,
-      entryFunc: FuncNameT = "f:main",
+      entryFuncName: FuncNameT = "f:main",
       mainAnName: Opt[AnalysisNameT] = None,
       otherAnalyses: Opt[List[AnalysisNameT]] = None,
       supportAnalyses: Opt[List[AnalysisNameT]] = None,
@@ -140,11 +140,11 @@ class IpaHost:
       analysisSeq: Opt[List[List[AnalysisNameT]]] = None,  # for cascading/lerner
       disableAllSim: bool = False,
   ) -> None:
-    if tUnit is None or not tUnit.getFuncObj(entryFunc):
-      raise ValueError(f"No {entryFunc} in translation unit {tUnit.name}.")
+    if tUnit is None or not tUnit.getFuncObj(entryFuncName):
+      raise ValueError(f"No {entryFuncName} in translation unit {tUnit.name}.")
 
     self.tUnit = tUnit
-    self.entryFunc = entryFunc
+    self.entryFuncName = entryFuncName
     self.mainAnName = mainAnName
     self.otherAnalyses = otherAnalyses
     self.supportAnalyses = supportAnalyses  # TODO: pass it to span.sys.host.Host
@@ -177,9 +177,10 @@ class IpaHost:
 
     # STEP 2: start analyzing from the entry function
     entryCallSite = conv.genFuncNodeId(conv.GLOBAL_INITS_FUNC_ID, 0)
+    mainBi = self.prepareCalleeBi(self.entryFuncName, globalBi)
     self.analyzeFunc(entryCallSite,
-                     self.entryFunc,
-                     globalBi,
+                     self.entryFuncName,
+                     mainBi,
                      0)
 
     # STEP 3: finalize IPA results
@@ -208,6 +209,9 @@ class IpaHost:
                                       f" UniqueId: {uniqueId}")
                                       # f" FuncBi: {funcBi}")
 
+    if funcName in ("f:f1", "f:spec_load", "f:spec_init", "f:debug_time"): #delit
+      print("IpaFuncBi:", ipaFuncBi) #delit
+
     if recursionDepth >= RECURSION_LIMIT:
       return self.analyzeFuncFinal(callSite, funcName, ipaFuncBi)
 
@@ -215,16 +219,12 @@ class IpaHost:
     host, preComputed = self.getComputedValue(callSite, uniqueId, vContext)
 
     if preComputed:
-      # print("UsingPreComputedResult: ThanksToValueContext", callSite) #delit
       # if using a memoized result, no need for further computation
       return host.getBoundaryResult()
 
     callerName = funcName  # now the current function is a 'caller'
     reAnalyze = True
     while reAnalyze:
-      # sizeStr = f"vContextMap: ({len(self.vContextMap)},{cutil.getSize(self.vContextMap)})," \
-      #           f" tunit: {cutil.getSize(self.tUnit)})"
-      # print("(Re)AnalyzingFunction:", funcName, f" {sizeStr}")
       reAnalyze = False
       host.analyze()
 
@@ -235,19 +235,50 @@ class IpaHost:
           calleeName = instr.getCalleeFuncName(node.insn)
           assert calleeName, f"{node}"
           localDfvs, nonLocalDfvs = self.separateLocalNonLocalDfvs(dfvs) # w.r.t. caller
-          calleeBi = self.prepareIpaBi(calleeName, nonLocalDfvs)
+          calleeBi = self.prepareCalleeBi(calleeName, nonLocalDfvs)
           newCalleeBi = self.analyzeFunc(calleeSite, calleeName,
                                          calleeBi, recursionDepth + 1,
                                          newUniqueId)  # recursion
-          newDfvs = self.localizeIpaBi(callerName, newCalleeBi, localDfvs)
+          newDfvs = self.prepareCallNodeDfv(callerName, newCalleeBi, localDfvs)
+          self.checkInvariantsDfvs(callerName, newDfvs) #delit
           reAnalyze = host.setCallSiteDfv(node.id, newDfvs)
+
+          if calleeName in ("f:f1", "f:BZ2_hbMakeCodeLengths", "f:main_sort",
+                            "f:fallbackSort", "f:BZ2_bz__AssertH__fail"):
+            ptaOld = dfvs["IntervalA"].dfvOut
+            ptaNew = newDfvs["IntervalA"].dfvOut
+            # ptaNew = nonLocalDfvs["PointsToA"].dfvIn
+            print(f"ReAnalyze: {reAnalyze} ({calleeName}):")
+            if ptaOld.val and ptaNew.val:
+              print(f"PTA diff:")
+              ptaOldSet = set((k,v) for k,v in ptaOld.val.items())
+              ptaNewSet = set((k,v) for k,v in ptaNew.val.items())
+              print(f"Diff (Old-New):", len(ptaOldSet), len(ptaNewSet), ptaOldSet - ptaNewSet)
+              print(f"Diff (New-Old):", len(ptaOldSet), len(ptaNewSet), ptaNewSet - ptaOldSet)
+            else:
+              print(f"PTA diff: on of the val is None/Empty"
+                    f" {ptaOld.top}, {ptaNew.top} || {ptaOld.bot}, {ptaNew.bot}")
+            # print(f"ReAnalyze: {reAnalyze} ({calleeName}):"
+            #       f"\n OLD: {dfvs}\n NEW: {newDfvs}") #delit
           if reAnalyze:
             break  # first re-analyze then goto other call sites
 
       if LS: LOG.debug("ReAnalyzingFunction: %s", funcName) if reAnalyze else None
-    if funcName in ("f:spec_load", "f:main"):  #delit
+    if funcName in ("f:spec_load", "f:main", "f:f1"):  #delit
       host.printOrLogResult()  #delit
     return host.getBoundaryResult()
+
+
+  def checkInvariantsDfvs(self,
+      callerName: FuncNameT,
+      nDfvs: Dict[AnalysisNameT, NodeDfvL],
+      level: int = 0
+  ) -> None:
+     if level >= 0:
+       for anName, nDfv in nDfvs.items():
+         nDfv.checkInvariants()
+         assert nDfv.dfvIn.func.name == callerName,\
+           f"{anName} {nDfv.dfvIn.func.name} {callerName}"
 
 
   def separateLocalNonLocalDfvs(self,
@@ -260,12 +291,11 @@ class IpaHost:
     return localDfvs, nonLocalDfvs
 
 
-  def localizeIpaBi(self,
+  def prepareCallNodeDfv(self,
       funcName: FuncNameT,
       newCalleeBi: Dict[AnalysisNameT, NodeDfvL],
       localDfvs: Dict[AnalysisNameT, NodeDfvL],
   ) -> Dict[AnalysisNameT, NodeDfvL]:
-    # TODO: complete the logic
     localizedDfvs = dict()
     for anName, localDfv in localDfvs.items():
       newCalleeDfv = newCalleeBi[anName]
@@ -303,30 +333,13 @@ class IpaHost:
     else:  # look for previous value context
       prevValueContext = self.getPrevValueContext(callSite, uniqueId, vContext)
       if prevValueContext is not None:
-        try:
-          tup = self.vContextMap[prevValueContext]
-        except Exception as e:
-          for key in self.vContextMap.keys():
-            if key.funcName == prevValueContext.funcName:
-              ptaV, ptaP = key.dfvs["PointsToA"], prevValueContext.dfvs["PointsToA"]
-              intV, intP = key.dfvs["IntervalA"], prevValueContext.dfvs["IntervalA"]
-              print("IPA:KEY:", key.funcName, ptaV == ptaP, intV == intP,
-                    ptaV.dfvIn.func.name,
-                    key == prevValueContext,
-                    hash(key),
-                    id(key), id(prevValueContext),
-                    len(key.dfvs) == len(prevValueContext.dfvs),
-                    hash(ptaV) == hash(ptaP), hash(intV) == hash(intP))
-          print("IPA:ERROR:", len(self.vContextMap))
-          raise e
+        tup = self.vContextMap[prevValueContext]
         allCallSites = tup[0]
         if len(allCallSites) > 1:
           # since more than one callSite needs the vContext we cannot modify it
           prevValueContext = None
 
     if prevValueContext is not None:
-      print(f"IPA:UsingPrevValueContext: at"
-            f" {conv.getFuncNodeIdStr(callSite)} (uniqueId: {uniqueId})")
       if LS: LOG.debug("IPA:UsingPrevValueContext: at callsite %s", callSite)
       tup = self.vContextMap[prevValueContext]
       del self.vContextMap[prevValueContext] # remove the old one
@@ -334,9 +347,11 @@ class IpaHost:
       self.vContextMap[vContext] = tup
       hostInstance = tup[1]
       hostInstance.setBoundaryResult(vContext.getCopy().dfvs)
+      print("OLD/NEW_VALUE_CONTEXT", vContext) #delit
     else:
       # vContext not present, hence create one and attach a Host instance
       if LS: LOG.debug("IPA:NewValueContext: %s", vContext)
+      print("NEW_VALUE_CONTEXT", vContext) #delit
       hostInstance = self.createHostInstance(vContext.funcName,
                                              biDfv=vContext.getCopy().dfvs)
       self.vContextMap[vContext] = ({callSite}, hostInstance)  # save the instance
@@ -362,7 +377,7 @@ class IpaHost:
     return None
 
 
-  def prepareIpaBi(self,
+  def prepareCalleeBi(self,
       funcName: FuncNameT,
       bi: Dict[AnalysisNameT, NodeDfvL],
   ) -> Dict[AnalysisNameT, NodeDfvL]:
@@ -501,8 +516,9 @@ def diagnoseInterval(tUnit: TranslationUnit):
                         )
   ipaHostSpan.analyze()
 
-  #ipaHostLern = IpaHost(tUnit, analysisSeq=[[mainAnalysis] + otherAnalyses])
-  ipaHostLern = IpaHost(tUnit, analysisSeq=[[mainAnalysis]])
+  ipaHostLern = IpaHost(tUnit, analysisSeq=[[mainAnalysis] + otherAnalyses])
+  #ipaHostLern = IpaHost(tUnit, analysisSeq=[[mainAnalysis]])
+  #ipaHostLern = IpaHost(tUnit, mainAnName=mainAnalysis, maxNumOfAnalyses=1) # span with single analysis
   ipaHostLern.analyze()
 
   totalPPoints = 0  # total program points
@@ -517,17 +533,9 @@ def diagnoseInterval(tUnit: TranslationUnit):
     interSpan = ipaHostSpan.finalResult[funcName][mainAnalysis]
     interLern = ipaHostLern.finalResult[funcName][mainAnalysis]
 
-    #delit: the continuous bock below
-    debug1 = False
-    if funcName in ("f:spec_load", "f:main"):
-      debug1 = True
-      pass  # just start debugging from here
-
     for nid in sorted(interSpan.keys()):
       nDfvSpan = interSpan[nid]
       nDfvLern = interLern[nid]
-
-      if debug1: print(f"{funcName},{nid}:\n{nDfvSpan}\n{nDfvLern}")
 
       totalPPoints += 2
 
@@ -551,13 +559,13 @@ def diagnoseInterval(tUnit: TranslationUnit):
             total1 += 1
             lhs = cast(expr.VarE, insn.lhs)
             name = lhs.name
-            # val1 = nDfvSpan.dfvOut.getVal(name)
-            # if not val1.bot:
-            #   totalPreciseComparisons1 += 1
-            # val2 = nDfvLern.dfvOut.getVal(name)
-            # if not val2.bot:
-            #   print(f"{name}: {val1}, {val2} ({insn.info})")
-            #   totalPreciseComparisons2 += 1
+            val1 = nDfvSpan.dfvOut.getVal(name)
+            if not val1.bot:
+              totalPreciseComparisons1 += 1
+            val2 = nDfvLern.dfvOut.getVal(name)
+            if not val2.bot:
+              print(f"{node.id}: {name}: {val1}, {val2} ({insn.info})")
+              totalPreciseComparisons2 += 1
 
   print("\nTotalPPoints:", totalPPoints, "WeakPPoints:", weakPPoints)
   print(f"TotalPreciseComparisons: {totalPreciseComparisons1}"

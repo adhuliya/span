@@ -187,6 +187,14 @@ class OverallL(dfv.OverallL):
     self.val: Opt[Dict[types.VarNameT, ComponentL]] = val  # type: ignore
 
 
+  def getAllVars(self) -> Set[types.VarNameT]:
+    """Return a set of vars the analysis is tracking.
+    One must override this method if variables are other
+    than numeric.
+    """
+    return ir.getNamesEnv(self.func, pointer=True)
+
+
 ################################################
 # BOUND END  : Points-to lattice.
 ################################################
@@ -605,7 +613,6 @@ class PointsToA(analysis.ValueAnalysisAT):
     elif isinstance(e, expr.DerefE):
       assert isinstance(e.arg, expr.VarE), f"{e}"
       varNames.update(PointsToA.getNamesOfPointees(func, e.arg.name, dfvIn))
-      print(f"{e}: {varNames}") #delit
       return varNames
 
     elif isinstance(e, expr.ArrayE):

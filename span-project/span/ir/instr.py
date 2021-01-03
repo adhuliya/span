@@ -77,7 +77,7 @@ class InstrIT:
     Args:
       level: An argument to help invoke specific checks in future.
     """
-    if level == 0:
+    if level >= 0:
       assert self.instrCode is not None, f"{self}"
       assert self.type is not None, f"{self}"
 
@@ -198,7 +198,7 @@ class AssignI(InstrIT):
 
   def checkInvariants(self, level: int = 0):
     super().checkInvariants(level)
-    if level == 0:
+    if level >= 0:
       self.lhs.checkInvariants(level)
       self.rhs.checkInvariants(level)
 
@@ -429,7 +429,7 @@ class CondI(InstrIT):
 
   def checkInvariants(self, level: int = 0):
     super().checkInvariants(level)
-    if level == 0:
+    if level >= 0:
       assert isinstance(self.arg, expr.VarE), f"{self}"
       self.arg.checkInvariants(level)
 
@@ -507,7 +507,7 @@ class ReturnI(InstrIT):
 
   def checkInvariants(self, level: int = 0):
     super().checkInvariants(level)
-    if level == 0:
+    if level >= 0:
       assert self.arg is None \
              or isinstance(self.arg, (expr.VarE, expr.LitE)), f"{self}"
       if self.arg: self.arg.checkInvariants(level)
@@ -593,7 +593,7 @@ class CallI(InstrIT):
 
   def checkInvariants(self, level: int = 0):
     super().checkInvariants(level)
-    if level == 0:
+    if level >= 0:
       assert self.arg is not None, f"{self}"
       self.arg.checkInvariants(level)
 

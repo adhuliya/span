@@ -65,13 +65,36 @@ class ComponentL(dfv.ComponentL):
       return ComponentL(self.func, val=(lowerLim, upperLim)), Changed
 
 
+  def widen(self,
+      newDfv: Opt['ComponentL'] = None,
+      ipa: bool = False,  # special case #IPA
+  ) -> Tuple['ComponentL', ChangedT]:
+    """For docs see base class method."""
+    if newDfv is None: return self, not Changed
+
+    if newDfv.top:        # no widening needed
+      return self, not Changed
+    elif self.top:        # no widening needed
+      return (self, not Changed) if newDfv.top else (newDfv, Changed)
+    elif self.bot:        # no widening needed
+      return self, not Changed
+    elif self != newDfv:  # WIDEN-WIDEN
+      return newDfv if newDfv.bot else ComponentL(self.func, bot=True), Changed
+    else:                 # no widening needed
+      return self, not Changed
+
+
   def __lt__(self,
       other: 'ComponentL'
   ) -> bool:
     """A non-strict weaker-than test. See doc of super class."""
     lt = basicLessThanTest(self, other)
-    return lt if lt is not None else \
-      (self.val[0] <= other.val[0] and self.val[1] >= other.val[1])
+    try: #delit
+      return lt if lt is not None else \
+        (self.val[0] <= other.val[0] and self.val[1] >= other.val[1])
+    except Exception as e: #delit
+      print(f"SelfOther: {self.val}, {other.val}") #delit
+      raise e
 
 
   def __eq__(self, other) -> bool:
@@ -85,10 +108,18 @@ class ComponentL(dfv.ComponentL):
     return hash((self.val, self.top))
 
 
+  def checkInvariants(self, level: int = 0):
+    if level >= 0:
+      if self.top: assert not self.bot, f"{self.func.name}: {self}"
+      if self.bot: assert not self.top, f"{self.func.name}: {self}"
+      if not (self.top or self.bot):
+        assert self.val is not None, f"{self.func.name}: {self}"
+
+
   def getCopy(self) -> 'ComponentL':
-    if self.top: ComponentL(self.func, top=True)
-    if self.bot: ComponentL(self.func, bot=True)
-    return ComponentL(self.func, self.val)
+    if self.top: return ComponentL(self.func, top=True)
+    if self.bot: return ComponentL(self.func, bot=True)
+    return ComponentL(self.func, val=self.val)
 
 
   def isExactZero(self) -> bool:
@@ -366,6 +397,51 @@ class OverallL(dfv.OverallL):
     return sum(1 for v in self.val.values() if v.isConstant())  # type: ignore
 
 
+  def widen(self,
+      newDfv: Opt['OverallL'] = None,
+      ipa: bool = False,  # special case #IPA
+  ) -> Tuple['OverallL', ChangedT]:
+    if newDfv is None: return self, not Changed
+
+    if newDfv.top:        # no widening needed
+      return self, not Changed
+    elif self.top:        # no widening needed
+      return (self, not Changed) if newDfv.top else (newDfv, Changed)
+    elif self.bot:        # no widening needed
+      return self, not Changed
+    elif self != newDfv:  # WIDEN-WIDEN
+      if newDfv.bot:
+        return newDfv, Changed
+      else:
+        pass # continues to the widening logic below...
+    else:                 # no widening needed
+      return self, not Changed
+
+    # widen individual entities (variables)
+    widened_val: Dict[types.VarNameT, ComponentL] = {}
+    vNames = set(self.val.keys())
+    vNames.update(newDfv.val.keys())
+    selfValGet, otherValGet = self.val.get, newDfv.val.get
+    for vName in vNames:
+      defaultVal = self.getDefaultVal(vName)
+      dfv1: ComponentL = selfValGet(vName, defaultVal)
+      dfv2: ComponentL = otherValGet(vName, defaultVal)
+      dfv3, _ = dfv1.widen(dfv2)  # attempt widening here
+      if dfv3.bot and not dfv2.bot: # vName in ("v:sendMTFValues:t"):  #delit
+        print(f"WIDENED: {vName}: {dfv1}, {dfv2}: {dfv3}")  #delit
+      if not dfv3 == defaultVal:
+        widened_val[vName] = dfv3
+
+    if widened_val:
+      value = OverallL(self.func, val=widened_val)
+    elif self.isDefaultValBot():
+      value = OverallL(self.func, bot=True)
+    else:
+      value = OverallL(self.func, val=None)
+
+    return value, Changed
+
+
 ################################################
 # BOUND END  : interval_lattice
 ################################################
@@ -597,10 +673,9 @@ class IntervalA(analysis.ValueAnalysisAT):
       newOut = cast(dfv.OverallL, dfvIn.getCopy())
       newOutSetVal = newOut.setVal
       for name, value in outDfvValues.items():
-        oldOutValue = dfvOutGetVal(name)
-        if not oldOutValue.top and oldOutValue != value:
-          value = self.componentBot  # widening
-        newOutSetVal(name, value)
+        oldOutValue: ComponentL = dfvOutGetVal(name)
+        newValue, _ = oldOutValue.widen(value)
+        newOutSetVal(name, newValue)
     return NodeDfvL(dfvIn, newOut)
 
 

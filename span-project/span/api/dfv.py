@@ -257,11 +257,16 @@ class NodeDfvL(LatticeLT):
     return NodeDfvL(dfvIn, dfvOut, dfvOutTrue, dfvOutFalse), chIn or chOut
 
 
+  def checkInvariants(self, level: int = 0):
+    self.dfvIn.checkInvariants(level)
+    self.dfvOut.checkInvariants(level)
+
+
   def separateLocalNonLocalDfvs(self
   ) -> Tuple['NodeDfvL', 'NodeDfvL']:
     # since call nodes don't have true/false edge so the logic is simple
     localDfvIn, nonLocalDfvIn = self.dfvIn.separateLocalNonLocalDfvs()
-    localDfvOut, nonLocalDfvOut = self.dfvIn.separateLocalNonLocalDfvs()
+    localDfvOut, nonLocalDfvOut = self.dfvOut.separateLocalNonLocalDfvs()
     return NodeDfvL(localDfvIn, localDfvOut), NodeDfvL(nonLocalDfvIn, nonLocalDfvOut)
 
 
@@ -415,7 +420,7 @@ class OverallL(DataLT):
     selfValGet, otherValGet = self.val.get, other.val.get
     for vName in vNames:
       dfv1, dfv2 = selfValGet(vName, defaultVal), otherValGet(vName, defaultVal)
-      if not dfv1 < dfv2: return False
+      if not (dfv1 < dfv2): return False
     return True
 
 
@@ -439,17 +444,21 @@ class OverallL(DataLT):
 
   def __hash__(self):
     hashThisVal = None if self.val is None else frozenset(self.val.items())
-    if self.func.name == "f:make_gather" and self.name == "IntervalA": #delit
-      if hashThisVal:
-        print("IPA:make_gather:hashThisVal:IntervalA", hash(hashThisVal),
-              "\n", hashThisVal, self.val) #delit
     return hash((hashThisVal, self.top)) # , self.bot))
+
+
+  def checkInvariants(self, level: int = 0):
+    if level >= 0:
+      if self.val:
+        for k, v in self.val.items():
+          v.checkInvariants()
+          assert v is not None, f"{self.func.name}: {k}, {v}"
 
 
   def separateLocalNonLocalDfvs(self
   ) -> Tuple['OverallL', 'OverallL']:
-    """DFV with only the local variables of the current function,
-    and DFV without the local variables.
+    """DFV with only the locally accessible variables of the current function,
+    and DFV with variables that can be accessed from outside the function.
     This is used in Value Context IPA analysis.
     """
     if self.top or self.bot:
@@ -459,11 +468,14 @@ class OverallL(DataLT):
     localVal, nonLocalVal = dict(), dict()
 
     func: constructs.Func = self.func
-    tUnit: tunit.TranslationUnit =  func.tUnit
+    tUnit: tunit.TranslationUnit = func.tUnit
     for k, v in self.val.items():
+      assert v is not None, f"{k}, {v}"
       l, g = func.isLocalName(k), tUnit.canBeGloballyAccessed(k)
-      if l and not g: localVal[k] = v  # vars inaccessible outside the func
-      if not l or g: nonLocalVal[k] = v
+      ll = conv.isLocalVarName(k) # i.e. any local
+      if ll and not g: localVal[k] = v  # vars inaccessible outside the func
+      if l and not g:  localVal[k] = v  # vars inaccessible outside the func
+      if not l or g:   nonLocalVal[k] = v
 
     return self.getCopy(localVal), self.getCopy(nonLocalVal)
 
@@ -480,11 +492,13 @@ class OverallL(DataLT):
     callerFunc = localDfv.func
     tUnit: tunit.TranslationUnit = self.func.tUnit
     if self.top:
+      assert localDfv.componentTop is not None, f"{localDfv}"
       val = {n: localDfv.componentTop for n in self.getAllVars()}
       if localDfv.val: val.update(localDfv.val)
       return self.__class__(callerFunc, val=val)
     if self.val:
       newDfv = self.getCopy()
+      newDfv.func = callerFunc
       for vName in newDfv.val.keys():
         val = newDfv.val[vName].getCopy()
         val.func = callerFunc
@@ -492,6 +506,7 @@ class OverallL(DataLT):
       if localDfv.val: newDfv.val.update(localDfv.val)
       return newDfv
     if localDfv.top:
+      assert localDfv.componentTop is not None, f"{localDfv}"
       val = {n: localDfv.componentTop
              for n in localDfv.getAllVars()
              if not tUnit.canBeGloballyAccessed(n)}
@@ -566,10 +581,6 @@ class OverallL(DataLT):
           self.val = None
           self.top, self.bot = topDefVal, botDefVal
     else:
-      if self.name == "IntervalA" and varName in self.val: #delit FIXME: used for debugging
-        oldVal = self.val[varName]
-        if varName == "v:StoreTT:best":
-          print(f"ProbablyUnsafeMutation: {id(self)}, {oldVal}, {val}")  #delit
       self.val[varName] = val
 
     if not (topDefVal or botDefVal): # important optimization check
@@ -610,7 +621,7 @@ class OverallL(DataLT):
       assert not (self.isDefaultValTop() or self.isDefaultValBot()), f"{self}"
       return self.__class__(self.func, val=None)
     else:
-      return self.__class__(self.func, self.val.copy())
+      return self.__class__(self.func, val=self.val.copy())
 
 
   def getAllVars(self) -> Set[types.VarNameT]:

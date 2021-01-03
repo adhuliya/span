@@ -415,6 +415,7 @@ class DirectionDT:
   def update(self,
       node: cfg.CfgNode,
       nodeDfv: NodeDfvL,
+      widen: bool = False, # apply widening
   ) -> NewOldL:
     """Update, the node dfv in wl if changed.
 
@@ -426,20 +427,27 @@ class DirectionDT:
     oldIn, oldOut = oldNdfv.dfvIn, oldNdfv.dfvOut
     oldOutTrue, oldOutFalse = oldNdfv.dfvOutTrue, oldNdfv.dfvOutFalse
 
+    newIn, newOut = nodeDfv.dfvIn, nodeDfv.dfvOut
+    newOutTrue, newOutFalse = nodeDfv.dfvOutTrue, nodeDfv.dfvOutFalse
+
+    if widen:  # used for widening at call sites
+      assert oldOut is oldOutTrue and oldOut is oldOutFalse
+      assert newOut is newOutTrue and newOut is newOutFalse
+      newIn, c1 = oldIn.widen(newIn)
+      newOut, c2 = oldOut.widen(newOut)
+      nodeDfv = NodeDfvL(newIn, newOut)  # nodeDfv OVER-WRITTEN
+
     if AS:
       if nodeDfv < oldNdfv:
         pass  # i.e. its okay
       else:
         LOG.error("NonMonotonicDFV: Analysis: %s", oldIn.__class__)
-        if not nodeDfv.dfvIn < oldNdfv.dfvIn:
+        if not newIn < oldIn:
           LOG.error("NonMonotonicDFV (IN):\n NodeId: %s, Instr: %s, Info: %s, Old: %s,\n New: %s.",
-                    nid, node.insn, node.insn.info, oldNdfv.dfvIn, nodeDfv.dfvIn)
-        if not nodeDfv.dfvOut < oldNdfv.dfvOut:
+                    nid, node.insn, node.insn.info, oldIn, newIn)
+        if not newOut < oldOut:
           LOG.error("NonMonotonicDFV (OUT):\n NodeId: %s, Info: %s, Instr: %s, Old: %s,\n New: %s.",
-                    nid, node.insn, node.insn.info, oldNdfv.dfvOut, nodeDfv.dfvOut)
-
-    newIn, newOut = nodeDfv.dfvIn, nodeDfv.dfvOut
-    newOutTrue, newOutFalse = nodeDfv.dfvOutTrue, nodeDfv.dfvOutFalse
+                    nid, node.insn, node.insn.info, oldOut, newOut)
 
     isNewIn = newIn != oldIn
     isNewOut = newOut != oldOut \
@@ -502,12 +510,13 @@ class ForwardDT(DirectionDT):
   def update(self,
       node: cfg.CfgNode,
       nodeDfv: NodeDfvL,
+      widen: bool = False, # apply widening
   ) -> NewOldL:
     """Update, for forward direction.
 
     If OUT is changed add the pred/succ to the worklist.
     """
-    inOutChange = super().update(node, nodeDfv)
+    inOutChange = super().update(node, nodeDfv, widen)
 
     #assert not inOutChange.isNewIn, msg.INVARIANT_VIOLATED  #FIXME: why did i put this assertion?
 
@@ -601,13 +610,14 @@ class BackwardDT(DirectionDT):
   def update(self,
       node: cfg.CfgNode,
       nodeDfv: NodeDfvL,
+      widen: bool = False, # apply widening
   ) -> NewOldL:
     """Update, for backward direction.
 
     If IN is changed add the pred/succ to the worklist.
     """
     # print("OldOut:", nodeDfv.dfvOut)
-    inOutChange = super().update(node, nodeDfv)
+    inOutChange = super().update(node, nodeDfv, widen)
 
     # if not inOutChange.isNewOut:
     #   print("NewOut:", self.nidNdfvMap[node.id].dfvOut)

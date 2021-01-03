@@ -191,7 +191,7 @@ def extractFuncName(varName: types.VarNameT) -> Opt[types.FuncNameT]:
   assert isCorrectNameFormat(varName), f"Wrong variable name format: {varName}"
   if isLocalVarName(varName):
     bareFuncName = varName.split(':')[1]
-    canonicalizeFuncName(bareFuncName)
+    return canonicalizeFuncName(bareFuncName)
   return None
 
 
