@@ -119,6 +119,10 @@ class CfgNode(object):
     return self.id
 
 
+  def __lt__(self, other):
+    return self.id < other.id
+
+
   def __str__(self):
     predIds = []
     for predEdge in self.predEdges:

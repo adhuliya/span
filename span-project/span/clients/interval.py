@@ -422,17 +422,22 @@ class OverallL(dfv.OverallL):
     vNames = set(self.val.keys())
     vNames.update(newDfv.val.keys())
     selfValGet, otherValGet = self.val.get, newDfv.val.get
+    changed = False
     for vName in vNames:
       defaultVal = self.getDefaultVal(vName)
       dfv1: ComponentL = selfValGet(vName, defaultVal)
       dfv2: ComponentL = otherValGet(vName, defaultVal)
-      dfv3, _ = dfv1.widen(dfv2)  # attempt widening here
-      if dfv3.bot and not dfv2.bot: # vName in ("v:sendMTFValues:t"):  #delit
-        print(f"WIDENED: {vName}: {dfv1}, {dfv2}: {dfv3}")  #delit
+      dfv3, _changed = dfv1.widen(dfv2)  # attempt widening here
+      changed = changed or _changed
+      if dfv3.bot: # vName in ("v:sendMTFValues:t"):  #delit
+        print(f"WIDENED: {vName}: {dfv1}, {dfv2}: {dfv3} {changed}")  #delit
       if not dfv3 == defaultVal:
         widened_val[vName] = dfv3
 
-    if widened_val:
+    print(f"WIDENED?(Interval): {changed}")  #delit
+    if not changed:
+      return self, not Changed
+    elif widened_val:
       value = OverallL(self.func, val=widened_val)
     elif self.isDefaultValBot():
       value = OverallL(self.func, bot=True)

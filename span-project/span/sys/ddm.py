@@ -525,7 +525,7 @@ class DdMethod:
 
     if isinstance(insn, instr.AssignI):
       return self.processInstrBackwardAssignI(insn, demand)
-    elif isinstance(insn, instr.ParallelI):
+    elif isinstance(insn, instr.III):
       return self.processInstrBackwardParallelI(insn, demand)
     elif ic == instr.COND_READ_INSTR_IC or ic == instr.EX_READ_INSTR_IC:
       propDemand = copy(demand)
@@ -537,7 +537,7 @@ class DdMethod:
 
 
   def processInstrBackwardParallelI(self,
-      insn: instr.ParallelI,
+      insn: instr.III,
       demand: AtomicDemand,
   ) -> Tuple[List[AtomicDemand], IsNopT]:
     insns = insn.insns

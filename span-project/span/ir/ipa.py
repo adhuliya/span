@@ -63,7 +63,7 @@ def generateCallSiteParamAssigns(callE: expr.CallE,
   return insns
 
 
-def generateCallSiteReturnAssigns(insn: instr.AssignI,
+def generateCallSiteReturnAssigns(insn: instr.InstrIT,
     tUnit: tunit.TranslationUnit,
 ) -> Opt[instr.InstrIT]:
   """
@@ -72,7 +72,8 @@ def generateCallSiteReturnAssigns(insn: instr.AssignI,
   possible returned values from the called function.
   If its a pointer based call, then return None.
   """
-  assert isinstance(insn, instr.AssignI), f"{insn}"
+  if not isinstance(insn, instr.AssignI):
+    return instr.III([instr.NopI()], forIpa=True)
 
   callE = insn.rhs
   assert isinstance(callE, expr.CallE), f"{insn.rhs}"
@@ -82,18 +83,14 @@ def generateCallSiteReturnAssigns(insn: instr.AssignI,
   func = tUnit.getFuncObj(callE.callee.name)
   returnExprs = getReturnExprList(func)
   if returnExprs is None:
-    return None
+    return instr.III([instr.NopI()], forIpa=True)
   if len(returnExprs) == 0:  #FIXME: remove this if and correct slang checker
-    return None
+    return instr.III([instr.NopI()], forIpa=True)
 
   assert len(returnExprs) > 0, f"{returnExprs} {func.name}"
-  if len(returnExprs) == 1:
-    ins: instr.InstrIT = instr.AssignI(lhs=insn.lhs,
-                                       rhs=returnExprs[0], info=insn.lhs.info)
-  else:
-    ins = instr.ParallelI.genPrallelMultiAssign(lhs=insn.lhs,
-                                                rhsList=returnExprs)  # type: ignore
-
+  ins = instr.III.genPrallelMultiAssign(lhs=insn.lhs,
+                                        rhsList=returnExprs,
+                                        forIpa=True)  # type: ignore
   tUnit.inferTypeOfInstr(ins)
   return ins
 
@@ -160,9 +157,7 @@ def insertIpaInstructions(
       # If here, then a call expression has been encountered,
       # now generate the ipa instructions around it
       paramAssigns = generateCallSiteParamAssigns(callE, tUnit)
-      returnAssign = None
-      if isinstance(insn, instr.AssignI):
-        returnAssign = generateCallSiteReturnAssigns(insn, tUnit)
+      returnAssign = generateCallSiteReturnAssigns(insn, tUnit)
 
       # STEP 1: Now add the ipa instructions around the call site
       if paramAssigns:

@@ -168,12 +168,12 @@ class Func(ConstructT):
         currLabelSet.clear()
 
     # STEP 3: Now divide instr sequence into basic blocks.
-    foundReturn = False  # to skip redundant instructions after the return stmt
+    foundReturnOrGoto = False  # to skip redundant instructions after the return stmt
     instructions: List[instr.InstrIT] = []
     currBbId = -1  # start block id
     for index, insn in enumerate(instrSeq):
       if index in leaders:
-        foundReturn = False
+        foundReturnOrGoto = False
         # save the old bb
         prevBbId = currBbId
         bbMap[prevBbId] = instructions
@@ -197,11 +197,10 @@ class Func(ConstructT):
 
       # add the instruction if not a label (GotoI is deliberately added)
       if not isinstance(insn, LabelI):
-        if isinstance(insn, ReturnI):
+        if not foundReturnOrGoto:
           instructions.append(insn)
-          foundReturn = True
-        elif not foundReturn:
-          instructions.append(insn)
+          if isinstance(insn, (ReturnI, GotoI)):
+            foundReturnOrGoto = True
 
     bbMap[currBbId] = instructions  # add the last basic block
     bbMap[0] = [NopI()]  # end bb

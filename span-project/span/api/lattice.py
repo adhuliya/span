@@ -138,13 +138,6 @@ class DataLT(LatticeLT):
   ) -> Tuple['DataLT', ChangedT]:
     """Apply widening w.r.t. the prev value.
     MUST override this function if widening is needed.
-    By default return self, meaning no widening is applied.
-    In general:
-      if newDfv is Top: return self, not Changed;   # no widening needed
-      elif self is Top: return newDfv, Changed;     # no widening needed
-      elif self is Bot: return self, not Changed;   # no widening needed
-      elif self != newDfv: return Bot, Changed;     # widen
-      else: return self, not Changed;               # no widening needed
     """
     return newDfv, Changed  # no widening by default
 

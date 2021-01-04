@@ -235,8 +235,8 @@ class ReachingDefA(AnalysisAT):
     inBi, outBi = self.defaultDfv, self.overallTop
     getDefaultVal = self.overallTop.getDefaultVal
     if ipa:
-      return dfv.getBoundaryInfoIpa(self.func, nodeDfv,
-                                    getDefaultVal, self.getAllVars)
+      nDfv = dfv.updateFuncObjInDfvs(self.func, nodeDfv)
+      return dfv.removeNonEnvVars(nDfv, getDefaultVal, self.getAllVars)
     if nodeDfv:
       inBi, outBi = nodeDfv.dfvIn, nodeDfv.dfvOut
     return NodeDfvL(inBi, outBi)  # good to create a copy

@@ -435,7 +435,9 @@ class DirectionDT:
       assert newOut is newOutTrue and newOut is newOutFalse
       newIn, c1 = oldIn.widen(newIn)
       newOut, c2 = oldOut.widen(newOut)
+      print(f"WIDENED?(analysis1): {c1}, {c2} {newOut is oldOut}")  #delit
       nodeDfv = NodeDfvL(newIn, newOut)  # nodeDfv OVER-WRITTEN
+      newOutFalse = newOutTrue = newOut
 
     if AS:
       if nodeDfv < oldNdfv:
@@ -454,6 +456,7 @@ class DirectionDT:
                or newOutFalse != oldOutFalse \
                or newOutTrue != oldOutTrue
     self.nidNdfvMap[nid] = nodeDfv
+    if widen: print(f"WIDENED?(analysis2): {isNewIn}, {isNewOut}")
     return NewOldL.getNewOldObj(isNewIn, isNewOut)
 
 
@@ -1736,8 +1739,8 @@ class ValueAnalysisAT(AnalysisAT):
     inBi, outBi = self.overallBot, self.overallBot
     getDefaultVal = self.overallTop.getDefaultVal
     if ipa:
-      return dfv.getBoundaryInfoIpa(self.func, nodeDfv,
-                                    getDefaultVal, self.getAllVars)
+      nDfv = dfv.updateFuncObjInDfvs(self.func, nodeDfv)
+      return dfv.removeNonEnvVars(nDfv, getDefaultVal, self.getAllVars)
     if nodeDfv:
       inBi, outBi = nodeDfv.dfvIn, nodeDfv.dfvOut
     return NodeDfvL(inBi, outBi)  # good to create a copy

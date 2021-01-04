@@ -3556,9 +3556,10 @@ void compressStream(int stream , int zStream )
   outOfMemory();
 #line 528
   break;
-  errhandler_io: 
+//AD errhandler_io:  //AD ref #12345
   case -6: 
 #line 531
+ errhandler_io:  //AD ref #12345
   ioError();
 #line 531
   break;
@@ -3750,9 +3751,10 @@ unsigned char uncompressStream(int zStream , int stream )
   configError();
 #line 635
   break;
-  errhandler_io: 
+//AD errhandler_io:  //AD ref #123456
   case -6: 
 #line 638
+  errhandler_io:  //AD ref #123456
   ioError();
 #line 638
   break;

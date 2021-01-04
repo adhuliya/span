@@ -230,27 +230,32 @@ class IpaHost:
 
       callSiteDfvs = host.getCallSiteDfvs()
       if callSiteDfvs:  # check if call sites present
-        for node, dfvs in callSiteDfvs.items():
+        for node in sorted(callSiteDfvs.keys()):
+          dfvs = callSiteDfvs[node]
+          if self.allTopValues(dfvs): # might an be unreachable node
+            continue  # SKIP PROCESSING
           calleeSite = conv.genFuncNodeId(host.func.id, node.id)
           calleeName = instr.getCalleeFuncName(node.insn)
           assert calleeName, f"{node}"
           localDfvs, nonLocalDfvs = self.separateLocalNonLocalDfvs(dfvs) # w.r.t. caller
           calleeBi = self.prepareCalleeBi(calleeName, nonLocalDfvs)
+          if calleeBi["IntervalA"].dfvIn.top: #delit
+            print(f"TOP_IN: (Caller: {callerName}), (Callee: {calleeName}) (Site: {calleeSite})") #delit
+            host.printOrLogResult(); exit() #delit
           newCalleeBi = self.analyzeFunc(calleeSite, calleeName,
                                          calleeBi, recursionDepth + 1,
                                          newUniqueId)  # recursion
           newDfvs = self.prepareCallNodeDfv(callerName, newCalleeBi, localDfvs)
           self.checkInvariantsDfvs(callerName, newDfvs) #delit
           reAnalyze = host.setCallSiteDfv(node.id, newDfvs)
+          print(f"ReAnalyze: {reAnalyze} (Callee: {calleeName}) (Caller: {callerName})")
 
-          if calleeName in ("f:f1", "f:BZ2_hbMakeCodeLengths", "f:main_sort",
-                            "f:fallbackSort", "f:BZ2_bz__AssertH__fail"):
+          if calleeName in ("f:debug_time", "f:f1", "f:bsPutUChar"):
             ptaOld = dfvs["IntervalA"].dfvOut
             ptaNew = newDfvs["IntervalA"].dfvOut
             # ptaNew = nonLocalDfvs["PointsToA"].dfvIn
-            print(f"ReAnalyze: {reAnalyze} ({calleeName}):")
             if ptaOld.val and ptaNew.val:
-              print(f"PTA diff:")
+              print(f"PTA/INTERVAL diff:")
               ptaOldSet = set((k,v) for k,v in ptaOld.val.items())
               ptaNewSet = set((k,v) for k,v in ptaNew.val.items())
               print(f"Diff (Old-New):", len(ptaOldSet), len(ptaNewSet), ptaOldSet - ptaNewSet)
@@ -264,9 +269,19 @@ class IpaHost:
             break  # first re-analyze then goto other call sites
 
       if LS: LOG.debug("ReAnalyzingFunction: %s", funcName) if reAnalyze else None
-    if funcName in ("f:spec_load", "f:main", "f:f1"):  #delit
+    if funcName in ("f:BZ2_bzCompress", "f:spec_load", "f:main", "f:f1"):  #delit
       host.printOrLogResult()  #delit
     return host.getBoundaryResult()
+
+
+  def allTopValues(self,
+      dfvs: Dict[AnalysisNameT, NodeDfvL]
+  ) -> bool:
+    """Returns true if all the data flow values are Top."""
+    tops = [nDfv.top for nDfv in dfvs.values()]
+    isTop = all(tops)
+    if any(tops): assert all(tops), f"NotAllTop: {dfvs}"
+    return isTop
 
 
   def checkInvariantsDfvs(self,
@@ -516,9 +531,9 @@ def diagnoseInterval(tUnit: TranslationUnit):
                         )
   ipaHostSpan.analyze()
 
-  ipaHostLern = IpaHost(tUnit, analysisSeq=[[mainAnalysis] + otherAnalyses])
+  # ipaHostLern = IpaHost(tUnit, analysisSeq=[[mainAnalysis] + otherAnalyses])
   #ipaHostLern = IpaHost(tUnit, analysisSeq=[[mainAnalysis]])
-  #ipaHostLern = IpaHost(tUnit, mainAnName=mainAnalysis, maxNumOfAnalyses=1) # span with single analysis
+  ipaHostLern = IpaHost(tUnit, mainAnName=mainAnalysis, maxNumOfAnalyses=1) # span with single analysis
   ipaHostLern.analyze()
 
   totalPPoints = 0  # total program points

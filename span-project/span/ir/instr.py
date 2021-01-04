@@ -43,7 +43,7 @@ CALL_INSTR_IC: InstrCodeT = 30
 COND_INSTR_IC: InstrCodeT = 40
 GOTO_INSTR_IC: InstrCodeT = 50
 
-PAR_INSTR_IC: InstrCodeT = 60
+III_INSTR_IC: InstrCodeT = 60
 
 ################################################
 # BOUND END  : instr_codes
@@ -647,18 +647,19 @@ class CallI(InstrIT):
            f"instr.CallI({repr(self.arg)}, {repr(self.info)})"
 
 
-class ParallelI(InstrIT):
+class III(InstrIT):
   """
   Holds the set of instructions which are assumed to be
   parallel in their execution semantics.
   These instructions should never have function calls in them.
   """
 
-  __slots__ : List[str] = ["insns"]
+  __slots__ : List[str] = ["insns", "forIpa"]
 
   def __init__(self,
       insns: List[InstrIT],
       info: Opt[types.Info] = None,
+      forIpa: bool = False,
   ) -> None:
     # invariant check
     if AS:
@@ -666,8 +667,9 @@ class ParallelI(InstrIT):
         if not isinstance(insn, InstrIT) \
             or getCallExpr(insn):  # insn must not contain a call expression
           raise ValueError(f"{insn} in {insns}")
-    super().__init__(PAR_INSTR_IC, info)
+    super().__init__(III_INSTR_IC, info)
     self.insns = insns
+    self.forIpa = forIpa
 
 
   def getFormalStr(self) -> types.FormalStrT:
@@ -684,27 +686,28 @@ class ParallelI(InstrIT):
 
   @staticmethod
   def genPrallelMultiAssign(lhs: expr.LocationET,
-      rhsList: List[expr.ExprET]
-  ) -> 'ParallelI':
+      rhsList: List[expr.ExprET],
+      forIpa: bool = False
+  ) -> 'III':
     """
     A convenience function to generate an object of PrallelI
     such that the lhs is the same and is being assigned multiple
     rhs expressions (more than one).
     """
-    assert len(rhsList) > 1, f"rhsList"
+    assert len(rhsList) >= 1, f"rhsList"
 
     insns: List[InstrIT] = []
     for rhs in rhsList:
       insn = AssignI(lhs=lhs, rhs=rhs, info=lhs.info)
       insns.append(insn)
 
-    return ParallelI(insns=insns, info=lhs.info)
+    return III(insns=insns, info=lhs.info, forIpa=forIpa)
 
 
   def __eq__(self, other):
     if self is other:
       return True
-    if not isinstance(other, ParallelI):
+    if not isinstance(other, III):
       return NotImplemented
     equal = True
     if not len(self.insns) == len(other.insns):
@@ -718,14 +721,14 @@ class ParallelI(InstrIT):
 
   def __hash__(self):
     insn = self.insns[-1] if self.insns else None
-    return hash(("ParallelI", len(self.insns), insn))
+    return hash(("III", len(self.insns), insn))
 
 
   def isEqual(self,
       other: 'InstrIT'
   ) -> bool:
     equal = True
-    if not isinstance(other, ParallelI):
+    if not isinstance(other, III):
       if LS: LOG.error("ObjectsIncomparable: %s, %s", self, other)
       return False
     if not len(self.insns) == len(other.insns):
@@ -746,11 +749,11 @@ class ParallelI(InstrIT):
   def __str__(self):
     insnList = [str(insn) for insn in self.insns]
     insns = "//".join(insnList)
-    return f"ParallelI({insns})"
+    return f"III({insns})"
 
 
   def __repr__(self):
-    return f"ParallelI({self.insns})"
+    return f"III({self.insns})"
 
 
 ################################################

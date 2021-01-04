@@ -472,8 +472,6 @@ class OverallL(DataLT):
     for k, v in self.val.items():
       assert v is not None, f"{k}, {v}"
       l, g = func.isLocalName(k), tUnit.canBeGloballyAccessed(k)
-      ll = conv.isLocalVarName(k) # i.e. any local
-      if ll and not g: localVal[k] = v  # vars inaccessible outside the func
       if l and not g:  localVal[k] = v  # vars inaccessible outside the func
       if not l or g:   nonLocalVal[k] = v
 
@@ -694,30 +692,44 @@ class OverallL(DataLT):
 # BOUND START: Convenience_Functions
 ################################################
 
-def getBoundaryInfoIpa(
+def updateFuncObjInDfvs(
     func: constructs.Func,
     nodeDfv: NodeDfvL,
-    getDefaultVal: Callable[[str], ComponentL],
-    getAllVars: Callable[[], Set[types.VarNameT]],
 ) -> NodeDfvL:
-  """Returns the IPA boundary info for the func.
-  It removes the variables that are not in the env
-  of func."""
+  """It removes the variables that are not in the env of func."""
   dfvIn = cast(OverallL, nodeDfv.dfvIn.getCopy())
   dfvOut = cast(OverallL, nodeDfv.dfvOut.getCopy())
   dfvIn.func = dfvOut.func = func
 
-  vNames: Set[types.VarNameT] = getAllVars()
-
   if dfvIn.val:
     for value in dfvIn.val.values():
       value.func = func
-    for key in list(dfvIn.val.keys()):
-      if key not in vNames:
-        dfvIn.setVal(key, getDefaultVal(key)) # remove key
   if dfvOut.val:
     for value in dfvOut.val.values():
       value.func = func
+
+  return NodeDfvL(dfvIn, dfvOut)
+
+
+def removeNonEnvVars(
+    nodeDfv: NodeDfvL,
+    getDefaultVal: Callable[[str], ComponentL],
+    getAllVars: Callable[[], Set[types.VarNameT]],
+    direction: types.DirectionT = conv.Forward,
+) -> NodeDfvL:
+  """It removes the variables that are not in the env of func."""
+  dfvIn = cast(OverallL, nodeDfv.dfvIn.getCopy())
+  dfvOut = cast(OverallL, nodeDfv.dfvOut.getCopy())
+
+  vNames: Set[types.VarNameT] = getAllVars()
+
+  assert direction != conv.ForwBack
+
+  if dfvIn.val and direction == conv.Backward:
+    for key in list(dfvIn.val.keys()):
+      if key not in vNames:
+        dfvIn.setVal(key, getDefaultVal(key)) # remove key
+  if dfvOut.val and direction == conv.Forward:
     for key in list(dfvOut.val.keys()):
       if key not in vNames:
         dfvOut.setVal(key, getDefaultVal(key)) # remove key

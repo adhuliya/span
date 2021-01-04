@@ -862,7 +862,7 @@ class TranslationUnit:
     elif isinstance(insn, _instr.ExReadI):
       pass  # i.e. types.Void
 
-    elif isinstance(insn, instr.ParallelI):
+    elif isinstance(insn, instr.III):
       for ins in insn.yieldInstructions():
         iType = self.inferTypeOfInstr(ins)
 

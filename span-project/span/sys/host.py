@@ -6,6 +6,9 @@
 """The Host that manages SPAN."""
 
 import logging
+
+from span.api import dfv
+
 LOG = logging.getLogger("span")
 
 from typing import Dict, Tuple, Set, List, Callable,\
@@ -969,7 +972,7 @@ class Host:
     if treatAsNop:
       return self.activeAnObj.Nop_Instr(node.id, insn, nodeDfv)
 
-    if not isinstance(insn, instr.ParallelI):
+    if not isinstance(insn, instr.III):
       return self._analyzeInstr(node, insn, nodeDfv)
 
     # if here its a ParallelI
@@ -980,10 +983,15 @@ class Host:
       if LS: LOG.debug("FinalInstrDfv: %s", dfv)
       return dfv
 
-    return mergeAll(ai(ins) for ins in insn.insns)
+    res = mergeAll(ai(ins) for ins in insn.insns)
+    if insn.forIpa:
+      getDefaultVal = self.activeAnTop.getDefaultVal  # FIXME: assumes dfv.OverallL class
+      getAllVars = self.activeAnObj.getAllVars # FIXME: assumes analysis.ValueAnalysisAT class
+      res = dfv.removeNonEnvVars(res, getDefaultVal, getAllVars)
+    return res
 
 
-  def handleCallsForIpa(self,
+  def handleCallsForIpa(self, #IPA
       node: cfg.CfgNode,
       insn: instr.InstrIT,
       nodeDfv: NodeDfvL,
@@ -1290,7 +1298,7 @@ class Host:
       newInsn = instr.ExReadI({lhsArg.name})
     else:  # take meet of the dfv of the set of instructions now possible
       AssignI, VarE = instr.AssignI, expr.VarE
-      newInsn = instr.ParallelI([AssignI(VarE(vName), rhs) for vName in values])
+      newInsn = instr.III([AssignI(VarE(vName), rhs) for vName in values])
       newInsn.addInstr(instr.ExReadI({lhsArg.name}))
 
     self.tUnit.inferTypeOfInstr(newInsn)
@@ -1331,7 +1339,7 @@ class Host:
     else:  # take meet of the dfv of the set of instructions now possible
       assert values and len(values), f"{node}: {values}"
       AssignI, VarE = instr.AssignI, expr.VarE
-      newInsn = instr.ParallelI([AssignI(lhs, VarE(vName)) for vName in values])
+      newInsn = instr.III([AssignI(lhs, VarE(vName)) for vName in values])
       newInsn.addInstr(instr.CondReadI(
         lhs.name, ir.getNamesUsedInExprSyntactically(rhsArg)))
 
@@ -1373,8 +1381,8 @@ class Host:
     else:  # take meet of the dfv of the set of instructions now possible
       assert values, f"{node}: {values}"
       AssignI, VarE = instr.AssignI, expr.VarE
-      newInsn = instr.ParallelI([AssignI(VarE(f"{varName}.{lhs.name}"), rhs)
-                                 for varName in values])
+      newInsn = instr.III([AssignI(VarE(f"{varName}.{lhs.name}"), rhs)
+                           for varName in values])
       newInsn.addInstr(instr.ExReadI({lhs.of.name}))
 
     self.tUnit.inferTypeOfInstr(newInsn)
@@ -1415,8 +1423,8 @@ class Host:
     else:  # take meet of the dfv of the set of instructions now possible
       assert values, f"{node}: {values}"
       AssignI, VarE = instr.AssignI, expr.VarE
-      newInsn = instr.ParallelI([AssignI(lhs, VarE(f"{vName}.{rhs.name}"))
-                                 for vName in values])
+      newInsn = instr.III([AssignI(lhs, VarE(f"{vName}.{rhs.name}"))
+                           for vName in values])
       newInsn.addInstr(instr.CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs.of)))
 
     self.tUnit.inferTypeOfInstr(newInsn)
@@ -1459,7 +1467,7 @@ class Host:
       if not self.activeAnIsSimAn and self.blockNonSimAn:
         return self.Barrier_Instr(node, node.insn, nodeDfv)
       AssignI, LitE = instr.AssignI, expr.LitE
-      newInsn = instr.ParallelI([AssignI(lhs, LitE(val)) for val in values])
+      newInsn = instr.III([AssignI(lhs, LitE(val)) for val in values])
 
     return self.handleNewInstr(node, simName, insn, rhs, newInsn, nodeDfv)
 
@@ -1485,7 +1493,7 @@ class Host:
     else:
       rhs = insn.rhs
       AssignI, UnaryE, LitE = instr.AssignI, expr.UnaryE, expr.LitE
-      newInsn = instr.ParallelI(
+      newInsn = instr.III(
         [AssignI(lhs, UnaryE(rhs.opr, LitE(val)).computeExpr()) for val in values])
 
     return self.handleNewInstr(node, simName, insn, rhsArg, newInsn, nodeDfv)
@@ -1509,7 +1517,7 @@ class Host:
       newInsn = instr.CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs))
     else:
       AssignI, LitE = instr.AssignI, expr.LitE
-      newInsn = instr.ParallelI(
+      newInsn = instr.III(
         [AssignI(lhs, LitE(val)) for val in values])
       newInsn.addInstr(instr.CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs)))
 
@@ -1542,10 +1550,10 @@ class Host:
     else:
       AssignI, LitE, BinaryE = instr.AssignI, expr.LitE, expr.BinaryE
       if argPos == 1:
-        newInsn = instr.ParallelI(
+        newInsn = instr.III(
           [AssignI(lhs, BinaryE(LitE(val), rhs.opr, rhs.arg2)) for val in values])
       else:
-        newInsn = instr.ParallelI(
+        newInsn = instr.III(
           [AssignI(lhs, BinaryE(rhs.arg1, rhs.opr, LitE(val))) for val in values])
       newInsn.addInstr(
         instr.CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs)))
@@ -1923,7 +1931,7 @@ class Host:
                         None if demand else self.activeAnName)
     anNames = self.fetchAndSetupSimSrcs(node, simName, e, demand)
 
-    res = self.collectAndMergeResults(anNames, simName, node, e)
+    res = self.collectAndMergeSimResults(anNames, simName, node, e)
     if res is not None and len(res) == 0: assert res is SimPending, f"{res}"
 
     if LS: LOG.debug("SimOfExpr (merged): '%s' is %s.", e, res)
@@ -1931,7 +1939,7 @@ class Host:
     return res
 
 
-  def collectAndMergeResults(self,
+  def collectAndMergeSimResults(self,
       anNames: Set[AnNameT],
       simName: SimNameT,
       node: cfg.CfgNode,
@@ -2081,7 +2089,7 @@ class Host:
     return results
 
 
-  def setCallSiteDfv(self,
+  def setCallSiteDfv(self, #IPA
       nodeId: NodeIdT,
       results: Dict[AnNameT, NodeDfvL]
   ) -> bool:
@@ -2101,6 +2109,7 @@ class Host:
         if LS: LOG.debug("IPA_UpdatedWorklist: %s, %s", self.func.name, dirn.wl)
         if self.cascade:
           tup = (anName, nodeId)
+          print(f"IPACASCADE: {self.func.name}: {tup} {dirn.nidNdfvMap[nodeId].dfvOut.top}")  #delit
           self.ipaCascadeCallSiteDfvMap[tup] = dirn.nidNdfvMap[nodeId]
         else:
           self.addAnToWorklist(anName, ipa=True)
@@ -2129,7 +2138,6 @@ class Host:
         if nid not in res.nidNdfvMap:
           continue  # NODE IS UNREACHABLE
         nDfv = res.nidNdfvMap.get(nid)
-        assert nDfv
         analysisDfvs[anName] = nDfv
       callSiteDfvs[node] = analysisDfvs
 
