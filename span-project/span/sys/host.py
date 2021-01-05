@@ -926,6 +926,10 @@ class Host:
 
       nid = node.id
       nodeDfv, inOutChange1, feasibleNode = self.calcInOut(node, dirn)
+      if self.activeAnName == "IntervalA" \
+          and self.func.name == "f:fallbackSort" and node.id == 311:
+        _valN = nodeDfv.dfvOut.getVal("v:fallbackSort:191t")
+        print(f"SIM_:(v:fallbackSort:191t)(_analyze()1)({inOutChange1}): {_valN}") #delit
       if feasibleNode:  # skip infeasible nodes
         if self.useDdm and self.activeAnName not in self.mainAnalyses:  #DDM
           if not nid == 1:  # skip the first node which is always NopI()
@@ -941,7 +945,17 @@ class Host:
         nodeDfv = self.analyzeInstr(node, node.insn, nodeDfv, treatAsNop)
         if LS: LOG.debug("Curr_Node_Dfv (AnalysisResult) (Node %s): %s", nid, nodeDfv)
 
+        if self.activeAnName == "IntervalA" \
+            and self.func.name == "f:fallbackSort" and node.id == 311:
+          _val = dirn.nidNdfvMap[311].dfvOut.getVal("v:fallbackSort:191t")
+          _valN = nodeDfv.dfvOut.getVal("v:fallbackSort:191t")
+          print(f"SIM_:(v:fallbackSort:191t)(_analyze()2): {_valN} {_val} {nodeDfv.bot}") #delit
         inOutChange2 = dirn.update(node, nodeDfv)
+        if self.activeAnName == "IntervalA"\
+            and self.func.name == "f:fallbackSort" and node.id == 311:
+          _val = dirn.nidNdfvMap[311].dfvOut.getVal("v:fallbackSort:191t")
+          _valN = nodeDfv.dfvOut.getVal("v:fallbackSort:191t")
+          print(f"SIM_:(v:fallbackSort:191t)(_analyze()3): {_valN} {_val}") #delit
 
         if LS: LOG.debug("Curr_Node_Dfv (AfterUpdate) (Node %s): %s, change: %s.",
                          nid, nodeDfv, inOutChange2)
@@ -1507,9 +1521,11 @@ class Host:
     lhs, rhs, simName = insn.lhs, insn.rhs, Num_Bin__to__Num_Lit__Name
 
     newInsn, valid = self.getCachedInstrSimResult(node, simName, insn, rhs)
+    if insn.lhs.name == "v:fallbackSort:191t": print(f"SIM_:(v:fallbackSort:191t)({insn})111: {newInsn} {valid}") #delit
     if valid: return self.analyzeInstr(node, newInsn, nodeDfv) if newInsn else None
 
     values = self.getSim(node, simName, rhs)
+    if insn.lhs.name == "v:fallbackSort:191t": print(f"SIM_:(v:fallbackSort:191t)222: {values}") #delit
     if values is SimFailed:
       self.setCachedInstrSim(node.id, simName, insn, rhs, insn)
       return None  # i.e. process_the_original_insn
@@ -1521,7 +1537,10 @@ class Host:
         [AssignI(lhs, LitE(val)) for val in values])
       newInsn.addInstr(instr.CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs)))
 
-    return self.handleNewInstr(node, simName, insn, rhs, newInsn, nodeDfv)
+    nDfv = self.handleNewInstr(node, simName, insn, rhs, newInsn, nodeDfv)
+    if insn.lhs.name == "v:fallbackSort:191t": print(f"SIM_:(v:fallbackSort:191t)333: "
+                                            f"{nDfv.dfvOut.getVal('v:fallbackSort:191t')} {newInsn}") #delit
+    return nDfv
 
 
   def handleRhsBinArithArgs(self,

@@ -209,7 +209,7 @@ class IpaHost:
                                       f" UniqueId: {uniqueId}")
                                       # f" FuncBi: {funcBi}")
 
-    if funcName in ("f:f1", "f:spec_load", "f:spec_init", "f:debug_time"): #delit
+    if funcName in ("f:f1"): #delit
       print("IpaFuncBi:", ipaFuncBi) #delit
 
     if recursionDepth >= RECURSION_LIMIT:
@@ -239,16 +239,12 @@ class IpaHost:
           assert calleeName, f"{node}"
           localDfvs, nonLocalDfvs = self.separateLocalNonLocalDfvs(dfvs) # w.r.t. caller
           calleeBi = self.prepareCalleeBi(calleeName, nonLocalDfvs)
-          if calleeBi["IntervalA"].dfvIn.top: #delit
-            print(f"TOP_IN: (Caller: {callerName}), (Callee: {calleeName}) (Site: {calleeSite})") #delit
-            host.printOrLogResult(); exit() #delit
           newCalleeBi = self.analyzeFunc(calleeSite, calleeName,
                                          calleeBi, recursionDepth + 1,
                                          newUniqueId)  # recursion
           newDfvs = self.prepareCallNodeDfv(callerName, newCalleeBi, localDfvs)
           self.checkInvariantsDfvs(callerName, newDfvs) #delit
           reAnalyze = host.setCallSiteDfv(node.id, newDfvs)
-          print(f"ReAnalyze: {reAnalyze} (Callee: {calleeName}) (Caller: {callerName})")
 
           if calleeName in ("f:debug_time", "f:f1", "f:bsPutUChar"):
             ptaOld = dfvs["IntervalA"].dfvOut
@@ -269,7 +265,7 @@ class IpaHost:
             break  # first re-analyze then goto other call sites
 
       if LS: LOG.debug("ReAnalyzingFunction: %s", funcName) if reAnalyze else None
-    if funcName in ("f:BZ2_bzCompress", "f:spec_load", "f:main", "f:f1"):  #delit
+    if funcName in ("f:fallbackSort", "f:f1"):  #delit
       host.printOrLogResult()  #delit
     return host.getBoundaryResult()
 
@@ -487,12 +483,34 @@ class IpaHost:
         if valContext.funcName == funcName:
           allAnalysisNames = host.getParticipatingAnalyses()
           for anName in allAnalysisNames:
-            res = host.getAnalysisResults(anName)
+            currRes = host.getAnalysisResults(anName)
+            if funcName == "f:main":  #delit
+              self.delitTestResult(anName, currRes, 9, "v:main:3if")  #delit
             if anName not in funcResult:
-              funcResult[anName] = res
+              funcResult[anName] = currRes
             else:
-              funcResult[anName] = self.mergeAnalysisResult(funcResult[anName], res)
+              prevRes = funcResult[anName]
+              newRes  = self.mergeAnalysisResult(prevRes, currRes)
+              funcResult[anName] = newRes
+              if funcName == "f:fallbackSort":  #delit
+                self.delitTestResult(anName, prevRes, 311, "v:fallbackSort:191t")  #delit
+                self.delitTestResult(anName, newRes, 311, "v:fallbackSort:191t")  #delit
       self.finalResult[funcName] = funcResult
+
+
+  def delitTestResult(self,  #delit
+      anName: str,
+      res: Dict[cfg.CfgNodeId, NodeDfvL],
+      nid: int,
+      vName: str,
+  ):
+    if anName != "IntervalA": return
+    if nid in res:
+      dfv = res[nid].dfvOut
+      val = dfv.getVal(vName)
+    else:
+      val = f"Top(nid {nid} not present)"
+    print(f"SIM_:({vName}): {val}")
 
 
   @staticmethod
@@ -575,10 +593,10 @@ def diagnoseInterval(tUnit: TranslationUnit):
             lhs = cast(expr.VarE, insn.lhs)
             name = lhs.name
             val1 = nDfvSpan.dfvOut.getVal(name)
-            if not val1.bot:
+            if val1.isConstant():
               totalPreciseComparisons1 += 1
             val2 = nDfvLern.dfvOut.getVal(name)
-            if not val2.bot:
+            if val2.isConstant():
               print(f"{node.id}: {name}: {val1}, {val2} ({insn.info})")
               totalPreciseComparisons2 += 1
 

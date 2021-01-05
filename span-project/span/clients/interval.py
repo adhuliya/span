@@ -78,8 +78,14 @@ class ComponentL(dfv.ComponentL):
       return (self, not Changed) if newDfv.top else (newDfv, Changed)
     elif self.bot:        # no widening needed
       return self, not Changed
-    elif self != newDfv:  # WIDEN-WIDEN
-      return newDfv if newDfv.bot else ComponentL(self.func, bot=True), Changed
+    elif self != newDfv:  # WIDEN-WIDEN # return self it its weaker
+      #print(f"WIDEN(v:fallbackSort:191t)(selfnewDfv): {self} {newDfv}") #delit
+      if self < newDfv:
+        return self, not Changed
+      elif self.isBooleanRange() and newDfv.isBooleanRange():
+        return self.meet(newDfv)
+      else:
+        return ComponentL(self.func, bot=True), Changed
     else:                 # no widening needed
       return self, not Changed
 
@@ -202,6 +208,13 @@ class ComponentL(dfv.ComponentL):
       upper = self.val[1] if 0 < self.val[1] else upper
 
     return ComponentL(self.func, val=(0, upper))
+
+
+  def isBooleanRange(self) -> bool:
+    if self.val:
+      lo, up = self.val
+      return lo in (0,1) and up in (0,1)
+    return False
 
 
   def isPositive(self) -> bool:
@@ -541,7 +554,7 @@ class IntervalA(analysis.ValueAnalysisAT):
 
     # STEP 2: If here, eval may be possible, hence attempt eval
     if nodeDfv is None:
-      return SimPending # tell that sim my be possible if nodeDfv given
+      return SimPending # tell that sim my be possible if nodeDfv is given
 
     # STEP 3: If here, either eval or filter the values
     dfvIn = cast(OverallL, nodeDfv.dfvIn)
@@ -744,13 +757,15 @@ class IntervalA(analysis.ValueAnalysisAT):
     """A default implementation (assuming Constant Propagation)."""
     val1 = cast(ComponentL, self.getExprDfv(e.arg1, dfvIn))
     val2 = cast(ComponentL, self.getExprDfv(e.arg2, dfvIn))
-    rhsOpCode = e.opr.opCode
+    opr = e.opr
+    rhsOpCode = opr.opCode
     if val1.top or val2.top:
       return self.componentTop
     elif rhsOpCode == op.BO_MOD_OC:
       return val2.modRange()
     elif val1.bot or val2.bot:
-      return self.componentBot
+      return ComponentL(self.func, val=(0,1))\
+        if opr.isRelationalOp() else self.componentBot
     else:
       if rhsOpCode == op.BO_ADD_OC:
         return val1.addRange(val2)

@@ -1713,7 +1713,7 @@ class ValueAnalysisAT(AnalysisAT):
   needsNumVarToNumLitSim: bool = False
   needsNumBinToNumLitSim: bool = True
   needsCondToUnCondSim: bool = True
-  needsLhsVarToNilSim: bool = True
+  needsLhsVarToNilSim: bool = False # FIXME: True when using liveness analysis
   needsNodeToNilSim: bool = False
 
 
