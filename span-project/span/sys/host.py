@@ -6,9 +6,6 @@
 """The Host that manages SPAN."""
 
 import logging
-
-from span.api import dfv
-
 LOG = logging.getLogger("span")
 
 from typing import Dict, Tuple, Set, List, Callable,\
@@ -18,6 +15,7 @@ import time
 import io
 import functools
 
+from span.api import dfv
 import span.util.util as util
 import span.util.common_util as cutil
 from span.util.util import LS, AS, GD
@@ -40,11 +38,18 @@ from span.ir.expr import (VAR_EXPR_EC, FUNC_EXPR_EC, LIT_EXPR_EC, UNARY_EXPR_EC,
 from span.api.dfv import NodeDfvL, NewOldL, OLD_INOUT
 from span.api.analysis import SimNameT, simDirnMap, SimFailed, SimPending
 from span.api.lattice import mergeAll, DataLT
-from span.api.analysis import AnalysisAT, AnalysisNameT as AnNameT,\
-  ForwardD, BackwardD, DirectionDT
+from span.api.analysis import (AnalysisAT, AnalysisNameT as AnNameT,\
+  ForwardD, BackwardD, DirectionDT,
+  Node__to__Nil__Name,
+  LhsVar__to__Nil__Name,
+  Num_Var__to__Num_Lit__Name,
+  Cond__to__UnCond__Name,
+  Num_Bin__to__Num_Lit__Name,
+  Deref__to__Vars__Name,
+  )
 import span.sys.clients as clients
 import span.sys.ddm as ddm
-import span.sys.stats as stats
+from span.sys.stats import HostStat, GST, GlobalStats
 from span.sys.sim import SimRecord
 import span.ir.cfg as cfg
 import span.ir.tunit as irTUnit
@@ -52,29 +57,20 @@ import span.ir.constructs as constructs
 import span.ir.ir as ir
 
 
-MAX_ANALYSES: int = 1024
+MAX_ANALYSES: int = 16
 
 Reachability = bool
 Reachable: Reachability = True
-NotReachable: Reachability = False
+NotReachable: Reachability = not Reachable
 
 # BOUND START: Module_Storage__for__Optimization
-
-Node__to__Nil__Name: str = AnalysisAT.Node__to__Nil.__name__
-LhsVar__to__Nil__Name: str = AnalysisAT.LhsVar__to__Nil.__name__
-Num_Var__to__Num_Lit__Name: str = AnalysisAT.Num_Var__to__Num_Lit.__name__
-Cond__to__UnCond__Name: str = AnalysisAT.Cond__to__UnCond.__name__
-Num_Bin__to__Num_Lit__Name: str = AnalysisAT.Num_Bin__to__Num_Lit.__name__
-Deref__to__Vars__Name: str = AnalysisAT.Deref__to__Vars.__name__
-
 ExRead_Instr__Name: str = AnalysisAT.ExRead_Instr.__name__
 CondRead_Instr__Name: str = AnalysisAT.CondRead_Instr.__name__
 Conditional_Instr__Name: str = AnalysisAT.Conditional_Instr.__name__
 UnDefVal_Instr__Name: str = AnalysisAT.UnDefVal_Instr.__name__
 Filter_Instr__Name: str = AnalysisAT.Filter_Instr.__name__
-
-
 # BOUND END  : Module_Storage__for__Optimization
+
 
 class Participant:
   """Participant analysis details."""
@@ -127,13 +123,11 @@ class PriorityAnWorklist:
   def __init__(self):
     # wl is sorted in ascending order of weights, and popped from right
     self.wl: List[Participant] = []
-    self.wlSet: Set[Participant] = set()
+    self.wlSet: Set[Participant] = set() # in sync with self.wl, to test AN presence
     # remember all analyses added in the analysis dependence graph
-    self.anDepGraph: \
-      Dict[AnNameT, Participant] = {}
+    self.anDepGraph: Dict[AnNameT, Participant] = {}
     # remember the sequence in which the analyses were run
-    self.popSequence: \
-      List[Participant] = []
+    self.popSequence: List[Participant] = []
 
 
   def addToAnDepGraph(self,
@@ -151,9 +145,8 @@ class PriorityAnWorklist:
       self.anDepGraph[anName] = participant
       added = True  # added an isolated node
 
-    if neededBy and anName != neededBy:
-      # i.e. don't record self dependence
-      assert neededBy in self.anDepGraph  # neededBy should be already present
+    if neededBy and anName != neededBy: # don't record self dependence
+      assert neededBy in self.anDepGraph, f"{self.anDepGraph.keys()}"
       neededByParticipant = self.anDepGraph[neededBy]
 
       # record neededBy dependence
@@ -166,7 +159,7 @@ class PriorityAnWorklist:
         neededByParticipant.dependsOn.add(participant)
         added = True  # added a connection
         self.updateWeight(neededByParticipant)
-        self.wl.sort()  # needed since weights were updated
+        self.wl.sort()  # needed since weights may be updated
 
     return added
 
@@ -189,7 +182,7 @@ class PriorityAnWorklist:
       self.wl.sort()
       if LS: LOG.debug("AddedAnalysisToWl(YES): %s, (neededBy: %s)", anName, neededBy)
     else:
-      if LS: LOG.debug("AddedAnalysisToWl(NO 2): %s, (neededBy: %s), (wlSet: %s)",
+      if LS: LOG.debug("AddedAnalysisToWl(NO2): %s, (neededBy: %s), (wlSet: %s)",
                        anName, neededBy, self.wlSet)
 
 
@@ -206,8 +199,7 @@ class PriorityAnWorklist:
         self.wlSet.add(participant)
         updated = True
 
-    if updated:
-      self.wl.sort()
+    if updated: self.wl.sort()
 
 
   def pop(self) -> Opt[AnNameT]:
@@ -227,6 +219,7 @@ class PriorityAnWorklist:
   def updateWeightRecursively(self, participant: Participant,
       visited: Dict[Participant, int]
   ) -> int:
+    """FIXME: replace this with Tarjan's algorithm."""
     maxDepth = 0  # returns the maximum recursion depth
     if participant in visited:
       visited[participant] += 1
@@ -250,7 +243,6 @@ class PriorityAnWorklist:
         if maxDepth < depth:
           maxDepth = depth
 
-    assert participant in visited
     visited[participant] -= 1
     if visited[participant] <= 0:
       del visited[participant]
@@ -358,8 +350,8 @@ class Host:
       self.anDemandDep: Dict[ddm.AtomicDemand, Set[AnNameT]] = dict()
       # map of (nid, simName, expr) --to-> set of demands affected
       self.nodeInstrDemandSimDep: \
-        Dict[Tuple[cfg.CfgNodeId, SimNameT,
-                   expr.ExprET], Set[ddm.AtomicDemand]] = dict()
+        Dict[Tuple[cfg.CfgNodeId, SimNameT, expr.ExprET],
+             Set[ddm.AtomicDemand]] = dict()
 
     #IPA inter-procedural analysis?
     self.ipaBiDfv: Opt[Dict[AnNameT, NodeDfvL]] = ipaBiDfv  #IPA
@@ -398,22 +390,20 @@ class Host:
         message = f"Analysis '{anName}' is not present/registered."
         if LS: LOG.error(message)
         stop = True
-      if stop: raise ValueError("Analysis not present. (See logs)")
+      if stop: raise ValueError(f"Analysis not present: {anName}")
     # BLOCK END  : SomeChecks
 
-    # BLOCK START: #Cascading_And_Lerners
+    # BLOCK START: #CASCADE
     self.cascade: bool = False
     if analysisSeq:  # enable cascading/lerner
-      self.analysisSeq: Opt[List[List[AnNameT]]] = analysisSeq
       self.cascade = True
-      self.cascadeStepCurr: int = 0
-      self.cascadeStepMax: int = len(analysisSeq)
-    # BLOCK END  : #Cascading_And_Lerners
+      self.analysisSeq: Opt[List[List[AnNameT]]] = analysisSeq
+    # BLOCK END  : #CASCADE
 
     # block information from IN to OUT and vice-versa,
     # for non simplification analyses.
     # It should be set to false eventually,
-    # for non sim analyses to to conclude safely.
+    # for non sim analyses to conclude safely.
     self.blockNonSimAn: bool = True  # for testing purposes: should be True
 
     # function to be analyzed
@@ -442,7 +432,7 @@ class Host:
     # participant names, with their analysis instance (for curr function)
     self.anParticipating: Dict[AnNameT, AnalysisAT] = dict()
     # participated analyses names, with their instance (for curr function)
-    # Used by: #Cascading_And_Lerners
+    # Used by: #CASCADE
     self.anParticipated: Dict[AnNameT, AnalysisAT] = dict()
     # participants and their work result
     self.anWorkDict: Dict[AnNameT, DirectionDT] = dict()
@@ -458,7 +448,7 @@ class Host:
       Dict[Tuple[NodeIdT, SimNameT],
            Dict[Tuple[instr.InstrIT, Opt[expr.ExprET]], instr.InstrIT]] = dict()
 
-    self.stats: stats.HostStat = stats.HostStat(self, len(self.funcCfg.nodeMap))
+    self.stats: HostStat = HostStat(self, len(self.funcCfg.nodeMap))
 
     # sim sources: sim to analysis mapping
     self.simSrcs: Dict[SimNameT, Set[AnNameT]] = dict()
@@ -497,7 +487,7 @@ class Host:
         self.mainAnalyses.add(anName)
         self.addParticipantAn(anName)
     # add the main analysis last (hence it is picked up first)
-    if self.mainAnName:  # could be None in case of #Cascading_And_Lerners
+    if self.mainAnName:  # could be None in case of #CASCADE
       self.mainAnalyses.add(self.mainAnName)
       self.addParticipantAn(self.mainAnName)
 
@@ -525,7 +515,7 @@ class Host:
   def addDepAnToWorklist(self, node: cfg.CfgNode, inOutChange: NewOldL) -> None:
     """Add analyses dependent on active analysis (wrt given node) to worklist."""
     if not self.activeAnIsSimAn: return
-    if not self.doesChangeMatchAnDirection(inOutChange): return
+    if not self.willChangeAffectSimDep(inOutChange): return
 
     nid, tup1 = node.id, (self.activeAnName, node.id)
 
@@ -536,8 +526,8 @@ class Host:
 
     for tup2 in simRecordDict.keys():
       simRecord = simRecordDict[tup2]
-      if simRecord is SimFailed:
-        continue  # i.e. update is useless
+      if simRecord is None: # i.e. failed value
+        continue  # hence update is useless
       e, simName = tup2[0], tup2[1]  # tup2 type is (expr, simName)
       value = self.calculateSimValue(self.activeAnName, simName, node, e)
       changed = simRecord.setSimValue(value)  # update value
@@ -692,7 +682,7 @@ class Host:
       self.anParticipating[anName] = analysisObj
       if self.cascade:
         self.anParticipated[anName] = analysisObj
-      self.anWorkDict[anName] = analysisObj.D(self.func.cfg, top)
+      self.anWorkDict[anName] = clients.getAnDirnClass(anName)(self.func.cfg, top)
       self.addAnToWorklist(anName, neededBy, force=True, ipa=ipa)
       self.anSimSuccessCount[anName] = 1 if anName in self.mainAnalyses else 0
       added = True
@@ -813,8 +803,9 @@ class Host:
 
 
   def reInitCascading(self) -> None:
-    """Invoked between #IPA calls.
-    #Cascading_And_Lerners"""
+    """Invoked between #IPA calls. #CASCADE"""
+    assert self.analysisSeq and self.cascade, f"{self.cascade}, {self.analysisSeq}"
+    self.cascadeStepMax: int = len(self.analysisSeq)
     self.cascadeStepCurr: int = 0
     self.currNumOfAnalyses = 0
     self.anParticipated = dict()
@@ -826,16 +817,18 @@ class Host:
     # map of (nid, simName, expr) --to-> set of analyses affected
     self.nodeInstrSimDep: \
       Dict[Tuple[cfg.CfgNodeId, SimNameT, expr.ExprET], Set[AnNameT]] = dict()
+
     # simplifications that depend on the given analysis (active analysis)
     self.anRevNodeDep: \
       Dict[Tuple[AnNameT, cfg.CfgNodeId],
            Dict[Tuple[Opt[expr.ExprET], SimNameT], Opt[SimRecord]]] = dict()
+
     # sim instruction cache: cache the instruction computed for a sim
     self.instrSimCache: \
       Dict[Tuple[NodeIdT, SimNameT],
            Dict[Tuple[instr.InstrIT, Opt[expr.ExprET]], instr.InstrIT]] = dict()
 
-    self.stats: stats.HostStat = stats.HostStat(self, len(self.funcCfg.nodeMap))
+    # self.stats: HostStat = HostStat(self, len(self.funcCfg.nodeMap))
 
     # sim sources: sim to analysis mapping
     self.simSrcs: Dict[SimNameT, Set[AnNameT]] = dict()
@@ -858,7 +851,7 @@ class Host:
     (with transformation restrictions similar to Cascading).
     This can be controlled by providing an
     appropriate value to self.analysisSeq.
-    #Cascading_And_Lerners
+    #CASCADE
     """
     self.cascadeStepCurr = 0 # required to reanalyze
     assert self.analysisSeq, f"{self.analysisSeq}"
@@ -874,7 +867,7 @@ class Host:
   def initCascadeStep(self, stepAnalyses: List[AnNameT]) -> None:
     """Initialize a step in cascading approach,
     to work in a manner similar to Lerner's approach.
-    #Cascading_And_Lerners
+    #CASCADE
     """
     # Note that self.anWorkDict should not be emptied
     # since it holds dfv that can be used by analyses
@@ -900,7 +893,7 @@ class Host:
 
 
   def analyzeCascadeStep(self) -> None:
-    if LS: LOG.info("\nRUNNING_ANALYSIS (#Cascading_And_Lerners): %s."
+    if LS: LOG.info("\nRUNNING_ANALYSIS (#CASCADE): %s."
                     "on function %s\n", self.mainAnName, self.func.name)
     if LS: LOG.info(f"MODE: IPA: {self.ipaEnabled}, DDM: {self.useDdm},"
                     f" CASCADED: {self.cascade}")
@@ -929,7 +922,6 @@ class Host:
       if self.activeAnName == "IntervalA" \
           and self.func.name == "f:fallbackSort" and node.id == 311:
         _valN = nodeDfv.dfvOut.getVal("v:fallbackSort:191t")
-        print(f"SIM_:(v:fallbackSort:191t)(_analyze()1)({inOutChange1}): {_valN}") #delit
       if feasibleNode:  # skip infeasible nodes
         if self.useDdm and self.activeAnName not in self.mainAnalyses:  #DDM
           if not nid == 1:  # skip the first node which is always NopI()
@@ -951,11 +943,6 @@ class Host:
           _valN = nodeDfv.dfvOut.getVal("v:fallbackSort:191t")
           print(f"SIM_:(v:fallbackSort:191t)(_analyze()2): {_valN} {_val} {nodeDfv.bot}") #delit
         inOutChange2 = dirn.update(node, nodeDfv)
-        if self.activeAnName == "IntervalA"\
-            and self.func.name == "f:fallbackSort" and node.id == 311:
-          _val = dirn.nidNdfvMap[311].dfvOut.getVal("v:fallbackSort:191t")
-          _valN = nodeDfv.dfvOut.getVal("v:fallbackSort:191t")
-          print(f"SIM_:(v:fallbackSort:191t)(_analyze()3): {_valN} {_val}") #delit
 
         if LS: LOG.debug("Curr_Node_Dfv (AfterUpdate) (Node %s): %s, change: %s.",
                          nid, nodeDfv, inOutChange2)
@@ -1019,9 +1006,9 @@ class Host:
         tup = (self.activeAnName, nodeId)
         if tup in self.ipaCascadeCallSiteDfvMap:
           ipaNodeDfv = self.ipaCascadeCallSiteDfvMap[tup]
-          if clients.getDirection(self.activeAnName) == Forward:
+          if clients.getAnDirection(self.activeAnName) == Forward:
             return NodeDfvL(nodeDfv.dfvIn, ipaNodeDfv.dfvOut)
-          elif clients.getDirection(self.activeAnName) == Backward:
+          elif clients.getAnDirection(self.activeAnName) == Backward:
             return NodeDfvL(ipaNodeDfv.dfvIn, nodeDfv.dfvOut)
           else:
             return ipaNodeDfv
@@ -1156,10 +1143,10 @@ class Host:
       e: expr.ExprET,
       demand: Opt[ddm.AtomicDemand] = None, #DDM
   ) -> Tuple[Opt[instr.InstrIT], bool]:
-    """Returns data flow computation using the cache if available."""
+    """Returns already computed instruction simplification."""
     self.stats.simTimer.start()
     nid = node.id
-    self.addExprSimNeed(node.id, simName, e, demand,
+    self.addExprSimNeed(nid, simName, e, demand,
                         None if demand else self.activeAnName)  # record the dependence
     newInsn = self.getCachedInstrSim(nid, simName, insn, e)
 
@@ -1346,6 +1333,8 @@ class Host:
 
     values = self.Calc_Deref__to__Vars(node, rhsArg)
     if values is SimFailed:
+      print(f"SIM_FAILED: {self.func.name}{node.id}): "
+            f"(Cas:{self.cascade}) (Ins:{insn}) {values}.")  #delit
       self.setCachedInstrSim(node.id, simName, insn, rhsArg, insn)
       return None  # i.e. process_the_original_insn
     elif values == SimPending:
@@ -1525,7 +1514,6 @@ class Host:
     if valid: return self.analyzeInstr(node, newInsn, nodeDfv) if newInsn else None
 
     values = self.getSim(node, simName, rhs)
-    if insn.lhs.name == "v:fallbackSort:191t": print(f"SIM_:(v:fallbackSort:191t)222: {values}") #delit
     if values is SimFailed:
       self.setCachedInstrSim(node.id, simName, insn, rhs, insn)
       return None  # i.e. process_the_original_insn
@@ -1770,7 +1758,7 @@ class Host:
                          e, simName, simValue, sr)
         self.incSimSuccessCount(simAnName, self.activeAnName) #COUNT_HERE:INC
         if not sr: self.decSimSuccessCount(simAnName)   #COUNT_HERE:DEC
-        simRecordMap[tup2] = sr if sr else SimFailed
+        simRecordMap[tup2] = sr if sr else None
 
 
   def incSimSuccessCount(self,
@@ -1811,9 +1799,14 @@ class Host:
 
     if LS: LOG.debug("SimOfExpr: '%s' isAttemptedBy %s withDfv %s.", e, simAnName, nDfv)
     # Note: if e is None, it assumes sim works on node id
-    value = simFunction(e if e else nid, nDfv, values)
-    if LS: LOG.debug("SimOfExpr: '%s' is %s, by %s.", e, value, simAnName)
-    return value
+    val = value = simFunction(e if e else nid, nDfv, values)
+    if self.cascade and val and simName == Deref__to__Vars__Name: #CASCADE
+      val = SimFailed if len(val) > 1 else val
+      if not val:
+        print(f"CASCADE: SimFailed:({self.func.name, nid}) {e} {e.info},"
+              f" Pointees: {value}") #delit
+    if LS: LOG.debug("SimOfExpr: '%s' is %s, by %s.", e, val, simAnName)
+    return val
 
 
   #@functools.lru_cache(500)
@@ -1845,7 +1838,7 @@ class Host:
     """Called after anName is added using self.addParticipantAn()
     and it returns True"""
     if not self.useDdm or anName in self.mainAnalyses:
-      return  # main analyses are not #DDM driven
+      return  # main analyses are not ddm driven
 
     if self.useDdm: self.ddmObj.timer.start()
     wl = self.anWorkDict[anName].wl
@@ -2011,14 +2004,15 @@ class Host:
     if res is SimFailed:
       return SimFailed  # i.e. process_the_original_insn
 
-    if self.cascade and len(res) > 1:
+    if self.cascade and len(res) > 1:  #CASCADE
+      print(f"DEREF_FAILED_IN_CASCADING ({node.id}): {e}, {e.info}") #delit
       res = SimFailed
     elif len(res) > 1 and NULL_OBJ_NAME in res:
-        res.val.remove(NULL_OBJ_NAME)
+        res.remove(NULL_OBJ_NAME)
     elif len(res) == 1 and NULL_OBJ_NAME in res:
-      if LS: LOG.error("NullDerefEncountered (bad user program): %s, %s",
-                       e.name, node)
-      print(f"NullDerefEncountered (bad user program): {self.func.name}, {e}, {e.info}")
+      if LS: LOG.error("NullDerefEncountered (bad user program)(%s,%s): %s, %s",
+                       self.func.name, node.id, e.name, node)
+      print(f"NullDerefEncountered (bad user program)({self.func.name},{node.id}), {e}, {e.info}")
       res = SimFailed  # i.e. process_the_original_insn
 
     if LS: LOG.debug("SimOfExpr (joined): '%s' is %s.", e.name, res)
@@ -2059,7 +2053,7 @@ class Host:
     """
     Update the results at the boundary.
     After this, one can restart the Host.
-    Return true if there is a need to restart Host.
+    Returns true if there is a need to restart Host.
     """
     restart = False
 
@@ -2068,7 +2062,7 @@ class Host:
       self.ipaBiDfv = boundaryInfo
     else:
       for anName in boundaryInfo.keys():
-        anDirn = clients.getDirection(anName)
+        anDirn = clients.getAnDirection(anName)
         dirnObj = self.anWorkDict[anName]
         nDfv = boundaryInfo[anName]
 
@@ -2101,9 +2095,13 @@ class Host:
     startId = self.funcCfg.start.id
     endId = self.funcCfg.end.id
     for anName, res in self.anWorkDict.items():
+      if anName in self.anParticipating:
+        anObj = self.anParticipating[anName]
+      else:
+        anObj = self.anParticipated[anName]
       startIn = res.nidNdfvMap.get(startId).dfvIn  # type: ignore
       endOut = res.nidNdfvMap.get(endId).dfvOut  # type: ignore
-      results[anName] = NodeDfvL(startIn, endOut)
+      results[anName] = anObj.cleanUpBoundaryInfo(NodeDfvL(startIn, endOut))
 
     return results
 
@@ -2124,13 +2122,16 @@ class Host:
       nDfv = results[anName]
       inOutChange = dirn.update(node, nDfv, widen=True)
       if inOutChange:
+        print(f"InOutChange: {inOutChange}") #delit
         restart = True  # Should re-run the Host
         if LS: LOG.debug("IPA_UpdatedWorklist: %s, %s", self.func.name, dirn.wl)
         if self.cascade:
           tup = (anName, nodeId)
-          print(f"IPACASCADE: {self.func.name}: {tup} {dirn.nidNdfvMap[nodeId].dfvOut.top}")  #delit
           self.ipaCascadeCallSiteDfvMap[tup] = dirn.nidNdfvMap[nodeId]
         else:
+          if isinstance(node.insn, instr.AssignI)\
+              and clients.getAnDirection(anName) == Forward:
+            dirn.setTopValue(nid=node.id+1)  # III() instr (to stop widening)
           self.addAnToWorklist(anName, ipa=True)
 
       # IMPORTANT: Not needed. No analysis dependence at call sites!
@@ -2248,6 +2249,8 @@ class Host:
       insn: instr.InstrIT,
       e: expr.ExprET,
   ) -> Opt[instr.InstrIT]:
+    """Returns the cached instruction simplification for the given
+    node, simName, insn, expression."""
     tup1 = (nid, simName)
     if tup1 in self.instrSimCache:
       simCache = self.instrSimCache[tup1]
@@ -2301,18 +2304,28 @@ class Host:
           del self.instrSimCache[tup1][tup2]
 
 
-  def doesChangeMatchAnDirection(self, inOutChange: NewOldL) -> bool:
+  def willChangeAffectSimDep(self, inOutChange: NewOldL) -> bool:
+    """Returns True if the direction of change matters for sim dependence."""
     assert self.activeAnObj
-    dirnClass = self.activeAnObj.D
+    dirnClass = clients.getAnDirnClass(self.activeAnName)
     iChanged = inOutChange.isNewIn
     oChanged = inOutChange.isNewOut
 
     if dirnClass is ForwardD and iChanged:
-      return True
+      return True # for forward analyses change at IN can change sim
     if dirnClass is BackwardD and oChanged:
-      return True
+      return True # for backward analyses change at OUT can change sim
     if dirnClass is ForwardD and (iChanged or oChanged):
-      return True
+      return True # for forw/backward analyses change at IN/OUT can change sim
     return False
 
+
+  def collectStats(self, gst: GlobalStats):
+    """Collects useful stats in the system.
+    This function must be called once the host is finished.
+    """
+    for tupAnNid, simMap in self.anRevNodeDep.items():
+      for (e, simName), simRecord in simMap.items():
+        if simRecord is not None and not simRecord.hasFailedValue():
+          gst.simCountMap[simName] += 1
 

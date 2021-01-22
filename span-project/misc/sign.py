@@ -13,12 +13,14 @@ This (and every) analysis subclasses,
 
 import logging
 
+from span.ir.conv import Forward
+
 LOG = logging.getLogger("span")
-from typing import Tuple, Dict, Set, List, Optional
+from typing import Tuple, Dict, Set, List, Optional as Opt
 import io
 
 import span.util.util as util
-import span.util.messages as msg
+import span.util.consts as consts
 
 import span.ir.types as types
 import span.ir.op as op
@@ -55,7 +57,7 @@ class ComponentL(DataLT):
 
   def __init__(self,
       func: constructs.Func,
-      val: Optional[bool] = None,  # True/False if Even/Odd
+      val: Opt[bool] = None,  # True/False if Even/Odd
       top: bool = False,
       bot: bool = False
   ) -> None:
@@ -128,12 +130,12 @@ class OverallL(DataLT):
 
   def __init__(self,
       func: constructs.Func,
-      val: Optional[Dict[types.VarNameT, ComponentL]] = None,
+      val: Opt[Dict[types.VarNameT, ComponentL]] = None,
       top: bool = False,
       bot: bool = False
   ) -> None:
     super().__init__(func, val, top, bot)
-    self.val: Optional[Dict[types.VarNameT, ComponentL]] = val
+    self.val: Opt[Dict[types.VarNameT, ComponentL]] = val
     self.componentTop = ComponentL(self.func, top=True)
     self.componentBot = ComponentL(self.func, bot=True)
 
@@ -278,7 +280,7 @@ class OverallL(DataLT):
         allTop = False
       if not objVal.bot:
         allBot = False
-    assert not (allTop and allBot), msg.INVARIANT_VIOLATED
+    assert not (allTop and allBot),
 
     if allBot:
       allNumericNames = ir.filterNamesNumeric(self.func, ir.getNamesEnv(self.func))
@@ -362,7 +364,7 @@ class OverallL(DataLT):
 class EvenOddA(analysis.AnalysisAT):
   """Even-Odd (Parity) Analysis."""
   L: type = OverallL
-  D: type = analysis.ForwardD
+  D: Opt[types.DirectionT] = Forward
   simNeeded: List[type] = [sim.SimAT.Num_Var__to__Num_Lit,
                            sim.SimAT.Num_Bin__to__Num_Lit,
                            sim.SimAT.Deref__to__Vars,
@@ -384,8 +386,8 @@ class EvenOddA(analysis.AnalysisAT):
 
 
   def getBoundaryInfo(self,
-      inBi: Optional[DataLT] = None,
-      outBi: Optional[DataLT] = None,
+      inBi: Opt[DataLT] = None,
+      outBi: Opt[DataLT] = None,
   ) -> Tuple[OverallL, OverallL]:
     if inBi is None:
       # all locations are unknown at start of the function
@@ -642,7 +644,7 @@ class EvenOddA(analysis.AnalysisAT):
 
   def Num_Bin__to__Num_Lit(self,
       e: expr.BinaryE,
-      nodeDfv: Optional[NodeDfvL] = None,
+      nodeDfv: Opt[NodeDfvL] = None,
   ) -> sim.SimToNumL:
     """Specifically for expression: 'var % 2'."""
     # STEP 1: check if the expression can be evaluated
@@ -669,7 +671,7 @@ class EvenOddA(analysis.AnalysisAT):
 
   def Cond__to__UnCond(self,
       e: expr.VarE,
-      nodeDfv: Optional[NodeDfvL] = None,
+      nodeDfv: Opt[NodeDfvL] = None,
   ) -> sim.SimToBoolL:
     # STEP 1: check if the expression can be evaluated
     exprType = e.type
@@ -712,7 +714,7 @@ class EvenOddA(analysis.AnalysisAT):
       return NodeDfvL(dfvIn, dfvIn)
 
     lhsvarNames = ir.getExprLValueNames(self.func, lhs)
-    assert len(lhsvarNames) >= 1, msg.INVARIANT_VIOLATED
+    assert len(lhsvarNames) >= 1
 
     # Yet another Very Special Case
     if dfvIn.bot and len(lhsvarNames) > 1:
@@ -788,7 +790,7 @@ class EvenOddA(analysis.AnalysisAT):
           return self.componentOdd if value.val == Even else self.componentEven
         elif rhsOpCode == op.UO_LNOT_OC:
           return self.componentOdd if value.val == Even else self.componentEven
-        assert False, msg.CONTROL_HERE_ERROR
+        assert False
 
     elif isinstance(rhs, expr.BinaryE):
       val1 = self.getExprDfv(rhs.arg1, dfvIn)

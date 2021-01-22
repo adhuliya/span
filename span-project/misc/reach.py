@@ -13,7 +13,7 @@ This (and every) analysis subclasses,
 import logging
 
 LOG = logging.getLogger("span")
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional as Opt
 
 import span.ir.types as types
 import span.ir.instr as instr
@@ -89,7 +89,7 @@ class OverallL(DataLT):
 class ReachA(analysis.AnalysisAT):
   """Reachability Analysis."""
   L: type = OverallL
-  D: type = analysis.ForwardD
+  D: Opt[types.DirectionT] = Forward
   simNeeded: List[type] = []
 
 
@@ -103,8 +103,8 @@ class ReachA(analysis.AnalysisAT):
 
 
   def getBoundaryInfo(self,
-      inBi: Optional[DataLT] = None,
-      outBi: Optional[DataLT] = None,
+      inBi: Opt[DataLT] = None,
+      outBi: Opt[DataLT] = None,
   ) -> Tuple[OverallL, OverallL]:
     if inBi is None:
       # in of start is always reachable

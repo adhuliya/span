@@ -415,14 +415,15 @@ class Cfg(object):
     self.connectNodes(self.bbMap, inputBbEdges)
 
     # STEP 3: Find the reverse post order sequence of CFG Nodes
-    self.revPostOrder = self.calcRevPostOrder()
+    #self.revPostOrder = self.calcRevPostOrder()
+    self.revPostOrder = self.calcRevPostOrderNew()
 
-    # STEP 4: Number the nodes in reverse post order and add to dict
-    newId = 0
-    for node in self.revPostOrder:
-      newId += 1
-      node.id = newId
-      self.nodeMap[newId] = node
+    # # STEP 4: Number the nodes in reverse post order and add to dict
+    # newId = 0
+    # for node in self.revPostOrder:
+    #   newId += 1
+    #   node.id = newId
+    #   self.nodeMap[newId] = node
 
 
   def connectNodes(self,
@@ -469,6 +470,26 @@ class Cfg(object):
         if pred.id > newPredHeight:
           pred.id = newPredHeight
           nodes.append(pred)
+
+
+  def calcRevPostOrderNew(self) -> List[CfgNode]:
+    newId = 0
+    nodeList = []
+    for bbId in sorted(self.bbMap.keys()):
+      if bbId == 0: continue # we will access END node last
+      for node in self.bbMap[bbId].cfgNodeSeq:
+        newId += 1
+        nodeList.append(node)
+        self.nodeMap[newId] = node
+        node.id = newId
+
+    for node in self.bbMap[0].cfgNodeSeq:
+      newId += 1
+      nodeList.append(node)
+      self.nodeMap[newId] = node
+      node.id = newId
+
+    return nodeList
 
 
   def calcRevPostOrder(self) -> List[CfgNode]:

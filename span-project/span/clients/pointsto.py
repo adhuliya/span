@@ -208,7 +208,7 @@ class PointsToA(analysis.ValueAnalysisAT):
   __slots__ : List[str] = []
 
   L: type = OverallL
-  D: type = analysis.ForwardD
+  D: Opt[types.DirectionT] = irConv.Forward
 
 
   needsRhsDerefToVarsSim: bool = False
@@ -287,7 +287,8 @@ class PointsToA(analysis.ValueAnalysisAT):
 
     val = dfvIn.getVal(varName)
     if val.top: return SimPending
-    if val.bot: return SimFailed
+    if val.bot:
+      return SimFailed
     return val.val
 
 
@@ -448,11 +449,11 @@ class PointsToA(analysis.ValueAnalysisAT):
       return self.componentBot
 
     elif isinstance(rhs, expr.CastE):
-      return self.componentBot
-      # if isinstance(rhsType, types.Ptr):
-      #   return self.getExprDfv(rhs.arg, dfvIn)
-      # else:
-      #   return self.componentBot
+      #return self.componentBot
+      if isinstance(rhsType, types.Ptr):
+        return self.getExprDfv(rhs.arg, dfvIn)
+      else:
+        return self.componentBot
 
     elif isinstance(rhs, expr.DerefE):
       names = PointsToA.getNamesUsedInExprNonSyntactically(self.func, rhs, dfvIn)
@@ -695,7 +696,7 @@ class PointsToA(analysis.ValueAnalysisAT):
       return ir.getNamesEnv(func, pointeeType)
     else:                 # precise result
       assert varDfv.val, f"{varDfv}"
-      return varDfv.val
+      return varDfv.val - irConv.NULL_OBJ_SET
 
   ################################################
   # BOUND END  : Helper_Functions

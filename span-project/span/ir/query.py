@@ -234,6 +234,62 @@ def countIfCondWithConstComparison(func: constructs.Func) -> int:
           count += 1
   return count
 
+
+def countNumericDerefs(func: constructs.Func) -> int:
+  """Counts the derefs of numeric types."""
+  count = 0
+  if func.hasBody():
+    assert func.cfg is not None, f"{func}"
+    for insn in func.yieldInstrSeq():
+      if isinstance(insn, instr.AssignI):
+        if isinstance(insn.lhs, expr.DerefE)\
+            and insn.lhs.type.isNumeric():
+          count += 1
+        elif isinstance(insn.rhs, expr.DerefE) \
+            and insn.rhs.type.isNumeric():
+          count += 1
+  return count
+
+
+def countNumericDerefsLhs(func: constructs.Func) -> int:
+  """Counts the derefs of numeric types."""
+  count = 0
+  if func.hasBody():
+    assert func.cfg is not None, f"{func}"
+    for insn in func.yieldInstrSeq():
+      if isinstance(insn, instr.AssignI):
+        if isinstance(insn.lhs, expr.DerefE) \
+            and insn.lhs.type.isNumeric():
+          count += 1
+  return count
+
+
+def countNumericDerefsRhs(func: constructs.Func) -> int:
+  """Counts the derefs of numeric types."""
+  count = 0
+  if func.hasBody():
+    assert func.cfg is not None, f"{func}"
+    for insn in func.yieldInstrSeq():
+      if isinstance(insn, instr.AssignI):
+        if isinstance(insn.rhs, expr.DerefE)\
+            and insn.rhs.type.isNumeric():
+          count += 1
+  return count
+
+
+def countNumericDerefsRhsNonChar(func: constructs.Func) -> int:
+  """Counts the derefs of numeric types."""
+  count = 0
+  if func.hasBody():
+    assert func.cfg is not None, f"{func}"
+    for insn in func.yieldInstrSeq():
+      if isinstance(insn, instr.AssignI):
+        if isinstance(insn.rhs, expr.DerefE) \
+            and insn.rhs.type.isNumeric()\
+            and insn.rhs.type.sizeInBytes() != 1:
+          count += 1
+  return count
+
 ################################################
 # BLOCK END  : counting_queries
 ################################################
@@ -333,6 +389,10 @@ def executeAllQueries(tUnit: TranslationUnit):
   p("DerefsUsed(all):", countOnFunctions(tUnit, countDerefsUsed, FUNC_WITH_BODY))
   p("DerefsUsed(Lhs):", countOnFunctions(tUnit, countDerefsUsedLhs, FUNC_WITH_BODY))
   p("DerefsUsed(Rhs):", countOnFunctions(tUnit, countDerefsUsedRhs, FUNC_WITH_BODY))
+  p("DerefsUsed(Num:Lhs):", countOnFunctions(tUnit, countNumericDerefsLhs, FUNC_WITH_BODY))
+  p("DerefsUsed(Num:Rhs):", countOnFunctions(tUnit, countNumericDerefsRhs, FUNC_WITH_BODY))
+  p("DerefsUsed(Num:RhsNonChar):", countOnFunctions(tUnit, countNumericDerefsRhsNonChar, FUNC_WITH_BODY))
+  p("DerefsUsed(Num:All):", countOnFunctions(tUnit, countNumericDerefs, FUNC_WITH_BODY))
   p("TotalModOperations:", countOnFunctions(tUnit, countModOperators, FUNC_WITH_BODY))
   p("TotalModByTwoOperations:", countOnFunctions(tUnit, countModByTwoOperators, FUNC_WITH_BODY))
   p("TotalFuncWithModByTwoOperations:",

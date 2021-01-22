@@ -657,9 +657,11 @@ class OverallL(DataLT):
     string = io.StringIO()
     if self.val:
       string.write("{")
-      prefix = None
-      for key in self.val:
-        if prefix: string.write(prefix)
+      prefix = ""
+      for key in sorted(self.val.keys()):
+        val = self.val[key]
+        if val.top: continue  # don't write Top values
+        string.write(prefix)
         prefix = ", "
         #string.write(f"{simplifyName(key)}: {self.val[key]}")
         string.write(f"{key}: {self.val[key]}")
@@ -696,7 +698,7 @@ def updateFuncObjInDfvs(
     func: constructs.Func,
     nodeDfv: NodeDfvL,
 ) -> NodeDfvL:
-  """It removes the variables that are not in the env of func."""
+  """It updates function in the values."""
   dfvIn = cast(OverallL, nodeDfv.dfvIn.getCopy())
   dfvOut = cast(OverallL, nodeDfv.dfvOut.getCopy())
   dfvIn.func = dfvOut.func = func

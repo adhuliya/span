@@ -301,7 +301,7 @@ def parseCascadingAnalysisExpr(anNameExpr: str) -> Tuple[str, list, list, int]:
   mainAnalysis      = ""
   otherAnalyses     = []
   avoidAnalyses     = []
-  maxAnalysisCount  = 1024 # a large number
+  maxAnalysisCount  = host.MAX_ANALYSES # a large number
 
   if anNameExpr[0] == "/" and anNameExpr[-1] == "/":
     maxAnalysisCount = 0
@@ -398,7 +398,7 @@ def analyzeFunctions(
     otherAnalyses: Opt[List[an.AnalysisNameT]] = None,
     supportAnalyses: Opt[List[an.AnalysisNameT]] = None,
     avoidAnalyses: Opt[List[an.AnalysisNameT]] = None,
-    maxNumOfAnalyses: int = 1024,
+    maxNumOfAnalyses: int = host.MAX_ANALYSES,
     analysisSeq: Opt[List[List[an.AnalysisNameT]]] = None,  # for cascading/lerner
     disableAllSim: bool = False,
     useDdm: bool = False,

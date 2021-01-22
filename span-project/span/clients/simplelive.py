@@ -7,6 +7,8 @@
 
 import logging
 
+from ..ir.conv import Backward
+
 LOG = logging.getLogger("span")
 from typing import Optional as Opt, Set, Tuple, List, Callable, cast
 
@@ -40,7 +42,8 @@ class LiveVarsA(AnalysisAT):
   """Simple Live Variables Analysis."""
   # liveness lattice
   L: type = OverallL
-  D: type = BackwardD
+  # direction of the analysis
+  D: Opt[types.DirectionT] = Backward
 
 
   needsRhsDerefToVarsSim: bool = True

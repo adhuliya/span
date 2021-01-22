@@ -62,3 +62,25 @@ class HostStat:
     l1.append(f"HostResultSize: {cutil.getSize2(self.host.anWorkDict)}")
     return "\n".join(l1)
 
+
+class GlobalStats:
+  """
+  Collects various global statistics in span.sys package in one place.
+  """
+
+  def __init__(self):
+    # sim name to count map
+    self.simCountMap: Dict[str, int] = dict()
+    for simName in analysis.simNames:
+      self.simCountMap[simName] = 0
+
+  def print(self):
+    print("GLOBAL_STATS")
+    print("=" * 64)
+    for simName in sorted(analysis.simNames):
+      print(f"{simName}: {self.simCountMap[simName]}")
+
+"""import this object into other modules in the span.sys module"""
+GST = GlobalStats()
+
+

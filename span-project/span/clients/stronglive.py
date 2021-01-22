@@ -13,7 +13,7 @@ from typing import Optional as Opt, Set, Tuple, List, Callable, cast
 from span.util.util import LS
 
 import span.ir.types as types
-from span.ir.conv import getSuffixes, simplifyName
+from span.ir.conv import getSuffixes, simplifyName, Backward
 import span.ir.expr as expr
 import span.ir.instr as instr
 import span.ir.constructs as obj
@@ -169,11 +169,8 @@ class StrongLiveVarsA(AnalysisAT):
   """Strongly Live Variables Analysis."""
   # liveness lattice
   L: type = OverallL
-  D: type = BackwardD
-  simNeeded: List[Callable] = [AnalysisAT.Deref__to__Vars,
-                               AnalysisAT.Cond__to__UnCond,
-                               AnalysisAT.Node__to__Nil,
-                              ]
+  # direction of the analysis
+  D: Opt[types.DirectionT] = Backward
 
 
   needsRhsDerefToVarsSim: bool = True

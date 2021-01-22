@@ -11,6 +11,9 @@ Note: All IR related processing for IPA is done in span.ir.ipa module.
 """
 
 import logging
+
+from span.sys.stats import GST, GlobalStats
+
 LOG = logging.getLogger("span")
 
 from typing import Dict, Tuple, Set, List, cast
@@ -42,7 +45,7 @@ import span.util.util as util
 LS = True
 import span.util.common_util as cutil
 
-RECURSION_LIMIT = 100
+RECURSION_LIMIT = 200
 count: int = 0
 
 def takeTracemallocSnapshot():
@@ -87,7 +90,7 @@ class ValueContext:
       equal = False
     else:
       for anName in self.dfvs.keys():
-        direction = clients.getDirection(anName)
+        direction = clients.getAnDirection(anName)
         nDfvSelf = self.dfvs[anName]
         nDfvOther = other.dfvs[anName]
         if direction == Forward:
@@ -106,7 +109,7 @@ class ValueContext:
   def __hash__(self) -> int:
     theHash = hash(self.funcName)
     for anName in self.dfvs.keys():
-      direction = clients.getDirection(anName)
+      direction = clients.getAnDirection(anName)
       nDfvSelf = self.dfvs[anName]
       if direction == Forward:
         theHash = hash((theHash, nDfvSelf.dfvIn))
@@ -159,6 +162,7 @@ class IpaHost:
                            Dict[AnalysisNameT,
                                 Dict[cfg.CfgNodeId, NodeDfvL]]] = {}
     self.uniqueId = 0
+    self.gst = GlobalStats()
 
 
   def analyze(self) -> None:
@@ -172,8 +176,8 @@ class IpaHost:
     # hostGlobal.printResult() #delit
 
     globalBi = hostGlobal.getBoundaryResult()
-    globalBi = self.swapGlobalBi(globalBi)
-    print("GlobalBi:", globalBi)  # delit
+    globalBi = self.swapGlobalBiInOut(globalBi)
+    print("GlobalBi:", globalBi)  #delit
 
     # STEP 2: start analyzing from the entry function
     entryCallSite = conv.genFuncNodeId(conv.GLOBAL_INITS_FUNC_ID, 0)
@@ -209,9 +213,6 @@ class IpaHost:
                                       f" UniqueId: {uniqueId}")
                                       # f" FuncBi: {funcBi}")
 
-    if funcName in ("f:f1"): #delit
-      print("IpaFuncBi:", ipaFuncBi) #delit
-
     if recursionDepth >= RECURSION_LIMIT:
       return self.analyzeFuncFinal(callSite, funcName, ipaFuncBi)
 
@@ -246,16 +247,18 @@ class IpaHost:
           self.checkInvariantsDfvs(callerName, newDfvs) #delit
           reAnalyze = host.setCallSiteDfv(node.id, newDfvs)
 
-          if calleeName in ("f:debug_time", "f:f1", "f:bsPutUChar"):
-            ptaOld = dfvs["IntervalA"].dfvOut
-            ptaNew = newDfvs["IntervalA"].dfvOut
+          if calleeName in ("f:_read_min"):
+            ptaOld = dfvs["PointsToA"].dfvOut
+            ptaNew = newDfvs["PointsToA"].dfvOut
             # ptaNew = nonLocalDfvs["PointsToA"].dfvIn
             if ptaOld.val and ptaNew.val:
-              print(f"PTA/INTERVAL diff:")
+              print(f"PTA/INTERVAL diff ({reAnalyze}):")
               ptaOldSet = set((k,v) for k,v in ptaOld.val.items())
               ptaNewSet = set((k,v) for k,v in ptaNew.val.items())
-              print(f"Diff (Old-New):", len(ptaOldSet), len(ptaNewSet), ptaOldSet - ptaNewSet)
-              print(f"Diff (New-Old):", len(ptaOldSet), len(ptaNewSet), ptaNewSet - ptaOldSet)
+              print(f"Diff (Old-New): ({len(ptaOldSet)}, {len(ptaNewSet)})",
+                    sorted(ptaOldSet - ptaNewSet))
+              print(f"Diff (New-Old): ({len(ptaOldSet)}, {len(ptaNewSet)})",
+                    sorted(ptaNewSet - ptaOldSet))
             else:
               print(f"PTA diff: on of the val is None/Empty"
                     f" {ptaOld.top}, {ptaNew.top} || {ptaOld.bot}, {ptaNew.bot}")
@@ -265,7 +268,7 @@ class IpaHost:
             break  # first re-analyze then goto other call sites
 
       if LS: LOG.debug("ReAnalyzingFunction: %s", funcName) if reAnalyze else None
-    if funcName in ("f:fallbackSort", "f:f1"):  #delit
+    if funcName in ("f:main", "f:read_min"):  #delit
       host.printOrLogResult()  #delit
     return host.getBoundaryResult()
 
@@ -310,7 +313,7 @@ class IpaHost:
     localizedDfvs = dict()
     for anName, localDfv in localDfvs.items():
       newCalleeDfv = newCalleeBi[anName]
-      localizedDfv = newCalleeDfv.addLocalDfv(localDfv, clients.getDirection(anName))
+      localizedDfv = newCalleeDfv.addLocalDfv(localDfv, clients.getAnDirection(anName))
       localizedDfvs[anName] = localizedDfv
     return localizedDfvs
 
@@ -358,11 +361,9 @@ class IpaHost:
       self.vContextMap[vContext] = tup
       hostInstance = tup[1]
       hostInstance.setBoundaryResult(vContext.getCopy().dfvs)
-      print("OLD/NEW_VALUE_CONTEXT", vContext) #delit
     else:
       # vContext not present, hence create one and attach a Host instance
       if LS: LOG.debug("IPA:NewValueContext: %s", vContext)
-      print("NEW_VALUE_CONTEXT", vContext) #delit
       hostInstance = self.createHostInstance(vContext.funcName,
                                              biDfv=vContext.getCopy().dfvs)
       self.vContextMap[vContext] = ({callSite}, hostInstance)  # save the instance
@@ -404,7 +405,7 @@ class IpaHost:
     return newBi
 
 
-  def swapGlobalBi(self, globalBi: Dict[AnalysisNameT, NodeDfvL]):
+  def swapGlobalBiInOut(self, globalBi: Dict[AnalysisNameT, NodeDfvL]):
     """Swaps IN and OUT, because the OUT of the end node in
     the global function is the IN of the main() function."""
     for anName in globalBi.keys():
@@ -438,6 +439,7 @@ class IpaHost:
   def finalizeIpaResults(self):
     print("ValueContextMapSize:", len(self.vContextMap))
 
+    self.collectStats()
     self.mergeFinalResults()
     # print(f"UnMergedSize: {len(self.vContextMap)}, MemorySize: {cutil.getSize(self.vContextMap)}")
     self.vContextMap.clear() # clear the memory
@@ -468,6 +470,13 @@ class IpaHost:
           print(f">> {nid}. ({node.insn}): {nDfv}")
 
 
+  def collectStats(self):
+    """Collects various statistics."""
+    for vc, (fn, host) in self.vContextMap.items():
+      host.collectStats(self.gst)
+    self.gst.print()
+
+
   def mergeFinalResults(self):
     """Computes the final result of an IPA computation.
     It merges all the results of all the contexts of a function
@@ -484,17 +493,12 @@ class IpaHost:
           allAnalysisNames = host.getParticipatingAnalyses()
           for anName in allAnalysisNames:
             currRes = host.getAnalysisResults(anName)
-            if funcName == "f:main":  #delit
-              self.delitTestResult(anName, currRes, 9, "v:main:3if")  #delit
             if anName not in funcResult:
               funcResult[anName] = currRes
             else:
               prevRes = funcResult[anName]
               newRes  = self.mergeAnalysisResult(prevRes, currRes)
               funcResult[anName] = newRes
-              if funcName == "f:fallbackSort":  #delit
-                self.delitTestResult(anName, prevRes, 311, "v:fallbackSort:191t")  #delit
-                self.delitTestResult(anName, newRes, 311, "v:fallbackSort:191t")  #delit
       self.finalResult[funcName] = funcResult
 
 
@@ -549,9 +553,9 @@ def diagnoseInterval(tUnit: TranslationUnit):
                         )
   ipaHostSpan.analyze()
 
-  # ipaHostLern = IpaHost(tUnit, analysisSeq=[[mainAnalysis] + otherAnalyses])
+  ipaHostLern = IpaHost(tUnit, analysisSeq=[[mainAnalysis] + otherAnalyses])
   #ipaHostLern = IpaHost(tUnit, analysisSeq=[[mainAnalysis]])
-  ipaHostLern = IpaHost(tUnit, mainAnName=mainAnalysis, maxNumOfAnalyses=1) # span with single analysis
+  #ipaHostLern = IpaHost(tUnit, mainAnName=mainAnalysis, maxNumOfAnalyses=1) # span with single analysis
   ipaHostLern.analyze()
 
   totalPPoints = 0  # total program points
@@ -576,6 +580,15 @@ def diagnoseInterval(tUnit: TranslationUnit):
           and nDfvLern.dfvIn < nDfvSpan.dfvIn:
         weakPPoints += 1
 
+      if nDfvSpan.dfvOut != nDfvLern.dfvOut:
+        valS = nDfvSpan.dfvOut.val
+        valL = nDfvLern.dfvOut.val
+        if valS and valL:
+          setS, setL = set(valS.items()), set(valL.items())
+          print(f"NOT_SAME ({nid})({funcName}):"
+                f"\n  S-L:{sorted(setS-setL)}\n  L-S:{sorted(setL-setS)}")
+        else:
+          print(f"NOT_SAME ({nid})({funcName}): {valS} {valL}")
       if nDfvSpan.dfvOut != nDfvLern.dfvOut \
           and nDfvLern.dfvOut < nDfvSpan.dfvOut:
         weakPPoints += 1

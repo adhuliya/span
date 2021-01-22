@@ -1,0 +1,191 @@
+
+Date: 2020-01-06
+==================
+
+bzip2_comb.c.spanir
+    SPAN: IntervalA + PointsToA
+    LERN: IntervalA + PointsToA
+    Same for both.
+    GLOBAL_STATS
+    ================================================================
+    Cond__to__UnCond: 106
+    Deref__to__Vars: 390
+    LhsVar__to__Nil: 0
+    Node__to__Nil: 0
+    Num_Bin__to__Num_Lit: 929
+    Num_Var__to__Num_Lit: 112
+
+
+bzip2_comb.c.spanir
+    SPAN: IntervalA + PointsToA
+    GLOBAL_STATS
+    ================================================================
+    Cond__to__UnCond: 106
+    Deref__to__Vars: 390
+    LhsVar__to__Nil: 0
+    Node__to__Nil: 0
+    Num_Bin__to__Num_Lit: 929
+    Num_Var__to__Num_Lit: 112
+    
+    LERN: IntervalA
+    GLOBAL_STATS
+    ================================================================
+    Cond__to__UnCond: 101
+    Deref__to__Vars: 0
+    LhsVar__to__Nil: 0
+    Node__to__Nil: 0
+    Num_Bin__to__Num_Lit: 922
+    Num_Var__to__Num_Lit: 107
+
+    TotalPPoints: 20536 WeakPPoints: 1699
+    TotalPreciseComparisons: 13 (11) / 760
+
+
+
+################################################################
+
+bzip2_comb.c.spanir
+    SPAN: IntervalA + PointsToA
+    GLOBAL_STATS
+    ================================================================
+    Cond__to__UnCond: 130
+    Deref__to__Vars: 426
+    LhsVar__to__Nil: 0
+    Node__to__Nil: 0
+    Num_Bin__to__Num_Lit: 1087
+    Num_Var__to__Num_Lit: 128
+
+    LERN: IntervalA
+    GLOBAL_STATS
+    ================================================================
+    Cond__to__UnCond: 108
+    Deref__to__Vars: 0
+    LhsVar__to__Nil: 0
+    Node__to__Nil: 0
+    Num_Bin__to__Num_Lit: 922
+    Num_Var__to__Num_Lit: 107
+
+    TotalPPoints: 20536 WeakPPoints: 1699
+    TotalPreciseComparisons: 17 (15) / 760
+
+
+mcf_comb.c.spanir
+    SPAN: IntervalA + PointsToA
+    GLOBAL_STATS
+    ================================================================
+    Cond__to__UnCond: 20
+    Deref__to__Vars: 315
+    LhsVar__to__Nil: 0
+    Node__to__Nil: 0
+    Num_Bin__to__Num_Lit: 301
+    Num_Var__to__Num_Lit: 17
+    
+    LERN: IntervalA
+    GLOBAL_STATS
+    ================================================================
+    Cond__to__UnCond: 9
+    Deref__to__Vars: 0
+    LhsVar__to__Nil: 0
+    Node__to__Nil: 0
+    Num_Bin__to__Num_Lit: 157
+    Num_Var__to__Num_Lit: 6
+
+    TotalPPoints: 3980 WeakPPoints: 3575
+    TotalPreciseComparisons: 0 (0) / 129
+
+
+bzip2_comb.c.spanir (same for both)
+    SPAN: IntervalA + PointsToA
+    LERN: IntervalA + PointsToA
+    GLOBAL_STATS
+    ================================================================
+    Cond__to__UnCond: 130
+    Deref__to__Vars: 426
+    LhsVar__to__Nil: 0
+    Node__to__Nil: 0
+    Num_Bin__to__Num_Lit: 1087
+    Num_Var__to__Num_Lit: 128
+
+
+milc_comb.c.spanir
+    SPAN: IntervalA + PointsToA
+    LERN: IntervalA + PointsToA
+    GLOBAL_STATS
+    ================================================================
+    Cond__to__UnCond: 524
+    Deref__to__Vars: 6077
+    LhsVar__to__Nil: 0
+    Node__to__Nil: 0
+    Num_Bin__to__Num_Lit: 2797
+    Num_Var__to__Num_Lit: 235
+
+    TotalPPoints: 34680 WeakPPoints: 388
+    TotalPreciseComparisons: 40 (40) / 925
+
+    SPAN: IntervalA + PointsToA
+    GLOBAL_STATS
+    ================================================================
+    Cond__to__UnCond: 524
+    Deref__to__Vars: 6117
+    LhsVar__to__Nil: 0
+    Node__to__Nil: 0
+    Num_Bin__to__Num_Lit: 2801
+    Num_Var__to__Num_Lit: 235
+
+    LERN: IntervalA
+    GLOBAL_STATS
+    ================================================================
+    Cond__to__UnCond: 406
+    Deref__to__Vars: 0
+    LhsVar__to__Nil: 0
+    Node__to__Nil: 0
+    Num_Bin__to__Num_Lit: 2149
+    Num_Var__to__Num_Lit: 164
+
+    TotalPPoints: 34680 WeakPPoints: 3433
+    TotalPreciseComparisons: 40 (40) / 925
+
+
+mcf_comb.c.spanir
+    SPAN: IntervalA + PointsToA
+    GLOBAL_STATS
+    ================================================================
+    Cond__to__UnCond: 33
+    Deref__to__Vars: 295
+    LhsVar__to__Nil: 0
+    Node__to__Nil: 0
+    Num_Bin__to__Num_Lit: 304
+    Num_Var__to__Num_Lit: 37
+
+    LERN: IntervalA
+    GLOBAL_STATS
+    ================================================================
+    Cond__to__UnCond: 15
+    Deref__to__Vars: 0
+    LhsVar__to__Nil: 0
+    Node__to__Nil: 0
+    Num_Bin__to__Num_Lit: 196
+    Num_Var__to__Num_Lit: 15
+
+
+mcf_comb.c.spanir
+    SPAN: IntervalA + PointsToA
+    GLOBAL_STATS
+    ================================================================
+    Cond__to__UnCond: 33
+    Deref__to__Vars: 295
+    LhsVar__to__Nil: 0
+    Node__to__Nil: 0
+    Num_Bin__to__Num_Lit: 304
+    Num_Var__to__Num_Lit: 37
+    
+    LERN: IntervalA + PointsToA
+    GLOBAL_STATS
+    ================================================================
+    Cond__to__UnCond: 33
+    Deref__to__Vars: 231
+    LhsVar__to__Nil: 0
+    Node__to__Nil: 0
+    Num_Bin__to__Num_Lit: 304
+    Num_Var__to__Num_Lit: 37
+

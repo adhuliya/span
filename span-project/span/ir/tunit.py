@@ -129,7 +129,7 @@ class TranslationUnit:
       Dict[types.FuncSig, List[constructs.Func]] = {}
 
     # maps tmps assigned only once to the assigned expression
-    self._funcTmpExprMap: \
+    self._tmpVarExprMap: \
       Dict[types.VarNameT, expr.ExprET] = {}
 
     # stores the increasing counter for pseudo variables in the function
@@ -744,7 +744,7 @@ class TranslationUnit:
         itype1 = self.inferTypeOfExpr(e.arg1)
         itype2 = self.inferTypeOfExpr(e.arg2)
         # FIXME: conversion rules
-        if itype1.bitSize() >= itype2.bitSize():
+        if itype1.sizeInBits() >= itype2.sizeInBits():
           if types.FLOAT16_TC <= itype2.typeCode <= types.FLOAT128_TC:
             eType = itype2
           else:
@@ -1316,7 +1316,7 @@ class TranslationUnit:
     sizeVal = self.getMemAllocSizeExprValue(sizeExpr)
     pvType = irConv.DEFAULT_PSEUDO_VAR_TYPE(of=varType)
     if sizeVal is not None:
-      if sizeVal == varType.bitSizeInBytes():
+      if sizeVal == varType.sizeInBytes():
         pvType = types.Ptr(varType)
     self.addVarNames(pvName, pvType, True)
 
@@ -1373,8 +1373,8 @@ class TranslationUnit:
     It only tracks some tmp vars, e.g. ones like 3t, 1if, 2if ...
     The idea is to map the tmp vars that are assigned only once.
     """
-    if vName in self._funcTmpExprMap:
-      return self._funcTmpExprMap[vName]
+    if vName in self._tmpVarExprMap:
+      return self._tmpVarExprMap[vName]
     return None  # None if tmp var is not tracked
 
 
@@ -1383,7 +1383,7 @@ class TranslationUnit:
     they hold the value of.
     It caches the result in a global map."""
 
-    tmpExprMap = self._funcTmpExprMap
+    tmpExprMap = self._tmpVarExprMap
 
     for func in self.yieldFunctionsWithBody():
       for insn in func.yieldInstrSeq():
@@ -1827,54 +1827,63 @@ class TranslationUnit:
   def getNamesPossiblyModifiedInCallExpr(self,
       func: constructs.Func,  # the caller
       e: expr.CallE,
-      pointeeMap: Opt[Dict[types.VarNameT, Any]] = None,
   ) -> Set[types.VarNameT]:
     """E.g. in call: func(a, b, p)
     An over-approximation.
-    All variables whose address has been taken can be modified.
+    """
+    names = set()
+    for arg in e.args:
+      if isinstance(arg, expr.VarE):
+        names |= self.getExprLValuesForCallArgument(func, arg.getFullName(), True)
+    if func.hasBody(): # Assumption: only func with body modify globals
+      names.update(self.getNamesGlobal())
+    return names
 
+
+  def getExprLValuesForCallArgument(self,
+      func: constructs.Func,  # the caller
+      argName: types.VarNameT,
+      passByValue: bool = True,
+  ) -> Set[types.VarNameT]:
+    """Conservatively returns the set of names that can be
+    possibly modified by passing the argument named argName
+    a function call. This function is recursive.
+
+    All variables whose address has been taken can be modified.
     # If p is pointer to integers, then all the integer variables
     # visible in the caller can be modified.
     # If p is ptr-to ptr-to int, then all the ptr-to int and int variables
     # visible in the caller can be modified.
     """
-    # names = set()
-    # for arg in e.args:
-    #   names |= self.getExprLValuesForCallArgument(func, arg)
-    # names.update(self.getNamesGlobal())
-    # return names
-    # TODO: add convenient exceptions for known library functions.
-    return self.getNamesGlobal()
-
-
-  def getExprLValuesForCallArgument(self,
-      func: constructs.Func,  # the caller
-      arg: expr.ExprET, # only LitE, VarE or AddrOfE (&a form only)
-  ) -> Set[types.VarNameT]:
-    """Conservatively returns the set of names that can be
-    possibly modified by passing the argument named varName or &varName to
-    a function call.
-    """
     names = set()
+    argType = self.inferTypeOfVal(argName)
 
-    def addNamesThatCanBeModified(argType, names):
-      if isinstance(argType, (types.RecordT, types.ArrayT)):
-        varNames = self.getNamesGlobal(argType)
-        for varName in varNames:
-          varNameInfos = argType.getNamesOfType(None, prefix=varName)
-          for vnInfo in varNameInfos:
-            names.add(vnInfo.name)
+    # CASE 1: if arg is a record or an array
+    if argType.isRecord():
+      varNameInfos = argType.getNamesOfType(None, prefix=argName)
+      for vnInfo in varNameInfos:
+        if passByValue and not vnInfo.type.isPointer(): continue
+        if not passByValue: names.add(vnInfo.name) #i.e. the name can also be modified
+        names.update(self.getExprLValuesForCallArgument(func, vnInfo.name, True))
 
-    argType = arg.type
-    if isinstance(arg, expr.AddrOfE):
-      names.add(arg.arg.getFullName())
-      argType = arg.arg.type
+    # CASE 2: if arg is a pointer
+    nameSet = None
+    if argType.isPointer(): # transitively add pointees
+      added, argType = False, argType.getPointeeType()
+      e = self.getTmpVarExpr(argName)
+      if e:
+        if isinstance(e, expr.AddrOfE) and isinstance(e.arg, expr.VarE):
+          added, nameSet = True, {e.arg.getFullName()}
+          names.update(nameSet)
+      if not added:
+        nameSet = self.getNamesEnv(func, argType) # over-approximate
+        names.update(nameSet)
 
-    while isinstance(argType, types.Ptr):
-        argType = argType.getPointeeType()
-        names.update(self.getNamesEnv(func, argType))
+    # CASE 3: After case 2, check if the pointer leads to a record
+    if nameSet and argType.isRecord():
+      for vName in nameSet:
+        names.update(self.getExprLValuesForCallArgument(func, vName, False))
 
-    addNamesThatCanBeModified(argType, names)
     return names
 
 
@@ -2129,9 +2138,27 @@ class TranslationUnit:
     for node in callSiteNodes:
       callE = instr.getCallExpr(node.insn)
       assert callE is not None, f"{node}"
-      func = self.getFuncObj(callE.callee.name)
+      func = self.getFuncObj(callE.getCalleeFuncName())
       if func.hasBody():
         # only add nodes with calls to functions which have body!
         newNodeList.append(node)
 
     return newNodeList
+
+
+  def underApproxFunc(self,
+      func: constructs.Func,
+  ) -> bool:
+    """Returns True if the function can be completely under-approximated.
+    This is used to increase the precision.
+    """
+    funcName = func.name
+    approx = True
+
+    if not func.hasBody():
+      if "scanf" in funcName:
+        approx = False
+
+    return approx
+
+

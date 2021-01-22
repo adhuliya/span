@@ -12,6 +12,8 @@ This (and every) analysis subclasses,
 
 import logging
 
+from span.ir.conv import Forward
+
 LOG = logging.getLogger("span")
 from typing import Tuple, Dict, Set, List, Optional as Opt, Callable, cast
 
@@ -131,7 +133,8 @@ class EvenOddA(analysis.ValueAnalysisAT):
   """Even-Odd (Parity) Analysis."""
   __slots__ : List[str] = ["componentEven", "componentOdd"]
   L: type = OverallL
-  D: type = analysis.ForwardD
+  # direction of the analysis
+  D: Opt[types.DirectionT] = Forward
 
 
   def __init__(self,

@@ -249,7 +249,7 @@ class AssignI(InstrIT):
 
 
   def __str__(self):
-    return f"{self.lhs} = {self.rhs}"
+    return f"{self.lhs} = {self.rhs}; {self.type}"
 
 
   def __repr__(self):
@@ -323,7 +323,7 @@ class GotoI(InstrIT):
 
 
   def __str__(self):
-    return f"goto {self.label}"
+    return f"goto {self.label}; {self.type}"
 
 
   def __repr__(self):
@@ -389,7 +389,7 @@ class LabelI(InstrIT):
 
 
   def __str__(self):
-    return f"label {self.label}"
+    return f"label {self.label}; {self.type}"
 
 
   def __repr__(self):
@@ -475,7 +475,7 @@ class CondI(InstrIT):
 
 
   def __str__(self):
-    return f"if ({self.arg}) {self.trueLabel} {self.falseLabel}"
+    return f"if ({self.arg}) {self.trueLabel} {self.falseLabel}; {self.type}"
 
 
   def __repr__(self):
@@ -560,7 +560,7 @@ class ReturnI(InstrIT):
 
 
   def __str__(self):
-    return f"return {self.arg}"
+    return f"return {self.arg}; {self.type}"
 
 
   def __repr__(self):
@@ -639,7 +639,7 @@ class CallI(InstrIT):
 
 
   def __str__(self):
-    return f"{self.arg}"
+    return f"{self.arg}; {self.type}"
 
 
   def __repr__(self):
@@ -749,7 +749,7 @@ class III(InstrIT):
   def __str__(self):
     insnList = [str(insn) for insn in self.insns]
     insns = "//".join(insnList)
-    return f"III({insns})"
+    return f"III({insns}); {self.type}"
 
 
   def __repr__(self):
@@ -793,7 +793,7 @@ class UseI(InstrIT):
 
 
   def __str__(self):
-    return f"use({self.vars})"
+    return f"use({self.vars}); {self.type}"
 
 
   def __repr__(self):
@@ -839,7 +839,7 @@ class ExReadI(InstrIT):
 
 
   def __str__(self):
-    return f"exRead({self.vars})"
+    return f"exRead({self.vars}); {self.type}"
 
 
   def __repr__(self):
@@ -890,7 +890,7 @@ class CondReadI(InstrIT):
 
 
   def __str__(self):
-    return f"condRead({self.lhs}, {self.rhs})"
+    return f"condRead({self.lhs}, {self.rhs}); {self.type}"
 
 
   def __repr__(self):
@@ -933,7 +933,7 @@ class FilterI(InstrIT):
 
 
   def __str__(self):
-    return f"filter({self.varNames})"
+    return f"filter({self.varNames}); {self.type}"
 
 
   def __repr__(self):
@@ -975,7 +975,7 @@ class UnDefValI(InstrIT):
 
 
   def __str__(self):
-    return f"input({self.lhsName})"
+    return f"input({self.lhsName}); {self.type}"
 
 
   def __repr__(self):
@@ -1010,7 +1010,7 @@ class BarrierI(InstrIT):
 
 
   def __str__(self):
-    return f"barrier()"
+    return f"barrier(); {self.type}"
 
 
   def __repr__(self):
@@ -1050,7 +1050,7 @@ class NopI(InstrIT):
 
 
   def __str__(self):
-    return "nop()"
+    return "nop(); {self.type}"
 
 
   def __repr__(self):

@@ -34,7 +34,7 @@ import span.api.analysis as analysis
 from span.api.analysis import AnalysisAT, ValueAnalysisAT, ForwardD
 from span.ir.conv import (simplifyName, isCorrectNameFormat, genFuncNodeId, getNodeId,
                           GLOBAL_INITS_FUNC_ID, isGlobalName, getFuncNodeIdStr,
-                          getFuncId)
+                          getFuncId, Forward, )
 
 GLOBAL_INITS_FNID = genFuncNodeId(GLOBAL_INITS_FUNC_ID, 1)  # initialized global
 
@@ -201,7 +201,8 @@ class ReachingDefA(AnalysisAT):
   """Constant Propagation Analysis."""
   __slots__ : List[str] = ["defaultDfv"]
   L: type = OverallL  # the lattice used
-  D: type = ForwardD  # its a forward flow analysis
+  # direction of the analysis
+  D: Opt[types.DirectionT] = Forward
 
 
   needsDerefToVarsSim: bool = True

@@ -53,7 +53,9 @@ from span.ir.conv import \
    MEMBER_EXPR_REGEX,
    PSEUDO_VAR_REGEX,
    PSEUDO_VAR_REGEX2,
-   NULL_OBJ_NAME, )
+   NULL_OBJ_NAME,
+   GLOBAL_INITS_FUNC_NAME,
+   )
 
 from span.ir.tunit import \
   TranslationUnit
@@ -359,6 +361,9 @@ def genTranslationUnit(cFileName: str) -> TranslationUnit:
   return tUnit
 
 
+def isDummyGlobalFunc(func: constructs.Func):
+  """Returns true if the function given is the dummy global function."""
+  return func.name == GLOBAL_INITS_FUNC_NAME
 
 
 

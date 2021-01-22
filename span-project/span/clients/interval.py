@@ -16,6 +16,7 @@ import span.ir.expr as expr
 import span.ir.instr as instr
 import span.ir.constructs as constructs
 import span.ir.ir as ir
+from span.ir.conv import Forward
 
 from span.api.lattice import \
   (ChangedT,
@@ -79,7 +80,6 @@ class ComponentL(dfv.ComponentL):
     elif self.bot:        # no widening needed
       return self, not Changed
     elif self != newDfv:  # WIDEN-WIDEN # return self it its weaker
-      #print(f"WIDEN(v:fallbackSort:191t)(selfnewDfv): {self} {newDfv}") #delit
       if self < newDfv:
         return self, not Changed
       elif self.isBooleanRange() and newDfv.isBooleanRange():
@@ -95,12 +95,8 @@ class ComponentL(dfv.ComponentL):
   ) -> bool:
     """A non-strict weaker-than test. See doc of super class."""
     lt = basicLessThanTest(self, other)
-    try: #delit
-      return lt if lt is not None else \
-        (self.val[0] <= other.val[0] and self.val[1] >= other.val[1])
-    except Exception as e: #delit
-      print(f"SelfOther: {self.val}, {other.val}") #delit
-      raise e
+    return lt if lt is not None else \
+      (self.val[0] <= other.val[0] and self.val[1] >= other.val[1])
 
 
   def __eq__(self, other) -> bool:
@@ -261,7 +257,7 @@ class ComponentL(dfv.ComponentL):
     if intType and self.val:
       low, high = self.val
       if high - low < 10: # FIXME: defined a named constant
-        return set(i for i in range(low, high+1))
+        return set(i for i in range(int(low), int(high)+1))  # FIXME: remove int()
     return None
 
 
@@ -442,12 +438,9 @@ class OverallL(dfv.OverallL):
       dfv2: ComponentL = otherValGet(vName, defaultVal)
       dfv3, _changed = dfv1.widen(dfv2)  # attempt widening here
       changed = changed or _changed
-      if dfv3.bot: # vName in ("v:sendMTFValues:t"):  #delit
-        print(f"WIDENED: {vName}: {dfv1}, {dfv2}: {dfv3} {changed}")  #delit
       if not dfv3 == defaultVal:
         widened_val[vName] = dfv3
 
-    print(f"WIDENED?(Interval): {changed}")  #delit
     if not changed:
       return self, not Changed
     elif widened_val:
@@ -473,8 +466,8 @@ class IntervalA(analysis.ValueAnalysisAT):
   __slots__ : List[str] = []
   # concrete lattice class of the analysis
   L: Opt[Type[dfv.DataLT]] = OverallL
-  # concrete direction class of the analysis
-  D: Opt[Type[analysis.DirectionDT]] = analysis.ForwardD
+  # direction of the analysis
+  D: Opt[types.DirectionT] = Forward
 
 
   def __init__(self,
@@ -713,7 +706,6 @@ class IntervalA(analysis.ValueAnalysisAT):
     assert isinstance(e.arg, expr.VarE), f"{e}"
     if self.isAcceptedType(e.arg.type):
       value = dfvInGetVal(e.arg.name)
-      if value is None: print(f"{e}, {e.arg.name}, {e.info}, {e.arg.type}")  #delit
       if value.top or value.bot:
         return value
       else:

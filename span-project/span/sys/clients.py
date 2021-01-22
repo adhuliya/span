@@ -168,20 +168,25 @@ def getSimNamesNeeded(anClass: Type[analysis.AnalysisAT]) -> Set[str]:
   return simNames
 
 @functools.lru_cache(50)
-def getDirection(anName: analysis.AnalysisNameT
+def getAnDirection(anName: analysis.AnalysisNameT
 ) -> Opt[types.DirectionT]:
-  direction = None
   if anName in analyses:
     anClass = cast(Type[analysis.AnalysisAT], analyses[anName])
-    D = anClass.D  # it must be type correct
-    assert D, f"{anClass.__name__}"
-    if D.__name__.startswith("Forw"):
-      direction = irConv.Forward
-    elif D.__name__.startswith("Back"):
-      direction = irConv.Backward
-    elif D.__name__.startswith("ForwBack"):
-      direction = irConv.ForwBack
-  return direction
+    return anClass.D  # it must be type correct
+  raise ValueError(f"UnknownAnalysis: {anName}")
+
+
+@functools.lru_cache(50)
+def getAnDirnClass(anName: analysis.AnalysisNameT
+) -> Type[analysis.DirectionDT]:
+  dirn = getAnDirection(anName)
+  if dirn == irConv.Forward:
+    return analysis.ForwardD
+  elif dirn == irConv.Backward:
+    return analysis.BackwardD
+  elif dirn == irConv.ForwBack:
+    return analysis.ForwBackDT
+  raise ValueError(f"UnknownDirection: {anName}, {dirn}")
 
 
 # mainentry for this module

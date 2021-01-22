@@ -68,7 +68,7 @@ GLOBAL_INITS_FUNC_ID = 0
 """Function id of the artificial global inits function."""
 
 GLOBAL_INITS_FUNC_NAME = "f:1_global_inits"
-"""All global declarations go into this artificial function."""
+"""All global definitions go into this artificial function."""
 
 NAME_SEP = ":"
 """The top level separator used in object names."""
@@ -108,9 +108,10 @@ The null pointer is considered a null object
 of type Void. This object is used in place of
 zero or NULL/nullptr assignment to a pointer.
 """
-NULL_OBJ_NAME = "g:00"
+NULL_OBJ_NAME = "g:0Nul"
 NULL_OBJ_TYPE = types.Void  ## Null object type is Void
 NULL_OBJ_PTR_TYPE = types.Ptr(NULL_OBJ_TYPE)
+NULL_OBJ_SET = {"g:0Nul"}
 
 DUMMY_VAR_NAME = "g:{id}d"
 DUMMY_VAR_REGEX = re.compile(r"^(.*:|)\d+d$")

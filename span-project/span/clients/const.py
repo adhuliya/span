@@ -14,6 +14,8 @@ This (and every) analysis subclasses,
 
 import logging
 
+from span.ir.conv import Forward
+
 LOG = logging.getLogger("span")
 from typing import Tuple, Set, Dict, List, Optional as Opt,\
   Callable, cast
@@ -140,7 +142,8 @@ class ConstA(analysis.ValueAnalysisAT):
   """Constant Propagation Analysis."""
   __slots__ : List[str] = []
   L: type = OverallL  # the lattice ConstA uses
-  D: type = analysis.ForwardD  # its a forward flow analysis
+  # direction of the analysis
+  D: Opt[types.DirectionT] = Forward
 
 
   def __init__(self,
@@ -331,7 +334,6 @@ class ConstA(analysis.ValueAnalysisAT):
       e: expr.LitE,
       dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
   ) -> ComponentL:
-    if LS: LOG.debug("ReachedHere")  #delit
     assert isinstance(e.val, (int, float)), f"{e}"
     return ComponentL(self.func, val=e.val)
 

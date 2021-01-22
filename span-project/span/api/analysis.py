@@ -7,6 +7,8 @@
 
 import logging
 
+from span.ir.tunit import TranslationUnit
+
 LOG = logging.getLogger("span")
 from typing import List, Tuple, Set, Dict, Any, Type, Callable, cast
 from typing import Optional as Opt
@@ -14,14 +16,15 @@ import io
 
 from span.util.util import LS, AS
 import span.ir.types as types
-import span.ir.conv as conv
+from span.ir.conv import TrueEdge, FalseEdge, Forward, Backward
 import span.ir.cfg as cfg
 import span.ir.expr as expr
 import span.ir.instr as instr
 import span.ir.constructs as constructs
 from span.ir.ir import \
   (getExprRValueNames, getExprLValueNames, getNamesEnv,
-   filterNames, nameHasArray, getNamesPossiblyModifiedInCallExpr)
+   filterNames, nameHasArray, getNamesPossiblyModifiedInCallExpr,
+   isDummyGlobalFunc)
 
 from span.api.dfv import OLD_INOUT, NEW_IN, NodeDfvL, NewOldL
 import span.api.dfv as dfv
@@ -93,7 +96,11 @@ class FastNodeWorkList:
       return None, None, None
 
     nid = self.wl.pop()
-    self.fullSequence.append(nid * -1 if self.isNop[nid-1] else nid)
+    try:
+      self.fullSequence.append(nid * -1 if self.isNop[nid-1] else nid)
+    except Exception as e:
+      print(f"NID: {nid-1}")
+      raise e
 
     self.wlNodeSet.remove(nid)
     return self.nodes[nid], self.isNop[nid-1], self.valueFilter[nid-1]
@@ -412,6 +419,14 @@ class DirectionDT:
     return wl
 
 
+  def setTopValue(self,
+      node: Opt[cfg.CfgNode] = None,
+      nid: Opt[types.NodeIdT] = None,
+  ) -> None:
+    if not nid: nid = node.id
+    self.nidNdfvMap[nid] = self.topNdfv
+
+
   def update(self,
       node: cfg.CfgNode,
       nodeDfv: NodeDfvL,
@@ -435,7 +450,6 @@ class DirectionDT:
       assert newOut is newOutTrue and newOut is newOutFalse
       newIn, c1 = oldIn.widen(newIn)
       newOut, c2 = oldOut.widen(newOut)
-      print(f"WIDENED?(analysis1): {c1}, {c2} {newOut is oldOut}")  #delit
       nodeDfv = NodeDfvL(newIn, newOut)  # nodeDfv OVER-WRITTEN
       newOutFalse = newOutTrue = newOut
 
@@ -456,7 +470,6 @@ class DirectionDT:
                or newOutFalse != oldOutFalse \
                or newOutTrue != oldOutTrue
     self.nidNdfvMap[nid] = nodeDfv
-    if widen: print(f"WIDENED?(analysis2): {isNewIn}, {isNewOut}")
     return NewOldL.getNewOldObj(isNewIn, isNewOut)
 
 
@@ -555,9 +568,9 @@ class ForwardDT(DirectionDT):
       if LS: LOG.debug("Edge: %s, Feasible: %s", predEdge, f)
       if f:
         predNodeDfv = self.nidNdfvMap.get(predEdge.src.id, self.topNdfv)
-        if predEdge.label == conv.TrueEdge and predNodeDfv.dfvOutTrue is not None:
+        if predEdge.label == TrueEdge and predNodeDfv.dfvOutTrue is not None:
           predOut = predNodeDfv.dfvOutTrue
-        elif predEdge.label == conv.FalseEdge and predNodeDfv.dfvOutFalse is not None:
+        elif predEdge.label == FalseEdge and predNodeDfv.dfvOutFalse is not None:
           predOut = predNodeDfv.dfvOutFalse
         else:
           if predNodeDfv.dfvOut is None:
@@ -705,8 +718,8 @@ class AnalysisAT:
 
   # concrete lattice class of the analysis
   L: Opt[Type[dfv.DataLT]] = None
-  # concrete direction class of the analysis
-  D: Opt[Type[DirectionDT]] = None
+  # direction of the analysis
+  D: Opt[types.DirectionT] = None
 
   # Simplification needed: methods simplifying (blocking) exprs of this analysis
   # list required sim function objects here (functions with '__to__' in their name)
@@ -756,6 +769,15 @@ class AnalysisAT:
     if nodeDfv: inBi, outBi = nodeDfv.dfvIn, nodeDfv.dfvOut
     return NodeDfvL(inBi, outBi)  # good to create a copy
 
+
+  def cleanUpBoundaryInfo(self,
+      nodeDfv: NodeDfvL,
+  ) -> NodeDfvL:
+    """Removes the local variables explicitly set to top at Bi"""
+    # return nodeDfv
+    raise NotImplementedError(f"{self.func.name}, {self.__class__.__name__}")
+
+
   # BOUND START: special_instructions_seven
 
   def Nop_Instr(self,
@@ -765,7 +787,7 @@ class AnalysisAT:
   ) -> NodeDfvL:
     """Instr_Form: void: NopI()."""
     # Default implementation for forward analyses.
-    assert self.D and self.D.__name__.startswith("Forw"), f"{self.D}"
+    assert self.D == Forward, f"{self.D}"
     dfvIn = nodeDfv.dfvIn
     if dfvIn is nodeDfv.dfvOut:
       return nodeDfv
@@ -1647,13 +1669,6 @@ class AnalysisAT:
   # BOUND END  : sim_related 2/3
   ################################################
 
-Node__to__Nil__Name: str = AnalysisAT.Node__to__Nil.__name__
-LhsVar__to__Nil__Name: str = AnalysisAT.LhsVar__to__Nil.__name__
-Num_Var__to__Num_Lit__Name: str = AnalysisAT.Num_Var__to__Num_Lit.__name__
-Cond__to__UnCond__Name: str = AnalysisAT.Cond__to__UnCond.__name__
-Num_Bin__to__Num_Lit__Name: str = AnalysisAT.Num_Bin__to__Num_Lit.__name__
-Deref__to__Vars__Name: str = AnalysisAT.Deref__to__Vars.__name__
-
 ################################################
 # BOUND END  : AnalysisAT_The_Base_Class.
 ################################################
@@ -1682,12 +1697,12 @@ Num_Bin__to__Num_Lit__Name: str = AnalysisAT.Num_Bin__to__Num_Lit.__name__
 Deref__to__Vars__Name: str = AnalysisAT.Deref__to__Vars.__name__
 
 simDirnMap = {  # the IN/OUT information needed for the sim
-  Node__to__Nil__Name:        conv.Forward,  # means dfv at IN is needed
-  Num_Var__to__Num_Lit__Name: conv.Forward,
-  Cond__to__UnCond__Name:     conv.Forward,
-  Num_Bin__to__Num_Lit__Name: conv.Forward,
-  Deref__to__Vars__Name:      conv.Forward,
-  LhsVar__to__Nil__Name:      conv.Backward,  # means dfv at OUT is needed
+  Node__to__Nil__Name:        Forward,  # means dfv at IN is needed
+  Num_Var__to__Num_Lit__Name: Forward,
+  Cond__to__UnCond__Name:     Forward,
+  Num_Bin__to__Num_Lit__Name: Forward,
+  Deref__to__Vars__Name:      Forward,
+  LhsVar__to__Nil__Name:      Backward,  # means dfv at OUT is needed
 }
 
 ################################################
@@ -1733,17 +1748,51 @@ class ValueAnalysisAT(AnalysisAT):
       nodeDfv: Opt[NodeDfvL] = None,
       ipa: bool = False,
   ) -> NodeDfvL:
+    """TODO:
+      * IPA/Intra: initialize all local (non-parameter) vars to Top.
+      * IPA: initialize all non-initialized globals to Top
+        only at the entry of the main function. (DONE)
+      * Intra: initialize all globals to Bot. (as is done currently)
+    """
     if ipa and not nodeDfv:
       raise ValueError(f"{ipa}, {nodeDfv}")
 
-    inBi, outBi = self.overallBot, self.overallBot
-    getDefaultVal = self.overallTop.getDefaultVal
-    if ipa:
-      nDfv = dfv.updateFuncObjInDfvs(self.func, nodeDfv)
-      return dfv.removeNonEnvVars(nDfv, getDefaultVal, self.getAllVars)
-    if nodeDfv:
-      inBi, outBi = nodeDfv.dfvIn, nodeDfv.dfvOut
-    return NodeDfvL(inBi, outBi)  # good to create a copy
+    if isDummyGlobalFunc(self.func):  # initialize all to Top
+      inBi, outBi = self.overallTop, self.overallTop
+    else:
+      if nodeDfv:
+        inBi, outBi = nodeDfv.dfvIn, nodeDfv.dfvOut
+      else:
+        inBi, outBi = self.overallBot, self.overallBot
+      tUnit: TranslationUnit = self.func.tUnit
+      globalNames = tUnit.getNamesGlobal()
+      for vName in self.getAllVars() - set(self.func.paramNames):
+        if self.func.isLocalName(vName) and vName not in globalNames:
+          inBi.setVal(vName, self.componentTop) # initialize locals to Top
+
+    nDfv1 = NodeDfvL(inBi, outBi)
+
+    if ipa and not isDummyGlobalFunc(self.func):
+      getDefaultVal = self.overallTop.getDefaultVal
+      nDfv2 = dfv.updateFuncObjInDfvs(self.func, nDfv1)
+      return dfv.removeNonEnvVars(nDfv2, getDefaultVal, self.getAllVars)
+
+    return nDfv1
+
+
+  def cleanUpBoundaryInfo(self,
+      nodeDfv: NodeDfvL,
+  ) -> NodeDfvL:
+    """Removes the local variables explicitly set to top at Bi"""
+    inBi, outBi = nodeDfv.dfvIn.getCopy(), nodeDfv.dfvOut.getCopy()
+    tUnit: TranslationUnit = self.func.tUnit
+    globalNames = tUnit.getNamesGlobal()
+    defaultVal = self.overallTop.getDefaultVal()
+    for vName in self.getAllVars() - set(self.func.paramNames):
+      if self.func.isLocalName(vName) and vName not in globalNames:
+        inBi.setVal(vName, defaultVal) # initialize locals defaultVal
+
+    return NodeDfvL(inBi, outBi)
 
 
   def isAcceptedType(self, t: types.Type) -> bool:
@@ -1959,8 +2008,16 @@ class ValueAnalysisAT(AnalysisAT):
       e: expr.ExprET,
       dfvIn: DataLT,
   ) -> Dict[types.VarNameT, dfv.ComponentL]:
+    """Under-approximates functions with no body."""
     assert isinstance(e, expr.CallE), f"{e}"
     assert isinstance(dfvIn, dfv.OverallL), f"{type(dfvIn)}"
+
+    tUnit: TranslationUnit = self.func.tUnit
+    calleeName = e.getCalleeFuncName()
+    if calleeName:
+      calleeFuncObj = tUnit.getFuncObj(calleeName)
+      if tUnit.underApproxFunc(calleeFuncObj):
+        return {}  # FIXME: under-approximation
 
     names = getNamesPossiblyModifiedInCallExpr(self.func, e)
     names = filterNames(self.func, names, self.isAcceptedType)
@@ -2049,9 +2106,10 @@ class ValueAnalysisAT(AnalysisAT):
       dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
   ) -> dfv.ComponentL:
     """A default implementation (assuming Constant Propagation)."""
-    varNames = getExprRValueNames(self.func, e)
-    assert varNames, f"{e}, {varNames}"
-    return mergeAll(map(dfvInGetVal, varNames))
+    return self.componentBot
+    # varNames = getExprRValueNames(self.func, e)
+    # assert varNames, f"{e}, {varNames}"
+    # return mergeAll(map(dfvInGetVal, varNames))
 
 
   def getExprDfvCastE(self,
@@ -2114,9 +2172,10 @@ class ValueAnalysisAT(AnalysisAT):
       dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
   ) -> dfv.ComponentL:
     """A default implementation"""
-    varNames = getExprRValueNames(self.func, e)
-    assert varNames, f"{e}, {varNames}"
-    return mergeAll(map(dfvInGetVal, varNames))
+    return self.componentBot
+    # varNames = getExprRValueNames(self.func, e)
+    # assert varNames, f"{e}, {varNames}"
+    # return mergeAll(map(dfvInGetVal, varNames))
 
 
   def getExprDfvCallE(self,

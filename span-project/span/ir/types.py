@@ -324,6 +324,10 @@ class Type:
     return False
 
 
+  def getPointeeType(self) -> 'Type':
+    raise NotImplementedError(f"{self}")
+
+
   def getFormalStr(self) -> FormalStrT:
     if self.isNumeric():
       fstr = "Num"
@@ -485,11 +489,11 @@ class Type:
     return True
 
 
-  def bitSizeInBytes(self) -> int:
-    return self.bitSize() >> 3
+  def sizeInBytes(self) -> int:
+    return self.sizeInBits() >> 3
 
 
-  def bitSize(self) -> int:
+  def sizeInBits(self) -> int:
     """Returns size in bits for builtin types.
     For other types, see respective overrides of this method.
     """
@@ -1017,7 +1021,12 @@ class ArrayT(Type):
     return True
 
 
-  def bitSize(self) -> int:
+  def getPointeeType(self) -> Type:
+    assert self.isPointer(), f"{self}"
+    return self.of.getPointeeType()
+
+
+  def sizeInBits(self) -> int:
     # Only specializations of ArrayT should
     # implement this method.
     raise NotImplementedError()
@@ -1053,9 +1062,9 @@ class ConstSizeArray(ArrayT):
     return True
 
 
-  def bitSize(self) -> int:
+  def sizeInBits(self) -> int:
     """Returns size in bits of this array."""
-    size = self.of.bitSize()
+    size = self.of.sizeInBits()
     size = self.size * size
     return size
 
@@ -1128,7 +1137,7 @@ class VarArray(ArrayT):
     return False
 
 
-  def bitSize(self) -> int:
+  def sizeInBits(self) -> int:
     raise NotImplementedError()  # no size of a VarArray !!
 
 
@@ -1196,7 +1205,7 @@ class IncompleteArray(ArrayT):
     return False
 
 
-  def bitSize(self) -> int:
+  def sizeInBits(self) -> int:
     raise NotImplementedError()  # no size of an IncompleteArray !!
 
 
@@ -1354,13 +1363,13 @@ class Struct(RecordT):
     self.members = members
 
 
-  def bitSize(self):
+  def sizeInBits(self):
     """Returns size in bits of this structure."""
     size = 0
 
     for memberName, memberType in self.members:
       assert memberType.hasKnownBitSize()
-      size += memberType.bitSize()
+      size += memberType.sizeInBits()
     return size
 
 
@@ -1444,13 +1453,13 @@ class Union(RecordT):
     super().__init__(name, members, info, UNION_TC)
 
 
-  def bitSize(self) -> int:
+  def sizeInBits(self) -> int:
     """Returns size in bits of this union."""
     size = 0
     assert self.members, f"{self}"
     for memberName, memberType in self.members:
       assert memberType.hasKnownBitSize()
-      memberBitSize = memberType.bitSize()
+      memberBitSize = memberType.sizeInBits()
       size = memberBitSize if size < memberBitSize else size
     return size
 
@@ -1542,7 +1551,7 @@ class FuncSig(Type):
     return False
 
 
-  def bitSize(self) -> int:
+  def sizeInBits(self) -> int:
     raise NotImplementedError()  # no size of a FuncSig !!
 
 
