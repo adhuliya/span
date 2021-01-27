@@ -410,7 +410,6 @@ class DirectionDT:
       self.nidNdfvMap[nid] = self.topNdfv
     # set this to true once boundary values are initialized
     self.wl: FastNodeWorkList = self.generateInitialWorklist()
-    self.boundaryInfoInitialized = False
 
 
   def generateInitialWorklist(self) -> FastNodeWorkList:
@@ -867,7 +866,8 @@ class AnalysisAT:
   def Num_Assign_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
+      nodeDfv: NodeDfvL,
+      calleeBi: Opt[NodeDfvL] = None,
   ) -> NodeDfvL:
     """Instr_Form: numeric: lhs = rhs.
     Convention:
@@ -879,7 +879,8 @@ class AnalysisAT:
   def Ptr_Assign_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
+      nodeDfv: NodeDfvL,
+      calleeBi: Opt[NodeDfvL] = None,
   ) -> NodeDfvL:
     """Instr_Form: pointer: lhs = rhs.
     Convention:
@@ -891,7 +892,8 @@ class AnalysisAT:
   def Record_Assign_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
+      nodeDfv: NodeDfvL,
+      calleeBi: Opt[NodeDfvL] = None,
   ) -> NodeDfvL:
     """Instr_Form: record: lhs = rhs.
     Convention:
@@ -1182,6 +1184,7 @@ class AnalysisAT:
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
+      calleeBi: Opt[NodeDfvL] = None,
   ) -> NodeDfvL:
     """Instr_Form: numeric: b = func(args...).
     Convention:
@@ -1196,6 +1199,7 @@ class AnalysisAT:
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
+      calleeBi: Opt[NodeDfvL] = None,
   ) -> NodeDfvL:
     """Instr_Form: pointer: p = func()."""
     return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
@@ -1205,6 +1209,7 @@ class AnalysisAT:
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
+      calleeBi: Opt[NodeDfvL] = None,
   ) -> NodeDfvL:
     """Instr_Form: record: r = func()."""
     return self.Record_Assign_Instr(nodeId, insn, nodeDfv)
@@ -1536,6 +1541,7 @@ class AnalysisAT:
       nodeId: types.NodeIdT,
       insn: instr.CallI,
       nodeDfv: NodeDfvL,
+      calleeBi: Opt[NodeDfvL] = None,
   ) -> NodeDfvL:
     """Instr_Form: void: func(args...) (just a call statement).
     Convention:
@@ -1882,6 +1888,7 @@ class ValueAnalysisAT(AnalysisAT):
       nodeId: types.NodeIdT,
       insn: instr.CallI,
       nodeDfv: NodeDfvL,
+      calleeBi: Opt[NodeDfvL] = None,
   ) -> NodeDfvL:
     dfvIn = cast(dfv.OverallL, nodeDfv.dfvIn)
     return self.genNodeDfvL(self.processCallE(insn.arg, dfvIn), nodeDfv)
@@ -1918,7 +1925,12 @@ class ValueAnalysisAT(AnalysisAT):
     elif self.isAcceptedType(lhsType):
       func = self.func
       lhsVarNames = self.getExprLValueNames(func, lhs, dfvIn)
-      assert len(lhsVarNames) >= 1, f"{lhs}: {lhsVarNames}"
+      if not len(lhsVarNames):
+        print(f"NO_LVALUE_POINTEE: {func.name}, {lhs}, {lhs.info}")
+        if LS: LOG.warning(f"NO_LVALUE_POINTEE: {func.name}, {lhs}, {lhs.info}"
+                           f"\nTreating as NopI.")
+        return nodeDfv  # i.e. NopI
+      # assert len(lhsVarNames) >= 1, f"{lhs}: {lhsVarNames}"
       mustUpdate = len(lhsVarNames) == 1
 
       rhsDfv = self.getExprDfv(rhs, dfvIn)
@@ -1974,7 +1986,12 @@ class ValueAnalysisAT(AnalysisAT):
     allMemberInfo = instrType.getNamesOfType(None)
 
     lhsVarNames = self.getExprLValueNames(self.func, lhs, dfvIn)
-    assert len(lhsVarNames) >= 1, f"{lhs}: {lhsVarNames}"
+    if not len(lhsVarNames):
+      print(f"NO_LVALUE_POINTEE: {self.func.name}, {lhs}, {lhs.info}")
+      if LS: LOG.warning(f"NO_LVALUE_POINTEE: {self.func.name}, {lhs}, {lhs.info}"
+                         f"\nTreating as NopI.")
+      return {}  # i.e. NopI
+    # assert len(lhsVarNames) >= 1, f"{lhs}: {lhsVarNames}"
     strongUpdate: bool = len(lhsVarNames) == 1
 
     rhsVarNames = None
@@ -2008,7 +2025,9 @@ class ValueAnalysisAT(AnalysisAT):
       e: expr.ExprET,
       dfvIn: DataLT,
   ) -> Dict[types.VarNameT, dfv.ComponentL]:
-    """Under-approximates functions with no body."""
+    """Under-approximates specific functions.
+    See TranslationUnit.underApproxFunc() definition.
+    """
     assert isinstance(e, expr.CallE), f"{e}"
     assert isinstance(dfvIn, dfv.OverallL), f"{type(dfvIn)}"
 
@@ -2017,7 +2036,7 @@ class ValueAnalysisAT(AnalysisAT):
     if calleeName:
       calleeFuncObj = tUnit.getFuncObj(calleeName)
       if tUnit.underApproxFunc(calleeFuncObj):
-        return {}  # FIXME: under-approximation
+        return {}  # FIXME: too narrow an under-approximation
 
     names = getNamesPossiblyModifiedInCallExpr(self.func, e)
     names = filterNames(self.func, names, self.isAcceptedType)

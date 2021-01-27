@@ -7,8 +7,6 @@
 
 import logging
 
-from span.ir import conv
-
 LOG = logging.getLogger("span")
 from typing import List, Dict, Tuple, Optional as Opt, Set
 import io
@@ -19,7 +17,9 @@ from span.ir.types import (StructNameT, UnionNameT, MemberNameT, FuncNameT, VarN
                            Type, FuncSig, Info, Loc, LabelNameT, FuncIdT, )
 import span.ir.instr as instr
 from span.ir.instr import InstrIT, LabelI, GotoI, CondI, NopI, ReturnI
-from span.ir.conv import FalseEdge, TrueEdge, UnCondEdge, GLOBAL_INITS_FUNC_NAME
+from span.ir.conv import \
+  (FalseEdge, TrueEdge, UnCondEdge, GLOBAL_INITS_FUNC_NAME,
+   START_END_BBIDS, START_BB_ID, END_BB_ID, extractFuncName)
 from span.ir.types import BasicBlockIdT, InstrIndexT, FuncNodeIdT
 import span.ir.expr as expr
 import span.ir.cfg as graph
@@ -102,7 +102,7 @@ class Func(ConstructT):
   def isLocalName(self,
       varName: VarNameT
   ) -> bool:
-    funcName = conv.extractFuncName(varName)
+    funcName = extractFuncName(varName)
     if not funcName: return False
     return funcName == self.name
 
@@ -413,8 +413,12 @@ class Func(ConstructT):
   def yieldInstrSeq(self):
     """Yield all the instructions in no particular order."""
     if self.cfg:
-      for bbId, bb in self.cfg.bbMap.items():
+      yield from self.cfg.bbMap[START_BB_ID].instrSeq
+      for bbId, bb in sorted(self.cfg.bbMap.items(), key=lambda x: x[0]):
+        if bbId in START_END_BBIDS:
+          continue
         yield from bb.instrSeq
+      yield from self.cfg.bbMap[END_BB_ID].instrSeq
     elif self.basicBlocks:
       for _, insnSeq in self.basicBlocks.items():
         yield from insnSeq
@@ -427,7 +431,11 @@ class Func(ConstructT):
   def yieldBasicBlocks(self):
     """Yields tuples of (BBId, InstructionSequence) in no particular order."""
     if self.basicBlocks:
-      yield from self.basicBlocks.items()
+      yield from self.basicBlocks[START_BB_ID]
+      for bbId in sorted(self.basicBlocks.keys()):
+        if bbId not in START_END_BBIDS:
+          yield from self.basicBlocks[bbId]
+      yield from self.basicBlocks[END_BB_ID]
     else:
       yield from []
 

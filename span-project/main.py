@@ -141,7 +141,8 @@ def getRegisteredDiagnoses() -> str:
 
 def c2spanirArgParse(args: argparse.Namespace) -> int:
   """Processes cmd line args and invokes `c2spanir()`."""
-  util.Verbosity = args.verbose
+  util.VV = args.verbose; util.setupVV()
+  util.CC = args.check; util.setupCC()
   return c2spanir(args.fileName)
 
 
@@ -172,7 +173,8 @@ def c2spanir(cFileName: str = None) -> int:
 def ipaDiagnoseSpanIr(args: argparse.Namespace) -> None:
   diName    = args.diagnosisName
   fileName = args.fileName
-  util.Verbosity = args.verbose
+  util.VV = args.verbose; util.setupVV()
+  util.CC = args.check; util.setupCC()
 
   spanirFileName = convertIfCFile(fileName)
   print("Filename:", fileName, spanirFileName)
@@ -186,7 +188,8 @@ def ipaDiagnoseSpanIr(args: argparse.Namespace) -> None:
 
 def optimizeSpanIr(args: argparse.Namespace) -> None:
   optName = args.optName
-  util.Verbosity = args.verbose
+  util.VV = args.verbose; util.setupVV()
+  util.CC = args.check; util.setupCC()
 
   currTUnit = parseTUnitObject(args.fileName, ipa=True)
 
@@ -201,7 +204,8 @@ def diagnoseSpanIr(args: argparse.Namespace) -> None:
   lerner  = args.diagnosisStyle == "lerner"
   span    = args.diagnosisStyle == "span" # default case too
   fileName = args.fileName
-  util.Verbosity = args.verbose
+  util.VV = args.verbose; util.setupVV()
+  util.CC = args.check; util.setupCC()
 
   spanirFileName = convertIfCFile(fileName)
   currTUnit: tunit.TranslationUnit = ir.readSpanIr(spanirFileName)
@@ -334,7 +338,8 @@ def parseCascadingAnalysisExpr(anNameExpr: str) -> Tuple[str, list, list, int]:
 def analyzeSpanIrIpa(args: argparse.Namespace) -> None:
   """Runs the given analyses on the whole spanir translation unit."""
   disableAllSim = True if args.subcommand == "ipa" else False
-  util.Verbosity = args.verbose
+  util.VV = args.verbose; util.setupVV()
+  util.CC = args.check; util.setupCC()
 
   mainAnalysis, otherAnalyses, supportAnalyses, avoidAnalyses, maxAnalysisCount = \
             parseSpanAnalysisExpr(args.analyses)
@@ -359,7 +364,8 @@ def analyzeSpanIrIpa(args: argparse.Namespace) -> None:
 def analyzeSpanIr(args: argparse.Namespace) -> None:
   """Runs the given analyses on the spanir file for each function."""
   disableAllSim = True if args.subcommand == "analyze" else False
-  util.Verbosity = args.verbose
+  util.VV = args.verbose; util.setupVV()
+  util.CC = args.check; util.setupCC()
   idemand = True if args.subcommand == "idemand" else False
 
   anNameExpr = args.analyses
@@ -417,7 +423,7 @@ def analyzeFunctions(
       avoidAnalyses     = avoidAnalyses,
       maxNumOfAnalyses  = maxNumOfAnalyses,
       analysisSeq       = analysisSeq,
-      disableAllSim     = disableAllSim,
+      disableSim= disableAllSim,
       useDdm            = useDdm,
     )
     analysisTime = syn1.analyze() # do the analysis
@@ -432,7 +438,8 @@ def analyzeFunctions(
 def queryTranslationUnit(args: argparse.Namespace):
   """Query predefined information on the translation unit."""
   fileName = args.fileName
-  util.Verbosity = args.verbose
+  util.VV = args.verbose; util.setupVV()
+  util.CC = args.check; util.setupCC()
   currTUnit = parseTUnitObject(fileName)
 
   irQuery.executeAllQueries(currTUnit)
@@ -442,7 +449,8 @@ def viewDotFile(args: argparse.Namespace):
   """Generates the dot files to view the IR better."""
   graphType = args.graphType
   fileName = args.fileName
-  util.Verbosity = args.verbose
+  util.VV = args.verbose; util.setupVV()
+  util.CC = args.check; util.setupCC()
 
   funcName = args.functionName
   funcName = None if not funcName else irConv.canonicalizeFuncName(funcName)
@@ -503,7 +511,8 @@ def testSpan(args: argparse.Namespace):
   It first checks if the current directory has test cases.
   """
   testType = args.testType
-  util.Verbosity = args.verbose
+  util.VV = args.verbose; util.setupVV()
+  util.CC = args.check; util.setupCC()
 
   import span.tests.run as run
   run.runTests(testType)
@@ -518,7 +527,8 @@ def sliceDemand(args: argparse.Namespace):
   ppPattern = re.compile(SLICE_POINT_REGEX)
   programPoint = args.programpoint
   vars = args.vars
-  util.Verbosity = args.verbose
+  util.VV = args.verbose; util.setupVV()
+  util.CC = args.check; util.setupCC()
 
   funcName = getCmdLineFuncName(args.functionName)
   assert funcName, f"{args.functionName}"
@@ -547,7 +557,8 @@ def sliceDemand(args: argparse.Namespace):
 def simulateCascading(args: argparse.Namespace):
   """Runs the cascaded analyses on the spanir file for each function."""
   anNameExpr = args.analyses
-  util.Verbosity = args.verbose
+  util.VV = args.verbose; util.setupVV()
+  util.CC = args.check; util.setupCC()
 
   funcName = getCmdLineFuncName(args.functionName)
   print("Analyzing Function(s):", funcName if funcName else "ALL")
@@ -578,7 +589,8 @@ def dumpSpanIr(args: argparse.Namespace):
   `test.c.spanir.processed`
   """
   fileName = args.fileName
-  util.Verbosity = args.verbose
+  util.VV = args.verbose; util.setupVV()
+  util.CC = args.check; util.setupCC()
 
   spanIrFileName = convertIfCFile(fileName)
   cFileName = extractCFileName(spanIrFileName)
@@ -677,6 +689,7 @@ if __name__ == "__main__":
                                        help="Non-Synergistically analyze (interactions disabled)")
   analyzeParser.set_defaults(func=analyzeSpanIr)
   analyzeParser.add_argument('-v', '--verbose', action='count', default=0)
+  analyzeParser.add_argument('-c', '--check', action='count', default=0)
   analyzeParser.add_argument("analyses", type=spanAnSpecRegex, help=analysisSpecString)
   analyzeParser.add_argument("functionName", nargs="?",
                              help="Name of function (prefix 'f:' is optional)")
@@ -687,6 +700,7 @@ if __name__ == "__main__":
                                         help="Synergistically analyze (interactions enabled)")
   ianalyzeParser.set_defaults(func=analyzeSpanIr)
   ianalyzeParser.add_argument('-v', '--verbose', action='count', default=0)
+  ianalyzeParser.add_argument('-c', '--check', action='count', default=0)
   ianalyzeParser.add_argument("analyses", type=spanAnSpecRegex, help=analysisSpecString)
   ianalyzeParser.add_argument("functionName", nargs="?",
                               help="Name of function (prefix 'f:' is optional)")
@@ -697,6 +711,7 @@ if __name__ == "__main__":
                                         help="Synergistically analyze (interactions enabled)")
   ianalyzeParser.set_defaults(func=analyzeSpanIr)
   ianalyzeParser.add_argument('-v', '--verbose', action='count', default=0)
+  ianalyzeParser.add_argument('-c', '--check', action='count', default=0)
   ianalyzeParser.add_argument("analyses", type=spanAnSpecRegex, help=analysisSpecString)
   ianalyzeParser.add_argument("functionName", nargs="?",
                               help="Name of function (prefix 'f:' is optional)")
@@ -707,6 +722,7 @@ if __name__ == "__main__":
                                         help="Non-Synergistic IPA analysis (interactions disabled)")
   ianalyzeParser.set_defaults(func=analyzeSpanIrIpa)
   ianalyzeParser.add_argument('-v', '--verbose', action='count', default=0)
+  ianalyzeParser.add_argument('-c', '--check', action='count', default=0)
   ianalyzeParser.add_argument("analyses", help=analysisSpecString)
   ianalyzeParser.add_argument("fileName", help=cOrSpanirFile)
 
@@ -715,6 +731,7 @@ if __name__ == "__main__":
                                         help="Synergistic IPA analysis (interactions enabled)")
   ianalyzeParser.set_defaults(func=analyzeSpanIrIpa)
   ianalyzeParser.add_argument('-v', '--verbose', action='count', default=0)
+  ianalyzeParser.add_argument('-c', '--check', action='count', default=0)
   ianalyzeParser.add_argument("analyses", help=analysisSpecString)
   ianalyzeParser.add_argument("fileName", help=cOrSpanirFile)
 
@@ -723,6 +740,7 @@ if __name__ == "__main__":
                                         help="Simulate cascading and lerners method")
   cascadeParser.set_defaults(func=simulateCascading)
   cascadeParser.add_argument('-v', '--verbose', action='count', default=0)
+  cascadeParser.add_argument('-c', '--check', action='count', default=0)
   cascadeParser.add_argument("analyses", help=analysisSpecString)
   cascadeParser.add_argument("functionName", nargs="?",
                               help="Name of function (prefix 'f:' is optional)")
@@ -732,6 +750,7 @@ if __name__ == "__main__":
   sliceParser = subParser.add_parser("slice", help="Raise a demand to get a slice.")
   sliceParser.set_defaults(func=sliceDemand)
   sliceParser.add_argument('-v', '--verbose', action='count', default=0)
+  sliceParser.add_argument('-c', '--check', action='count', default=0)
   sliceParser.add_argument("vars", help="Comma separated vars"
                                         " e.g. 'a,b,c' (for globals specify prefix 'g:'")
   sliceParser.add_argument("programpoint", type=slicePointRegex,
@@ -751,12 +770,14 @@ if __name__ == "__main__":
   viewParser.add_argument("fileName", help=cOrSpanirFile)
   viewParser.set_defaults(func=viewDotFile)
   viewParser.add_argument('-v', '--verbose', action='count', default=0)
+  viewParser.add_argument('-c', '--check', action='count', default=0)
 
   # subcommand: c2spanir
   c2SpanirParser = subParser.add_parser("c2spanir",
                                         help="Convert .c file to .c.spanir file")
   c2SpanirParser.set_defaults(func=c2spanirArgParse)
   c2SpanirParser.add_argument('-v', '--verbose', action='count', default=0)
+  c2SpanirParser.add_argument('-c', '--check', action='count', default=0)
   c2SpanirParser.add_argument("fileName", help=cOrSpanirFile)
 
   # subcommand: dumpir
@@ -764,6 +785,7 @@ if __name__ == "__main__":
                                         help="Dump spanir after pre-processing (used for testing)")
   c2SpanirParser.set_defaults(func=dumpSpanIr)
   c2SpanirParser.add_argument('-v', '--verbose', action='count', default=0)
+  c2SpanirParser.add_argument('-c', '--check', action='count', default=0)
   c2SpanirParser.add_argument("fileName", help=cOrSpanirFile)
 
   # subcommand: test
@@ -832,6 +854,7 @@ if __name__ == "__main__":
                          nargs="?",
                          help="The algorithm to use. (default is 'span')")
   optParser.add_argument('-v', '--verbose', action='count', default=0)
+  optParser.add_argument('-c', '--check', action='count', default=0)
   optParser.add_argument("fileName", help=cOrSpanirFile)
 
   try: # TODO: add auto completion if present

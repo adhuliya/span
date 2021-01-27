@@ -9,7 +9,6 @@ Prepares the IR for the IPA.
 """
 
 import logging
-
 LOG = logging.getLogger("span")
 
 from typing import Dict, Tuple, Set, List, Callable

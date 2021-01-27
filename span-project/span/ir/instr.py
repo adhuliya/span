@@ -1050,7 +1050,7 @@ class NopI(InstrIT):
 
 
   def __str__(self):
-    return "nop(); {self.type}"
+    return f"nop(); {self.type}"
 
 
   def __repr__(self):

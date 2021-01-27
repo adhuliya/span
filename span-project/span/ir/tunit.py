@@ -20,9 +20,8 @@ Following important things are available here,
 """
 
 import logging
-
-
 LOG = logging.getLogger("span")
+
 from typing import Dict, Set, Tuple, List, Callable, Any
 from typing import Optional as Opt
 import io
@@ -30,7 +29,7 @@ import re
 import time
 
 from span.util.util import LS, AS
-import span.util.common_util as cutil
+import span.util.util as util
 
 import span.ir.types as types
 import span.ir.conv as irConv
@@ -43,11 +42,11 @@ import span.ir.cfg as cfg
 class Stats:
   def __init__(self, tunit: 'TranslationUnit', totalCfgNodes=0):
     self.tunit = tunit
-    self.getNamesTimer = cutil.Timer("TUNIT:GetNames", start=False)
+    self.getNamesTimer = util.Timer("TUNIT:GetNames", start=False)
 
   def __str__(self):
     l1 = [f"{self.getNamesTimer}"]
-    l1.append(f"TUnitSize: {cutil.getSize2(self.tunit)}")
+    l1.append(f"TUnitSize: {util.getSize2(self.tunit)}")
     return "\n".join(l1)
 
 
@@ -94,21 +93,20 @@ class TranslationUnit:
     self._nameInfoMap: \
       Dict[types.VarNameT, types.VarNameInfo] = {}
 
-    # Set of all global vars in this translation unit.
-    self._globalVarNames: \
-      Set[types.VarNameT] = set()
-
-    # Set of all global vars categorized by types
-    self._globalTypeVarNamesMap: \
-      Dict[Opt[types.Type], Set[types.VarNameT]] = {}
-
     # The local pseudo variables in each function
     self._localPseudoVars: \
       Dict[types.FuncNameT, Set[types.VarNameT]] = {}
 
+    # Set of all pseudo vars in this translation unit.
+    # Note: pseudo vars hide memory allocation with a variable name.
+    self._pseudoVars: Set[types.VarNameT] = set()
+
     # All the pseudo variables in the translation unit
-    self._allPseudoNames: \
-      Opt[Set[types.VarNameT]] = None
+    self._allPseudoNames: Opt[Set[types.VarNameT]] = None
+
+    # stores the increasing counter for pseudo variables in the function
+    # pseudo variables replace malloc/calloc calls as addressOf(pseudoVar)
+    self._funcPseudoCountMap: Dict[types.FuncNameT, int] = {}
 
     # map (func, givenType) to vars of givenType accessible in the func (local+global)
     # (func, None) holds all types of vars accessible in the func (local+global)
@@ -119,35 +117,28 @@ class TranslationUnit:
     self._typeFuncLocalNameMap: \
       Dict[Tuple[types.FuncNameT, Opt[types.Type]], Set[types.VarNameT]] = {}
 
-    # Set of all pseudo vars in this translation unit.
-    # Note: pseudo vars hide memory allocation with a variable name.
-    self._pseudoVars: \
-      Set[types.VarNameT] = set()
-
     # function signature (funcsig) to function object mapping
     self._funcSigToFuncObjMap: \
       Dict[types.FuncSig, List[constructs.Func]] = {}
 
     # maps tmps assigned only once to the assigned expression
-    self._tmpVarExprMap: \
-      Dict[types.VarNameT, expr.ExprET] = {}
-
-    # stores the increasing counter for pseudo variables in the function
-    # pseudo variables replace malloc/calloc calls as addressOf(pseudoVar)
-    self._funcPseudoCountMap: \
-      Dict[types.FuncNameT, int] = {}
+    self._tmpVarExprMap: Dict[types.VarNameT, expr.ExprET] = {}
 
     # used to allot unique name to string literals
     self._stringLitCount: int = 0
     self._dummyVarCount: int = 0
+
+    # Set of all (actual) global vars in this translation unit.
+    self._globalVarNames: Set[types.VarNameT] = set()
 
     # named locations whose address is taken
     self._addrTakenSet: Set[types.VarNameT] = set()
 
     # effective globals (actual globals + addr taken set)
     self._globalsAndAddrTakenSet: Set[types.VarNameT] = set()
-    # pointee cache
-    self._globalsAndAddrTakenSetMap:\
+
+    # type based globals and address taken set categorization
+    self._globalsAndAddrTakenSetMap: \
       Dict[types.Type, Set[types.VarNameT]] = dict()
 
     # function id list: id is the index in the list
@@ -171,33 +162,41 @@ class TranslationUnit:
     self.fillTheRecordTypes()  # IMPORTANT (MUST)
     self.fillFuncParamTypes()  # IMPORTANT (MUST)
     self.addThisTUnitRefToObjs()  # IMPORTANT (MUST)
-    # self.genBasicBlocks()             # IMPORTANT (MUST)
     self.inferAllInstrTypes()  # IMPORTANT (MUST)
     self.convertNonDerefMemberE()  # IMPORTANT
 
     # STEP 2: Canonicalize the IR
     self.canonicalize()  # CANONICALIZE SPAN IR (MUST)
-    if LS: LOG.debug("NameInfoObjects:\n %s", self._nameInfoMap)
 
     # STEP 3: Extract and cache the information on the IR
     self.extractTmpVarAssignExprs()  # IMPORTANT
     self.extractAllVarNames()  # (MUST)
+    self.printNameInfoMap()  # (OPTIONAL)
 
     # STEP 4: Misc
     self.fillGlobalInitsFunction()  # MUST
     self.collectAddrTakenVars()  # MUST
     # FIXME: Don't add dummy vars: handle pointers with no possible pointees in the code.
-    self.addDummyObjects()  # MUST (after extractAllVarNames())
+    # self.addDummyObjects()  # MUST (after extractAllVarNames())
     self.genCfgs()  # MUST
 
     self.assignFunctionIds()
 
-    self.checkInvariants(level=0)  # IMPORTANT: checks the IR for basic correctness
+    self.checkInvariants(util.CC)  # IMPORTANT: checks the IR for basic correctness
 
     self.logStats() # must be the last call (OPTIONAL)
 
     self.initialized = True
     if LS: LOG.info(f"PreProcessing_TUnit({self.name}): END/DONE.")
+
+
+  def printNameInfoMap(self):
+    """Logs/Prints the _nameInfoMap values for debugging purposes."""
+    if LS:
+      ss = io.StringIO()
+      for vName in sorted(self._nameInfoMap.keys()):
+        ss.write(f"{self._nameInfoMap[vName]}\n")
+      LOG.debug("NameInfoObjects:\n %s", ss.getvalue())
 
 
   def checkInvariants(self, level: int = 0):
@@ -436,10 +435,11 @@ class TranslationUnit:
         and nameType.getElementTypeFinal() == pointeeType:
         names.append(varName)
 
+    namesSet = set(names)
     if cache:
-      self._globalsAndAddrTakenSetMap[pointeeType] = set(names)
+      self._globalsAndAddrTakenSetMap[pointeeType] = namesSet
 
-    return set(names)
+    return namesSet
 
 
   def addDummyObjects(self):
@@ -598,9 +598,11 @@ class TranslationUnit:
 
 
   def yieldRecords(self, rType=types.RecordT):
-    """Yields all the records in the TUnit"""
+    """Yields all the records in the TUnit.
+    rType can be either types.Struct or types.Union
+    """
     assert rType in (types.RecordT, types.Struct, types.Union), f"{rType}"
-    for _, record in self.allRecords.items():
+    for record in sorted(self.allRecords.values(), key=lambda x: x.name):
       if isinstance(record, rType):
         yield record
 
@@ -652,9 +654,6 @@ class TranslationUnit:
       if val in self.allFunctions:
         func: constructs.Func = self.allFunctions[val]
         return func.sig
-
-      if val == irConv.DUMMY_VAR_NAME.format(id=0):  # FIXME: for varargs
-        return irConv.DUMMY_VAR_TYPE  # FIXME: for varargs
 
       # return types.Void # FIXME: to avoid ValueError
 
@@ -770,8 +769,6 @@ class TranslationUnit:
         eType = argType.getPointeeType()
       elif isinstance(argType, types.ArrayT):
         eType = argType.getElementTypeFinal()
-      elif isinstance(e.arg, expr.VarE) and e.arg.name == "g:0d": # FIXME: for varargs
-        eType = irConv.DUMMY_VAR_TYPE  # FIXME: for varargs
       else:
         raise ValueError(f"{e}, {type(e)}, {argType}")
 
@@ -959,7 +956,7 @@ class TranslationUnit:
       self.removeUnreachableBbs(func)  # (OPTIONAL)
 
     self.canonicalizeExpressions()  # MUST
-    self.createAndAddGlobalDummyVar(irConv.DUMMY_VAR_TYPE)
+    #self.createAndAddGlobalDummyVar(irConv.DUMMY_VAR_TYPE)
 
 
   def fillGlobalInitsFunction(self):
@@ -1203,7 +1200,7 @@ class TranslationUnit:
 
     bbIds = func.basicBlocks.keys()
     for bbId in bbIds:
-      if bbId in [-1, 0]: continue  # leave START and END BBs as it is.
+      if bbId in irConv.START_END_BBIDS: continue  # leave START and END BBs as it is.
 
       onlyNop = True
       for insn in func.basicBlocks[bbId]:
@@ -1474,7 +1471,7 @@ class TranslationUnit:
 
   def getNamesGlobal(self,
       givenType: Opt[types.Type] = None,
-      cacheResult: bool = True,  # set to False in very special case
+      cacheResult: bool = True,  # set to False in a very special case
       numeric: bool = False,
       integer: bool = False,
       pointer: bool = False,
@@ -1489,9 +1486,9 @@ class TranslationUnit:
     if integer: key = types.IntegerAny
     if pointer: key = types.PointerAny
 
-    if key in self._globalTypeVarNamesMap:
+    if key in self._globalsAndAddrTakenSetMap:
       self.stats.getNamesTimer.stop()
-      return self._globalTypeVarNamesMap[key]
+      return self._globalsAndAddrTakenSetMap[key]
 
     names: Set[types.VarNameT] = set()
     if isinstance(givenType, types.FuncSig):
@@ -1508,7 +1505,7 @@ class TranslationUnit:
     if pointer: names = self.filterNamesPointer(names)
 
     if cacheResult:
-      self._globalTypeVarNamesMap[key] = names  # cache the result
+      self._globalsAndAddrTakenSetMap[key] = names  # cache the result
 
     self.stats.getNamesTimer.stop()
     return names
@@ -1835,8 +1832,15 @@ class TranslationUnit:
     for arg in e.args:
       if isinstance(arg, expr.VarE):
         names |= self.getExprLValuesForCallArgument(func, arg.getFullName(), True)
-    if func.hasBody(): # Assumption: only func with body modify globals
-      names.update(self.getNamesGlobal())
+
+    addGlobals = True
+    calleeName = e.getCalleeFuncName()
+    if calleeName:
+      tUnit: TranslationUnit = func.tUnit
+      calleeFunc = tUnit.getFuncObj(calleeName)
+      if not calleeFunc.hasBody(): # Assumption: only func with body modify globals
+        addGlobals = False
+    if addGlobals: names.update(self.getNamesGlobal())
     return names
 
 
@@ -1982,7 +1986,7 @@ class TranslationUnit:
       forLiveness = True,
   ) -> Set[types.VarNameT]:
     """Returns the names syntactically present in the expression.
-    Note if forLiveness is false,
+    Note if forLiveness is False,
       It will also return the function name in a call.
       The name of variable whose address is taken.
     """

@@ -244,10 +244,10 @@ class IpaHost:
                                          calleeBi, recursionDepth + 1,
                                          newUniqueId)  # recursion
           newDfvs = self.prepareCallNodeDfv(callerName, newCalleeBi, localDfvs)
-          self.checkInvariantsDfvs(callerName, newDfvs) #delit
+          self.checkInvariantsDfvs(callerName, newDfvs)
           reAnalyze = host.setCallSiteDfv(node.id, newDfvs)
 
-          if calleeName in ("f:_read_min"):
+          if util.CC >= util.CC1 and calleeName in ("f:_read_min"):
             ptaOld = dfvs["PointsToA"].dfvOut
             ptaNew = newDfvs["PointsToA"].dfvOut
             # ptaNew = nonLocalDfvs["PointsToA"].dfvIn
@@ -268,8 +268,9 @@ class IpaHost:
             break  # first re-analyze then goto other call sites
 
       if LS: LOG.debug("ReAnalyzingFunction: %s", funcName) if reAnalyze else None
-    if funcName in ("f:main", "f:read_min"):  #delit
-      host.printOrLogResult()  #delit
+    if util.VV3:
+      if funcName in ("f:main", "f:read_min"): #delit
+        host.printOrLogResult()
     return host.getBoundaryResult()
 
 
@@ -286,13 +287,12 @@ class IpaHost:
   def checkInvariantsDfvs(self,
       callerName: FuncNameT,
       nDfvs: Dict[AnalysisNameT, NodeDfvL],
-      level: int = 0
   ) -> None:
-     if level >= 0:
-       for anName, nDfv in nDfvs.items():
-         nDfv.checkInvariants()
-         assert nDfv.dfvIn.func.name == callerName,\
-           f"{anName} {nDfv.dfvIn.func.name} {callerName}"
+     if util.CC < util.CC1: return
+     for anName, nDfv in nDfvs.items():
+       nDfv.checkInvariants()
+       assert nDfv.dfvIn.func.name == callerName,\
+         f"{anName} {nDfv.dfvIn.func.name} {callerName}"
 
 
   def separateLocalNonLocalDfvs(self,
@@ -431,7 +431,7 @@ class IpaHost:
       avoidAnalyses=self.avoidAnalyses,
       maxNumOfAnalyses=self.maxNumOfAnalyses,
       analysisSeq=self.analysisSeq,
-      disableAllSim=self.disableAllSim,
+      disableSim=self.disableAllSim,
       ipaBiDfv=biDfv,
     )
 
@@ -540,10 +540,11 @@ def diagnoseInterval(tUnit: TranslationUnit):
   then using Lerner's
   """
   #mainAnalysis = "ConstA"
-  mainAnalysis = "IntervalA"
-  otherAnalyses : List[str] = ["PointsToA"]
+  #mainAnalysis = "IntervalA"
+  mainAnalysis = "PointsToA"
+  #otherAnalyses : List[str] = ["PointsToA"]
   #otherAnalyses : List[str] = ["EvenOddA"]
-  #otherAnalyses : List[str] = []
+  otherAnalyses : List[str] = []
   maxNumOfAnalyses = len(otherAnalyses) + 1
 
   ipaHostSpan = IpaHost(tUnit,
@@ -553,9 +554,9 @@ def diagnoseInterval(tUnit: TranslationUnit):
                         )
   ipaHostSpan.analyze()
 
-  ipaHostLern = IpaHost(tUnit, analysisSeq=[[mainAnalysis] + otherAnalyses])
+  #ipaHostLern = IpaHost(tUnit, analysisSeq=[[mainAnalysis] + otherAnalyses])
   #ipaHostLern = IpaHost(tUnit, analysisSeq=[[mainAnalysis]])
-  #ipaHostLern = IpaHost(tUnit, mainAnName=mainAnalysis, maxNumOfAnalyses=1) # span with single analysis
+  ipaHostLern = IpaHost(tUnit, mainAnName=mainAnalysis, maxNumOfAnalyses=1) # span with single analysis
   ipaHostLern.analyze()
 
   totalPPoints = 0  # total program points
@@ -593,25 +594,25 @@ def diagnoseInterval(tUnit: TranslationUnit):
           and nDfvLern.dfvOut < nDfvSpan.dfvOut:
         weakPPoints += 1
 
-      # some queries
-      node = tUnit.getNode(funcName, nid)
-      assert node, f"{funcName} {nid}"
-      if node:
-        insn = node.insn
-        if isinstance(insn, instr.AssignI)\
-            and isinstance(insn.rhs, expr.BinaryE):
-          rhs: expr.BinaryE = insn.rhs
-          if rhs.opr.isRelationalOp():
-            total1 += 1
-            lhs = cast(expr.VarE, insn.lhs)
-            name = lhs.name
-            val1 = nDfvSpan.dfvOut.getVal(name)
-            if val1.isConstant():
-              totalPreciseComparisons1 += 1
-            val2 = nDfvLern.dfvOut.getVal(name)
-            if val2.isConstant():
-              print(f"{node.id}: {name}: {val1}, {val2} ({insn.info})")
-              totalPreciseComparisons2 += 1
+      # # some queries
+      # node = tUnit.getNode(funcName, nid)
+      # assert node, f"{funcName} {nid}"
+      # if node:
+      #   insn = node.insn
+      #   if isinstance(insn, instr.AssignI)\
+      #       and isinstance(insn.rhs, expr.BinaryE):
+      #     rhs: expr.BinaryE = insn.rhs
+      #     if rhs.opr.isRelationalOp():
+      #       total1 += 1
+      #       lhs = cast(expr.VarE, insn.lhs)
+      #       name = lhs.name
+      #       val1 = nDfvSpan.dfvOut.getVal(name)
+      #       if val1.isConstant():
+      #         totalPreciseComparisons1 += 1
+      #       val2 = nDfvLern.dfvOut.getVal(name)
+      #       if val2.isConstant():
+      #         print(f"{node.id}: {name}: {val1}, {val2} ({insn.info})")
+      #         totalPreciseComparisons2 += 1
 
   print("\nTotalPPoints:", totalPPoints, "WeakPPoints:", weakPPoints)
   print(f"TotalPreciseComparisons: {totalPreciseComparisons1}"

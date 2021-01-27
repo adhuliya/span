@@ -12,7 +12,7 @@ Hence, except `span.ir.types` module all other modules can import this module.
 import logging
 LOG = logging.getLogger("span")
 
-from typing import Optional as Opt, Set, List
+from typing import Optional as Opt, Set, Tuple
 from span.util.util import LS
 import re
 import functools
@@ -33,7 +33,10 @@ NodeSiteTotalBitLen   = 32
 NodeSiteFuncIdBitLen  = 14
 NodeSiteNodeIdBitLen  = 18
 
-
+START_BB_ID: types.BasicBlockIdT = 0
+END_BB_ID:   types.BasicBlockIdT = -1
+START_END_BBIDS: Tuple[types.BasicBlockIdT, types.BasicBlockIdT] =\
+  (START_BB_ID, END_BB_ID)
 ################################################
 # BOUND START: special_vars_values_and_types_of_spanir
 ################################################
@@ -108,10 +111,10 @@ The null pointer is considered a null object
 of type Void. This object is used in place of
 zero or NULL/nullptr assignment to a pointer.
 """
-NULL_OBJ_NAME = "g:0Nul"
+NULL_OBJ_NAME = "g:0Null"
 NULL_OBJ_TYPE = types.Void  ## Null object type is Void
 NULL_OBJ_PTR_TYPE = types.Ptr(NULL_OBJ_TYPE)
-NULL_OBJ_SET = {"g:0Nul"}
+NULL_OBJ_SET = {"g:0Null"}
 
 DUMMY_VAR_NAME = "g:{id}d"
 DUMMY_VAR_REGEX = re.compile(r"^(.*:|)\d+d$")

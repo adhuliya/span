@@ -20,11 +20,31 @@ from span.util.common_util import \
    getSize2,
    Timer,
    programExists,
-   Verbosity)
+   )
 
 ################################################
 # BOUND START: SystemWideSwitches
 ################################################
+
+VV:int = 0  # Verbosity. One of 0,1,2,3 (set via command line)
+VV0 = VV1 = VV2 = VV3 = False
+def setupVV():
+  """Call this function after setting VV value."""
+  global VV, VV0, VV1, VV2, VV3
+  VV0 = VV >= 0
+  VV1 = VV >= 1
+  VV2 = VV >= 2
+  VV3 = VV >= 3
+
+CC:int = 0  # Constraint Checks. One of 0,1,2,3 (set via command line)
+CC0 = CC1 = CC2 = CC3 = False
+def setupCC():
+  """Call this function after setting CC value."""
+  global CC, CC0, CC1, CC2, CC3
+  CC0 = CC >= 0
+  CC1 = CC >= 1
+  CC2 = CC >= 2
+  CC3 = CC >= 3
 
 # A system wide feature switches
 # The switches are used to dynamically enable or disable specific features.
