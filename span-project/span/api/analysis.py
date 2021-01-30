@@ -96,13 +96,9 @@ class FastNodeWorkList:
       return None, None, None
 
     nid = self.wl.pop()
-    try:
-      self.fullSequence.append(nid * -1 if self.isNop[nid-1] else nid)
-    except Exception as e:
-      print(f"NID: {nid-1}")
-      raise e
-
     self.wlNodeSet.remove(nid)
+
+    self.fullSequence.append(nid * -1 if self.isNop[nid-1] else nid)
     return self.nodes[nid], self.isNop[nid-1], self.valueFilter[nid-1]
 
 
@@ -718,11 +714,11 @@ class AnalysisAT:
   # concrete lattice class of the analysis
   L: Opt[Type[dfv.DataLT]] = None
   # direction of the analysis
-  D: Opt[types.DirectionT] = None
+  D: types.DirectionT = Forward  # default setting
 
   # Simplification needed: methods simplifying (blocking) exprs of this analysis
   # list required sim function objects here (functions with '__to__' in their name)
-  needsRhsDerefToVarsSim: bool = False
+  needsRhsDerefToVarsSim: bool = False # also used for function pointer sim
   needsLhsDerefToVarsSim: bool = False
   needsNumVarToNumLitSim: bool = False
   needsNumBinToNumLitSim: bool = False
@@ -749,7 +745,7 @@ class AnalysisAT:
   ) -> NodeDfvL:
     """The default behaviour for unimplemented instructions.
     Analysis should override this method if unimplemented
-    instructions have to handled in a way other than
+    instructions have to be handled in a way other than
     like a NOP instruction.
     """
     return self.Nop_Instr(nodeId, insn, nodeDfv)
@@ -769,12 +765,15 @@ class AnalysisAT:
     return NodeDfvL(inBi, outBi)  # good to create a copy
 
 
-  def cleanUpBoundaryInfo(self,
+  def getLocalizedCalleeBi(self, #IPA
+      nodeId: types.NodeIdT,
+      insn: instr.InstrIT,
       nodeDfv: NodeDfvL,
+      calleeBi: Opt[NodeDfvL] = None,  #IPA
   ) -> NodeDfvL:
-    """Removes the local variables explicitly set to top at Bi"""
-    # return nodeDfv
-    raise NotImplementedError(f"{self.func.name}, {self.__class__.__name__}")
+    """Computes the value context of the callee, given
+    the data flow value of the caller."""
+    raise NotImplementedError
 
 
   # BOUND START: special_instructions_seven
@@ -804,7 +803,7 @@ class AnalysisAT:
 
     This implementation works for *any* direction analysis.
     """
-    return nodeDfv  # no information travel from IN to OUT or OUT to IN
+    return nodeDfv  # no information travels from IN to OUT or OUT to IN
 
 
   def Use_Instr(self,
@@ -814,7 +813,7 @@ class AnalysisAT:
   ) -> NodeDfvL:
     """Instr_Form: void: UseI(x).
     Value of x is read from memory."""
-    return self.Nop_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def ExRead_Instr(self,
@@ -845,7 +844,7 @@ class AnalysisAT:
   ) -> NodeDfvL:
     """Instr_Form: void: input(x). (user supplies value of x)
     Thus value of x is undefined."""
-    return self.Nop_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Filter_Instr(self,
@@ -855,7 +854,7 @@ class AnalysisAT:
   ) -> NodeDfvL:
     """Instr_Form: void: FilterI({x,y,z}).
     x,y,z are known to be dead after this program point."""
-    return self.Nop_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   # BOUND END  : special_instructions_seven
@@ -867,39 +866,39 @@ class AnalysisAT:
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
-      calleeBi: Opt[NodeDfvL] = None,
+      calleeBi: Opt[NodeDfvL] = None,  #IPA
   ) -> NodeDfvL:
     """Instr_Form: numeric: lhs = rhs.
     Convention:
       Type of lhs and rhs is numeric.
     """
-    return self.Nop_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
-      calleeBi: Opt[NodeDfvL] = None,
+      calleeBi: Opt[NodeDfvL] = None,  #IPA
   ) -> NodeDfvL:
     """Instr_Form: pointer: lhs = rhs.
     Convention:
       Type of lhs and rhs is a record.
     """
-    return self.Nop_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Record_Assign_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
-      calleeBi: Opt[NodeDfvL] = None,
+      calleeBi: Opt[NodeDfvL] = None,  #IPA
   ) -> NodeDfvL:
     """Instr_Form: record: lhs = rhs.
     Convention:
       Type of lhs and rhs is a record.
     """
-    return self.Nop_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Num_Assign_Var_Var_Instr(self,
@@ -1184,7 +1183,7 @@ class AnalysisAT:
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
-      calleeBi: Opt[NodeDfvL] = None,
+      calleeBi: Opt[NodeDfvL] = None,  #IPA
   ) -> NodeDfvL:
     """Instr_Form: numeric: b = func(args...).
     Convention:
@@ -1192,27 +1191,27 @@ class AnalysisAT:
       func is a function pointer or a function name.
       args are either a variable, a literal or addrof expression.
     """
-    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Num_Assign_Instr(nodeId, insn, nodeDfv, calleeBi)
 
 
   def Ptr_Assign_Var_Call_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
-      calleeBi: Opt[NodeDfvL] = None,
+      calleeBi: Opt[NodeDfvL] = None,  #IPA
   ) -> NodeDfvL:
     """Instr_Form: pointer: p = func()."""
-    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv, calleeBi)
 
 
   def Record_Assign_Var_Call_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: NodeDfvL,
-      calleeBi: Opt[NodeDfvL] = None,
+      calleeBi: Opt[NodeDfvL] = None,  #IPA
   ) -> NodeDfvL:
     """Instr_Form: record: r = func()."""
-    return self.Record_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Record_Assign_Instr(nodeId, insn, nodeDfv, calleeBi)
 
 
   def Num_Assign_Var_CastVar_Instr(self,
@@ -1541,13 +1540,13 @@ class AnalysisAT:
       nodeId: types.NodeIdT,
       insn: instr.CallI,
       nodeDfv: NodeDfvL,
-      calleeBi: Opt[NodeDfvL] = None,
+      calleeBi: Opt[NodeDfvL] = None,  #IPA
   ) -> NodeDfvL:
     """Instr_Form: void: func(args...) (just a call statement).
     Convention:
       args are either a variable, a literal or addrof expression.
     """
-    return self.Nop_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Return_Var_Instr(self,
@@ -1559,7 +1558,7 @@ class AnalysisAT:
     Convention:
       b is a variable.
     """
-    return self.Nop_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Return_Lit_Instr(self,
@@ -1571,7 +1570,7 @@ class AnalysisAT:
     Convention:
       b is a literal.
     """
-    return self.Nop_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Return_Void_Instr(self,
@@ -1581,7 +1580,7 @@ class AnalysisAT:
   ) -> NodeDfvL:
     """Instr_Form: void: return;
     """
-    return self.Nop_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Conditional_Instr(self,
@@ -1593,7 +1592,7 @@ class AnalysisAT:
     Convention:
       b is a variable.
     """
-    return self.Nop_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
   # BOUND END  : regular_insn__other
   # BOUND END  : regular_instructions
@@ -1726,7 +1725,7 @@ class ValueAnalysisAT(AnalysisAT):
   __slots__ : List[str] = ["componentTop", "componentBot"]
   # redefine these variables as needed (see ConstA, IntervalA for examples)
   L: Type[dfv.OverallL] = dfv.OverallL  # the OverallL lattice used
-  D: Type[DirectionDT]  = ForwardD  # its a forward flow analysis
+  D: types.DirectionT = Forward  # its a forward flow analysis
 
 
   needsRhsDerefToVarsSim: bool = True
@@ -1786,6 +1785,26 @@ class ValueAnalysisAT(AnalysisAT):
     return nDfv1
 
 
+  def getLocalizedCalleeBi(self, #IPA
+      nodeId: types.NodeIdT,
+      insn: instr.InstrIT,
+      nodeDfv: NodeDfvL,
+      calleeBi: Opt[NodeDfvL] = None,  #IPA
+  ) -> NodeDfvL:
+    """Computes the value context of the callee, given
+    the data flow value of the caller."""
+    assert insn.hasCallExpr(), f"{self.func.name}, {nodeId}, {insn}, {insn.info}"
+
+    calleeName = instr.getCalleeFuncName(insn)
+    tUnit: TranslationUnit = self.func.tUnit
+    calleeFuncObj = tUnit.getFuncObj(calleeName)
+
+    # Out is unchanged in Forward analyses
+    outDfv = calleeBi.dfvOut if calleeBi else self.overallTop # unchanged Out
+    inDfv = nodeDfv.dfvIn.localize(calleeFuncObj)
+    return NodeDfvL(inDfv, outDfv)
+
+
   def cleanUpBoundaryInfo(self,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
@@ -1832,7 +1851,7 @@ class ValueAnalysisAT(AnalysisAT):
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
     if not self.isAcceptedType(insn.type):
-      return self.Nop_Instr(nodeId, insn, nodeDfv)
+      return self.Default_Instr(nodeId, insn, nodeDfv)
     newOut = dfvIn = cast(dfv.OverallL, nodeDfv.dfvIn)
     if not dfvIn.getVal(insn.lhsName).bot:
       newOut = dfvIn.getCopy()
@@ -1851,25 +1870,28 @@ class ValueAnalysisAT(AnalysisAT):
   def Num_Assign_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
+      nodeDfv: NodeDfvL,
+      calleeBi: Opt[NodeDfvL] = None,  #IPA
   ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
+    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv, calleeBi)
 
 
   def Ptr_Assign_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
+      nodeDfv: NodeDfvL,
+      calleeBi: Opt[NodeDfvL] = None,  #IPA
   ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
+    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv, calleeBi)
 
 
   def Record_Assign_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
+      nodeDfv: NodeDfvL,
+      calleeBi: Opt[NodeDfvL] = None,  #IPA
   ) -> NodeDfvL:
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
+    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv, calleeBi)
 
 
   def Conditional_Instr(self,
@@ -1888,10 +1910,15 @@ class ValueAnalysisAT(AnalysisAT):
       nodeId: types.NodeIdT,
       insn: instr.CallI,
       nodeDfv: NodeDfvL,
-      calleeBi: Opt[NodeDfvL] = None,
+      calleeBi: Opt[NodeDfvL] = None,  #IPA
   ) -> NodeDfvL:
     dfvIn = cast(dfv.OverallL, nodeDfv.dfvIn)
-    return self.genNodeDfvL(self.processCallE(insn.arg, dfvIn), nodeDfv)
+    if not calleeBi: # handle intra-procedurally
+      return self.genNodeDfvL(self.processCallE(insn.arg, dfvIn), nodeDfv)
+    else: # handle for #IPA
+      newOut = calleeBi.dfvOut.localize(self.func)
+      newOut.addLocals(dfvIn)
+      return NodeDfvL(dfvIn, newOut)
 
 
   ################################################
@@ -1906,6 +1933,7 @@ class ValueAnalysisAT(AnalysisAT):
       lhs: expr.ExprET,
       rhs: expr.ExprET,
       nodeDfv: NodeDfvL,
+      calleeBi: Opt[NodeDfvL] = None,  #IPA
   ) -> NodeDfvL:
     """A common function to handle various assignment instructions.
     This is a common function to all the value analyses.
@@ -1933,7 +1961,7 @@ class ValueAnalysisAT(AnalysisAT):
       # assert len(lhsVarNames) >= 1, f"{lhs}: {lhsVarNames}"
       mustUpdate = len(lhsVarNames) == 1
 
-      rhsDfv = self.getExprDfv(rhs, dfvIn)
+      rhsDfv = self.getExprDfv(rhs, dfvIn, calleeBi)
       if LS: LOG.debug("RhsDfvOfExpr: '%s' is %s, lhsVarNames are %s",
                        rhs, rhsDfv, lhsVarNames)
 
@@ -1945,7 +1973,13 @@ class ValueAnalysisAT(AnalysisAT):
           outDfvValues[name] = newVal
 
     if isinstance(rhs, expr.CallE):
-      outDfvValues.update(self.processCallE(rhs, dfvIn))
+      if calleeBi: #IPA
+        calleeOut = calleeBi.dfvOut
+        newOut = calleeOut.localize(self.func)
+        newOut.addLocals(dfvIn)
+        nodeDfv = NodeDfvL(dfvIn, newOut)
+      else: #INTRA
+        outDfvValues.update(self.processCallE(rhs, dfvIn))
     nDfv = self.genNodeDfvL(outDfvValues, nodeDfv)
     return nDfv
 
@@ -2021,7 +2055,7 @@ class ValueAnalysisAT(AnalysisAT):
     return outDfvValues
 
 
-  def processCallE(self,
+  def processCallE(self, # only for intra-procedural
       e: expr.ExprET,
       dfvIn: DataLT,
   ) -> Dict[types.VarNameT, dfv.ComponentL]:
@@ -2032,7 +2066,7 @@ class ValueAnalysisAT(AnalysisAT):
     assert isinstance(dfvIn, dfv.OverallL), f"{type(dfvIn)}"
 
     tUnit: TranslationUnit = self.func.tUnit
-    calleeName = e.getCalleeFuncName()
+    calleeName = e.getFuncName()
     if calleeName:
       calleeFuncObj = tUnit.getFuncObj(calleeName)
       if tUnit.underApproxFunc(calleeFuncObj):
@@ -2060,7 +2094,8 @@ class ValueAnalysisAT(AnalysisAT):
 
   def getExprDfv(self,
       e: expr.ExprET,
-      dfvIn: dfv.OverallL
+      dfvIn: dfv.OverallL,
+      calleeBi: Opt[NodeDfvL] = None,  #IPA
   ) -> dfv.ComponentL:
     """Returns the effective component dfv of the rhs.
     It expects that the rhs is a non-record type.
@@ -2100,7 +2135,7 @@ class ValueAnalysisAT(AnalysisAT):
       return self.getExprDfvMemberE(e, dfvInGetVal)
 
     elif isinstance(e, expr.CallE):
-      return self.getExprDfvCallE(e, dfvInGetVal)
+      return self.getExprDfvCallE(e, calleeBi)
 
     raise ValueError(f"{e}, {self.__class__}")
 
@@ -2199,10 +2234,23 @@ class ValueAnalysisAT(AnalysisAT):
 
   def getExprDfvCallE(self,
       e: expr.CallE,
-      dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
+      calleeBi: Opt[NodeDfvL] = None,  #IPA
   ) -> dfv.ComponentL:
-    """A default implementation"""
-    return self.componentBot
+    """A default implementation."""
+    tUnit: TranslationUnit = self.func.tUnit
+    calleeName = e.getFuncName()
+
+    if not calleeBi or not calleeName: return self.componentBot
+
+    outCalleeBi = calleeBi.dfvOut
+    calleeFuncObj = tUnit.getFuncObj(calleeName)
+    returnExprList = calleeFuncObj.getReturnExprList()
+
+    if not returnExprList: return self.componentBot
+    val = self.componentTop
+    for e in returnExprList:
+      val, _ = val.meet(self.getExprDfv(e, outCalleeBi))
+    return val
 
 
   def filterValues(self,

@@ -110,6 +110,9 @@ class InstrIT:
   def needsCondInstrSim(self) -> bool: return False
 
 
+  def hasCallExpr(self) -> bool: return False
+
+
   def getFormalStr(self) -> types.FormalStrT:
     """Returns the formal name of this instruction.
     These names should have corresponding function in
@@ -186,6 +189,9 @@ class AssignI(InstrIT):
   def needsRhsNumUnaryExprSim(self) -> bool: return self.rhs.needsNumUnarySim()
 
   def needsRhsPtrCallSim(self) -> bool: return self.rhs.needsPtrCallSim()
+
+
+  def hasCallExpr(self) -> bool: return isinstance(self.rhs, expr.CallE)
 
 
   def getFormalStr(self) -> types.FormalStrT:
@@ -591,6 +597,9 @@ class CallI(InstrIT):
   def needsPtrCallSim(self) -> bool: return self.arg.needsPtrCallSim()
 
 
+  def hasCallExpr(self) -> bool: return True
+
+
   def checkInvariants(self, level: int = 0):
     super().checkInvariants(level)
     if level >= 0:
@@ -650,26 +659,19 @@ class CallI(InstrIT):
 class III(InstrIT):
   """
   Holds the set of instructions which are assumed to be
-  parallel in their execution semantics.
+  indeterministic in their execution semantics.
   These instructions should never have function calls in them.
   """
 
-  __slots__ : List[str] = ["insns", "forIpa"]
+  __slots__ : List[str] = ["insns"]
 
   def __init__(self,
       insns: List[InstrIT],
       info: Opt[types.Info] = None,
-      forIpa: bool = False,
   ) -> None:
     # invariant check
-    if AS:
-      for insn in insns:
-        if not isinstance(insn, InstrIT) \
-            or getCallExpr(insn):  # insn must not contain a call expression
-          raise ValueError(f"{insn} in {insns}")
     super().__init__(III_INSTR_IC, info)
     self.insns = insns
-    self.forIpa = forIpa
 
 
   def getFormalStr(self) -> types.FormalStrT:
@@ -687,7 +689,6 @@ class III(InstrIT):
   @staticmethod
   def genPrallelMultiAssign(lhs: expr.LocationET,
       rhsList: List[expr.ExprET],
-      forIpa: bool = False
   ) -> 'III':
     """
     A convenience function to generate an object of PrallelI
@@ -701,7 +702,7 @@ class III(InstrIT):
       insn = AssignI(lhs=lhs, rhs=rhs, info=lhs.info)
       insns.append(insn)
 
-    return III(insns=insns, info=lhs.info, forIpa=forIpa)
+    return III(insns=insns, info=lhs.info)
 
 
   def __eq__(self, other):
@@ -1076,7 +1077,7 @@ def getCallExpr(insn: InstrIT) -> Opt[expr.CallE]:
 def getCalleeFuncName(insn: InstrIT) -> Opt[types.FuncNameT]:
   """Get the callee name if its a proper function."""
   callE = getCallExpr(insn)
-  return callE.getCalleeFuncName() if callE else None
+  return callE.getFuncName() if callE else None
 
 
 def getDerefExpr(insn: InstrIT) -> Opt[expr.ExprET]:

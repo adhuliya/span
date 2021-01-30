@@ -7,6 +7,8 @@
 
 import logging
 
+from span.ir import constructs
+
 LOG = logging.getLogger("span")
 
 from typing import Tuple, Any, List, TypeVar, Optional as Opt, Sequence as Seq, Iterable
@@ -163,6 +165,29 @@ class DataLT(LatticeLT):
     Assumes default value is bot.
     """
     raise NotImplementedError()
+
+
+  def localize(self, #IPA
+      forFunc: constructs.Func,
+  ) -> 'DataLT':
+    """Returns self's copy localized for the given forFunc."""
+    raise NotImplementedError
+
+
+  def updateFuncObj(self, funcObj: constructs.Func): #IPA #modifies self object
+    """Updates the self.func object reference (for all sub-objects too).
+    Modifies self object."""
+    raise NotImplementedError
+
+
+  def addLocals(self, #IPA #modifies self object
+      fromDfv: 'DataLT',
+  ) -> None:
+    """Adds the value of strictly local variables in self.func
+    in fromDfv to self. It modifies self object.
+    Modifies self object.
+    """
+    raise NotImplementedError
 
 
   def basicMeetOp(self, other: types.T) -> Opt[Tuple[types.T, ChangedT]]:

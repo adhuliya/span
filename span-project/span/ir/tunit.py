@@ -1834,7 +1834,7 @@ class TranslationUnit:
         names |= self.getExprLValuesForCallArgument(func, arg.getFullName(), True)
 
     addGlobals = True
-    calleeName = e.getCalleeFuncName()
+    calleeName = e.getFuncName()
     if calleeName:
       tUnit: TranslationUnit = func.tUnit
       calleeFunc = tUnit.getFuncObj(calleeName)
@@ -2142,7 +2142,7 @@ class TranslationUnit:
     for node in callSiteNodes:
       callE = instr.getCallExpr(node.insn)
       assert callE is not None, f"{node}"
-      func = self.getFuncObj(callE.getCalleeFuncName())
+      func = self.getFuncObj(callE.getFuncName())
       if func.hasBody():
         # only add nodes with calls to functions which have body!
         newNodeList.append(node)

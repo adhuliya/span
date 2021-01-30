@@ -1277,9 +1277,16 @@ class CallE(ExprET):
     return isinstance(self.callee.type, types.Ptr)
 
 
-  def getCalleeFuncName(self) -> Opt[types.FuncNameT]:
+  def getFuncName(self) -> Opt[types.FuncNameT]:
     """Get the callee name if its a proper function."""
     if not self.isPointerCall():
+      return self.callee.name
+    return None
+
+
+  def getFuncPtrName(self) -> Opt[types.VarNameT]:
+    """Returns the name of the function pointer if present."""
+    if self.isPointerCall():
       return self.callee.name
     return None
 

@@ -265,7 +265,7 @@ def getExprCallees(
     calleeFuncs = func.tUnit.getFunctionsOfGivenSignature(calleeTypeSig)
     calleeFuncNames = [func.name for func in calleeFuncs]
   else:
-    calleeFuncNames = [callExpr.getCalleeFuncName()]
+    calleeFuncNames = [callExpr.getFuncName()]
 
   assert calleeFuncNames != [None], f"{func.name}, {callExpr}, {callExpr.info}"
   return calleeFuncNames

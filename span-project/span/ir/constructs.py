@@ -243,6 +243,25 @@ class Func(ConstructT):
     return bbMap, bbEdges
 
 
+  def getReturnExprList(self) -> Opt[List[expr.SimpleET]]:
+    """
+    Returns the expressions (which are always of type expr.UnitET)
+    that the function returns.
+    If the function's return type is void, it returns None
+    """
+    if self.sig.returnType == Void or not self.hasBody():
+      # a void function has no return expression
+      # and so does a function with no body
+      return None
+
+    exprSet: Set[expr.SimpleET] = set()
+    for insn in self.yieldInstrSeq():
+      if isinstance(insn, instr.ReturnI):
+        assert insn.arg is not None, f"{self.name}: {insn}"
+        exprSet.add(insn.arg)  # arg cannot be None
+    return list(exprSet)
+
+
   def __eq__(self, other) -> bool:
     """The name of the function is enough for equality (C Language)."""
     if self is other:

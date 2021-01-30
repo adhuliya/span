@@ -84,7 +84,7 @@ class SpanAnalysisTests(unittest.TestCase):
       for anName in action.analyses:
         if anName not in action.results["analysis.results"]: continue
         if func.name not in action.results["analysis.results"][anName]: continue
-        anNameResults = syn1.getAnalysisResults(anName)
+        anNameResults = syn1.getAnalysisResults(anName).nidNdfvMap
         assert anNameResults, f"{anName}"
         if self.compareAnalysisResults(anNameResults,
                                        action.results["analysis.results"][anName][func.name],

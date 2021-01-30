@@ -198,11 +198,11 @@ class OverallL(dfv.OverallL):
 ################################################
 
 class ReachingDefA(AnalysisAT):
-  """Constant Propagation Analysis."""
+  """Reaching Definitions Analysis."""
   __slots__ : List[str] = ["defaultDfv"]
   L: type = OverallL  # the lattice used
   # direction of the analysis
-  D: Opt[types.DirectionT] = Forward
+  D: types.DirectionT = Forward
 
 
   needsDerefToVarsSim: bool = True

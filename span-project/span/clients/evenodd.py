@@ -134,7 +134,7 @@ class EvenOddA(analysis.ValueAnalysisAT):
   __slots__ : List[str] = ["componentEven", "componentOdd"]
   L: type = OverallL
   # direction of the analysis
-  D: Opt[types.DirectionT] = Forward
+  D: types.DirectionT = Forward
 
 
   def __init__(self,

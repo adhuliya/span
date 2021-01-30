@@ -607,6 +607,7 @@ class OverallL(DataLT):
 
 
   def getCopy(self, newVal: Opt[Dict] = None) -> 'OverallL':
+    """Returns a shallow copy of self."""
     if newVal: return self.__class__(self.func, val=newVal)
     retTop, retBot = False, False
     if newVal is not None: # empty dict means top/bot depending on the default value
@@ -647,6 +648,43 @@ class OverallL(DataLT):
     for vName in varNames:
       selfSetVal(vName, cTop)
     return None
+
+
+  def localize(self, #IPA
+      forFunc: constructs.Func,
+  ) -> 'OverallL':
+    """Returns self's copy localized for the given forFunc."""
+    localizedDfv = self.getCopy()
+
+    defaultVal = self.getDefaultVal()
+    if localizedDfv.val:
+      tUnit: tunit.TranslationUnit = self.func.tUnit
+      varNames = set(localizedDfv.val.keys())
+      varNames = varNames - tUnit.getNamesEnv(forFunc)
+      for vName in varNames:
+        localizedDfv.setVal(vName, defaultVal) # essentially removing the values
+
+    localizedDfv.updateFuncObj(forFunc)
+    return localizedDfv
+
+
+  def updateFuncObj(self, funcObj: constructs.Func): #IPA #modifies self object
+    self.func = funcObj
+    if self.val:
+      for vName in self.val:
+        newVal = self.val[vName].getCopy()
+        newVal.func = funcObj
+        self.val[vName] = newVal
+
+
+  def addLocals(self, #IPA #modifies self object
+      fromDfv: 'OverallL',
+  ) -> None:
+    tUnit: tunit.TranslationUnit = self.func.tUnit
+    localVars = tUnit.getNamesEnv(self.func) - tUnit.getNamesGlobal()
+    for vName in localVars:
+      val = fromDfv.getVal(vName)
+      self.setVal(vName, val)
 
 
   def __str__(self):

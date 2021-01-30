@@ -151,7 +151,7 @@ def countPtrFuncCalls(func: constructs.Func) -> int:
     assert func.cfg is not None, f"{func}"
     for insn in func.yieldInstrSeq():
       callE = instr.getCallExpr(insn)
-      if callE and callE.getCalleeFuncName() is None:
+      if callE and callE.getFuncName() is None:
         count += 1
   return count
 
@@ -163,7 +163,7 @@ def countNonPtrFuncCalls(func: constructs.Func) -> int:
     assert func.cfg is not None, f"{func}"
     for insn in func.yieldInstrSeq():
       callE = instr.getCallExpr(insn)
-      if callE and callE.getCalleeFuncName():
+      if callE and callE.getFuncName():
         count += 1
   return count
 

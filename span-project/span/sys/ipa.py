@@ -223,55 +223,55 @@ class IpaHost:
       # if using a memoized result, no need for further computation
       return host.getBoundaryResult()
 
-    callerName = funcName  # now the current function is a 'caller'
+    callerName, callerId = funcName, host.func.id  # now the current function is a 'caller'
     reAnalyze = True
     while reAnalyze:
       reAnalyze = False
       host.analyze()
 
-      callSiteDfvs = host.getCallSiteDfvs()
+      callSiteDfvs = host.getCallSiteDfvsIpaHost()
       if callSiteDfvs:  # check if call sites present
-        for node in sorted(callSiteDfvs.keys()):
-          dfvs = callSiteDfvs[node]
-          if self.allTopValues(dfvs): # might an be unreachable node
-            continue  # SKIP PROCESSING
-          calleeSite = conv.genFuncNodeId(host.func.id, node.id)
-          calleeName = instr.getCalleeFuncName(node.insn)
-          assert calleeName, f"{node}"
-          localDfvs, nonLocalDfvs = self.separateLocalNonLocalDfvs(dfvs) # w.r.t. caller
-          calleeBi = self.prepareCalleeBi(calleeName, nonLocalDfvs)
+        for nid, calleeName in sorted(callSiteDfvs.keys()):
+          tup = nid, calleeName
+          calleeSite = conv.genFuncNodeId(callerId, nid)
+
+          calleeBi = callSiteDfvs[tup]
           newCalleeBi = self.analyzeFunc(calleeSite, calleeName,
                                          calleeBi, recursionDepth + 1,
                                          newUniqueId)  # recursion
-          newDfvs = self.prepareCallNodeDfv(callerName, newCalleeBi, localDfvs)
-          self.checkInvariantsDfvs(callerName, newDfvs)
-          reAnalyze = host.setCallSiteDfv(node.id, newDfvs)
 
-          if util.CC >= util.CC1 and calleeName in ("f:_read_min"):
-            ptaOld = dfvs["PointsToA"].dfvOut
-            ptaNew = newDfvs["PointsToA"].dfvOut
-            # ptaNew = nonLocalDfvs["PointsToA"].dfvIn
-            if ptaOld.val and ptaNew.val:
-              print(f"PTA/INTERVAL diff ({reAnalyze}):")
-              ptaOldSet = set((k,v) for k,v in ptaOld.val.items())
-              ptaNewSet = set((k,v) for k,v in ptaNew.val.items())
-              print(f"Diff (Old-New): ({len(ptaOldSet)}, {len(ptaNewSet)})",
-                    sorted(ptaOldSet - ptaNewSet))
-              print(f"Diff (New-Old): ({len(ptaOldSet)}, {len(ptaNewSet)})",
-                    sorted(ptaNewSet - ptaOldSet))
-            else:
-              print(f"PTA diff: on of the val is None/Empty"
-                    f" {ptaOld.top}, {ptaNew.top} || {ptaOld.bot}, {ptaNew.bot}")
-            # print(f"ReAnalyze: {reAnalyze} ({calleeName}):"
-            #       f"\n OLD: {dfvs}\n NEW: {newDfvs}") #delit
-          if reAnalyze:
-            break  # first re-analyze then goto other call sites
+          reAnalyze = host.setCallSiteDfvsIpaHost(nid, calleeName, newCalleeBi)
+
+          if util.VV2: self.printToDebug(calleeName, calleeBi, newCalleeBi)
+          if util.CC2: self.checkInvariants1(calleeName, calleeBi)
+
+          if reAnalyze: break  # first re-analyze then goto other call sites
 
       if LS: LOG.debug("ReAnalyzingFunction: %s", funcName) if reAnalyze else None
     if util.VV3:
       if funcName in ("f:main", "f:read_min"): #delit
         host.printOrLogResult()
     return host.getBoundaryResult()
+
+
+  def printToDebug(self, calleeName, calleeBi, newCalleeBi):
+    if util.CC >= util.CC1 and calleeName in ("f:_read_min"):
+      ptaOld = calleeBi["PointsToA"].dfvOut
+      ptaNew = newCalleeBi["PointsToA"].dfvOut
+      # ptaNew = nonLocalDfvs["PointsToA"].dfvIn
+      if ptaOld.val and ptaNew.val:
+        print(f"PTA/INTERVAL diff ({reAnalyze}):")
+        ptaOldSet = set((k,v) for k,v in ptaOld.val.items())
+        ptaNewSet = set((k,v) for k,v in ptaNew.val.items())
+        print(f"Diff (Old-New): ({len(ptaOldSet)}, {len(ptaNewSet)})",
+              sorted(ptaOldSet - ptaNewSet))
+        print(f"Diff (New-Old): ({len(ptaOldSet)}, {len(ptaNewSet)})",
+              sorted(ptaNewSet - ptaOldSet))
+      else:
+        print(f"PTA diff: on of the val is None/Empty"
+              f" {ptaOld.top}, {ptaNew.top} || {ptaOld.bot}, {ptaNew.bot}")
+      # print(f"ReAnalyze: {reAnalyze} ({calleeName}):"
+      #       f"\n OLD: {dfvs}\n NEW: {newDfvs}") #delit
 
 
   def allTopValues(self,
@@ -284,15 +284,11 @@ class IpaHost:
     return isTop
 
 
-  def checkInvariantsDfvs(self,
-      callerName: FuncNameT,
-      nDfvs: Dict[AnalysisNameT, NodeDfvL],
+  def checkInvariants1(self,
+      funcName: FuncNameT,
+      nodeDfvs: Dict[AnalysisNameT, NodeDfvL],
   ) -> None:
-     if util.CC < util.CC1: return
-     for anName, nDfv in nDfvs.items():
-       nDfv.checkInvariants()
-       assert nDfv.dfvIn.func.name == callerName,\
-         f"{anName} {nDfv.dfvIn.func.name} {callerName}"
+    pass
 
 
   def separateLocalNonLocalDfvs(self,
@@ -432,7 +428,7 @@ class IpaHost:
       maxNumOfAnalyses=self.maxNumOfAnalyses,
       analysisSeq=self.analysisSeq,
       disableSim=self.disableAllSim,
-      ipaBiDfv=biDfv,
+      biDfv=biDfv,
     )
 
 
@@ -492,7 +488,7 @@ class IpaHost:
         if valContext.funcName == funcName:
           allAnalysisNames = host.getParticipatingAnalyses()
           for anName in allAnalysisNames:
-            currRes = host.getAnalysisResults(anName)
+            currRes = host.getAnalysisResults(anName).nidNdfvMap
             if anName not in funcResult:
               funcResult[anName] = currRes
             else:

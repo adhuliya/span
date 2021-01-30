@@ -19,7 +19,7 @@ from span.api import dfv
 import span.util.util as util
 from span.util.util import LS, AS, GD
 
-from span.ir.types import NodeIdT, VarNameT
+from span.ir.types import NodeIdT, VarNameT, FuncNameT
 from span.ir.conv import FalseEdge, TrueEdge
 from span.ir.conv import Forward, Backward, ForwBack, NULL_OBJ_NAME
 import span.ir.op as op
@@ -326,10 +326,11 @@ class Host:
       otherAnalyses: Opt[List[AnNameT]] = None, # these analyses must be run
       supportAnalyses: Opt[List[AnNameT]] = None, # analyses that are optional
       avoidAnalyses: Opt[List[AnNameT]] = None, # these are always avoided
-      maxNumOfAnalyses: int = MAX_ANALYSES, # max analyses at a time
-      anDfvs: Opt[Dict[AnNameT, DirectionDT]] = None,
+      maxNumOfAnalyses: int = MAX_ANALYSES, # max (participating) analyses at a time
+      anDfvs: Opt[Dict[AnNameT, DirectionDT]] = None, # pre-computed dfvs of some analyses
       transform: bool = False, # transform mode (for Cascading/Lerners)
-      ipaBiDfv: Opt[Dict[AnNameT, NodeDfvL]] = None,  #IPA call site BI
+      biDfv: Opt[Dict[AnNameT, NodeDfvL]] = None,  # custom boundary info
+      ipaEnabled: bool = False,
       useDdm: bool = False,  # use demand driven approach
       disableSim: bool = False,
   ) -> None:
@@ -339,6 +340,7 @@ class Host:
 
     # function to be analyzed
     self.func: constructs.Func = func
+    self.tUnit: irTUnit.TranslationUnit = func.tUnit
 
     # function's cfg
     self.funcCfg: cfg.Cfg = func.cfg
@@ -355,16 +357,18 @@ class Host:
       self.anDemandDep: Dict[ddm.AtomicDemand, Set[AnNameT]] = dict()
       # map of (nid, simName, expr) --to-> set of demands affected
       self.nodeInstrDemandSimDep: \
-        Dict[Tuple[cfg.CfgNodeId, SimNameT, expr.ExprET],
+        Dict[Tuple[NodeIdT, SimNameT, expr.ExprET],
              Set[ddm.AtomicDemand]] = dict()
 
     #IPA inter-procedural analysis?
-    self.ipaBiDfv: Opt[Dict[AnNameT, NodeDfvL]] = ipaBiDfv  #IPA
-    self.ipaEnabled: bool = bool(ipaBiDfv) #IPA
-    if self.ipaEnabled: assert ipaBiDfv, f"{ipaBiDfv}"  #IPA
+    self.biDfv: Opt[Dict[AnNameT, NodeDfvL]] = biDfv  #IPA
+    self.ipaEnabled: bool = ipaEnabled #IPA
+    if self.ipaEnabled: assert biDfv, f"{biDfv}"  #IPA
 
-    self.disableSim: bool = disableSim
-    self.tUnit: irTUnit.TranslationUnit = func.tUnit
+    # Set some more flags:
+    self.disableSim: bool = disableSim  #SIM
+    self.transform: bool = transform    #TRANSFORM
+    self.enableNodeReachabilitySim = False  # set to True if needed
 
     # BLOCK START: SomeChecks
     if not func.canBeAnalyzed():
@@ -377,6 +381,7 @@ class Host:
     if otherAnalyses:    tmpList.extend(otherAnalyses)
     if supportAnalyses:  tmpList.extend(supportAnalyses)
     if avoidAnalyses:    tmpList.extend(avoidAnalyses)
+    if anDfvs:           tmpList.extend(anDfvs.keys())
 
     assert tmpList
     for anName in tmpList:
@@ -388,15 +393,12 @@ class Host:
       if stop: raise ValueError(f"Analysis not present: {anName}")
     # BLOCK END  : SomeChecks
 
-    # BLOCK START: #TRANSFORM
-    self.transform: bool = transform
-    # BLOCK END  : #TRANSFORM
-
     # block information from IN to OUT and vice-versa,
     # for non simplification analyses.
     # It should be set to false eventually,
     # for non sim analyses to conclude safely.
-    self.blockNonSimAn: bool = True  # for testing purposes: should be True
+    # TODO: initializing to False until proper handling is added.
+    self.blockNonSimAn: bool = False  # for testing purposes: should be True
 
     # main analysis (that may result in addition of others)
     self.mainAnName: AnNameT = mainAnName
@@ -409,8 +411,6 @@ class Host:
     self.activeAnIsSimAn: Opt[bool] = None  # active An simplifies?
     # True if transfer function for FilterI instr is present in the analysis
     self.activeAnAcceptsLivenessSim: bool = False
-    # analysis priority worklist queue (not node worklist)
-    self.anWorkList: PriorityAnWorklist = PriorityAnWorklist()
 
     #graphviz some variables for dot graph visualization
     self.anWorkListDot: List[str] = []
@@ -418,22 +418,31 @@ class Host:
     # stores the insn seen by the analysis for the node
     self.nodeInsnDot: Dict[cfg.CfgNodeId, List[str]] = {}
 
+    # analysis priority worklist queue (not node worklist)
+    self.anWorkList: PriorityAnWorklist = PriorityAnWorklist()
+
     # participant names, with their analysis instance (for curr function)
     self.anParticipating: Dict[AnNameT, AnalysisAT] = dict()
-
-    # Used by: #TRANSFORM
-    self.anDfvs: Opt[Dict[AnNameT, DirectionDT]] = anDfvs
 
     # participants and their work result
     self.anWorkDict: Dict[AnNameT, DirectionDT] = dict()
 
+    # Used by: #TRANSFORM (and possibly by anyone)
+    # If anDfvs contains the analysis also given as one of the
+    # analyses to participate. The results of the 'participating'
+    # version is given preference.
+    self.anDfvs: Opt[Dict[AnNameT, DirectionDT]] = anDfvs
+    self.anDfvsAnObj: Opt[Dict[AnNameT, AnalysisAT]] = {}
+    for anName in self.anDfvs:
+      self.anDfvsAnObj[anName] = clients.analyses[anName](self.func)
+
     # map of (nid, simName, expr) --to-> set of analyses affected
     self.nodeInstrSimDep:\
-      Dict[Tuple[cfg.CfgNodeId, SimNameT, expr.ExprET], Set[AnNameT]] = dict()
+      Dict[Tuple[NodeIdT, SimNameT, expr.ExprET], Set[AnNameT]] = dict()
 
     # simplifications that depend on the given analysis (active analysis)
     self.anRevNodeDep: \
-      Dict[Tuple[AnNameT, cfg.CfgNodeId],
+      Dict[Tuple[AnNameT, NodeIdT],
            Dict[Tuple[Opt[expr.ExprET], SimNameT], Opt[SimRecord]]] = dict()
 
     # sim instruction cache: cache the instruction computed for a sim
@@ -443,8 +452,9 @@ class Host:
 
     self.stats: HostStat = HostStat(self, len(self.funcCfg.nodeMap))
 
-    # sim sources: sim to analysis mapping
+    # sim sources: sim to simplifying analyses map
     self.simSrcs: Dict[SimNameT, Set[AnNameT]] = dict()
+
     # cache filtered sim sources
     self.filteredSimSrcs: \
       Dict[Tuple[SimNameT, expr.ExprET, NodeIdT], Set[AnNameT]] = dict()
@@ -482,9 +492,16 @@ class Host:
       for anName in reversed(otherAnalyses):
         self.mainAnalyses.add(anName)
         self.addParticipantAn(anName)
-    # add the main analysis last (hence it is picked up first)
+    # add the main analysis last (then it is picked up first)
     self.mainAnalyses.add(self.mainAnName)
     self.addParticipantAn(self.mainAnName)
+
+    # Host writes to this map, IpaHost reads from this map
+    self.callSiteDfvMap: \
+      Dict[Tuple[NodeIdT, FuncNameT], Dict[AnNameT, NodeDfvL]] = dict()
+    # IpaHost writes to this map, Host reads from this map
+    self.callSiteDfvMapIpaHost:\
+      Dict[Tuple[NodeIdT, FuncNameT], Dict[AnNameT, NodeDfvL]] = dict()
 
     # add nodes that have one or more feasible pred edge
     self.addNodes(self.ef.initFeasibility())
@@ -619,7 +636,7 @@ class Host:
       neededBy: Opt[AnNameT] = None
   ) -> bool:
     """Conditionally add an analysis as participant."""
-    if self.canAdd(anName):
+    if self.canAddToParticipate(anName):
       return self.addParticipantAn(anName, neededBy)
     return False
 
@@ -652,8 +669,6 @@ class Host:
       top = analysisObj.overallTop
 
       self.anParticipating[anName] = analysisObj
-      if self.transform:
-        self.anParticipated[anName] = analysisObj
       self.anWorkDict[anName] = clients.getAnDirnClass(anName)(self.func.cfg, top)
       self.addAnToWorklist(anName, neededBy, force=True, ipa=ipa)
       self.anSimSuccessCount[anName] = 1 if anName in self.mainAnalyses else 0
@@ -730,9 +745,9 @@ class Host:
       startNodeId = dirn.cfg.start.id
       endNodeId = dirn.cfg.end.id
       if self.ipaEnabled:  #IPA
-        assert self.ipaBiDfv, f"{self.ipaBiDfv}"
-        if self.activeAnName in self.ipaBiDfv:
-          nDfv = self.ipaBiDfv[self.activeAnName]
+        assert self.biDfv, f"{self.biDfv}"
+        if self.activeAnName in self.biDfv:
+          nDfv = self.biDfv[self.activeAnName]
           bi = (nDfv.dfvIn, nDfv.dfvOut)
         else:
           bi = (top, top)
@@ -844,54 +859,22 @@ class Host:
     return res
 
 
-  def handleCallsForIpa(self, #IPA
-      node: cfg.CfgNode,
-      insn: instr.InstrIT,
-      nodeDfv: NodeDfvL,
-  ) -> Opt[NodeDfvL]:
-    callE = instr.getCallExpr(insn)
-    calleeFuncName = callE.getCalleeFuncName() if callE else None
-    if calleeFuncName:
-      func = self.tUnit.getFuncObj(calleeFuncName)
-      if func.canBeAnalyzed():
-        nodeId = node.id
-        # Inter-procedural analysis does not process the instructions with call
-        # currently: function pointer based calls are handled intra-procedurally
-        #            func with no body are handled intra-procedurally
-        #            func with variadic arguments are handled intra-procedurally
-        if LS: LOG.debug("IPA: SkippingFunctionCallForIpa"
-                          " (Nid %s) Insn: %s", nodeId, insn)
-        return nodeDfv
-    return None
-
-
-  def handleNodeReachability(self, node, insn, nodeDfv) -> Opt[NodeDfvL]:
-    nilSim = self.getSim(node, Node__to__Nil__Name)
-    if nilSim is not None:
-      if LS: LOG.debug("Unreachable_Node: %s: %s", node.id, insn)
-      return self.Barrier_Instr(node, node.insn, nodeDfv)
-    return None
-
-
   def _analyzeInstr(self,
       node: cfg.CfgNode,
       insn: instr.InstrIT,  # could be a simplified form of node.insn
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
-    LLS = LS
+    LLS, nid = LS, node.id
     if LLS: LOG.debug("Analyzing_Instr (Node %s): %s, iType: %s",
-                      node.id, insn, insn.type)
+                      nid, insn, insn.type)
 
-    if self.ipaEnabled:  #IPA
-      res = self.handleCallsForIpa(node, insn, nodeDfv)
+    # is reachable (vs feasible) ?
+    if self.enableNodeReachabilitySim and\
+        Node__to__Nil__Name in self.activeAnSimNeeds:
+      res = self.handleNodeReachability(node, insn, nodeDfv)
       if res: return res
 
-    # # is reachable (vs feasible) ?
-    # if Node__to__Nil__Name in self.activeAnSimNeeds:
-    #   res = self.handleNodeReachability(node, insn, nodeDfv)
-    #   if res: return res
-
-    # if here, node is reachable (or no analysis provides that information)
+    # if here, node is assumed reachable (or no analysis provides that information)
     activeAnObj = self.activeAnObj
     assert activeAnObj, f"{self.activeAnName}"
 
@@ -907,37 +890,38 @@ class Host:
     if not self.disableSim and transferFunc != activeAnObj.Nop_Instr:
       # is the instr a var assignment (not deref etc)
       if activeAnObj.needsLhsVarToNilSim and insn.needsLhsVarSim():
+        assert isinstance(insn, instr.AssignI), f"{nid}: {insn}"
         nDfv = self.handleLivenessSim(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
       if activeAnObj.needsLhsDerefToVarsSim and insn.needsLhsDerefSim():
-        assert isinstance(insn, instr.AssignI), f"{node.id}: {insn}"
+        assert isinstance(insn, instr.AssignI), f"{nid}: {insn}"
         nDfv = self.handleLhsDerefSim(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
       if activeAnObj.needsRhsDerefToVarsSim and insn.needsRhsDerefSim():
-        assert isinstance(insn, instr.AssignI), f"{node.id}: {insn}"
+        assert isinstance(insn, instr.AssignI), f"{nid}: {insn}"
         nDfv = self.handleRhsDerefSim(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
       if activeAnObj.needsLhsDerefToVarsSim and insn.needsLhsMemDerefSim():
-        assert isinstance(insn, instr.AssignI), f"{node.id}: {insn}"
+        assert isinstance(insn, instr.AssignI), f"{nid}: {insn}"
         nDfv = self.handleLhsMemDerefSim(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
       if activeAnObj.needsRhsDerefToVarsSim and insn.needsRhsMemDerefSim():
-        assert isinstance(insn, instr.AssignI), f"{node.id}: {insn}"
+        assert isinstance(insn, instr.AssignI), f"{nid}: {insn}"
         nDfv = self.handleRhsMemDerefSim(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
       if activeAnObj.needsNumBinToNumLitSim and insn.needsRhsNumBinaryExprSim():
         # rhs is a numeric bin expr, hence could be simplified
-        assert isinstance(insn, instr.AssignI), f"{node.id}: {insn}"
+        assert isinstance(insn, instr.AssignI), f"{nid}: {insn}"
         nDfv = self.handleRhsBinArith(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         nDfv = self.handleRhsBinArithArgs(node, insn, nodeDfv, 1)
@@ -948,34 +932,76 @@ class Host:
 
       if activeAnObj.needsNumVarToNumLitSim and insn.needsRhsNumUnaryExprSim():
         # rhs is a numeric unary expr, hence could be simplified
-        assert isinstance(insn, instr.AssignI), f"{node.id}: {insn}"
+        assert isinstance(insn, instr.AssignI), f"{nid}: {insn}"
         nDfv = self.handleRhsUnaryArith(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
       if activeAnObj.needsNumVarToNumLitSim and insn.needsRhsNumVarSim():
         # rhs is a numeric var, hence could be simplified
-        assert isinstance(insn, instr.AssignI), f"{node.id}: {insn}"
+        assert isinstance(insn, instr.AssignI), f"{nid}: {insn}"
         nDfv = self.handleRhsNumVar(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
     if GD:
-      if "Nop" in transferFunc.__name__:
-        self.nodeInsnDot[node.id].append("nop")
+      if transferFunc == activeAnObj.Nop_Instr:
+        self.nodeInsnDot[nid].append("nop")
       else:
-        self.nodeInsnDot[node.id].append(str(insn))
+        self.nodeInsnDot[nid].append(str(insn))
 
     if insn.needsCondInstrSim():
-      assert isinstance(insn, instr.CondI), f"{node.id}, {insn}"
+      assert isinstance(insn, instr.CondI), f"{nid}, {insn}"
       return self.Conditional_Instr(node, insn, nodeDfv)  # type: ignore
     else:
       self.stats.instrAnTimer.start()
       if LS: LOG.debug("FinallyInvokingInstrFunc: %s.%s() on %s",
                        self.activeAnName, tFuncName, insn)
-      nDfv = transferFunc(node.id, insn, nodeDfv)  # type: ignore
+      if self.ipaEnabled and insn.hasCallExpr():
+        nDfv = self.processInstrWithCall(node, insn, nodeDfv, transferFunc)
+      else:
+        nDfv = transferFunc(nid, insn, nodeDfv)  # type: ignore
       self.stats.instrAnTimer.stop()
       return nDfv
+
+
+  def processInstrWithCall(self, #IPA
+      node: cfg.CfgNode,
+      insn: instr.InstrIT,
+      nodeDfv: NodeDfvL,
+      transferFunc: Callable,
+  ) -> NodeDfvL:
+    """
+    # Inter-procedural analysis does not process the instructions with call
+    # currently: function pointer based calls are handled intra-procedurally
+    #            func which cannot be analyzed are handled intra-procedurally
+    """
+    assert self.ipaEnabled
+
+    nid = node.id
+    callE = instr.getCallExpr(insn)
+    calleeFuncName = callE.getFuncName()
+
+    if not calleeFuncName:
+      return transferFunc(nid, insn, nodeDfv) # go #INTRA
+    else:
+      func = self.tUnit.getFuncObj(calleeFuncName)
+      if not func.canBeAnalyzed():
+        return transferFunc(nid, insn, nodeDfv) # go #INTRA
+
+    calleeBi = self.getCallSiteDfv(nid, calleeFuncName, self.activeAnName)
+    if not calleeBi: # i.e. wait for the calleeBi to be some useful value
+      return self.Barrier_Instr(node, insn, nodeDfv)
+
+    return transferFunc(nid, insn, nodeDfv, calleeBi)  # type: ignore
+
+
+  def handleNodeReachability(self, node, insn, nodeDfv) -> Opt[NodeDfvL]:
+    nilSim = self.getSim(node, Node__to__Nil__Name)
+    if nilSim is not None:
+      if LS: LOG.debug("Unreachable_Node: %s: %s", node.id, insn)
+      return self.Barrier_Instr(node, node.insn, nodeDfv)
+    return None
 
 
   def getCachedInstrSimResult(self,
@@ -1004,7 +1030,7 @@ class Host:
 
     self.stats.cachedInstrSimHits.miss()
     self.stats.simTimer.stop()
-    return None, False
+    return None, False  # i.e. compute the newInsn
 
 
   #@functools.lru_cache(500)
@@ -1030,7 +1056,7 @@ class Host:
     client = anName if demand is None else demand
     if client not in depSet:
       depSet.add(client)
-      if simName == Num_Var__to__Num_Lit__Name and anName == "PointsToA":
+      if simName == Num_Var__to__Num_Lit__Name and anName == "PointsToA": #WHY?
         assert False, f"{nid}, {client}, {self.activeAnName}"
       if LS: LOG.debug("AddedSimDependence: (changed) (Node %s), %s, %s, Set: %s",
                        nid, simName, client, depSet)
@@ -1047,7 +1073,7 @@ class Host:
       newInsn: instr.InstrIT,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
-    """A basic function to encapsulate common computation in many functions."""
+    """Encapsulates common sequence of computation in many functions."""
     self.tUnit.inferTypeOfInstr(newInsn)
     self.setCachedInstrSim(node.id, simName, insn, e, newInsn)
     return self.analyzeInstr(node, newInsn, nodeDfv)
@@ -1461,7 +1487,7 @@ class Host:
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
     """block all info from crossing (forw&back) from within the node."""
-    if LS: LOG.debug("FinallyProcessingInstruction (Node %s): BarrierI()", node.id)
+    if LS: LOG.debug("FinallyInvokingInstrFunc (Node %s): BarrierI()", node.id)
     # return self.activeAnObj.Barrier_Instr(nodeDfv)
     if GD: self.nodeInsnDot[node.id].append("block")
     return nodeDfv  # i.e. block the info
@@ -1469,7 +1495,7 @@ class Host:
   # BOUND END  : SpecialInstructions
 
 
-  def canAdd(self,
+  def canAddToParticipate(self,
       anName: AnNameT
   ) -> bool:
     """Can this analysis be added?"""
@@ -1484,7 +1510,20 @@ class Host:
       okToAdd = False  # avoid this analysis
     elif self.currNumOfAnalyses >= self.maxNumOfAnalyses:
       okToAdd = False  # max analysis count reached
-    if LS: LOG.debug("CAN_ADD_ANALYSIS(%s): %s", anName, okToAdd)
+    if LS: LOG.debug("CAN_ADD TO_PARTICIPATE(%s): %s", anName, okToAdd)
+    return okToAdd
+
+
+  def canAddToSimplify(self,
+      anName: AnNameT
+  ) -> bool:
+    """Can this analysis be added?"""
+    okToAdd = False  # by default don't add
+    if self.canAddToParticipate(anName):
+      okToAdd = True
+    elif self.anDfvs and anName in self.anDfvs:
+      okToAdd = True
+    if LS: LOG.debug("CAN_ADD TO_SIMPLIFTY(%s): %s", anName, okToAdd)
     return okToAdd
 
 
@@ -1495,12 +1534,12 @@ class Host:
     """Fetches allowed analysis names that
     provide the simplification.
     It caches the results."""
-    if simName in self.simSrcs:
+    if simName in self.simSrcs:  # check the cache first
       return self.simSrcs[simName]
 
     simAnNames: Set[AnNameT] = set()  # adds type info
     for anName in clients.simSrcMap.get(simName, set()):
-      if self.canAdd(anName):
+      if self.canAddToSimplify(anName):
         simAnNames.add(anName)  # add simplification analyses
 
     self.simSrcs[simName] = simAnNames  # cache the result
@@ -1564,39 +1603,45 @@ class Host:
       values: Opt[Set] = None,
   ) -> Opt[Set]:
     """Calculates the simplification value for the given parameters."""
-    anObj = self.anParticipating[simAnName]
+    nid = node.id
+    if self.canAddToParticipate(simAnName):
+      anObj = self.anParticipating[simAnName]
+      nDfv = self.anWorkDict[simAnName].getDfv(nid)
+    else:
+      anObj = self.anDfvsAnObj[simAnName]
+      nDfv = self.anDfvs[simAnName].getDfv(nid)
 
     assert hasattr(anObj, simName), f"{simAnName}, {simName}"
-    nid, simFunction = node.id, getattr(anObj, simName)
-    nDfv = self.anWorkDict[simAnName].getDfv(nid)
+    simFunction = getattr(anObj, simName)
 
     if LS: LOG.debug("SimOfExpr: '%s' isAttemptedBy %s withDfv %s.", e, simAnName, nDfv)
     # Note: if e is None, it assumes sim works on node id
     val = value = simFunction(e if e else nid, nDfv, values)
-    if self.transform and val: # and any simName #TRANSFORM
+    if val and self.transform: # and any simName #TRANSFORM
       val = SimFailed if len(val) > 1 else val
-      # if not val:
-      #   print(f"TRANSFORM: SimFailed: ({self.func.name, nid})"
-      #         f" ({simName}) {e} {e.info} Vals: {value}") #delit
+      if not val and util.VV1:
+        print(f"TRANSFORM: SimFailed: ({self.func.name, nid})"
+              f" ({simName}) {e} {e.info} Vals: {value}") #delit
     if LS: LOG.debug("SimOfExpr: '%s' is %s, by %s.", e, val, simAnName)
     return val
 
 
   #@functools.lru_cache(500)
-  def fetchAndSetupSimSrcs(self,
+  def fetchSimSourcesAndSetup(self,
       node: cfg.CfgNode,
       simName: SimNameT,
       e: Opt[expr.ExprET] = None,
       demand: Opt[ddm.AtomicDemand] = None,  #DDM
   ) -> Set[AnNameT]:
     """Adds analyses that can evaluate simName."""
-    simAnNames = self.fetchAndFilterSimAnalyses(simName, node.id, e)
+    simAnNames = self.fetchSimSourcesAndFilter(simName, node.id, e)
 
     for anName in simAnNames:
       neededBy = None if demand else self.activeAnName
-      added = self.addParticipantAn(anName, neededBy=neededBy)
-      if added and self.useDdm:
-        self.initializeAnalysisForDdm(node, simName, anName, e)
+      if self.canAddToParticipate(anName):
+        added = self.addParticipantAn(anName, neededBy=neededBy)
+        if added and self.useDdm:
+          self.initializeAnalysisForDdm(node, simName, anName, e)
 
     self.setupSimSourcesDep(node, simAnNames, simName, e)
     return simAnNames
@@ -1657,7 +1702,7 @@ class Host:
 
 
   #@functools.lru_cache(1000)
-  def fetchAndFilterSimAnalyses(self,
+  def fetchSimSourcesAndFilter(self,
       simName: SimNameT,
       nid: NodeIdT,
       e: Opt[expr.ExprET] = None,
@@ -1704,7 +1749,7 @@ class Host:
     returns the combined sim of the given expression.
     """
     self.stats.simTimer.start()
-    if demand is not None and simName not in self.activeAnSimNeeds:
+    if demand is not None and simName not in self.activeAnSimNeeds: #DDM
       self.stats.simTimer.stop()
       return SimFailed  # i.e. process_the_original_insn
 
@@ -1714,7 +1759,7 @@ class Host:
     # record the dependence
     self.addExprSimNeed(node.id, simName, e, demand,
                         None if demand else self.activeAnName)
-    anNames = self.fetchAndSetupSimSrcs(node, simName, e, demand)
+    anNames = self.fetchSimSourcesAndSetup(node, simName, e, demand)
 
     res = self.collectAndMergeSimResults(anNames, simName, node, e)
     if res is not None and len(res) == 0: assert res is SimPending, f"{res}"
@@ -1778,17 +1823,18 @@ class Host:
       return SimFailed  # i.e. process_the_original_insn
 
     if self.transform and len(res) > 1:  #TRANSFORM
-      print(f"DEREF_FAILED_IN_CASCADING ({node.id}): {e}, {e.info}") #delit
+      if util.VV1: print(f"DEREF_FAILED_IN_TRANSFORM: ({node.id}): {e}, {e.info}")
       res = SimFailed
     elif len(res) > 1 and NULL_OBJ_NAME in res:
         res.remove(NULL_OBJ_NAME)
     elif len(res) == 1 and NULL_OBJ_NAME in res:
       if LS: LOG.error("NullDerefEncountered (bad user program)(%s,%s): %s, %s",
                        self.func.name, node.id, e.name, node)
-      print(f"NullDerefEncountered (bad user program)({self.func.name},{node.id}), {e}, {e.info}")
+      if util.VV0: print(f"NullDerefEncountered (bad user program)"
+                         f"({self.func.name},{node.id}), {e}, {e.info}")
       res = SimFailed  # i.e. process_the_original_insn
 
-    if LS: LOG.debug("SimOfExpr (joined): '%s' is %s.", e.name, res)
+    if LS: LOG.debug("SimOfExpr (merged): '%s' is %s.", e.name, res)
     return res
 
 
@@ -1832,8 +1878,8 @@ class Host:
     restart = False
 
     if self.transform:
-      restart = self.ipaBiDfv != boundaryInfo
-      self.ipaBiDfv = boundaryInfo
+      restart = self.biDfv != boundaryInfo
+      self.biDfv = boundaryInfo
     else:
       for anName in boundaryInfo.keys():
         anDirn = clients.getAnDirection(anName)
@@ -1860,8 +1906,8 @@ class Host:
   def getBoundaryResult(self) -> Dict[AnNameT, NodeDfvL]:
     """
     Returns the boundary result for all the analyses that participated.
-    It returns the IN  of start node, and OUT of end node for each analysis.
-    Extract the relevant value as per the directionality of the analysis.
+    It returns the IN of start node, and OUT of end node for each analysis.
+    User should extract the relevant value as per analysis directionality.
     """
     results = {}
     assert self.funcCfg.start and self.funcCfg.end, f"{self.funcCfg}"
@@ -1869,10 +1915,7 @@ class Host:
     startId = self.funcCfg.start.id
     endId = self.funcCfg.end.id
     for anName, res in self.anWorkDict.items():
-      if anName in self.anParticipating:
-        anObj = self.anParticipating[anName]
-      else:
-        anObj = self.anParticipated[anName]
+      anObj = self.anParticipating[anName]
       startIn = res.nidNdfvMap.get(startId).dfvIn  # type: ignore
       endOut = res.nidNdfvMap.get(endId).dfvOut  # type: ignore
       # results[anName] = anObj.cleanUpBoundaryInfo(NodeDfvL(startIn, endOut)) #??
@@ -1883,60 +1926,81 @@ class Host:
 
   def setCallSiteDfv(self, #IPA
       nodeId: NodeIdT,
-      results: Dict[AnNameT, NodeDfvL]
+      calleeName: FuncNameT,
+      anName: AnNameT,
+      nodeDfv: NodeDfvL,
+  ) -> None:
+    """
+    Update the results for the call site.
+    """
+    tup = (nodeId, calleeName)
+    if tup not in self.callSiteDfvMap:
+      dfvDict = self.callSiteDfvMap[tup] = dict()
+    else:
+      dfvDict = self.callSiteDfvMap[tup]
+
+    dfvDict[anName] = nodeDfv
+
+
+  def getCallSiteDfv(self, #IPA
+      nodeId: NodeIdT,
+      calleeName: Opt[FuncNameT],
+      anName: AnNameT,
+  ) -> Opt[NodeDfvL]:
+    """
+    Gets the callee BI as provided by IpaHost to the Host.
+    """
+    if not calleeName: return None # can happen in case of #INTRA analysis
+    tup = (nodeId, calleeName)
+    if tup not in self.callSiteDfvMapIpaHost:
+      return None
+    else:
+      return self.callSiteDfvMapIpaHost[tup][anName]
+
+
+  def setCallSiteDfvsIpaHost(self, #IPA
+      nodeId: NodeIdT,
+      calleeName: FuncNameT,
+      newResults: Dict[AnNameT, NodeDfvL]
   ) -> bool:
     """
-    Update the results at the call site.
+    Update the results for the call site.
     Returns true if there is a need to restart Host.
     """
     restart = False
 
     node = self.funcCfg.nodeMap[nodeId]
-    for anName in results.keys():
-      dirn = self.anWorkDict[anName]
-      nDfv = results[anName]
-      inOutChange = dirn.update(node, nDfv, widen=True)
-      if inOutChange:
-        print(f"InOutChange(IPA): {inOutChange}") #delit
-        restart = True  # Should re-run the Host
-        if LS: LOG.debug("IPA_UpdatedWorklist: %s, %s", self.func.name, dirn.wl)
-        if self.transform:
-          tup = (anName, nodeId)
-          self.ipaCascadeCallSiteDfvMap[tup] = dirn.nidNdfvMap[nodeId]
-        else:
-          if isinstance(node.insn, instr.AssignI)\
-              and clients.getAnDirection(anName) == Forward:
-            dirn.setTopValue(nid=node.id+1)  # III() instr (to stop widening)
-          self.addAnToWorklist(anName, ipa=True)
+    tup = (nodeId, calleeName)
+    if tup not in self.callSiteDfvMapIpaHost:
+      oldResults = self.callSiteDfvMapIpaHost[tup] = dict()
+      restart = True
+    else:
+      oldResults = self.callSiteDfvMapIpaHost[tup]
 
-      # IMPORTANT: Not needed. No analysis dependence at call sites!
-      #   self.addDepAnToWorklist(node, inOutChange)
+    for anName in newResults.keys():
+      restartAn = False
+      newDfv = newResults[anName]
+      if anName not in oldResults:
+        restart = restartAn = True
+      else:
+        oldDfv = oldResults[anName]
+        if oldDfv != newDfv:
+          restart = restartAn = True
 
+      if restartAn: # then modify the analysis' worklist
+        dirn = self.anWorkDict[anName]
+        dirn.add(node)
+
+    self.callSiteDfvMapIpaHost[tup] = newResults
     return restart
 
 
-  def getCallSiteDfvs(self
-  ) -> Opt[Dict[cfg.CfgNode, Dict[AnNameT, NodeDfvL]]]:
+  def getCallSiteDfvsIpaHost(self,
+  ) -> Dict[Tuple[NodeIdT, FuncNameT], Dict[AnNameT, NodeDfvL]]:
     """
-    Returns the NodeDfvL objects at the call site nodes.
+    Returns the NodeDfvL objects for each analysis at the call site nodes.
     """
-    callSiteNodes = self.funcCfg.getNodesWithNonPtrCallExpr()
-    callSiteNodes = self.tUnit.filterAwayCalleesWithNoBody(callSiteNodes)
-    if not callSiteNodes:
-      return None
-
-    callSiteDfvs = {}
-    for node in callSiteNodes:
-      nid = node.id
-      analysisDfvs = {}
-      for anName, res in self.anWorkDict.items():
-        if nid not in res.nidNdfvMap:
-          continue  # NODE IS UNREACHABLE
-        nDfv = res.nidNdfvMap.get(nid)
-        analysisDfvs[anName] = nDfv
-      callSiteDfvs[node] = analysisDfvs
-
-    return callSiteDfvs
+    return self.callSiteDfvMap
 
 
   def getParticipatingAnalyses(self) -> Set[AnNameT]:
@@ -1952,13 +2016,13 @@ class Host:
 
   def getAnalysisResults(self,
       anName: AnNameT,
-  ) -> Opt[Dict[cfg.CfgNodeId, NodeDfvL]]:
+  ) -> Opt[DirectionDT]:
     """Returns the analysis results of the given analysis.
 
     Returns None if no information present.
     """
     if anName in self.anWorkDict:
-      return self.anWorkDict[anName].nidNdfvMap
+      return self.anWorkDict[anName]
     return None
 
 
@@ -2082,15 +2146,15 @@ class Host:
   def willChangeAffectSimDep(self, inOutChange: NewOldL) -> bool:
     """Returns True if the direction of change matters for sim dependence."""
     assert self.activeAnObj
-    dirnClass = clients.getAnDirnClass(self.activeAnName)
+    dirnStr = clients.getAnDirection(self.activeAnName)
     iChanged = inOutChange.isNewIn
     oChanged = inOutChange.isNewOut
 
-    if dirnClass is ForwardD and iChanged:
+    if dirnStr == Forward and iChanged:
       return True # for forward analyses change at IN can change sim
-    if dirnClass is BackwardD and oChanged:
+    if dirnStr == Backward and oChanged:
       return True # for backward analyses change at OUT can change sim
-    if dirnClass is ForwardD and (iChanged or oChanged):
+    if dirnStr == ForwBack and (iChanged or oChanged):
       return True # for forw/backward analyses change at IN/OUT can change sim
     return False
 
