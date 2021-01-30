@@ -450,11 +450,11 @@ class Func(ConstructT):
   def yieldBasicBlocks(self):
     """Yields tuples of (BBId, InstructionSequence) in no particular order."""
     if self.basicBlocks:
-      yield from self.basicBlocks[START_BB_ID]
+      yield START_BB_ID, self.basicBlocks[START_BB_ID]
       for bbId in sorted(self.basicBlocks.keys()):
         if bbId not in START_END_BBIDS:
-          yield from self.basicBlocks[bbId]
-      yield from self.basicBlocks[END_BB_ID]
+          yield bbId, self.basicBlocks[bbId]
+      yield END_BB_ID, self.basicBlocks[END_BB_ID]
     else:
       yield from []
 

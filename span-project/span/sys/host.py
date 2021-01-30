@@ -19,7 +19,7 @@ from span.api import dfv
 import span.util.util as util
 from span.util.util import LS, AS, GD
 
-from span.ir.types import NodeIdT, VarNameT, FuncNameT
+from span.ir.types import NodeIdT, VarNameT, FuncNameT, DirectionT
 from span.ir.conv import FalseEdge, TrueEdge
 from span.ir.conv import Forward, Backward, ForwBack, NULL_OBJ_NAME
 import span.ir.op as op
@@ -405,6 +405,7 @@ class Host:
 
     # currently active analysis and its needed info/objects
     self.activeAnName: AnNameT = ""
+    self.activeAnDirn: DirectionT = ""
     self.activeAnObj: Opt[AnalysisAT] = None
     self.activeAnTop: Opt[DataLT] = None
     self.activeAnSimNeeds: Set[str] = set()
@@ -433,8 +434,9 @@ class Host:
     # version is given preference.
     self.anDfvs: Opt[Dict[AnNameT, DirectionDT]] = anDfvs
     self.anDfvsAnObj: Opt[Dict[AnNameT, AnalysisAT]] = {}
-    for anName in self.anDfvs:
-      self.anDfvsAnObj[anName] = clients.analyses[anName](self.func)
+    if self.anDfvs:
+      for anName in self.anDfvs:
+        self.anDfvsAnObj[anName] = clients.analyses[anName](self.func)
 
     # map of (nid, simName, expr) --to-> set of analyses affected
     self.nodeInstrSimDep:\
@@ -726,6 +728,7 @@ class Host:
     self.stats.anSwitchTimer.start()
     self.anRunSequence.append(anName)
     self.activeAnName = anName
+    self.activeAnDirn = clients.getAnDirection(anName)
     self.activeAnObj = self.anParticipating[anName]
     self.activeAnTop = self.activeAnObj.overallTop
     self.activeAnSimNeeds = clients.simNeedMap[anName]
@@ -919,6 +922,18 @@ class Host:
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
+      if activeAnObj.needsRhsDerefToVarsSim and insn.needsRhsPtrCallSim():
+        assert isinstance(insn, instr.AssignI), f"{nid}: {insn}"
+        nDfv = self.handleRhsPtrCallSim(node, insn, nodeDfv)
+        if nDfv is not None: return nDfv
+        # if nDfv is None then work on the original instruction
+
+      if activeAnObj.needsRhsDerefToVarsSim and insn.needsPtrCallSim():
+        assert isinstance(insn, instr.CallI), f"{nid}: {insn}"
+        nDfv = self.handlePtrCallSim(node, insn, nodeDfv)
+        if nDfv is not None: return nDfv
+        # if nDfv is None then work on the original instruction
+
       if activeAnObj.needsNumBinToNumLitSim and insn.needsRhsNumBinaryExprSim():
         # rhs is a numeric bin expr, hence could be simplified
         assert isinstance(insn, instr.AssignI), f"{nid}: {insn}"
@@ -993,7 +1008,39 @@ class Host:
     if not calleeBi: # i.e. wait for the calleeBi to be some useful value
       return self.Barrier_Instr(node, insn, nodeDfv)
 
-    return transferFunc(nid, insn, nodeDfv, calleeBi)  # type: ignore
+    if self.activeAnDirn == Forward:
+      nodeDfv = self.processCallArguments(node, callE, nodeDfv)
+      newCalleeBi = self.activeAnObj.getLocalizedCalleeBi(nid, insn, nodeDfv, calleeBi)
+      self.setCallSiteDfv(nid, calleeFuncName, self.activeAnName, newCalleeBi)
+      nodeDfv = transferFunc(nid, insn, nodeDfv, calleeBi)  # type: ignore
+    else: # both for Backward and ForwBack
+      assert False
+      assert self.activeAnDirn in (Backward, ForwBack), f"{self.activeAnDirn}"
+      nodeDfv = transferFunc(nid, insn, nodeDfv, calleeBi)  # type: ignore
+      newCalleeBi = self.activeAnObj.getLocalizedCalleeBi(nid, insn, nodeDfv, calleeBi)
+      self.setCallSiteDfv(nid, calleeFuncName, self.activeAnName, newCalleeBi)
+      # nodeDfv = self.processCallArguments(node, callE, nodeDfv)  #FIXME: think
+
+    return nodeDfv
+
+
+  def processCallArguments(self,
+      node: cfg.CfgNode,
+      callE: expr.CallE, # must not be a pointer-call
+      nodeDfv: NodeDfvL
+  ) -> NodeDfvL:
+    """Analyzes the argument assignment to function params."""
+    funcName = callE.getFuncName()
+    assert funcName, f"{self.func.name}, {callE}: {callE.info}"
+    funcObj = self.tUnit.getFuncObj(funcName)
+
+    for i, paramName in enumerate(funcObj.paramNames):
+      arg = callE.args[i]
+      lhs = expr.VarE(paramName, arg.info)
+      insn = instr.AssignI(lhs, arg, arg.info)
+      nodeDfv = self.analyzeInstr(node, insn, nodeDfv)
+
+    return nodeDfv
 
 
   def handleNodeReachability(self, node, insn, nodeDfv) -> Opt[NodeDfvL]:
@@ -1298,6 +1345,94 @@ class Host:
 
     self.tUnit.inferTypeOfInstr(newInsn)
     self.setCachedInstrSim(node.id, simName, insn, rhs.of, newInsn)
+    return newInsn
+
+
+  def handleRhsPtrCallSim(self,
+      node: cfg.CfgNode,
+      insn: instr.AssignI,
+      nodeDfv: NodeDfvL
+  ) -> Opt[NodeDfvL]:
+    newInsn = self.getRhsPtrCallSimInstr(node, insn)
+    if newInsn is None:
+      return None  # i.e. process_the_original_insn
+    else:
+      return self.analyzeInstr(node, newInsn, nodeDfv)
+
+
+  def getRhsPtrCallSimInstr(self,
+      node: cfg.CfgNode,
+      insn: instr.AssignI,
+      demand: Opt[ddm.AtomicDemand] = None, #DDM
+  ) -> Opt[instr.InstrIT]:
+    assert isinstance(insn.rhs, expr.CallE), f"{node.id}: {insn}"
+    lhs, rhsArg, simName = insn.lhs, insn.rhs.callee, Deref__to__Vars__Name
+    rhs = insn.rhs
+
+    newInsn, valid = self.getCachedInstrSimResult(node, simName,
+                                                  insn, rhsArg, demand)
+    if valid: return newInsn
+
+    values = self.Calc_Deref__to__Vars(node, rhsArg)
+    if values is SimFailed:
+      self.setCachedInstrSim(node.id, simName, insn, rhsArg, insn)
+      return None  # i.e. process_the_original_insn
+    elif values == SimPending:
+      newInsn = instr.CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhsArg))
+    else:  # take meet of the dfv of the set of instructions now possible
+      assert values and len(values), f"{node}: {values}"
+      AssignI, VarE = instr.AssignI, expr.VarE
+      newInsn = instr.III(
+        [AssignI(lhs, expr.CallE(VarE(vName), rhs.args, rhs.info), insn.info)
+         for vName in values])
+      newInsn.addInstr(instr.CondReadI(
+        lhs.name, ir.getNamesUsedInExprSyntactically(rhsArg)))
+
+    self.tUnit.inferTypeOfInstr(newInsn)
+    self.setCachedInstrSim(node.id, simName, insn, rhsArg, newInsn)
+    return newInsn
+
+
+  def handlePtrCallSim(self,
+      node: cfg.CfgNode,
+      insn: instr.CallI,
+      nodeDfv: NodeDfvL
+  ) -> Opt[NodeDfvL]:
+    newInsn = self.getPtrCallSimInstr(node, insn)
+    if newInsn is None:
+      return None  # i.e. process_the_original_insn
+    else:
+      return self.analyzeInstr(node, newInsn, nodeDfv)
+
+
+  def getPtrCallSimInstr(self,
+      node: cfg.CfgNode,
+      insn: instr.CallI,
+      demand: Opt[ddm.AtomicDemand] = None, #DDM
+  ) -> Opt[instr.InstrIT]:
+    assert isinstance(insn, instr.CallI), f"{node.id}: {insn}"
+    callE, callee, simName = insn.arg, insn.arg.callee, Deref__to__Vars__Name
+
+    newInsn, valid = self.getCachedInstrSimResult(node, simName,
+                                                  insn, callee, demand)
+    if valid: return newInsn
+
+    values = self.Calc_Deref__to__Vars(node, callee)
+    if values is SimFailed:
+      self.setCachedInstrSim(node.id, simName, insn, callee, insn)
+      return None  # i.e. process_the_original_insn
+    elif values == SimPending:
+      newInsn = instr.ExReadI({callee.name})
+    else:  # take meet of the dfv of the set of instructions now possible
+      assert values and len(values), f"{node}: {values}"
+      AssignI, VarE = instr.AssignI, expr.VarE
+      newInsn = instr.III(
+        [instr.CallI(expr.CallE(VarE(vName), callE.args, callE.info), insn.info)
+         for vName in values])
+      newInsn.addInstr(instr.ExReadI({callee.name}))
+
+    self.tUnit.inferTypeOfInstr(newInsn)
+    self.setCachedInstrSim(node.id, simName, insn, callee, newInsn)
     return newInsn
 
 
@@ -1853,7 +1988,7 @@ class Host:
     print("\n\n") # some blank lines for neatness
     print(self.func, "TUnit:", self.func.tUnit.name)
     print(f"MODE: IPA: {self.ipaEnabled}, DDM: {self.useDdm},"
-          f" CASCADED: {self.transform}")
+          f" TRANSFORM: {self.transform}")
     for anName, res in self.anWorkDict.items():
       print(f"{anName}:(SimCount: {self.anSimSuccessCount[anName]})")
 

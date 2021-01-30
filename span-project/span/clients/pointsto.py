@@ -409,7 +409,8 @@ class PointsToA(analysis.ValueAnalysisAT):
 
   def getExprDfv(self,
       rhs: expr.ExprET,
-      dfvIn: OverallL
+      dfvIn: OverallL,
+      calleeBi: Opt[NodeDfvL] = None,  #IPA
   ) -> dfv.ComponentL:
     """Returns the effective component dfv of the rhs.
     It expects the rhs to be pointer type or an array type."""
@@ -481,7 +482,7 @@ class PointsToA(analysis.ValueAnalysisAT):
       return value
 
     elif isinstance(rhs, expr.CallE):
-      return self.componentBot
+      return self.getExprDfvCallE(rhs, calleeBi)
 
     raise ValueError(f"{rhs}")
 

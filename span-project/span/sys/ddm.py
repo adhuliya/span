@@ -9,6 +9,8 @@ This module provides the demand driven logic to SPAN.
 
 import logging
 
+from span.ir import conv
+
 LOG = logging.getLogger("span")
 from typing import List, Set, Dict, Tuple, Callable, FrozenSet, Any
 from typing import Optional as Opt
@@ -388,9 +390,9 @@ class DdMethod:
                     demand.node.id, True,
                     {demand.demandVar} if demand.atIn else None)})  # initial value
 
-    if demand.dirn == types.Backward:
+    if demand.dirn == conv.Backward:
       slice =  self.propagateDemandBackward(demand)
-    elif demand.dirn == types.Forward:
+    elif demand.dirn == conv.Forward:
       slice =  self.propagateDemandForward(demand)
     else: # demand.dirn == types.ForwBack
       slice =  self.propagateDemandForwBack(demand)
@@ -430,18 +432,18 @@ class DdMethod:
 
 
   def propagateDemandForward(self, demand) -> NewSlice:
-    assert demand.dirn == types.Forward, f"{demand}"
+    assert demand.dirn == conv.Forward, f"{demand}"
     raise NotImplementedError()
 
 
   def propagateDemandForwBack(self, demand) -> NewSlice:
-    assert demand.dirn == types.ForwBack, f"{demand}"
+    assert demand.dirn == conv.ForwBack, f"{demand}"
     raise NotImplementedError()
 
 
   #@functools.lru_cache(2000)
   def propagateDemandToPred(self, demand: AtomicDemand) -> NewSlice:
-    #assert demand.atIn == AtIn and demand.dirn == types.Backward, f"{demand}" #invariant
+    #assert demand.atIn == AtIn and demand.dirn == conv.Backward, f"{demand}" #invariant
     slice, predEdges = NewSlice(), demand.node.predEdges
     isFeasibleEdge, addInfNodesDependence = self.fe.isFeasibleEdge, self.addInfNodesDependence
     for predEdge in predEdges:
@@ -679,7 +681,7 @@ class DdMethod:
 
     demands = [
       AtomicDemand(func, node, AtIn, varName,
-                   func.tUnit.inferTypeOfVal(varName), types.Backward)
+                   func.tUnit.inferTypeOfVal(varName), conv.Backward)
       for varName in varNames
     ]
 

@@ -16,7 +16,8 @@ from span.ir.constructs import Func
 from span.ir.conv import TRANSFORM_INFO_FILE_NAME
 from span.ir.types import FuncNameT, Loc
 from span.sys import clients
-from span.util.util import LS, Verbosity
+import span.util.util as util
+from span.util.util import LS
 
 from span.ir.tunit import TranslationUnit
 from span.sys.host import Host
@@ -87,8 +88,7 @@ class TransformCode:
                           )
     ipaHostSpan.analyze()
     self.ipaHost = ipaHostSpan
-    if Verbosity >= 2:
-      ipaHostSpan.printFinalResults()
+    if util.VV2: ipaHostSpan.printFinalResults()
 
 
   def genTransformInfo_All(self) -> None:

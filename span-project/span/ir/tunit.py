@@ -18,7 +18,7 @@ Following important things are available here,
 
   2. Provides API to fetch useful information from a translation unit.
 """
-
+import functools
 import logging
 LOG = logging.getLogger("span")
 
@@ -2164,5 +2164,27 @@ class TranslationUnit:
         approx = False
 
     return approx
+
+
+  @functools.lru_cache(512)
+  def isTailFunction(self,
+      funcName: types.FuncNameT,
+  ) -> bool:
+    tailFunc = True
+    funcObj = self.getFuncObj(funcName)
+
+    for insn in funcObj.yieldInstrSeq():
+      if insn.hasCallExpr():
+        calleeName = instr.getCalleeFuncName(insn)
+        if not calleeName: # function pointer call can be further processed
+          tailFunc = False
+          break
+        else:
+          calleeObj = self.getFuncObj(calleeName)
+          if calleeObj.canBeAnalyzed(): # callee can be analyzed hence not tail
+            tailFunc = False
+            break
+
+    return tailFunc
 
 

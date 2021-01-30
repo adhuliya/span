@@ -406,6 +406,7 @@ class DirectionDT:
       self.nidNdfvMap[nid] = self.topNdfv
     # set this to true once boundary values are initialized
     self.wl: FastNodeWorkList = self.generateInitialWorklist()
+    self.boundaryInfoInitialized = False
 
 
   def generateInitialWorklist(self) -> FastNodeWorkList:

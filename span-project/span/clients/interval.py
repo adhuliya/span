@@ -32,7 +32,7 @@ import span.api.analysis as analysis
 from span.api.analysis import SimFailed, SimPending, BoolValue, \
   NumValue, ValueTypeT, AnalysisAT
 
-from span.util.util import LS, Verbosity
+from span.util.util import LS
 
 
 ################################################

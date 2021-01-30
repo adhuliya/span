@@ -422,8 +422,8 @@ def analyzeFunctions(
       supportAnalyses   = supportAnalyses,
       avoidAnalyses     = avoidAnalyses,
       maxNumOfAnalyses  = maxNumOfAnalyses,
-      analysisSeq       = analysisSeq,
-      disableSim= disableAllSim,
+      # analysisSeq       = analysisSeq,
+      disableSim        = disableAllSim,
       useDdm            = useDdm,
     )
     analysisTime = syn1.analyze() # do the analysis
