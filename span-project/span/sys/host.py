@@ -114,6 +114,9 @@ class Participant:
     return f"({self.analysisName},{self.weight})"
 
 
+  def __repr__(self): return self.__str__()
+
+
 class PriorityAnWorklist:
   """Priority Worklist of all participating analyses (not nodes)"""
 
@@ -170,7 +173,7 @@ class PriorityAnWorklist:
     """Add an analysis to worklist.
     neededBy should already be in self.anDepGraph.
     """
-    if LS: LOG.debug("AddedAnalysisToWl(...): %s, (neededBy: %s)", anName, neededBy)
+    if LS: LOG.debug("AddedAnalysisToWl(Y/N): %s, (neededBy: %s)", anName, neededBy)
 
     self.addToAnDepGraph(anName, neededBy)
     participant = self.anDepGraph[anName]
@@ -336,6 +339,9 @@ class Host:
   ) -> None:
     timer = util.Timer("HostSetup")
 
+    if LS: LOG.debug(f"HostSetup ({func.name}): IPA: {ipaEnabled}, DDM: {useDdm}, "
+                     f"SIM: {not disableSim}, TRANSFORM: {transform}")
+
     assert func.cfg and func.tUnit, f"{func}: {func.cfg}, {func.tUnit}"
 
     # function to be analyzed
@@ -490,6 +496,7 @@ class Host:
     # Thus the execution of such analyses is optimized in useful ways.
     self.supportAnalyses: Opt[Set[AnNameT]] \
       = set(supportAnalyses) if supportAnalyses else None
+    if LS: LOG.debug(f"AddingParticipantAnalyses(HostSetup) START.")
     if otherAnalyses:
       for anName in reversed(otherAnalyses):
         self.mainAnalyses.add(anName)
@@ -497,6 +504,7 @@ class Host:
     # add the main analysis last (then it is picked up first)
     self.mainAnalyses.add(self.mainAnName)
     self.addParticipantAn(self.mainAnName)
+    if LS: LOG.debug(f"AddingParticipantAnalyses(HostSetup) END.")
 
     # Host writes to this map, IpaHost reads from this map
     self.callSiteDfvMap: \
@@ -506,7 +514,9 @@ class Host:
       Dict[Tuple[NodeIdT, FuncNameT], Dict[AnNameT, NodeDfvL]] = dict()
 
     # add nodes that have one or more feasible pred edge
+    if LS: LOG.debug(f"AddingFeasibleNodes(HostSetup) START.")
     self.addNodes(self.ef.initFeasibility())
+    if LS: LOG.debug(f"AddingFeasibleNodes(HostSetup) END.")
 
     timer.stopAndLog()
 
@@ -692,7 +702,7 @@ class Host:
     """Don't add self.activeAnName and analyses
     that failed to provide simplification"""
     if not ipa and anName == self.activeAnName:
-      if LS: LOG.debug("AddedAnalysisToWl(NO 1)(%s): %s, (neededBy: %s)",
+      if LS: LOG.debug("AddedAnalysisToWl(NO1)(%s): %s, (neededBy: %s)",
                        self.activeAnName, anName, neededBy)
       return  # don't add active analysis again
     if anName in self.mainAnalyses:
@@ -701,7 +711,7 @@ class Host:
       if force or self.anSimSuccessCount[anName]:
         self.anWorkList.add(anName, neededBy)
 
-    if LS: LOG.debug("AddedAnalysisToWl(NO 3)(%s:%s): %s, (neededBy: %s)",
+    if LS: LOG.debug("AddedAnalysisToWl(NO3)(%s:%s): %s, (neededBy: %s)",
                      self.activeAnName, self.anSimSuccessCount.get(anName, -1), anName, neededBy)
 
 
@@ -712,10 +722,10 @@ class Host:
     """Merge info at IN and OUT of a node."""
     nid = node.id
     if self.ef.isFeasibleNode(node):
-      if LS: LOG.debug("Before InOutMerge (Node %s): NodeDfv: %s.",
+      if LS: LOG.debug("Before InOutMerge (Node_%s): NodeDfv: %s.",
                        nid, dirn.nidNdfvMap.get(nid, dirn.topNdfv))
       ndfv, inout = dirn.calcInOut(node, self.ef)
-      if LS: LOG.debug("After  InOutMerge (Node %s): Change: %s, NodeDfv: %s.",
+      if LS: LOG.debug("After  InOutMerge (Node_%s): Change: %s, NodeDfv: %s.",
                        nid, inout, ndfv)
       return ndfv, inout, Reachable
     return dirn.topNdfv, OLD_INOUT, NotReachable
@@ -776,7 +786,7 @@ class Host:
     if LS: LOG.info("\nRUNNING_ANALYSIS MAIN_ANALYSIS: %s. on_function: %s\n",
                     self.mainAnName, self.func.name)
     if LS: LOG.info(f"MODE: IPA: {self.ipaEnabled}, DDM: {self.useDdm},"
-                    f" TRANSFORM: {self.transform}")
+                    f" SIM: {not self.disableSim}, TRANSFORM: {self.transform}")
 
     while not self.anWorkList.isEmpty():
       self.analysisCounter += 1
@@ -794,10 +804,13 @@ class Host:
     if GD: self.nodeInsnDot.clear()  # reinitialize for each new analysis iteration
 
     while True: #self.activeAnIsUseful:  #needs testing node visits are increasing
-      if LS: LOG.debug("GetNextNodeFrom_Worklist (%s): %s (NODE_NODE_NODE)",
-                       self.activeAnName, dirn.wl)
       node, treatAsNop, ddmVarSet = dirn.wl.pop()
+      if LS: LOG.debug("GetNextNodeFrom_Worklist (%s, %s):\n  Got %s. %s",
+                       self.func.name, self.activeAnName,
+                       f"Node_{node.id}" if node else None, dirn.wl)
       if node is None: break  # worklist is empty, so exit the loop
+      if LS: LOG.debug("  Got Node_%s: %s (info:%s) (TreatAsNop: %s, ddmVarSet: %s)",
+                       node.id, node.insn, node.insn.info, treatAsNop, ddmVarSet)
 
       nid = node.id
       nodeDfv, inOutChange1, feasibleNode = self.calcInOut(node, dirn)
@@ -812,13 +825,13 @@ class Host:
 
         self.addDepAnToWorklist(node, inOutChange1)
 
-        if LS: LOG.debug("Curr_Node_Dfv (Before) (Node %s): %s.", nid, nodeDfv)
+        if LS: LOG.debug("Curr_Node_Dfv (Before) (Node_%s): %s.", nid, nodeDfv)
         nodeDfv = self.analyzeInstr(node, node.insn, nodeDfv, treatAsNop)
-        if LS: LOG.debug("Curr_Node_Dfv (AnalysisResult) (Node %s): %s", nid, nodeDfv)
+        if LS: LOG.debug("Curr_Node_Dfv (AnalysisResult) (Node_%s): %s", nid, nodeDfv)
 
         inOutChange2 = dirn.update(node, nodeDfv)
 
-        if LS: LOG.debug("Curr_Node_Dfv (AfterUpdate) (Node %s): %s, change: %s.",
+        if LS: LOG.debug("Curr_Node_Dfv (AfterUpdate) (Node_%s): %s, change: %s.",
                          nid, nodeDfv, inOutChange2)
         self.addDepAnToWorklist(node, inOutChange2)
       else:
@@ -851,7 +864,7 @@ class Host:
       return self._analyzeInstr(node, insn, nodeDfv)
 
     # if here its a III instruction
-    if LS: LOG.debug("Analyzing_Instr (ParallelI) (Node %s): %s", node.id, insn)
+    if LS: LOG.debug("Analyzing_Instr (ParallelI) (Node_%s): %s", node.id, insn)
 
     def ai(ins):
       nDfv = self._analyzeInstr(node, ins, nodeDfv)
@@ -868,7 +881,7 @@ class Host:
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
     LLS, nid = LS, node.id
-    if LLS: LOG.debug("Analyzing_Instr (Node %s): %s, iType: %s",
+    if LLS: LOG.debug("Analyzing_Instr (Node_%s): %s, iType: %s",
                       nid, insn, insn.type)
 
     # is reachable (vs feasible) ?
@@ -992,6 +1005,7 @@ class Host:
     #            func which cannot be analyzed are handled intra-procedurally
     """
     assert self.ipaEnabled
+    if util.VV1: print(f"ProcessingIPACall: {self.func.name}, {node.id}, {insn}")
 
     nid = node.id
     callE = instr.getCallExpr(insn)
@@ -1006,11 +1020,17 @@ class Host:
 
     calleeBi = self.getCallSiteDfv(nid, calleeFuncName, self.activeAnName)
     if not calleeBi: # i.e. wait for the calleeBi to be some useful value
+      if not nodeDfv.top:
+        callDfv = self.processCallArguments(node, callE, nodeDfv)
+        print(f"BEFORE_LOCALIZATION: {callDfv}") #delit
+        newCalleeBi = self.activeAnObj.getLocalizedCalleeBi(nid, insn, callDfv, calleeBi)
+        self.setCallSiteDfv(nid, calleeFuncName, self.activeAnName, newCalleeBi)
       return self.Barrier_Instr(node, insn, nodeDfv)
 
     if self.activeAnDirn == Forward:
-      nodeDfv = self.processCallArguments(node, callE, nodeDfv)
-      newCalleeBi = self.activeAnObj.getLocalizedCalleeBi(nid, insn, nodeDfv, calleeBi)
+      callDfv = self.processCallArguments(node, callE, nodeDfv)
+      print(f"BEFORE_LOCALIZATION: {callDfv}") #delit
+      newCalleeBi = self.activeAnObj.getLocalizedCalleeBi(nid, insn, callDfv, calleeBi)
       self.setCallSiteDfv(nid, calleeFuncName, self.activeAnName, newCalleeBi)
       nodeDfv = transferFunc(nid, insn, nodeDfv, calleeBi)  # type: ignore
     else: # both for Backward and ForwBack
@@ -1034,11 +1054,18 @@ class Host:
     assert funcName, f"{self.func.name}, {callE}: {callE.info}"
     funcObj = self.tUnit.getFuncObj(funcName)
 
+    processNodeDfv = nodeDfv
     for i, paramName in enumerate(funcObj.paramNames):
       arg = callE.args[i]
       lhs = expr.VarE(paramName, arg.info)
       insn = instr.AssignI(lhs, arg, arg.info)
-      nodeDfv = self.analyzeInstr(node, insn, nodeDfv)
+      self.tUnit.inferTypeOfInstr(insn)
+      processNodeDfv = self.analyzeInstr(node, insn, processNodeDfv)
+
+    if self.activeAnDirn == Forward:
+      nodeDfv = NodeDfvL(processNodeDfv.dfvOut, nodeDfv.dfvOut)
+    else:
+      assert False  #FIXME: handle Backward too
 
     return nodeDfv
 
@@ -1105,10 +1132,10 @@ class Host:
       depSet.add(client)
       if simName == Num_Var__to__Num_Lit__Name and anName == "PointsToA": #WHY?
         assert False, f"{nid}, {client}, {self.activeAnName}"
-      if LS: LOG.debug("AddedSimDependence: (changed) (Node %s), %s, %s, Set: %s",
+      if LS: LOG.debug("AddedSimDependence: (changed) (Node_%s), %s, %s, Set: %s",
                        nid, simName, client, depSet)
     else:
-      if LS: LOG.debug("AddedSimDependence: (unchanged) (Node %s), %s, %s, Set: %s",
+      if LS: LOG.debug("AddedSimDependence: (unchanged) (Node_%s), %s, %s, Set: %s",
                        nid, simName, client, depSet)
 
 
@@ -1622,7 +1649,7 @@ class Host:
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
     """block all info from crossing (forw&back) from within the node."""
-    if LS: LOG.debug("FinallyInvokingInstrFunc (Node %s): BarrierI()", node.id)
+    if LS: LOG.debug("FinallyInvokingInstrFunc (Node_%s): BarrierI()", node.id)
     # return self.activeAnObj.Barrier_Instr(nodeDfv)
     if GD: self.nodeInsnDot[node.id].append("block")
     return nodeDfv  # i.e. block the info
@@ -1888,7 +1915,7 @@ class Host:
       self.stats.simTimer.stop()
       return SimFailed  # i.e. process_the_original_insn
 
-    if LS: LOG.debug("SimplifyingExpr:(Node %s) %s, SimName: %s. (For: %s)",
+    if LS: LOG.debug("SimplifyingExpr:(Node_%s) %s, SimName: %s. (For: %s)",
                      node.id, e, simName, demand if demand else self.activeAnName)
 
     # record the dependence
@@ -1982,7 +2009,7 @@ class Host:
       if LS: LOG.debug("DDM Stats\n%s", self.ddmObj.timer)
     if LS: LOG.debug("Stats:\n%s", self.tUnit.stats)
 
-    if LS: LOG.debug("AnWorklistDots:\n%s", self.getAnIterationDotString())
+    if LS and GD: LOG.debug("AnWorklistDots:\n%s", self.getAnIterationDotString())
 
     if not util.VV2: return # i.e. then don't print what is below
     print("\n\n") # some blank lines for neatness
@@ -2068,6 +2095,7 @@ class Host:
     """
     Update the results for the call site.
     """
+    if util.VV3: print(f"SetCallSiteDfv: {nodeId}, {calleeName}, {anName}, {nodeDfv}")
     tup = (nodeId, calleeName)
     if tup not in self.callSiteDfvMap:
       dfvDict = self.callSiteDfvMap[tup] = dict()
@@ -2112,21 +2140,23 @@ class Host:
     else:
       oldResults = self.callSiteDfvMapIpaHost[tup]
 
+    widenedResult = newResults
     for anName in newResults.keys():
       restartAn = False
-      newDfv = newResults[anName]
+      wideDfv = newDfv = newResults[anName]
       if anName not in oldResults:
         restart = restartAn = True
       else:
         oldDfv = oldResults[anName]
-        if oldDfv != newDfv:
-          restart = restartAn = True
+        wideDfv, changed = oldDfv.widen(newDfv)
+        if changed: restart = restartAn = True
+      widenedResult[anName] = wideDfv
 
       if restartAn: # then modify the analysis' worklist
         dirn = self.anWorkDict[anName]
         dirn.add(node)
 
-    self.callSiteDfvMapIpaHost[tup] = newResults
+    self.callSiteDfvMapIpaHost[tup] = widenedResult
     return restart
 
 
@@ -2135,6 +2165,7 @@ class Host:
     """
     Returns the NodeDfvL objects for each analysis at the call site nodes.
     """
+    if util.VV2: print(f"CallSiteDfv: {self.func.name}: {self.callSiteDfvMap}")
     return self.callSiteDfvMap
 
 

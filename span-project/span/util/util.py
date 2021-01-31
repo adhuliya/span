@@ -56,7 +56,7 @@ LS = US = AS = GD = False  # IMPORTANT
 
 # logger switch (enables the logging system)
 # its good to enable while developing
-# LS: bool = True # just comment this line to make it False
+LS: bool = True # just comment this line to make it False
 
 # dfv update switch (enforces monotonic updates)
 # its good to disable when deploying

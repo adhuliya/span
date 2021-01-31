@@ -141,7 +141,10 @@ class DataLT(LatticeLT):
     """Apply widening w.r.t. the prev value.
     MUST override this function if widening is needed.
     """
-    return newDfv, Changed  # no widening by default
+    if self != newDfv:
+      return newDfv, Changed
+    else:
+      return self, not Changed
 
 
   def checkInvariants(self, level: int = 0):

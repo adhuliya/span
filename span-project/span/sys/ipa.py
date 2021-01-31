@@ -134,7 +134,7 @@ class IpaHost:
 
   def __init__(self,
       tUnit: TranslationUnit,
-      entryFuncName: FuncNameT = "f:main",
+      entryFuncName: FuncNameT = conv.ENTRY_FUNC,
       mainAnName: Opt[AnalysisNameT] = None,
       otherAnalyses: Opt[List[AnalysisNameT]] = None,
       supportAnalyses: Opt[List[AnalysisNameT]] = None,
@@ -142,6 +142,7 @@ class IpaHost:
       maxNumOfAnalyses: int = MAX_ANALYSES,
       analysisSeq: Opt[List[List[AnalysisNameT]]] = None,  # for cascading/lerner
       disableAllSim: bool = False,
+      useDdm: bool = False,
   ) -> None:
     if tUnit is None or not tUnit.getFuncObj(entryFuncName):
       raise ValueError(f"No {entryFuncName} in translation unit {tUnit.name}.")
@@ -155,6 +156,7 @@ class IpaHost:
     self.maxNumOfAnalyses = maxNumOfAnalyses
     self.analysisSeq = analysisSeq
     self.disableAllSim = disableAllSim
+    self.useDdm = useDdm
 
     self.vContextMap: Dict[ValueContext, Tuple[Set[FuncNodeIdT], Host]] = {}
     self.callSiteVContextMap: Dict[FuncNodeIdT, Dict[int, ValueContext]] = {}
@@ -169,7 +171,7 @@ class IpaHost:
     """
     Call this function to start the IPA analysis.
     """
-    print("\n\nStart IPA Analysis #####################")  # delit
+    if util.VV1: print("\n\nStart IPA Analysis #####################")  # delit
     # STEP 1: Analyze the global inits and extract its BI
     hostGlobal = self.createHostInstance(GLOBAL_INITS_FUNC_NAME, ipa=False)
     hostGlobal.analyze()
@@ -177,7 +179,7 @@ class IpaHost:
 
     globalBi = hostGlobal.getBoundaryResult()
     globalBi = self.swapGlobalBiInOut(globalBi)
-    print("GlobalBi:", globalBi)  #delit
+    if util.VV1: print("GlobalBi:", globalBi)  #delit
 
     # STEP 2: start analyzing from the entry function
     entryCallSite = conv.genFuncNodeId(conv.GLOBAL_INITS_FUNC_ID, 0)
@@ -207,11 +209,12 @@ class IpaHost:
       uniqueId: int = 0,
   ) -> Dict[AnalysisNameT, NodeDfvL]:
     newUniqueId = self.getUniqueId()
-    print("AnalyzingFunc:", funcName, f"{conv.getFuncNodeIdStr(callSite)}"
-                                      f" Depth: {recursionDepth},"
-                                      f" VContextSize: {len(self.vContextMap)}"
-                                      f" UniqueId: {uniqueId}")
-                                      # f" FuncBi: {funcBi}")
+    if util.VV1: print("AnalyzingFunc:", funcName,
+                       f"{conv.getFuncNodeIdStr(callSite)}"
+                       f" Depth: {recursionDepth},"
+                       f" VContextSize: {len(self.vContextMap)}"
+                       f" UniqueId: {uniqueId}")
+                       # f" FuncBi: {funcBi}")
 
     if recursionDepth >= RECURSION_LIMIT:
       return self.analyzeFuncFinal(callSite, funcName, ipaFuncBi)
@@ -242,19 +245,18 @@ class IpaHost:
 
           reAnalyze = host.setCallSiteDfvsIpaHost(nid, calleeName, newCalleeBi)
 
-          if util.VV2: self.printToDebug(calleeName, calleeBi, newCalleeBi)
+          if util.VV2: self.printToDebug(calleeName, calleeBi, newCalleeBi, reAnalyze)
           if util.CC2: self.checkInvariants1(calleeName, calleeBi)
 
           if reAnalyze: break  # first re-analyze then goto other call sites
 
       if LS: LOG.debug("ReAnalyzingFunction: %s", funcName) if reAnalyze else None
     if util.VV3:
-      if funcName in ("f:main", "f:read_min"): #delit
-        host.printOrLogResult()
+      host.printOrLogResult()
     return host.getBoundaryResult()
 
 
-  def printToDebug(self, calleeName, calleeBi, newCalleeBi):
+  def printToDebug(self, calleeName, calleeBi, newCalleeBi, reAnalyze):
     if util.CC >= util.CC1 and calleeName in ("f:_read_min"):
       ptaOld = calleeBi["PointsToA"].dfvOut
       ptaNew = newCalleeBi["PointsToA"].dfvOut
@@ -426,14 +428,14 @@ class IpaHost:
       otherAnalyses=self.otherAnalyses,
       avoidAnalyses=self.avoidAnalyses,
       maxNumOfAnalyses=self.maxNumOfAnalyses,
-      analysisSeq=self.analysisSeq,
       disableSim=self.disableAllSim,
       biDfv=biDfv,
+      ipaEnabled=ipa,
     )
 
 
   def finalizeIpaResults(self):
-    print("ValueContextMapSize:", len(self.vContextMap))
+    if util.VV1: print("ValueContextMapSize:", len(self.vContextMap))
 
     self.collectStats()
     self.mergeFinalResults()
@@ -444,9 +446,11 @@ class IpaHost:
     # print("Wait and observe the memory!"); time.sleep(10);
     # objgraph.show_refs(gc.garbage, filename="objgraph.dot") # too huge an output
 
-    print(f"MergedSize: {len(self.finalResult)}") #, MemorySize: {cutil.getSize(self.finalResult)}")
+    if util.VV1:
+      print(f"MergedSize: {len(self.finalResult)}, "
+            f"MemorySize: {util.getSize2(self.finalResult)}")
     # print results if needed
-    if util.Verbosity >= 1:
+    if util.VV2:
       print("\n\nFINAL RESULTS of IPA:")
       print("=" * 48)
       self.printFinalResults()

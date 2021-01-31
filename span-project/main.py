@@ -625,10 +625,10 @@ def parseTUnitObject(fileName: str, ipa=False) -> tunit.TranslationUnit:
   if not cFileName: exit(19)
 
   currTUnit: tunit.TranslationUnit = ir.readSpanIr(spanIrFileName)
-  if ipa: irIpa.preProcess(currTUnit)
+  # if ipa: irIpa.preProcess(currTUnit)  # obsolete
 
   timer.stopAndLog()
-  print("TUnitObjSize:", util.getSize2(currTUnit))
+  if util.VV1: print("TUnitObjSize:", util.getSize2(currTUnit))
   return currTUnit
 
 
@@ -656,17 +656,20 @@ def slicePointRegex(argValue, pat=re.compile(SLICE_POINT_REGEX)):
     raise argparse.ArgumentTypeError(f"expecting pattern {SLICE_POINT_REGEX}")
   return argValue
 
+
 def spanAnSpecRegex(argValue, pat=re.compile(SPAN_AN_SPEC_REGEX)):
   """Checks the span analysis spec regex."""
   if not pat.match(argValue):
     raise argparse.ArgumentTypeError(f"expecting pattern {SPAN_AN_SPEC_REGEX}")
   return argValue
 
+
 def cascAnSpecRegex(argValue, pat=re.compile(CASC_AN_SPEC_REGEX)):
   """Checks the cascading analysis spec regex."""
   if not pat.match(argValue):
     raise argparse.ArgumentTypeError(f"expecting pattern {CASC_AN_SPEC_REGEX}")
   return argValue
+
 
 # mainentry - when this module is run
 if __name__ == "__main__":

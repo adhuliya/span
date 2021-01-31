@@ -187,7 +187,7 @@ class NodeDfvL(LatticeLT):
   Since IN and OUT are objects of (respective analysis') lattices,
   this object also behaves like a lattice.
   """
-  __slots__ : List[str] = ["dfvIn", "dfvOut", "dfvOutTrue", "dfvOutFalse"]
+  __slots__ : List[str] = ["func", "dfvIn", "dfvOut", "dfvOutTrue", "dfvOutFalse"]
 
 
   def __init__(self,
@@ -197,6 +197,7 @@ class NodeDfvL(LatticeLT):
       dfvOutFalse: Opt[DataLT] = None,
   ) -> None:
     self.dfvIn: DataLT = dfvIn
+    self.func = dfvIn.func
     # only used for out of conditional (i.e. if) nodes
     if dfvOutFalse is None or dfvOutTrue is None:
       assert dfvOutFalse is None and dfvOutTrue is None,\
@@ -254,6 +255,46 @@ class NodeDfvL(LatticeLT):
       chOut = chOut or chOutTmp
 
     if LS: LOG.debug("NodeDfv (meet with prev nodeDfv): In: %s, Out: %s.", chIn, chOut)
+    return NodeDfvL(dfvIn, dfvOut, dfvOutTrue, dfvOutFalse), chIn or chOut
+
+
+  def widen(self,
+      other: 'NodeDfvL',
+      ipa: bool = False,  # special case #IPA FIXME: is this needed?
+  ) -> Tuple['NodeDfvL', ChangedT]:
+    assert isinstance(other, NodeDfvL), f"{other}"
+    if self is other:
+      return self, not Changed
+
+    chOut = not Changed
+    chIn = not Changed
+
+    if self.dfvIn is other.dfvIn:  # since data flow values are treated immutable
+      dfvIn = self.dfvIn
+    else:
+      dfvIn, chIn = self.dfvIn.widen(other.dfvIn)
+
+    # dfvOut = dfvOutTrue = dfvOutFalse = None
+    # if self.dfvOut is not None:
+    if self.dfvOut is other.dfvOut:
+      dfvOut = self.dfvOut
+    else:
+      dfvOut, chOutTmp = self.dfvOut.widen(other.dfvOut)
+      chOut = chOut or chOutTmp
+
+    if other.dfvOut is other.dfvOutTrue:
+      dfvOutTrue = dfvOut
+    else:
+      dfvOutTrue, chOutTmp = self.dfvOutTrue.widen(other.dfvOutTrue)
+      chOut = chOut or chOutTmp
+
+    if other.dfvOut is other.dfvOutFalse:
+      dfvOutFalse = dfvOut
+    else:
+      dfvOutFalse, chOutTmp = self.dfvOutFalse.widen(other.dfvOutFalse)
+      chOut = chOut or chOutTmp
+
+    if LS: LOG.debug("NodeDfv (widen with prev nodeDfv): In: %s, Out: %s.", chIn, chOut)
     return NodeDfvL(dfvIn, dfvOut, dfvOutTrue, dfvOutFalse), chIn or chOut
 
 
@@ -661,6 +702,7 @@ class OverallL(DataLT):
       tUnit: tunit.TranslationUnit = self.func.tUnit
       varNames = set(localizedDfv.val.keys())
       varNames = varNames - tUnit.getNamesEnv(forFunc)
+      print(f"LOCALIZE: for {forFunc.name}, {varNames}, {localizedDfv}") #delit
       for vName in varNames:
         localizedDfv.setVal(vName, defaultVal) # essentially removing the values
 

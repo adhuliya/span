@@ -377,33 +377,42 @@ class TranslationUnit:
     ld = LOG.debug
 
     sio = io.StringIO()
-    for vName, t in self.allVars.items():
-      sio.write(f"    {vName!r}: {t},\n")
+    for vName in sorted(self.allVars.keys()):
+      sio.write(f"    {vName!r}: {self.allVars[vName]},\n")
     ld("InputVariables(total %s):\n%s", len(self.allVars), sio.getvalue())
 
     sio = io.StringIO()
-    for vName, info in self._nameInfoMap.items():
-      sio.write(f"    {vName!r}: {info},\n")
+    for vName in sorted(self._nameInfoMap.keys()):
+      sio.write(f"    {vName!r}: {self._nameInfoMap[vName]},\n")
     ld("ProcessedVariables(total %s):\n%s", len(self._nameInfoMap), sio.getvalue())
 
     sio = io.StringIO()
-    for vName, info in self._newVarsMap.items():
-      sio.write(f"    {vName!r}: {info},\n")
+    for vName in sorted(self._newVarsMap.keys()):
+      sio.write(f"    {vName!r}: {self._newVarsMap[vName]},\n")
     ld("NewVariables(total %s):\n%s", len(self._newVarsMap), sio.getvalue())
 
     sio = io.StringIO()
-    for vName in self._addrTakenSet:
+    for vName in sorted(self._addrTakenSet):
       sio.write(f"    {vName!r},\n")
     ld("AddrTakenVariables(total %s):\n%s", len(self._addrTakenSet), sio.getvalue())
 
     sio = io.StringIO()
-    for vName in self._globalsAndAddrTakenSet:
+    for vName in sorted(self._globalsAndAddrTakenSet):
       sio.write(f"    {vName!r},\n")
     ld("GlobalsAndAddrTakenVariables(total %s):\n%s",
        len(self._globalsAndAddrTakenSet), sio.getvalue())
 
-    ld("TotalRecords(total %s): Not printed.", len(self.allRecords))
-    ld("TotalFunctions(total %s): Not printed.", len(self.allFunctions))
+    sio = io.StringIO()
+    for rName in sorted(self.allRecords.keys()):
+      sio.write(f"    {rName!r},\n")
+    ld("AllRecords(Structs/Unions)(total %s):\n%s",
+       len(self.allRecords), sio.getvalue())
+
+    sio = io.StringIO()
+    for fName in sorted(self.allFunctions.keys()):
+      sio.write(f"    {fName!r},\n")
+    ld("AllFunctions(total %s):\n%s",
+       len(self.allFunctions), sio.getvalue())
 
 
   def canBeGloballyAccessed(self, name: str):
@@ -522,6 +531,7 @@ class TranslationUnit:
     for nameInfo in nameInfos:
       self._nameInfoMap[nameInfo.name] = nameInfo   # cache the results
       if new:
+        nameInfo.bySpan = True
         self._newVarsMap[nameInfo.name] = nameInfo  # record a new variable
 
 

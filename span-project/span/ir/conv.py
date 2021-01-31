@@ -20,6 +20,8 @@ import functools
 from . import types
 
 
+ENTRY_FUNC = "f:main"  # default entry function for #IPA
+
 FalseEdge: types.EdgeLabelT = "FalseEdge"
 TrueEdge: types.EdgeLabelT = "TrueEdge"
 UnCondEdge: types.EdgeLabelT = "UnCondEdge"

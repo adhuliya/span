@@ -53,7 +53,7 @@ LitT = TypingUnion[int, float, str]
 
 NodeIdT = int  # Node id (CFG) (18 bit) (>=0,<2^18)
 FuncIdT = int  # Function id (14 bit) (>=0,<2^14)
-FuncNodeIdT = int # FuncId || NodeId (32 bit)
+FuncNodeIdT = int # FuncId || NodeId (32 bit) # also used to denote a callsite
 BasicBlockIdT = int
 
 LineNumT = int

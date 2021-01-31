@@ -400,13 +400,13 @@ class DirectionDT:
     if type(self).__name__ == "DirectionT":
       super().__init__()
     self.cfg = cfg
-    self.nidNdfvMap: Dict[cfg.CfgNodeId, NodeDfvL] = dict()
+    self.nidNdfvMap: Dict[types.NodeIdT, NodeDfvL] = dict()
     self.topNdfv: NodeDfvL = NodeDfvL(top, top)
     for nid in self.cfg.nodeMap.keys():
       self.nidNdfvMap[nid] = self.topNdfv
     # set this to true once boundary values are initialized
-    self.wl: FastNodeWorkList = self.generateInitialWorklist()
     self.boundaryInfoInitialized = False
+    self.wl: Opt[FastNodeWorkList] = None # initialize in sub-class
 
 
   def generateInitialWorklist(self) -> FastNodeWorkList:
@@ -515,7 +515,7 @@ class ForwardDT(DirectionDT):
   def generateInitialWorklist(self) -> FastNodeWorkList:
     """Defaults to reverse post order."""
     wl = FastNodeWorkList(self.cfg.nodeMap, postOrder=False)
-    if LS: LOG.debug("Forward_Worklist_Init: %s", wl)
+    if LS: LOG.debug("  Forward_Worklist_Init: %s", wl)
     return wl
 
 
