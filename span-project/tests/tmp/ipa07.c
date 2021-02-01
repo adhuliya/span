@@ -1,7 +1,8 @@
-int *p = 0;
+// int *p = 0;
+float *p = 0;
 
 void f1(int i) {
-  *p = i;
+  *p = i; // undefined behavior in SPAN (when no pointsTo)
 }
 
 // void f2(int i) {

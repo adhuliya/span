@@ -171,7 +171,7 @@ class TranslationUnit:
     # STEP 3: Extract and cache the information on the IR
     self.extractTmpVarAssignExprs()  # IMPORTANT
     self.extractAllVarNames()  # (MUST)
-    self.printNameInfoMap()  # (OPTIONAL)
+    if util.VV3: self.printNameInfoMap()  # (OPTIONAL)
 
     # STEP 4: Misc
     self.fillGlobalInitsFunction()  # MUST
@@ -188,15 +188,6 @@ class TranslationUnit:
 
     self.initialized = True
     if LS: LOG.info(f"PreProcessing_TUnit({self.name}): END/DONE.")
-
-
-  def printNameInfoMap(self):
-    """Logs/Prints the _nameInfoMap values for debugging purposes."""
-    if LS:
-      ss = io.StringIO()
-      for vName in sorted(self._nameInfoMap.keys()):
-        ss.write(f"{self._nameInfoMap[vName]}\n")
-      LOG.debug("NameInfoObjects:\n %s", ss.getvalue())
 
 
   def checkInvariants(self, level: int = 0):
@@ -540,7 +531,7 @@ class TranslationUnit:
     self._nameInfoMap for debugging."""
     print("The names in the IR:")
     for name in sorted(self._nameInfoMap.keys()):
-      print(f"{name}:", self._nameInfoMap[name])
+      print(f"  {name}:", self._nameInfoMap[name])
 
 
   def replaceZeroWithNullPtr(self):
@@ -2167,13 +2158,14 @@ class TranslationUnit:
     This is used to increase the precision.
     """
     funcName = func.name
-    approx = True
+    underApprox = True
 
-    if not func.hasBody():
-      if "scanf" in funcName:
-        approx = False
+    if func.hasBody():
+      underApprox = False
+    elif "scanf" in funcName:
+        underApprox = False
 
-    return approx
+    return underApprox
 
 
   @functools.lru_cache(512)

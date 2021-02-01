@@ -693,6 +693,7 @@ class OverallL(DataLT):
 
   def localize(self, #IPA
       forFunc: constructs.Func,
+      keepParams: bool = False,
   ) -> 'OverallL':
     """Returns self's copy localized for the given forFunc."""
     localizedDfv = self.getCopy()
@@ -701,8 +702,8 @@ class OverallL(DataLT):
     if localizedDfv.val:
       tUnit: tunit.TranslationUnit = self.func.tUnit
       varNames = set(localizedDfv.val.keys())
-      varNames = varNames - tUnit.getNamesEnv(forFunc)
-      print(f"LOCALIZE: for {forFunc.name}, {varNames}, {localizedDfv}") #delit
+      keep = tUnit.getNamesGlobal() | (set(forFunc.paramNames) if keepParams else set())
+      varNames = varNames - keep
       for vName in varNames:
         localizedDfv.setVal(vName, defaultVal) # essentially removing the values
 

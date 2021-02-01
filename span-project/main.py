@@ -159,9 +159,9 @@ def c2spanir(cFileName: str = None) -> int:
   cmd = f"clang --analyze -Xanalyzer -analyzer-checker=core.span.SlangGenAst" \
         f" {cFileName} 2> /dev/null"
 
-  print("running> ", cmd)
+  if util.VV1: print("running> ", cmd)
   completed = subp.run(cmd, shell=True)
-  print("SPAN: clang return code:", completed.returncode)
+  if util.VV1: print("SPAN: clang return code:", completed.returncode)
   if completed.returncode != 0:
     print("SPAN: ERROR.")
     print("Maybe an invalid C program!")
@@ -177,7 +177,7 @@ def ipaDiagnoseSpanIr(args: argparse.Namespace) -> None:
   util.CC = args.check; util.setupCC()
 
   spanirFileName = convertIfCFile(fileName)
-  print("Filename:", fileName, spanirFileName)
+  if util.VV1: print("Filename:", fileName, spanirFileName)
   currTUnit = parseTUnitObject(spanirFileName, ipa=True)
 
   if diName == "interval":
@@ -237,7 +237,7 @@ def diagnoseSpanIr(args: argparse.Namespace) -> None:
   cFileName = ".".join(spanirFileName.split(".")[:-1]) # remove .spanir extension
   cmd = consts.CMD_F_SLANG_BUG.format(includesString=includesString, cFileName=cFileName)
   completed = subp.run(cmd, shell=True)
-  print("Return Code:", completed.returncode)
+  if util.VV1: print("Return Code:", completed.returncode)
   if completed.returncode != 0:
     print("SPAN: ERROR.")
 
@@ -356,9 +356,9 @@ def analyzeSpanIrIpa(args: argparse.Namespace) -> None:
     disableAllSim   = disableAllSim,
   )
 
-  timer = util.Timer()
+  timer = util.Timer("IpaAnalysis")
   ipa1.analyze()
-  print("OnlyAnalysis:", timer.stop())
+  timer.stopAndLog(util.VV1)
 
 
 def analyzeSpanIr(args: argparse.Namespace) -> None:
@@ -372,7 +372,6 @@ def analyzeSpanIr(args: argparse.Namespace) -> None:
   funcName = args.functionName
 
   funcName = None if not funcName else irConv.canonicalizeFuncName(funcName)
-  print("Analyzing Function(s):", funcName if funcName else "ALL")
 
   mainAnalysis, otherAnalyses, supportAnalyses, avoidAnalyses, maxAnalysisCount = \
     parseSpanAnalysisExpr(anNameExpr)
@@ -383,6 +382,7 @@ def analyzeSpanIr(args: argparse.Namespace) -> None:
     print(f"SPAN: ERROR: {funcName} not found.", file=sys.stderr)
     exit(42)
 
+  if util.VV1: print("\nAnalyzing Function(s):", funcName if funcName else "ALL")
   timer = util.Timer("SpanAnalysis(with setups)")
   analysisTime = analyzeFunctions(currTUnit=currTUnit,
                                   funcName=funcName,
@@ -393,8 +393,9 @@ def analyzeSpanIr(args: argparse.Namespace) -> None:
                                   maxNumOfAnalyses=maxAnalysisCount,
                                   disableAllSim=disableAllSim,
                                   useDdm=idemand)
-  timer.stopAndLog()
-  print(f"TimeElapsed(SpanAnalysis(no   setups)): {analysisTime} ms")
+  print()
+  if util.VV1: print(f"TimeElapsed(SpanAnalysis(no   setups)): {analysisTime} ms")
+  timer.stopAndLog(util.VV1)
 
 
 def analyzeFunctions(
@@ -414,7 +415,7 @@ def analyzeFunctions(
   for func in currTUnit.yieldFunctionsWithBody():
     if funcName and not funcName == func.name:
       continue
-    print("\nAnalyzingFunction:", func.name)
+    if util.VV1: print("\n AnalyzingFunction(Intra):", func.name)
     syn1 = host.Host(
       func              = func,
       mainAnName        = mainAnName,
@@ -428,8 +429,7 @@ def analyzeFunctions(
     )
     analysisTime = syn1.analyze() # do the analysis
     totalAnalysisTime += analysisTime
-    print("HostObjectSize (after  analysis):", util.getSize2(syn1))
-    print("========================================")
+    if util.VV2: print("HostObjectSize (after analysis):", util.getSize2(syn1))
     syn1.printOrLogResult() # print the result of each analysis
 
   return totalAnalysisTime
@@ -490,9 +490,9 @@ def showDotGraph(dotFileName: str) -> bool:
   else:
     util.exitIfProgramDoesnotExist("xdot")
     cmd = f"xdot {dotFileName} &"
-    print("running>", cmd)
+    if util.VV1: print("running>", cmd)
     completed = subp.run(cmd, shell=True)
-    print("SPAN: xdot return Code:", completed.returncode)
+    if util.VV1: print("SPAN: xdot return Code:", completed.returncode)
     if completed.returncode != 0:
       print(installDotMsg)
       return False
@@ -532,7 +532,7 @@ def sliceDemand(args: argparse.Namespace):
 
   funcName = getCmdLineFuncName(args.functionName)
   assert funcName, f"{args.functionName}"
-  print("Using Function(s):", funcName if funcName else "ALL")
+  if util.VV1: print("Using Function(s):", funcName if funcName else "ALL")
 
   currTUnit = parseTUnitObject(args.fileName)
   func = currTUnit.getFuncObj(funcName)
@@ -545,13 +545,13 @@ def sliceDemand(args: argparse.Namespace):
   atIn = True if not m.group(2) else m.group(2).lower() == "in"
   varSet = frozenset(irConv.genLocalName(func.name, var) for var in vars.split(","))
 
-  print("Note: Assuming all nodes are feasible.")
+  if util.VV1: print("Note: Assuming all nodes are feasible.")
   ddMethod = ddm.DdMethod(func)
   for varName in varSet:
     demand = ddm.AtomicDemand(func, node, atIn, varName,
                               ir.inferTypeOfVal(func, varName), irConv.Backward)
-    print("Got Slice:", ddMethod.propagateDemand(demand))
-    print("InfeasibleNodeDependence:", ddMethod.infNodeDep)
+    if util.VV1: print("Got Slice:", ddMethod.propagateDemand(demand))
+    if util.VV1: print("InfeasibleNodeDependence:", ddMethod.infNodeDep)
 
 
 def simulateCascading(args: argparse.Namespace):
@@ -561,7 +561,7 @@ def simulateCascading(args: argparse.Namespace):
   util.CC = args.check; util.setupCC()
 
   funcName = getCmdLineFuncName(args.functionName)
-  print("Analyzing Function(s):", funcName if funcName else "ALL")
+  if util.VV1: print("\n Analyzing Function(s):", funcName if funcName else "ALL")
 
   stepPattern = re.compile(r"/.*?/")
   allSteps = stepPattern.findall(anNameExpr)
@@ -578,7 +578,7 @@ def simulateCascading(args: argparse.Namespace):
   analyzeFunctions(currTUnit=currTUnit,
                    funcName=funcName,
                    analysisSeq=analysisSeq)
-  timer.stopAndLog()
+  timer.stopAndLog(util.VV1)
 
 
 def dumpSpanIr(args: argparse.Namespace):
@@ -627,7 +627,7 @@ def parseTUnitObject(fileName: str, ipa=False) -> tunit.TranslationUnit:
   currTUnit: tunit.TranslationUnit = ir.readSpanIr(spanIrFileName)
   # if ipa: irIpa.preProcess(currTUnit)  # obsolete
 
-  timer.stopAndLog()
+  timer.stopAndLog(util.VV1)
   if util.VV1: print("TUnitObjSize:", util.getSize2(currTUnit))
   return currTUnit
 
@@ -675,7 +675,7 @@ def cascAnSpecRegex(argValue, pat=re.compile(CASC_AN_SPEC_REGEX)):
 if __name__ == "__main__":
   print("SPAN is:", os.path.realpath(__file__))
   # sys.setrecursionlimit(10000) # FIXME: It is needed in some cases. But why exactly?
-  print("RotatingLogFile: file://", logger.ABS_LOG_FILE_NAME, sep="")
+  print("RotatingLogFile: file://", logger.ABS_LOG_FILE_NAME, "\n\n", sep="")
 
   analysisSpecString = f"Specification of analyses" \
                        f" to run choose from {getRegisteredAnalyses()}"
@@ -871,7 +871,7 @@ if __name__ == "__main__":
 
   timer = util.Timer("TotalTimeTaken")
   args.func(args)             # take action
-  timer.stopAndLog()
+  timer.stopAndLog(util.VV0)
 
   LOG.info("FINISHED!")  # type: ignore
 

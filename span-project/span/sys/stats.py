@@ -75,10 +75,11 @@ class GlobalStats:
       self.simCountMap[simName] = 0
 
   def print(self):
-    print("GLOBAL_STATS")
+    print("\nGLOBAL_STATS")
     print("=" * 64)
     for simName in sorted(analysis.simNames):
-      print(f"{simName}: {self.simCountMap[simName]}")
+      print(f"  {simName}: {self.simCountMap[simName]}")
+    print()
 
 """import this object into other modules in the span.sys module"""
 GST = GlobalStats()

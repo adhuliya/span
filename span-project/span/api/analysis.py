@@ -14,6 +14,7 @@ from typing import List, Tuple, Set, Dict, Any, Type, Callable, cast
 from typing import Optional as Opt
 import io
 
+import span.util.util as util
 from span.util.util import LS, AS
 import span.ir.types as types
 from span.ir.conv import TrueEdge, FalseEdge, Forward, Backward
@@ -167,12 +168,12 @@ class FastNodeWorkList:
   def getWorkingNodesString(self, allNodes=False):
     nodeIds = list(self.frozenSet if allNodes else self.wl)
     nodeIds.sort(key=lambda x: x if self.postOrder else -x)
-    listType = "All" if allNodes else "CurrentWL"
+    listType = "(All)" if allNodes else ""
 
     prefix = ""
     with io.StringIO() as sio:
       sio.write("#DDM " if self.frozen else "")
-      sio.write(f"FastNodeWorkList({listType})[")
+      sio.write(f"NodeWorkList{listType} [")
       for nid in nodeIds:
         sio.write(f"{prefix}{nid}")
         sio.write("." if self.isNop[nid - 1] else "")
@@ -469,10 +470,12 @@ class DirectionDT:
     return NewOldL.getNewOldObj(isNewIn, isNewOut)
 
 
-  def add(self, node: cfg.CfgNode):
+  def add(self, node: cfg.CfgNode) -> bool:
     """Add node_id to the worklist."""
     assert self.wl is not None
-    return self.wl.add(node)
+    added = self.wl.add(node)
+    if LS: LOG.debug("AddedNodeToWl: Node_%s: %s. %s", node.id, added, node.insn)
+    return added
 
 
   def calcInOut(self,
@@ -504,7 +507,6 @@ class ForwardDT(DirectionDT):
   def __init__(self,
       cfg: cfg.Cfg,
       top: DataLT,
-      callCfg: Opt[cfg.Cfg] = None,  # call parameter assignments
   ) -> None:
     if type(self).__name__ == "ForwardDT":
       raise NotImplementedError()  # can't create direct object
@@ -535,7 +537,7 @@ class ForwardDT(DirectionDT):
     if inOutChange.isNewOut:
       """Add the successors only."""
       for succEdge in node.succEdges:
-        if LS: LOG.debug("AddingNodeToWl (succ): Node %s", succEdge.dest.id)
+        if LS: LOG.debug("AddingNodeToWl(succ): Node_%s", succEdge.dest.id)
         self.wl.add(succEdge.dest)
 
     return inOutChange
@@ -561,7 +563,8 @@ class ForwardDT(DirectionDT):
     newIn = None  # don't enforce_monotonicity
     for predEdge in predEdges:
       f = fcfg.isFeasibleEdge(predEdge)
-      if LS: LOG.debug("Edge: %s, Feasible: %s", predEdge, f)
+      if LS: LOG.debug(" Edge(%s): %s",
+                       "Feasible" if f else "Infeasible", predEdge)
       if f:
         predNodeDfv = self.nidNdfvMap.get(predEdge.src.id, self.topNdfv)
         if predEdge.label == TrueEdge and predNodeDfv.dfvOutTrue is not None:
@@ -638,7 +641,7 @@ class BackwardDT(DirectionDT):
     if inOutChange.isNewIn:
       """Add the predecessors."""
       for predEdge in node.predEdges:
-        if LS: LOG.debug("AddingNodeToWl (pred): Node %s", predEdge.src.id)
+        if LS: LOG.debug("AddingNodeToWl(pred): Node_%s", predEdge.src.id)
         self.wl.add(predEdge.src)
 
     return inOutChange
@@ -664,7 +667,7 @@ class BackwardDT(DirectionDT):
     changed: ChangedT = not Changed
     for succEdge in succEdges:
       f = fcfg.isFeasibleEdge(succEdge)  # TODO: succEdge in fcfg.fEdges (for speed)
-      if LS: LOG.debug("Edge: %s, Feasible: %s", succEdge, f)
+      if LS: LOG.debug(" Edge(Feasible %s): %s", f, succEdge)
       if f:
         succIn = self.nidNdfvMap.get(succEdge.dest.id, self.topNdfv).dfvIn
         if not succIn.top:
@@ -1802,7 +1805,7 @@ class ValueAnalysisAT(AnalysisAT):
 
     # Out is unchanged in Forward analyses
     outDfv = calleeBi.dfvOut if calleeBi else self.overallTop # unchanged Out
-    inDfv = nodeDfv.dfvIn.localize(calleeFuncObj)
+    inDfv = nodeDfv.dfvIn.localize(calleeFuncObj, keepParams=True)
     return NodeDfvL(inDfv, outDfv)
 
 
@@ -1954,17 +1957,17 @@ class ValueAnalysisAT(AnalysisAT):
     elif self.isAcceptedType(lhsType):
       func = self.func
       lhsVarNames = self.getExprLValueNames(func, lhs, dfvIn)
-      if not len(lhsVarNames):
-        print(f"NO_LVALUE_POINTEE: {func.name}, {lhs}, {lhs.info}")
-        if LS: LOG.warning(f"NO_LVALUE_POINTEE: {func.name}, {lhs}, {lhs.info}"
-                           f"\nTreating as NopI.")
-        return nodeDfv  # i.e. NopI
       # assert len(lhsVarNames) >= 1, f"{lhs}: {lhsVarNames}"
       mustUpdate = len(lhsVarNames) == 1
 
       rhsDfv = self.getExprDfv(rhs, dfvIn, calleeBi)
-      if LS: LOG.debug("RhsDfvOfExpr: '%s' is %s, lhsVarNames are %s",
-                       rhs, rhsDfv, lhsVarNames)
+      if LS: LOG.debug("Analysis %s: RhsDfvOfExpr: '%s' is %s, lhsVarNames are %s",
+                       self.overallTop.name, rhs, rhsDfv, lhsVarNames)
+      if not len(lhsVarNames):
+        if util.VV1: print(f"NO_LVALUE_NAMES: {func.name}, {lhs}, {lhs.info}")
+        if LS: LOG.warning(f"NO_LVALUE_NAMES: {func.name}, {lhs}, {lhs.info}"
+                           f"\n  Hence treating it as NopI.")
+        return NodeDfvL(dfvIn, dfvIn)  # i.e. NopI
 
       for name in lhsVarNames: # loop enters only once if mustUpdate == True
         newVal, oldVal = rhsDfv, dfvInGetVal(name)
@@ -2022,9 +2025,9 @@ class ValueAnalysisAT(AnalysisAT):
 
     lhsVarNames = self.getExprLValueNames(self.func, lhs, dfvIn)
     if not len(lhsVarNames):
-      print(f"NO_LVALUE_POINTEE: {self.func.name}, {lhs}, {lhs.info}")
-      if LS: LOG.warning(f"NO_LVALUE_POINTEE: {self.func.name}, {lhs}, {lhs.info}"
-                         f"\nTreating as NopI.")
+      if util.VV1: print(f"NO_LVALUE_NAMES: {self.func.name}, {lhs}, {lhs.info}")
+      if LS: LOG.warning(f"NO_LVALUE_NAMES: {self.func.name}, {lhs}, {lhs.info}"
+                         f"\n  Hence treating it as NopI.")
       return {}  # i.e. NopI
     # assert len(lhsVarNames) >= 1, f"{lhs}: {lhsVarNames}"
     strongUpdate: bool = len(lhsVarNames) == 1
@@ -2075,6 +2078,8 @@ class ValueAnalysisAT(AnalysisAT):
 
     names = getNamesPossiblyModifiedInCallExpr(self.func, e)
     names = filterNames(self.func, names, self.isAcceptedType)
+
+    if LS: LOG.debug(" OverApproximating: %s", list(sorted(names)))
 
     bot = self.componentBot
     dfvInGetVal = dfvIn.getVal

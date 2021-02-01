@@ -491,7 +491,8 @@ class IntervalA(analysis.ValueAnalysisAT):
   def Ptr_Assign_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
+      nodeDfv: NodeDfvL,
+      calleeBi: Opt[NodeDfvL] = None,  #IPA
   ) -> NodeDfvL:
     return self.Nop_Instr(nodeId, insn, nodeDfv)
 
@@ -568,6 +569,7 @@ class IntervalA(analysis.ValueAnalysisAT):
     constArg2 = arg2Val.isConstant()
     lowerArg1 = arg1Val.isStrictlyLowerThan(arg2Val, arg1isInt)
     lowerArg2 = arg2Val.isStrictlyLowerThan(arg1Val, arg2isInt)
+    isEqual = arg1Val == arg2Val
 
     result: Opt[bool] = None  # None means don't know
     opCode = e.opr.opCode
@@ -591,7 +593,7 @@ class IntervalA(analysis.ValueAnalysisAT):
     elif opCode == op.BO_LT_OC:
       if lowerArg1:
         result = True
-      elif lowerArg2:
+      elif lowerArg2 or isEqual:
         result = False
     elif opCode == op.BO_GE_OC:
       if overlaps and constArg1 and constArg2:
@@ -601,7 +603,7 @@ class IntervalA(analysis.ValueAnalysisAT):
       elif lowerArg2:
         result = True
     elif opCode == op.BO_GT_OC:
-      if lowerArg1:
+      if lowerArg1 or isEqual:
         result = False
       elif lowerArg2:
         result = True

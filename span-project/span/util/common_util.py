@@ -190,7 +190,7 @@ def getFileModTimeInNanoSecs(filePath: str) -> int:
 
 def programExists(progName: str) -> bool:
   """Returns True if the given command exists."""
-  cmd = f"which {progName}"
+  cmd = f"which {progName} > /dev/null"
   completed = subp.run(cmd, shell=True)
   if completed.returncode != 0:
     return False
@@ -392,8 +392,9 @@ class Timer:
       self.stopCounts += 1
     return self
 
-  def stopAndLog(self) -> None:
+  def stopAndLog(self, printAlso=False) -> None:
     if LS: LOG.debug(self.stop())
+    if printAlso: print(self.stop())
 
   def getDurationInMillisec(self) -> float:
     return self.cumulativeTime * 1000

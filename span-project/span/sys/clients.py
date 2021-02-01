@@ -176,7 +176,7 @@ def getAnDirection(anName: analysis.AnalysisNameT
   raise ValueError(f"UnknownAnalysis: {anName}")
 
 
-@functools.lru_cache(50)
+@functools.lru_cache(32)
 def getAnDirnClass(anName: analysis.AnalysisNameT
 ) -> Type[analysis.DirectionDT]:
   dirn = getAnDirection(anName)
@@ -185,7 +185,8 @@ def getAnDirnClass(anName: analysis.AnalysisNameT
   elif dirn == irConv.Backward:
     return analysis.BackwardD
   elif dirn == irConv.ForwBack:
-    return analysis.ForwBackDT
+    raise ValueError(f"Handled ForwBack direction yet?")
+    # return analysis.ForwBackDT
   raise ValueError(f"UnknownDirection: {anName}, {dirn}")
 
 

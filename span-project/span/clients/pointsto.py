@@ -418,8 +418,6 @@ class PointsToA(analysis.ValueAnalysisAT):
     rhsType = rhs.type
     # assert isinstance(rhsType, (types.Ptr, types.ArrayT, types.FuncSig)), \
     #   f"{type(rhs)}: {rhsType}, {rhs}"
-    if not isinstance(rhsType, (types.Ptr, types.ArrayT, types.FuncSig)): # FIXME
-      return self.componentBot  #FIXME: safe approximation
 
     if isinstance(rhs, expr.LitE):
       if rhs.isString():
@@ -429,7 +427,10 @@ class PointsToA(analysis.ValueAnalysisAT):
       else:
         return self.componentBot  # a sound over-approximation
 
-    elif isinstance(rhs, expr.AddrOfE):
+    if not isinstance(rhsType, (types.Ptr, types.ArrayT, types.FuncSig)): # FIXME
+      return self.componentBot  #FIXME: safe approximation
+
+    if isinstance(rhs, expr.AddrOfE):
       arg = rhs.arg
       if isinstance(arg, expr.VarE):  # handles PseudoVarE too
         return ComponentL(self.func, val={arg.name})

@@ -172,6 +172,7 @@ class DataLT(LatticeLT):
 
   def localize(self, #IPA
       forFunc: constructs.Func,
+      keepParams: bool = False,
   ) -> 'DataLT':
     """Returns self's copy localized for the given forFunc."""
     raise NotImplementedError

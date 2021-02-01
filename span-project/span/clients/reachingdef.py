@@ -31,7 +31,7 @@ from span.api.lattice import (ChangedT, Changed, DataLT,
 import span.api.dfv as dfv
 from span.api.dfv import NodeDfvL
 import span.api.analysis as analysis
-from span.api.analysis import AnalysisAT, ValueAnalysisAT, ForwardD
+from span.api.analysis import AnalysisAT, ValueAnalysisAT
 from span.ir.conv import (simplifyName, isCorrectNameFormat, genFuncNodeId, getNodeId,
                           GLOBAL_INITS_FUNC_ID, isGlobalName, getFuncNodeIdStr,
                           getFuncId, Forward, )

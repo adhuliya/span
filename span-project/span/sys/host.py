@@ -38,7 +38,7 @@ from span.api.dfv import NodeDfvL, NewOldL, OLD_INOUT
 from span.api.analysis import SimNameT, simDirnMap, SimFailed, SimPending
 from span.api.lattice import mergeAll, DataLT
 from span.api.analysis import (AnalysisAT, AnalysisNameT as AnNameT,\
-  ForwardD, BackwardD, DirectionDT,
+  DirectionDT,
   Node__to__Nil__Name,
   LhsVar__to__Nil__Name,
   Num_Var__to__Num_Lit__Name,
@@ -339,7 +339,7 @@ class Host:
   ) -> None:
     timer = util.Timer("HostSetup")
 
-    if LS: LOG.debug(f"HostSetup ({func.name}): IPA: {ipaEnabled}, DDM: {useDdm}, "
+    if LS: LOG.info(f"HostSetup ({func.name}): IPA: {ipaEnabled}, DDM: {useDdm}, "
                      f"SIM: {not disableSim}, TRANSFORM: {transform}")
 
     assert func.cfg and func.tUnit, f"{func}: {func.cfg}, {func.tUnit}"
@@ -783,8 +783,7 @@ class Host:
     """Starts the process of running the analysis synergy.
     Conditionally simulates SPAN approach"""
     timer = util.Timer("HostAnalyze")
-    if LS: LOG.info("\nRUNNING_ANALYSIS MAIN_ANALYSIS: %s. on_function: %s\n",
-                    self.mainAnName, self.func.name)
+    if LS: LOG.info("AnalysisWorklist: %s", self.anWorkList)
     if LS: LOG.info(f"MODE: IPA: {self.ipaEnabled}, DDM: {self.useDdm},"
                     f" SIM: {not self.disableSim}, TRANSFORM: {self.transform}")
 
@@ -799,17 +798,19 @@ class Host:
   def _analyze(self) -> None:
     """Runs the analysis with highest priority, on self.func."""
     anName = self.anWorkList.pop()  # pops the highest priority analysis
+    if LS: LOG.info("\nRUNNING_ANALYSIS: %s. on_function: %s\n",
+                    anName, self.func.name)
     assert anName, f"{self.anWorkList}"
     dirn = self.setupActiveAnalysis(anName)
     if GD: self.nodeInsnDot.clear()  # reinitialize for each new analysis iteration
 
     while True: #self.activeAnIsUseful:  #needs testing node visits are increasing
       node, treatAsNop, ddmVarSet = dirn.wl.pop()
-      if LS: LOG.debug("GetNextNodeFrom_Worklist (%s, %s):\n  Got %s. %s",
+      if LS: LOG.debug("GetNextNodeFrom_Worklist (%s, %s):\n Got %s. %s",
                        self.func.name, self.activeAnName,
                        f"Node_{node.id}" if node else None, dirn.wl)
       if node is None: break  # worklist is empty, so exit the loop
-      if LS: LOG.debug("  Got Node_%s: %s (info:%s) (TreatAsNop: %s, ddmVarSet: %s)",
+      if LS: LOG.debug(" Node_%s: %s (info:%s) (TreatAsNop: %s, ddmVarSet: %s)",
                        node.id, node.insn, node.insn.info, treatAsNop, ddmVarSet)
 
       nid = node.id
@@ -983,11 +984,12 @@ class Host:
       return self.Conditional_Instr(node, insn, nodeDfv)  # type: ignore
     else:
       self.stats.instrAnTimer.start()
-      if LS: LOG.debug("FinallyInvokingInstrFunc: %s.%s() on %s",
-                       self.activeAnName, tFuncName, insn)
       if self.ipaEnabled and insn.hasCallExpr():
-        nDfv = self.processInstrWithCall(node, insn, nodeDfv, transferFunc)
+        nDfv = self.processInstrWithCall(node, insn, nodeDfv,
+                                         transferFunc, tFuncName)
       else:
+        if LS: LOG.debug("FinallyInvokingInstrFunc: %s.%s() on %s",
+                         self.activeAnName, tFuncName, insn)
         nDfv = transferFunc(nid, insn, nodeDfv)  # type: ignore
       self.stats.instrAnTimer.stop()
       return nDfv
@@ -998,6 +1000,7 @@ class Host:
       insn: instr.InstrIT,
       nodeDfv: NodeDfvL,
       transferFunc: Callable,
+      tFuncName: str,
   ) -> NodeDfvL:
     """
     # Inter-procedural analysis does not process the instructions with call
@@ -1005,7 +1008,7 @@ class Host:
     #            func which cannot be analyzed are handled intra-procedurally
     """
     assert self.ipaEnabled
-    if util.VV1: print(f"ProcessingIPACall: {self.func.name}, {node.id}, {insn}")
+    if util.VV1: print(f"  ProcessingIPACall(Host): {self.func.name}, {node.id}, {insn}")
 
     nid = node.id
     callE = instr.getCallExpr(insn)
@@ -1022,20 +1025,22 @@ class Host:
     if not calleeBi: # i.e. wait for the calleeBi to be some useful value
       if not nodeDfv.top:
         callDfv = self.processCallArguments(node, callE, nodeDfv)
-        print(f"BEFORE_LOCALIZATION: {callDfv}") #delit
         newCalleeBi = self.activeAnObj.getLocalizedCalleeBi(nid, insn, callDfv, calleeBi)
         self.setCallSiteDfv(nid, calleeFuncName, self.activeAnName, newCalleeBi)
       return self.Barrier_Instr(node, insn, nodeDfv)
 
     if self.activeAnDirn == Forward:
       callDfv = self.processCallArguments(node, callE, nodeDfv)
-      print(f"BEFORE_LOCALIZATION: {callDfv}") #delit
       newCalleeBi = self.activeAnObj.getLocalizedCalleeBi(nid, insn, callDfv, calleeBi)
       self.setCallSiteDfv(nid, calleeFuncName, self.activeAnName, newCalleeBi)
+      if LS: LOG.debug("FinallyInvokingInstrFunc: %s.%s() on %s",
+                       self.activeAnName, tFuncName, insn)
       nodeDfv = transferFunc(nid, insn, nodeDfv, calleeBi)  # type: ignore
     else: # both for Backward and ForwBack
       assert False
       assert self.activeAnDirn in (Backward, ForwBack), f"{self.activeAnDirn}"
+      if LS: LOG.debug("FinallyInvokingInstrFunc: %s.%s() on %s",
+                       self.activeAnName, tFuncName, insn)
       nodeDfv = transferFunc(nid, insn, nodeDfv, calleeBi)  # type: ignore
       newCalleeBi = self.activeAnObj.getLocalizedCalleeBi(nid, insn, nodeDfv, calleeBi)
       self.setCallSiteDfv(nid, calleeFuncName, self.activeAnName, newCalleeBi)
@@ -2012,10 +2017,11 @@ class Host:
     if LS and GD: LOG.debug("AnWorklistDots:\n%s", self.getAnIterationDotString())
 
     if not util.VV2: return # i.e. then don't print what is below
-    print("\n\n") # some blank lines for neatness
+    print() # some blank lines for neatness
     print(self.func, "TUnit:", self.func.tUnit.name)
     print(f"MODE: IPA: {self.ipaEnabled}, DDM: {self.useDdm},"
-          f" TRANSFORM: {self.transform}")
+          f" SIM: {not self.disableSim}, TRANSFORM: {self.transform}")
+    print("========================================")
     for anName, res in self.anWorkDict.items():
       print(f"{anName}:(SimCount: {self.anSimSuccessCount[anName]})")
 
@@ -2095,14 +2101,25 @@ class Host:
     """
     Update the results for the call site.
     """
-    if util.VV3: print(f"SetCallSiteDfv: {nodeId}, {calleeName}, {anName}, {nodeDfv}")
     tup = (nodeId, calleeName)
     if tup not in self.callSiteDfvMap:
       dfvDict = self.callSiteDfvMap[tup] = dict()
     else:
       dfvDict = self.callSiteDfvMap[tup]
 
-    dfvDict[anName] = nodeDfv
+    if anName in dfvDict: # if already present, then try widening
+      oldDfv = dfvDict[anName]
+      nDfv, _ = oldDfv.widen(nodeDfv, ipa=True)
+      if LS: LOG.debug(f"CalleeCallSiteDfv(Old): {tup}: {oldDfv}")
+      if LS: LOG.debug(f"CalleeCallSiteDfv(New): {tup}: {nodeDfv}")
+      if LS: LOG.debug(f"CalleeCallSiteDfv(Widened): {tup}: {nDfv}")
+    else:
+      if LS: LOG.debug(f"CalleeCallSiteDfv(Old): {tup}: EMPTY.")
+      if LS: LOG.debug(f"CalleeCallSiteDfv(New): {tup}: {nodeDfv}")
+      if LS: LOG.debug(f"CalleeCallSiteDfv(Widened): {tup}: is New, as Old=EMPTY.")
+      nDfv = nodeDfv
+
+    dfvDict[anName] = nDfv
 
 
   def getCallSiteDfv(self, #IPA
@@ -2154,7 +2171,8 @@ class Host:
 
       if restartAn: # then modify the analysis' worklist
         dirn = self.anWorkDict[anName]
-        dirn.add(node)
+        if dirn.add(node):
+          self.addAnToWorklist(anName, ipa=True)
 
     self.callSiteDfvMapIpaHost[tup] = widenedResult
     return restart
@@ -2165,7 +2183,7 @@ class Host:
     """
     Returns the NodeDfvL objects for each analysis at the call site nodes.
     """
-    if util.VV2: print(f"CallSiteDfv: {self.func.name}: {self.callSiteDfvMap}")
+    if util.VV2: print(f"CallSiteDfv(Host): {self.func.name}: {self.callSiteDfvMap}")
     return self.callSiteDfvMap
 
 

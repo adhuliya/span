@@ -200,10 +200,10 @@ class LitE(SimpleET):
 
   def isString(self) -> bool:
     if isinstance(self.val, str):
-      assert self.name is not None
+      assert self.name, f"{self}, {self.name}"
       return True
     else:
-      assert self.name is None
+      assert not self.name, f"{self}, {self.name}"
       return False
 
 
