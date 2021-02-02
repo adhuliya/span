@@ -33,6 +33,7 @@ from span.api.analysis import SimFailed, SimPending, BoolValue, \
   NumValue, ValueTypeT, AnalysisAT
 
 from span.util.util import LS
+import span.util.util as util
 
 
 ################################################
@@ -378,7 +379,11 @@ class ComponentL(dfv.ComponentL):
 
   def __str__(self):
     s = getBasicString(self)
-    return s if s else f"{self.val}"
+    if util.VV5:
+      idStr = f"{id(self)}" #delit
+      return f"{s}(id:{idStr})" if s else f"{self.val}(id:{idStr})" #delit
+    else:
+      return s if s else f"{self.val}"
 
 
   def __repr__(self):
@@ -524,11 +529,11 @@ class IntervalA(analysis.ValueAnalysisAT):
       return self.filterValues(e, values, dfvIn, NumValue) # filter the values
 
     # STEP 4: If here, eval the expression
-    exprVal = self.getExprDfv(e, dfvIn)
+    exprVal = cast(ComponentL, self.getExprDfv(e, dfvIn))
     if exprVal.top: return SimPending  # can be evaluated, needs more info
     if exprVal.bot: return SimFailed  # cannot be evaluated
-    valsSet = exprVal.getValuesSet(e.type.isInteger()) # type: ignore
-    if valsSet: return valsSet
+    simVals = exprVal.getValuesSet(e.type.isInteger()) # type: ignore
+    if simVals: return simVals
     return SimFailed
 
 
@@ -541,7 +546,7 @@ class IntervalA(analysis.ValueAnalysisAT):
     # STEP 1: tell the system if the expression can be evaluated
     arg1, arg2 = e.arg1, e.arg2
     if (not e.type.isNumeric()
-        or not e.opr.isRelationalOp()
+        # or not e.opr.isRelationalOp()
         or not arg1.type.isNumeric()
         or not arg2.type.isNumeric()):
       return SimFailed
@@ -557,61 +562,12 @@ class IntervalA(analysis.ValueAnalysisAT):
       return self.filterValues(e, values, dfvIn, NumValue) # filter the values
 
     # STEP 4: If here, eval the expression
-    arg1Val = cast(ComponentL, self.getExprDfv(arg1, dfvIn))
-    arg2Val = cast(ComponentL, self.getExprDfv(arg2, dfvIn))
-
-    if arg1Val.top or arg2Val.top:
-      return SimPending
-
-    arg1isInt, arg2isInt = arg1.type.isInteger(), arg2.type.isInteger()
-    overlaps = arg1Val.overlaps(arg2Val)
-    constArg1 = arg1Val.isConstant()
-    constArg2 = arg2Val.isConstant()
-    lowerArg1 = arg1Val.isStrictlyLowerThan(arg2Val, arg1isInt)
-    lowerArg2 = arg2Val.isStrictlyLowerThan(arg1Val, arg2isInt)
-    isEqual = arg1Val == arg2Val
-
-    result: Opt[bool] = None  # None means don't know
-    opCode = e.opr.opCode
-    if opCode == op.BO_EQ_OC:
-      if overlaps and constArg1 and constArg2:
-        result = True
-      elif not overlaps:
-        result = False
-    elif opCode == op.BO_NE_OC:
-      if overlaps and constArg1 and constArg2:
-        result = False
-      elif not overlaps:
-        result = True
-    elif opCode == op.BO_LE_OC:
-      if overlaps and constArg1 and constArg2:
-        result = True
-      elif not overlaps and lowerArg1:
-        result = True
-      elif not overlaps and lowerArg2:
-        result = False
-    elif opCode == op.BO_LT_OC:
-      if lowerArg1:
-        result = True
-      elif lowerArg2 or isEqual:
-        result = False
-    elif opCode == op.BO_GE_OC:
-      if overlaps and constArg1 and constArg2:
-        result = True
-      elif lowerArg1:
-        result = False
-      elif lowerArg2:
-        result = True
-    elif opCode == op.BO_GT_OC:
-      if lowerArg1 or isEqual:
-        result = False
-      elif lowerArg2:
-        result = True
-
-    if result is not None:
-      return {1 if result else 0}
-    else:
-      return {0, 1} # a better value than SimFailed
+    exprVal = cast(ComponentL, self.getExprDfvBinaryE(e, dfvIn))
+    if exprVal.top: return SimPending  # can be evaluated, needs more info
+    if exprVal.bot: return SimFailed  # cannot be evaluated
+    simVals = exprVal.getValuesSet(e.type.isInteger()) # type: ignore
+    if simVals: return simVals
+    return SimFailed
 
 
   def Cond__to__UnCond(self,
@@ -767,8 +723,72 @@ class IntervalA(analysis.ValueAnalysisAT):
         return val1.subtractRange(val2)
       elif rhsOpCode == op.BO_MUL_OC:
         return val1.multiplyRange(val2)
+      elif opr.isRelationalOp():
+        return self.getExprDfvBinaryRelE(e, dfvIn)
       else:
         return self.componentBot  # conservative
+
+
+  def getExprDfvBinaryRelE(self,
+      e: expr.BinaryE,
+      dfvIn: dfv.OverallL,
+  ) -> dfv.ComponentL:
+    arg1, arg2, opr = e.arg1, e.arg2, e.opr
+    assert opr.isRelationalOp(), f"{self.func.name}: {e}, {e.info}"
+
+    arg1Val = cast(ComponentL, self.getExprDfv(arg1, dfvIn))
+    arg2Val = cast(ComponentL, self.getExprDfv(arg2, dfvIn))
+
+    if arg1Val.top or arg2Val.top: return self.componentTop
+
+    arg1isInt, arg2isInt = arg1.type.isInteger(), arg2.type.isInteger()
+    overlaps = arg1Val.overlaps(arg2Val)
+    constArg1 = arg1Val.isConstant()
+    constArg2 = arg2Val.isConstant()
+    lowerArg1 = arg1Val.isStrictlyLowerThan(arg2Val, arg1isInt)
+    lowerArg2 = arg2Val.isStrictlyLowerThan(arg1Val, arg2isInt)
+    isEqual = arg1Val == arg2Val
+
+    result: Opt[bool] = None  # None means don't know
+    opCode = e.opr.opCode
+
+    if opCode == op.BO_EQ_OC:
+      if overlaps and constArg1 and constArg2:
+        result = True
+      elif not overlaps:
+        result = False
+    elif opCode == op.BO_NE_OC:
+      if overlaps and constArg1 and constArg2:
+        result = False
+      elif not overlaps:
+        result = True
+    elif opCode == op.BO_LE_OC:
+      if overlaps and constArg1 and constArg2:
+        result = True
+      elif not overlaps and lowerArg1:
+        result = True
+      elif not overlaps and lowerArg2:
+        result = False
+    elif opCode == op.BO_LT_OC:
+      if lowerArg1:
+        result = True
+      elif lowerArg2 or isEqual:
+        result = False
+    elif opCode == op.BO_GE_OC:
+      if overlaps and constArg1 and constArg2:
+        result = True
+      elif lowerArg1:
+        result = False
+      elif lowerArg2:
+        result = True
+    elif opCode == op.BO_GT_OC:
+      if lowerArg1 or isEqual:
+        result = False
+      elif lowerArg2:
+        result = True
+
+    val = (1, 1) if result else ((0, 1) if result is None else (0, 0))
+    return ComponentL(self.func, val=val)
 
 
   def calcTrueFalseDfv(self,

@@ -27,14 +27,16 @@ from span.util.common_util import \
 ################################################
 
 VV:int = 0  # Verbosity. One of 0,1,2,3 (set via command line)
-VV0 = VV1 = VV2 = VV3 = False
+VV0 = VV1 = VV2 = VV3 = VV4 = VV5 = False
 def setupVV():
   """Call this function after setting VV value."""
-  global VV, VV0, VV1, VV2, VV3
+  global VV, VV0, VV1, VV2, VV3, VV4, VV5
   VV0 = VV >= 0
   VV1 = VV >= 1
   VV2 = VV >= 2
   VV3 = VV >= 3
+  VV4 = VV >= 4 # prints Top values in dfv too
+  VV5 = VV >= 5 # prints id() of dfv objects too
 
 CC:int = 0  # Constraint Checks. One of 0,1,2,3 (set via command line)
 CC0 = CC1 = CC2 = CC3 = False

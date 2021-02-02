@@ -537,8 +537,10 @@ class ForwardDT(DirectionDT):
     if inOutChange.isNewOut:
       """Add the successors only."""
       for succEdge in node.succEdges:
-        if LS: LOG.debug("AddingNodeToWl(succ): Node_%s", succEdge.dest.id)
-        self.wl.add(succEdge.dest)
+        dest = succEdge.dest
+        if LS: LOG.debug("AddingNodeToWl(succ): Node_%s: %s (%s)",
+                         dest.id, dest.insn, dest.insn.info)
+        self.wl.add(dest)
 
     return inOutChange
 
@@ -641,8 +643,10 @@ class BackwardDT(DirectionDT):
     if inOutChange.isNewIn:
       """Add the predecessors."""
       for predEdge in node.predEdges:
-        if LS: LOG.debug("AddingNodeToWl(pred): Node_%s", predEdge.src.id)
-        self.wl.add(predEdge.src)
+        pred = predEdge.src
+        if LS: LOG.debug("AddingNodeToWl(pred): Node_%s: %s (%s)",
+                         pred.id, pred.insn, pred.insn.info)
+        self.wl.add(pred)
 
     return inOutChange
 

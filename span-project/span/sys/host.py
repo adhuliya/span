@@ -626,8 +626,6 @@ class Host:
     activeAnName = self.activeAnName
     for anName in anNames:
       if anName == activeAnName: continue  # don't add active analysis
-      if self.transform and anName not in self.anParticipating:
-        continue
       if LS: LOG.debug("Adding_analyses_dependent_on %s to worklist. Adding: %s, Node %s",
                        self.activeAnName, anName, nid)
       self.addAnToWorklist(anName)
@@ -659,11 +657,15 @@ class Host:
       ipa: bool = False,  #FIXME: is this redundant? use self.ipaEnabled ?
   ) -> bool:
     """Adds a new analysis into the mix (if not already present)."""
+    if anName in self.anParticipating:
+      if LS: LOG.debug("AddingNewAnalysis(AlreadyPresent): %s: False", anName)
+      return False
     if self.currNumOfAnalyses >= self.maxNumOfAnalyses:
-      if LS: LOG.debug("NOT_ADDING_ANALYSIS: %s", anName)
+      if LS: LOG.debug("AddingNewAnalysis(MaxAnalysesReached(%s)):"
+                       " %s: False", self.currNumOfAnalyses, anName)
       return False  # i.e. don't add any new analysis
     if anName in self.avoidAnalyses:
-      if LS: LOG.debug("NOT_ADDING_ANALYSIS: %s", anName)
+      if LS: LOG.debug("AddingNewAnalysis(InAvoidList): %s: False", anName)
       return False  # i.e. dont add the analysis
 
     added: bool = False
@@ -672,9 +674,8 @@ class Host:
       # Then add the analysis.
       self.currNumOfAnalyses += 1
       if LS: LOG.debug("Adding %s. Needed by %s.", anName, neededBy)
-      if not self.transform:
-        message = "If not in participants dict then should not be present at all."
-        if AS and anName in self.anWorkDict:    raise Exception(message)
+      message = "If not in participants dict then should not be present at all."
+      if AS and anName in self.anWorkDict:    raise Exception(message)
 
       analysisClass = clients.analyses[anName]  # get analysis Class
       analysisObj = analysisClass(self.func)  # create analysis instance
@@ -702,17 +703,19 @@ class Host:
     """Don't add self.activeAnName and analyses
     that failed to provide simplification"""
     if not ipa and anName == self.activeAnName:
-      if LS: LOG.debug("AddedAnalysisToWl(NO1)(%s): %s, (neededBy: %s)",
-                       self.activeAnName, anName, neededBy)
+      if LS: LOG.debug("AddedAnalysisToWl(NO): Not adding ActiveAn:"
+                       " %s, (neededBy: %s)", anName, neededBy)
       return  # don't add active analysis again
     if anName in self.mainAnalyses:
       self.anWorkList.add(anName, neededBy)
+      return
     else:
       if force or self.anSimSuccessCount[anName]:
         self.anWorkList.add(anName, neededBy)
+        return
 
-    if LS: LOG.debug("AddedAnalysisToWl(NO3)(%s:%s): %s, (neededBy: %s)",
-                     self.activeAnName, self.anSimSuccessCount.get(anName, -1), anName, neededBy)
+    if LS: LOG.debug("AddedAnalysisToWl(NO): An: %s, neededBy: %s, simSuccess: %s, ActiveAn: %s",
+                     anName, neededBy, self.anSimSuccessCount.get(anName, -1), self.activeAnName)
 
 
   def calcInOut(self,
@@ -1135,8 +1138,6 @@ class Host:
     client = anName if demand is None else demand
     if client not in depSet:
       depSet.add(client)
-      if simName == Num_Var__to__Num_Lit__Name and anName == "PointsToA": #WHY?
-        assert False, f"{nid}, {client}, {self.activeAnName}"
       if LS: LOG.debug("AddedSimDependence: (changed) (Node_%s), %s, %s, Set: %s",
                        nid, simName, client, depSet)
     else:
@@ -1543,7 +1544,6 @@ class Host:
     lhs, rhs, simName = insn.lhs, insn.rhs, Num_Bin__to__Num_Lit__Name
 
     newInsn, valid = self.getCachedInstrSimResult(node, simName, insn, rhs)
-    if insn.lhs.name == "v:fallbackSort:191t": print(f"SIM_:(v:fallbackSort:191t)({insn})111: {newInsn} {valid}") #delit
     if valid: return self.analyzeInstr(node, newInsn, nodeDfv) if newInsn else None
 
     values = self.getSim(node, simName, rhs)
@@ -1559,8 +1559,6 @@ class Host:
       newInsn.addInstr(instr.CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs)))
 
     nDfv = self.handleNewInstr(node, simName, insn, rhs, newInsn, nodeDfv)
-    if insn.lhs.name == "v:fallbackSort:191t": print(f"SIM_:(v:fallbackSort:191t)333: "
-                                            f"{nDfv.dfvOut.getVal('v:fallbackSort:191t')} {newInsn}") #delit
     return nDfv
 
 
@@ -1591,10 +1589,12 @@ class Host:
       AssignI, LitE, BinaryE = instr.AssignI, expr.LitE, expr.BinaryE
       if argPos == 1:
         newInsn = instr.III(
-          [AssignI(lhs, BinaryE(LitE(val), rhs.opr, rhs.arg2)) for val in values])
+          [AssignI(lhs, expr.reduceConstExpr(BinaryE(LitE(val), rhs.opr, rhs.arg2)))
+           for val in values])
       else:
         newInsn = instr.III(
-          [AssignI(lhs, BinaryE(rhs.arg1, rhs.opr, LitE(val))) for val in values])
+          [AssignI(lhs, expr.reduceConstExpr(BinaryE(rhs.arg1, rhs.opr, LitE(val))))
+           for val in values])
       newInsn.addInstr(
         instr.CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs)))
 
@@ -1677,7 +1677,7 @@ class Host:
       okToAdd = False  # avoid this analysis
     elif self.currNumOfAnalyses >= self.maxNumOfAnalyses:
       okToAdd = False  # max analysis count reached
-    if LS: LOG.debug("CAN_ADD TO_PARTICIPATE(%s): %s", anName, okToAdd)
+    if LS: LOG.debug("  CanAddAnalysis ToParticipate(%s): %s", anName, okToAdd)
     return okToAdd
 
 
@@ -1690,7 +1690,7 @@ class Host:
       okToAdd = True
     elif self.anDfvs and anName in self.anDfvs:
       okToAdd = True
-    if LS: LOG.debug("CAN_ADD TO_SIMPLIFTY(%s): %s", anName, okToAdd)
+    if LS: LOG.debug("  CanAddAnalysis ToSimplify   (%s): %s", anName, okToAdd)
     return okToAdd
 
 
@@ -1887,7 +1887,7 @@ class Host:
       return self.filteredSimSrcs[tup]
 
     simAnNames = self.fetchSimSources(simName)
-    if LS: LOG.debug("AllSimAnalyses for simName '%s' are %s",
+    if LS: LOG.debug("SimAnalyses (unfiltered) for sim '%s' are %s",
                      simName, simAnNames)
 
     filteredSimAnNames = set()
@@ -1899,6 +1899,8 @@ class Host:
       if simFunc(e) is not SimFailed:  # filtering away analyses here
         filteredSimAnNames.add(anName)
 
+    if LS: LOG.debug("SimAnalyses (filtered) for sim '%s' are %s",
+                     simName, filteredSimAnNames)
     self.filteredSimSrcs[tup] = filteredSimAnNames  # caching the results
     return filteredSimAnNames
 
@@ -1920,7 +1922,7 @@ class Host:
       self.stats.simTimer.stop()
       return SimFailed  # i.e. process_the_original_insn
 
-    if LS: LOG.debug("SimplifyingExpr:(Node_%s) %s, SimName: %s. (For: %s)",
+    if LS: LOG.debug("SimOfExpr (attempting): (Node_%s), %s, SimName: %s. (ForAn: %s)",
                      node.id, e, simName, demand if demand else self.activeAnName)
 
     # record the dependence
@@ -1990,7 +1992,7 @@ class Host:
       return SimFailed  # i.e. process_the_original_insn
 
     if self.transform and len(res) > 1:  #TRANSFORM
-      if util.VV1: print(f"DEREF_FAILED_IN_TRANSFORM: ({node.id}): {e}, {e.info}")
+      if LS: print(f"SimFailed(TransformDeref): ({node.id}): {e}, {e.info}")
       res = SimFailed
     elif len(res) > 1 and NULL_OBJ_NAME in res:
         res.remove(NULL_OBJ_NAME)
@@ -2045,28 +2047,24 @@ class Host:
     """
     restart = False
 
-    if self.transform:
-      restart = self.biDfv != boundaryInfo
-      self.biDfv = boundaryInfo
-    else:
-      for anName in boundaryInfo.keys():
-        anDirn = clients.getAnDirection(anName)
-        dirnObj = self.anWorkDict[anName]
-        nDfv = boundaryInfo[anName]
+    for anName in boundaryInfo.keys():
+      anDirn = clients.getAnDirection(anName)
+      dirnObj = self.anWorkDict[anName]
+      nDfv = boundaryInfo[anName]
 
-        nodeId = 1 if anDirn == Forward else len(self.funcCfg.nodeMap)
-        node = self.funcCfg.nodeMap[nodeId]
-        if anDirn == Forward: updateDfv = NodeDfvL(nDfv.dfvIn, nDfv.dfvIn)
-        elif anDirn == Backward: updateDfv = NodeDfvL(nDfv.dfvOut, nDfv.dfvOut)
-        else: raise TypeError("Analysis Direction ForwBack not handled.")
-        inOutChange = dirnObj.update(node, updateDfv)
-        if inOutChange:
-          if LS: LOG.debug("IPA_UpdatedWorklist: %s, %s", self.func.name, dirnObj.wl)
-          self.addAnToWorklist(anName, ipa=True)
-          restart = True  # Should re-run the Host
+      nodeId = 1 if anDirn == Forward else len(self.funcCfg.nodeMap)
+      node = self.funcCfg.nodeMap[nodeId]
+      if anDirn == Forward: updateDfv = NodeDfvL(nDfv.dfvIn, nDfv.dfvIn)
+      elif anDirn == Backward: updateDfv = NodeDfvL(nDfv.dfvOut, nDfv.dfvOut)
+      else: raise TypeError("Analysis Direction ForwBack not handled.")
+      inOutChange = dirnObj.update(node, updateDfv)
+      if inOutChange:
+        if LS: LOG.debug("IPA_UpdatedWorklist: %s, %s", self.func.name, dirnObj.wl)
+        self.addAnToWorklist(anName, ipa=True)
+        restart = True  # Should re-run the Host
 
-        # IMPORTANT: Not needed. No analysis dependence at call sites!
-        #   self.addDepAnToWorklist(node, inOutChange)
+      # IMPORTANT: Not needed. No analysis dependence at call sites!
+      #   self.addDepAnToWorklist(node, inOutChange)
 
     return restart
 
@@ -2157,7 +2155,7 @@ class Host:
     else:
       oldResults = self.callSiteDfvMapIpaHost[tup]
 
-    widenedResult = newResults
+    widenedResult = newResults.copy() # a shallow copy (important)
     for anName in newResults.keys():
       restartAn = False
       wideDfv = newDfv = newResults[anName]
@@ -2183,7 +2181,8 @@ class Host:
     """
     Returns the NodeDfvL objects for each analysis at the call site nodes.
     """
-    if util.VV2: print(f"CallSiteDfv(Host): {self.func.name}: {self.callSiteDfvMap}")
+    if LS and util.VV3:
+      LOG.debug(f"CallSitesDfvs(Host): {self.func.name}: {self.callSiteDfvMap}")
     return self.callSiteDfvMap
 
 

@@ -1574,3 +1574,61 @@ def getNamesUsedInExprSyntactically(
   raise ValueError(f"{e}")
 
 
+def reduceConstExpr(e: ExprET) -> ExprET:
+  """Converts: 5 + 6, 6 > 7, -5, +6, !7, ~9, ... to a single literal."""
+  newExpr = e  # default value on return
+
+  if isinstance(e, BinaryE):
+    arg1 = e.arg1
+    arg2 = e.arg2
+    opCode = e.opr.opCode
+
+    if isinstance(arg1, LitE) and isinstance(arg2, LitE):
+      if opCode == op.BO_ADD_OC:
+        newExpr = LitE(arg1.val + arg2.val, info=arg1.info)  # type: ignore
+      elif opCode == op.BO_SUB_OC:
+        newExpr = LitE(arg1.val - arg2.val, info=arg1.info)  # type: ignore
+      elif opCode == op.BO_MUL_OC:
+        newExpr = LitE(arg1.val * arg2.val, info=arg1.info)  # type: ignore
+      elif opCode == op.BO_DIV_OC:
+        newExpr = LitE(arg1.val / arg2.val, info=arg1.info)  # type: ignore
+      elif opCode == op.BO_MOD_OC:
+        newExpr = LitE(arg1.val % arg2.val, info=arg1.info)  # type: ignore
+
+      elif opCode == op.BO_LT_OC:
+        newExpr = LitE(int(arg1.val < arg2.val), info=arg1.info)  # type: ignore
+      elif opCode == op.BO_LE_OC:
+        newExpr = LitE(int(arg1.val <= arg2.val), info=arg1.info)  # type: ignore
+      elif opCode == op.BO_EQ_OC:
+        newExpr = LitE(int(arg1.val == arg2.val), info=arg1.info)  # type: ignore
+      elif opCode == op.BO_NE_OC:
+        newExpr = LitE(int(arg1.val != arg2.val), info=arg1.info)  # type: ignore
+      elif opCode == op.BO_GE_OC:
+        newExpr = LitE(int(arg1.val >= arg2.val), info=arg1.info)  # type: ignore
+      elif opCode == op.BO_GT_OC:
+        newExpr = LitE(int(arg1.val > arg2.val), info=arg1.info)  # type: ignore
+
+  elif isinstance(e, UnaryE):
+    arg = e.arg
+    opCode = e.opr.opCode
+
+    if isinstance(arg, LitE):
+      if opCode == op.UO_PLUS_OC:
+        newExpr = e.arg
+      elif opCode == op.UO_MINUS_OC:
+        newExpr = LitE(e.arg.val * -1, info=arg.info)  # type: ignore
+      elif opCode == op.UO_LNOT_OC:
+        newExpr = LitE(int(not (bool(arg.val))), info=arg.info)
+      elif opCode == op.UO_BIT_NOT_OC:
+        newExpr = LitE(~arg.val, info=arg.info)  # type: ignore
+
+  elif isinstance(e, CastE):
+    if isinstance(e.arg, LitE):
+      newExpr = e.arg
+      if isinstance(e.arg.val, (int, float)):
+        newVal = e.arg.type.castValue(e.arg.val)
+        newExpr = LitE(newVal, info=e.arg.info)
+
+  return newExpr
+
+

@@ -1047,68 +1047,10 @@ class TranslationUnit:
       for index in range(len(bb)):
         if bb[index].instrCode == assignInstrCode:
           insn: instr.AssignI = bb[index]
-          rhs = self.reduceConstExpr(insn.rhs)
+          rhs = expr.reduceConstExpr(insn.rhs)
           if rhs is not insn.rhs:
             insn.rhs = rhs
             self.inferTypeOfInstr(insn)
-
-
-  def reduceConstExpr(self, e: expr.ExprET) -> expr.ExprET:
-    """Converts: 5 + 6, 6 > 7, -5, +6, !7, ~9, ... to a single literal."""
-    newExpr = e  # default value on return
-
-    if isinstance(e, expr.BinaryE):
-      arg1 = e.arg1
-      arg2 = e.arg2
-      opCode = e.opr.opCode
-
-      if isinstance(arg1, expr.LitE) and isinstance(arg2, expr.LitE):
-        if opCode == op.BO_ADD_OC:
-          newExpr = expr.LitE(arg1.val + arg2.val, info=arg1.info)  # type: ignore
-        elif opCode == op.BO_SUB_OC:
-          newExpr = expr.LitE(arg1.val - arg2.val, info=arg1.info)  # type: ignore
-        elif opCode == op.BO_MUL_OC:
-          newExpr = expr.LitE(arg1.val * arg2.val, info=arg1.info)  # type: ignore
-        elif opCode == op.BO_DIV_OC:
-          newExpr = expr.LitE(arg1.val / arg2.val, info=arg1.info)  # type: ignore
-        elif opCode == op.BO_MOD_OC:
-          newExpr = expr.LitE(arg1.val % arg2.val, info=arg1.info)  # type: ignore
-
-        elif opCode == op.BO_LT_OC:
-          newExpr = expr.LitE(int(arg1.val < arg2.val), info=arg1.info)  # type: ignore
-        elif opCode == op.BO_LE_OC:
-          newExpr = expr.LitE(int(arg1.val <= arg2.val), info=arg1.info)  # type: ignore
-        elif opCode == op.BO_EQ_OC:
-          newExpr = expr.LitE(int(arg1.val == arg2.val), info=arg1.info)  # type: ignore
-        elif opCode == op.BO_NE_OC:
-          newExpr = expr.LitE(int(arg1.val != arg2.val), info=arg1.info)  # type: ignore
-        elif opCode == op.BO_GE_OC:
-          newExpr = expr.LitE(int(arg1.val >= arg2.val), info=arg1.info)  # type: ignore
-        elif opCode == op.BO_GT_OC:
-          newExpr = expr.LitE(int(arg1.val > arg2.val), info=arg1.info)  # type: ignore
-
-    elif isinstance(e, expr.UnaryE):
-      arg = e.arg
-      opCode = e.opr.opCode
-
-      if isinstance(arg, expr.LitE):
-        if opCode == op.UO_PLUS_OC:
-          newExpr = e.arg
-        elif opCode == op.UO_MINUS_OC:
-          newExpr = expr.LitE(e.arg.val * -1, info=arg.info)  # type: ignore
-        elif opCode == op.UO_LNOT_OC:
-          newExpr = expr.LitE(int(not (bool(arg.val))), info=arg.info)
-        elif opCode == op.UO_BIT_NOT_OC:
-          newExpr = expr.LitE(~arg.val, info=arg.info)  # type: ignore
-
-    elif isinstance(e, expr.CastE):
-      if isinstance(e.arg, expr.LitE):
-        newExpr = e.arg
-        if isinstance(e.arg.val, (int, float)):
-          newVal = e.arg.type.castValue(e.arg.val)
-          newExpr = expr.LitE(newVal, info=e.arg.info)
-
-    return newExpr
 
 
   def removeNopInsns(self) -> None:

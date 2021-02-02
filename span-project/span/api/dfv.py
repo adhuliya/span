@@ -15,6 +15,7 @@ from span.ir import tunit, conv
 LOG = logging.getLogger("span")
 
 from span.util.util import LS
+import span.util.util as util
 from span.api.lattice import\
   (LatticeLT, DataLT, ChangedT, Changed,
    BoundLatticeLT, basicMeetOp, basicLessThanTest,
@@ -731,8 +732,12 @@ class OverallL(DataLT):
 
 
   def __str__(self):
-    if self.top: return "Top"
-    if self.bot: return "Bot"
+    if util.VV5:
+      if self.top: return f"Top(id:{id(self)})"
+      if self.bot: return f"Bot(id:{id(self)})"
+    else:
+      if self.top: return "Top"
+      if self.bot: return "Bot"
 
     if self.getDefaultVal(): assert self.val, f"{self.val}"
     string = io.StringIO()
@@ -741,12 +746,12 @@ class OverallL(DataLT):
       prefix = ""
       for key in sorted(self.val.keys()):
         val = self.val[key]
-        if val.top: continue  # don't write Top values
+        if val.top and not util.VV4: continue  # don't write Top values
         string.write(prefix)
         prefix = ", "
         #string.write(f"{simplifyName(key)}: {self.val[key]}")
         string.write(f"{key}: {self.val[key]}")
-      string.write("}")
+      string.write(f"}}(id:{id(self)})" if util.VV5 else "}")
     else:
       string.write("Default")
     return string.getvalue()
