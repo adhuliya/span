@@ -244,7 +244,8 @@ class PointsToA(analysis.ValueAnalysisAT):
   def Num_Assign_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
+      nodeDfv: NodeDfvL,
+      calleeBi: Opt[NodeDfvL] = None,  #IPA
   ) -> NodeDfvL:
     return self.Nop_Instr(nodeId, insn, nodeDfv)
 

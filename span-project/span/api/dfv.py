@@ -360,13 +360,15 @@ class NodeDfvL(LatticeLT):
 
 
   def __str__(self):
+    idStr = f"(id:{id(self)})" if util.VV5 else ""
     if self.dfvOutTrue is self.dfvOutFalse and self.dfvOut is self.dfvOutTrue:
       if self.dfvIn is self.dfvOut:
-        return f"IN == OUT: {self.dfvIn}"
+        return f"{idStr} IN == OUT: {self.dfvIn}"
       else:
-        return f"IN: {self.dfvIn}, OUT: {self.dfvOut}"
+        return f"{idStr} IN: {self.dfvIn}, OUT: {self.dfvOut}"
     else:
-      return f"IN: {self.dfvIn}, OUT: {self.dfvOut}, TRUE: {self.dfvOutTrue}, FALSE: {self.dfvOutFalse}"
+      return f"{idStr} IN: {self.dfvIn}, OUT: {self.dfvOut}," \
+             f" TRUE: {self.dfvOutTrue}, FALSE: {self.dfvOutFalse}"
 
 
   def __repr__(self):

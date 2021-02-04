@@ -34,7 +34,7 @@ def setupVV():
   VV0 = VV >= 0
   VV1 = VV >= 1
   VV2 = VV >= 2
-  VV3 = VV >= 3
+  VV3 = VV >= 3 # shows widening logs too
   VV4 = VV >= 4 # prints Top values in dfv too
   VV5 = VV >= 5 # prints id() of dfv objects too
 

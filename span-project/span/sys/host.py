@@ -335,7 +335,8 @@ class Host:
       biDfv: Opt[Dict[AnNameT, NodeDfvL]] = None,  # custom boundary info
       ipaEnabled: bool = False,
       useDdm: bool = False,  # use demand driven approach
-      disableSim: bool = False,
+      disableSim: bool = False, # by default sims are enabled
+      simFpCalls: bool = True, # sim func pointer calls
   ) -> None:
     timer = util.Timer("HostSetup")
 
@@ -375,6 +376,7 @@ class Host:
     self.disableSim: bool = disableSim  #SIM
     self.transform: bool = transform    #TRANSFORM
     self.enableNodeReachabilitySim = False  # set to True if needed
+    self.simFpCalls = simFpCalls  # simplify fp based calls
 
     # BLOCK START: SomeChecks
     if not func.canBeAnalyzed():
@@ -809,8 +811,9 @@ class Host:
 
     while True: #self.activeAnIsUseful:  #needs testing node visits are increasing
       node, treatAsNop, ddmVarSet = dirn.wl.pop()
-      if LS: LOG.debug("GetNextNodeFrom_Worklist (%s, %s):\n Got %s. %s",
-                       self.func.name, self.activeAnName,
+      if LS: LOG.debug("GetNextNodeFrom_Worklist (%s, %s): %s"
+                       "\n Got %s. %s",
+                       self.func.name, self.activeAnName, "*" * 16,
                        f"Node_{node.id}" if node else None, dirn.wl)
       if node is None: break  # worklist is empty, so exit the loop
       if LS: LOG.debug(" Node_%s: %s (info:%s) (TreatAsNop: %s, ddmVarSet: %s)",
@@ -872,7 +875,7 @@ class Host:
 
     def ai(ins):
       nDfv = self._analyzeInstr(node, ins, nodeDfv)
-      if LS: LOG.debug("FinalInstrDfv: %s", nDfv)
+      if LS: LOG.debug(" FinalInstrDfv: %s", nDfv)
       return nDfv
 
     res = mergeAll(ai(ins) for ins in insn.insns)
@@ -945,7 +948,7 @@ class Host:
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
-      if activeAnObj.needsRhsDerefToVarsSim and insn.needsPtrCallSim():
+      if activeAnObj.needsFpCallSim and insn.needsPtrCallSim():
         assert isinstance(insn, instr.CallI), f"{nid}: {insn}"
         nDfv = self.handlePtrCallSim(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
@@ -1011,7 +1014,7 @@ class Host:
     #            func which cannot be analyzed are handled intra-procedurally
     """
     assert self.ipaEnabled
-    if util.VV1: print(f"  ProcessingIPACall(Host): {self.func.name}, {node.id}, {insn}")
+    if LS: LOG.debug(f" ProcessingIPACall(Host): {self.func.name}, {node.id}, {insn}")
 
     nid = node.id
     callE = instr.getCallExpr(insn)
@@ -1024,12 +1027,13 @@ class Host:
       if not func.canBeAnalyzed():
         return transferFunc(nid, insn, nodeDfv) # go #INTRA
 
+    if LS: LOG.debug("CalleeCallSiteDfv(CallerDfv): %s", nodeDfv)
+
     calleeBi = self.getCallSiteDfv(nid, calleeFuncName, self.activeAnName)
     if not calleeBi: # i.e. wait for the calleeBi to be some useful value
-      if not nodeDfv.top:
-        callDfv = self.processCallArguments(node, callE, nodeDfv)
-        newCalleeBi = self.activeAnObj.getLocalizedCalleeBi(nid, insn, callDfv, calleeBi)
-        self.setCallSiteDfv(nid, calleeFuncName, self.activeAnName, newCalleeBi)
+      callDfv = self.processCallArguments(node, callE, nodeDfv)
+      newCalleeBi = self.activeAnObj.getLocalizedCalleeBi(nid, insn, callDfv, calleeBi)
+      self.setCallSiteDfv(nid, calleeFuncName, self.activeAnName, newCalleeBi)
       return self.Barrier_Instr(node, insn, nodeDfv)
 
     if self.activeAnDirn == Forward:
@@ -1062,20 +1066,42 @@ class Host:
     assert funcName, f"{self.func.name}, {callE}: {callE.info}"
     funcObj = self.tUnit.getFuncObj(funcName)
 
-    processNodeDfv = nodeDfv
+    # adding Top to avoid unintended widening of params (esp. IntervalA)
+    if self.activeAnDirn == Forward:
+      nextNodeDfv = NodeDfvL(nodeDfv.dfvIn, self.activeAnTop)
+    elif self.activeAnDirn == Backward:
+      nextNodeDfv = NodeDfvL(self.activeAnTop, nodeDfv.dfvOut)
+    else:
+      raise ValueError(f"{self.activeAnDirn}")
+
     for i, paramName in enumerate(funcObj.paramNames):
       arg = callE.args[i]
       lhs = expr.VarE(paramName, arg.info)
       insn = instr.AssignI(lhs, arg, arg.info)
       self.tUnit.inferTypeOfInstr(insn)
-      processNodeDfv = self.analyzeInstr(node, insn, processNodeDfv)
+      nextNodeDfv = self.analyzeInstr(node, insn, nextNodeDfv)
+      if LS: LOG.debug(" FinalInstrDfv(ParamAssign): %s", nextNodeDfv)
 
+      # in/out of succ/pred becomes out/in of the current node
+      if self.activeAnDirn == Forward:
+        nextNodeDfv = NodeDfvL(nextNodeDfv.dfvOut, self.activeAnTop)
+      elif self.activeAnDirn == Backward:
+        nextNodeDfv = NodeDfvL(self.activeAnTop, nextNodeDfv.dfvIn)
+      else:
+        raise ValueError(f"{self.activeAnDirn}")
+
+    # restore in/out dfv
     if self.activeAnDirn == Forward:
-      nodeDfv = NodeDfvL(processNodeDfv.dfvOut, nodeDfv.dfvOut)
+      nextNodeDfv.dfvOut = nodeDfv.dfvOut
+      nextNodeDfv.dfvOutTrue = nextNodeDfv.dfvOutFalse = nextNodeDfv.dfvOut
+    elif self.activeAnDirn == Backward:
+      nextNodeDfv.dfvIn = nodeDfv.dfvIn
     else:
-      assert False  #FIXME: handle Backward too
+      raise ValueError(f"{self.activeAnDirn}")
 
-    return nodeDfv
+    if LS: LOG.debug("CalleeCallSiteDfv(AfterParams): %s", nextNodeDfv)
+
+    return nextNodeDfv
 
 
   def handleNodeReachability(self, node, insn, nodeDfv) -> Opt[NodeDfvL]:
@@ -2095,6 +2121,7 @@ class Host:
       calleeName: FuncNameT,
       anName: AnNameT,
       nodeDfv: NodeDfvL,
+      widen: bool = False,
   ) -> None:
     """
     Update the results for the call site.
@@ -2105,17 +2132,19 @@ class Host:
     else:
       dfvDict = self.callSiteDfvMap[tup]
 
+    nDfv = nodeDfv
     if anName in dfvDict: # if already present, then try widening
       oldDfv = dfvDict[anName]
-      nDfv, _ = oldDfv.widen(nodeDfv, ipa=True)
+      if widen: nDfv, _ = oldDfv.widen(nodeDfv, ipa=True)
       if LS: LOG.debug(f"CalleeCallSiteDfv(Old): {tup}: {oldDfv}")
       if LS: LOG.debug(f"CalleeCallSiteDfv(New): {tup}: {nodeDfv}")
-      if LS: LOG.debug(f"CalleeCallSiteDfv(Widened): {tup}: {nDfv}")
+      if widen and LS:
+        LOG.debug(f"CalleeCallSiteDfv(Widened): {tup}: {nDfv}")
     else:
       if LS: LOG.debug(f"CalleeCallSiteDfv(Old): {tup}: EMPTY.")
       if LS: LOG.debug(f"CalleeCallSiteDfv(New): {tup}: {nodeDfv}")
-      if LS: LOG.debug(f"CalleeCallSiteDfv(Widened): {tup}: is New, as Old=EMPTY.")
-      nDfv = nodeDfv
+      if widen and LS:
+        LOG.debug(f"CalleeCallSiteDfv(Widened): {tup}: is New, as Old=EMPTY.")
 
     dfvDict[anName] = nDfv
 

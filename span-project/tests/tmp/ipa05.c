@@ -9,7 +9,7 @@ void f(int c) {
 int main(int argc, char** argv) {
   a = 30;
   while (argc--) {
-    f(100);
+    f(100); // look: b is getting ipa-widened here
   }
   return b;
 }

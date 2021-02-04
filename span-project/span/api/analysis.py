@@ -577,6 +577,8 @@ class ForwardDT(DirectionDT):
           if predNodeDfv.dfvOut is None:
             if LS: LOG.error("dfvOut is None: %s", predNodeDfv)
           predOut = predNodeDfv.dfvOut  # must not be None, if here
+        if LS and util.VV3: LOG.debug(" PredDfvOut: %s", predOut)
+
 
         if newIn is None:
           newIn = predOut
@@ -733,6 +735,7 @@ class AnalysisAT:
   needsCondToUnCondSim: bool = False
   needsLhsVarToNilSim: bool = False
   needsNodeToNilSim: bool = False
+  needsFpCallSim: bool = True
 
 
   def __init__(self,
@@ -1743,6 +1746,7 @@ class ValueAnalysisAT(AnalysisAT):
   needsCondToUnCondSim: bool = True
   needsLhsVarToNilSim: bool = False # FIXME: True when using liveness analysis
   needsNodeToNilSim: bool = False
+  needsFpCallSim: bool = True
 
 
   def __init__(self,
@@ -1809,8 +1813,10 @@ class ValueAnalysisAT(AnalysisAT):
 
     # Out is unchanged in Forward analyses
     outDfv = calleeBi.dfvOut if calleeBi else self.overallTop # unchanged Out
-    inDfv = nodeDfv.dfvIn.localize(calleeFuncObj, keepParams=True)
-    return NodeDfvL(inDfv, outDfv)
+    newDfvIn = nodeDfv.dfvIn.localize(calleeFuncObj, keepParams=True)
+    localized = NodeDfvL(newDfvIn, outDfv)
+    if LS: LOG.debug("CalleeCallSiteDfv(Localized): %s", localized)
+    return localized
 
 
   def cleanUpBoundaryInfo(self,
@@ -1980,15 +1986,20 @@ class ValueAnalysisAT(AnalysisAT):
         if newVal != oldVal:
           outDfvValues[name] = newVal
 
+    callNode = False  #IPA
     if isinstance(rhs, expr.CallE):
       if calleeBi: #IPA
         calleeOut = calleeBi.dfvOut
         newOut = calleeOut.localize(self.func)
-        newOut.addLocals(dfvIn)
+        if LS: LOG.debug("CalleeCallSiteDfv(LocalizedDfvOutForCaller): %s", newOut)
+        newOut.addLocals(dfvIn) # due to this widen is False
+        if LS: LOG.debug(
+          "CalleeCallSiteDfv(LocalizedDfvOutForCaller:addedLocals): %s", newOut)
         nodeDfv = NodeDfvL(dfvIn, newOut)
+        callNode = True  #IPA
       else: #INTRA
         outDfvValues.update(self.processCallE(rhs, dfvIn))
-    nDfv = self.genNodeDfvL(outDfvValues, nodeDfv)
+    nDfv = self.genNodeDfvL(outDfvValues, nodeDfv, callNode)
     return nDfv
 
 
@@ -2004,14 +2015,25 @@ class ValueAnalysisAT(AnalysisAT):
   def genNodeDfvL(self,
       outDfvValues: Dict[types.VarNameT, dfv.ComponentL],
       nodeDfv: NodeDfvL,
+      callNode: bool = False, #IPA True if the node has a call expression
   ) -> NodeDfvL:
-    """A convenience function to create and return the NodeDfvL."""
+    """A convenience function to create and return the NodeDfvL.
+    When callNode == True, don't copy dfvIn
+    but directly work on the dfvOut.
+    """
     dfvIn = newOut = nodeDfv.dfvIn
-    if outDfvValues:
-      newOut = cast(dfv.OverallL, dfvIn.getCopy())
-      newOutSetVal = newOut.setVal
-      for name, value in outDfvValues.items():
-        newOutSetVal(name, value)
+    if callNode: #IPA
+      newOut = nodeDfv.dfvOut
+      if outDfvValues:
+        newOutSetVal = newOut.setVal
+        for name, value in outDfvValues.items():
+          newOutSetVal(name, value) # modify the out in-place
+    else: #INTRA
+      if outDfvValues:
+        newOut = cast(dfv.OverallL, dfvIn.getCopy())
+        newOutSetVal = newOut.setVal
+        for name, value in outDfvValues.items():
+          newOutSetVal(name, value)
     return NodeDfvL(dfvIn, newOut)
 
 
@@ -2063,7 +2085,7 @@ class ValueAnalysisAT(AnalysisAT):
     return outDfvValues
 
 
-  def processCallE(self, # only for intra-procedural
+  def processCallE(self, #INTRA only for intra-procedural
       e: expr.ExprET,
       dfvIn: DataLT,
   ) -> Dict[types.VarNameT, dfv.ComponentL]:

@@ -36,7 +36,7 @@ import span.ir.conv as conv
 from span.ir.conv import GLOBAL_INITS_FUNC_NAME, Forward, Backward
 from span.ir.types import FuncNameT, FuncNodeIdT
 from span.ir.tunit import TranslationUnit
-from span.api.analysis import AnalysisNameT
+from span.api.analysis import AnalysisNameT as AnNameT
 from span.api.dfv import NodeDfvL
 
 from span.sys.host import Host, MAX_ANALYSES
@@ -61,7 +61,7 @@ class ValueContext:
 
   def __init__(self,
       funcName: FuncNameT,
-      dfvs: Opt[Dict[AnalysisNameT, NodeDfvL]] = None
+      dfvs: Opt[Dict[AnNameT, NodeDfvL]] = None
   ):
     self.funcName = funcName
     self.dfvs = dfvs if dfvs is not None else {}
@@ -73,7 +73,7 @@ class ValueContext:
 
 
   def addValue(self,
-      anName: AnalysisNameT,
+      anName: AnNameT,
       nodeDfv: NodeDfvL
   ) -> None:
     self.dfvs[anName] = nodeDfv
@@ -122,7 +122,8 @@ class ValueContext:
 
 
   def __str__(self):
-    return f"ValueContext({self.funcName}, {self.dfvs})"
+    idStr = "" if not util.VV5 else f"(id:{id(self)})"
+    return f"ValueContext({self.funcName}, {self.dfvs}){idStr}"
 
 
   def __repr__(self):
@@ -135,15 +136,15 @@ class IpaHost:
   def __init__(self,
       tUnit: TranslationUnit,
       entryFuncName: FuncNameT = conv.ENTRY_FUNC,
-      mainAnName: Opt[AnalysisNameT] = None,
-      otherAnalyses: Opt[List[AnalysisNameT]] = None,
-      supportAnalyses: Opt[List[AnalysisNameT]] = None,
-      avoidAnalyses: Opt[List[AnalysisNameT]] = None,
+      mainAnName: Opt[AnNameT] = None,
+      otherAnalyses: Opt[List[AnNameT]] = None,
+      supportAnalyses: Opt[List[AnNameT]] = None,
+      avoidAnalyses: Opt[List[AnNameT]] = None,
       maxNumOfAnalyses: int = MAX_ANALYSES,
-      analysisSeq: Opt[List[List[AnalysisNameT]]] = None,  # for cascading/lerner
       disableAllSim: bool = False,
       useDdm: bool = False,
-      reUsePrevValueContextHost: bool = True
+      reUsePrevValueContextHost: bool = True,
+      widenValueContext: bool = False,
   ) -> None:
     if tUnit is None or not tUnit.getFuncObj(entryFuncName):
       raise ValueError(f"No {entryFuncName} in translation unit {tUnit.name}.")
@@ -155,18 +156,18 @@ class IpaHost:
     self.supportAnalyses = supportAnalyses  # TODO: pass it to span.sys.host.Host
     self.avoidAnalyses = avoidAnalyses
     self.maxNumOfAnalyses = maxNumOfAnalyses
-    self.analysisSeq = analysisSeq
     self.disableAllSim = disableAllSim
     self.useDdm = useDdm
+    self.widenValueContext = widenValueContext
 
     self.valueContextMap: Dict[ValueContext, Tuple[Set[FuncNodeIdT], Host]] = {}
 
     self.reUsePrevValueContextHost = reUsePrevValueContextHost
-    self.callSiteVContextMap: Dict[FuncNodeIdT, Dict[int, ValueContext]] = {}
+    self.callSiteVContextMap:\
+      Dict[Tuple[FuncNodeIdT, FuncNameT], Dict[int, ValueContext]] = {}
 
     self.finalResult: Dict[FuncNameT,
-                           Dict[AnalysisNameT,
-                                Dict[cfg.CfgNodeId, NodeDfvL]]] = {}
+                           Dict[AnNameT, Dict[cfg.CfgNodeId, NodeDfvL]]] = {}
     self.uniqueId = 0
     self.gst = GlobalStats()
 
@@ -179,7 +180,8 @@ class IpaHost:
     """
     if LS: LOG.info("\n\nIpaHost_Start #####################")  # delit
     # STEP 1: Analyze the global inits and extract its BI
-    if LS: LOG.info("AnalyzingFunction(IpaHost): %s", GLOBAL_INITS_FUNC_NAME)
+    if LS: LOG.info("AnalyzingFunction(IpaHost): %s %s",
+                    GLOBAL_INITS_FUNC_NAME, "*" * 16)
     hostGlobal = self.createHostInstance(GLOBAL_INITS_FUNC_NAME, ipa=False)
     hostGlobal.analyze()
     if util.VV2: hostGlobal.printOrLogResult()
@@ -194,7 +196,7 @@ class IpaHost:
     self.analyzeFunc(entryCallSite,
                      self.entryFuncName,
                      mainBi,
-                     0)
+                     0, 0, {entryCallSite: mainBi})
 
     # STEP 3: finalize IPA results
     self.finalizeIpaResults()
@@ -217,27 +219,35 @@ class IpaHost:
   def analyzeFunc(self,
       callSite: FuncNodeIdT,
       funcName: FuncNameT,  # the function being analyzed (callee)
-      ipaFuncBi: Dict[AnalysisNameT, NodeDfvL],
+      ipaFuncBi: Dict[AnNameT, NodeDfvL],
       recursionDepth: int,
-      parentUid: int = 0,
-  ) -> Dict[AnalysisNameT, NodeDfvL]:
+      parentUid: int, # start with 0
+      callSiteContextMap: Dict[FuncNodeIdT, Dict[AnNameT, NodeDfvL]],
+  ) -> Dict[AnNameT, NodeDfvL]:
     thisUid = self.getUniqueId()
     if LS: LOG.info("AnalyzingFunction(IpaHost)(Fresh,"
-                    " Uid:(This:%s, Parent:%s)): %s", thisUid, parentUid, funcName)
+                    " Uid:(This:%s, Parent:%s)): %s %s",
+                    thisUid, parentUid, funcName, "*" * 16)
     if LS: LOG.debug(f" {funcName} (Id:{self.tUnit.getFuncObj(funcName).id}): "
                      f"Site:{conv.getFuncNodeIdStr(callSite)}, "
                      f"Depth: {recursionDepth}, "
                      f"VContextSize: {len(self.valueContextMap)}, "
                      f"ParentUid: {parentUid}")
+    if LS: LOG.debug(f" ValueContext(CurrBi): {ipaFuncBi}")
 
     if recursionDepth >= RECURSION_LIMIT:
       return self.analyzeFuncFinal(callSite, funcName, ipaFuncBi)
+
+    ipaFuncBi = self.widenTheValueContext(callSite, ipaFuncBi, callSiteContextMap)
+    callSiteContextMap[callSite] = ipaFuncBi #for #widen
 
     vContext = ValueContext(funcName, ipaFuncBi.copy())
     if LS: LOG.debug(f" ValueContext: Id:{id(vContext)}, {vContext}")
     host, preComputed = self.getComputedValue(callSite, parentUid, vContext)
 
-    if preComputed: return host.getBoundaryResult() # HIT! Use prev result.
+    if preComputed:
+      if callSite in callSiteContextMap: del callSiteContextMap[callSite]
+      return host.getBoundaryResult() # HIT! Use prev result.
 
     ##### Current Callee is now a Caller #######################################
     allCallSites = set()
@@ -252,12 +262,13 @@ class IpaHost:
         for nid, calleeName in sorted(callSiteDfvs.keys()):
           tup = nid, calleeName
           calleeSite = conv.genFuncNodeId(callerId, nid)
-          allCallSites.add(calleeSite)
+          allCallSites.add((calleeSite, calleeName))
 
           calleeBi = callSiteDfvs[tup]
           if LS: LOG.debug(f"CalleeBi(Old) ({callerName} --> {calleeName}):\n {calleeBi}")
           newCalleeBi = self.analyzeFunc(calleeSite, calleeName, calleeBi,
-                                         recursionDepth + 1, thisUid) #recurse
+                                         recursionDepth + 1, thisUid,
+                                         callSiteContextMap) #recurse
           if LS: LOG.debug(f"CalleeBi(Old) ({callerName} --> {calleeName}):\n {calleeBi}")
           if LS: LOG.debug(f"CalleeBi(New) ({callerName} --> {calleeName}):\n {newCalleeBi}")
           reAnalyze = host.setCallSiteDfvsIpaHost(nid, calleeName, newCalleeBi)
@@ -267,13 +278,32 @@ class IpaHost:
 
           if reAnalyze: break  # first re-analyze then goto other call sites
 
-      if LS: LOG.debug("AnalyzingFunction(IpaHost)(Again:%s, Uid:(This:%s, Parent:%s)): %s",
-                       reAnalyze, thisUid, parentUid, funcName)
+      if LS: LOG.debug("AnalyzingFunction(IpaHost)(Again:%s,"
+                       " Uid:(This:%s, Parent:%s)): %s %s",
+                       reAnalyze, thisUid, parentUid, funcName, "*" * 16)
       if LS: LOG.debug(f" ValueContext: Id:{id(vContext)}, {vContext}")
     if util.VV3:
       host.printOrLogResult()
     self.freePrevValueContexts(allCallSites, thisUid)
+    if callSite in callSiteContextMap: del callSiteContextMap[callSite]
     return host.getBoundaryResult()
+
+
+  def widenTheValueContext(self, #widen
+      callSite: FuncNodeIdT,
+      ipaFuncBi: Dict[AnNameT, NodeDfvL],
+      callSiteContextMap: Dict[FuncNodeIdT, Dict[AnNameT, NodeDfvL]],
+  ) -> Dict[AnNameT, NodeDfvL]:
+    if self.widenValueContext:
+      if callSite in callSiteContextMap:
+        prevBi = callSiteContextMap[callSite]
+        if LS: LOG.debug(" Widening with ValueContext(PrevBi): %s", prevBi)
+        widenedBi = dict()
+        for anName, nDfv in prevBi.items():
+          currNdfv = ipaFuncBi[anName]
+          widenedBi[anName], _ = nDfv.widen(currNdfv)
+        return widenedBi
+    return ipaFuncBi # no change
 
 
   def printToDebug(self, calleeName, calleeBi, newCalleeBi, reAnalyze):
@@ -297,7 +327,7 @@ class IpaHost:
 
 
   def allTopValues(self,
-      dfvs: Dict[AnalysisNameT, NodeDfvL]
+      dfvs: Dict[AnNameT, NodeDfvL]
   ) -> bool:
     """Returns true if all the data flow values are Top."""
     tops = [nDfv.top for nDfv in dfvs.values()]
@@ -308,14 +338,14 @@ class IpaHost:
 
   def checkInvariants1(self,
       funcName: FuncNameT,
-      nodeDfvs: Dict[AnalysisNameT, NodeDfvL],
+      nodeDfvs: Dict[AnNameT, NodeDfvL],
   ) -> None:
     pass
 
 
   def separateLocalNonLocalDfvs(self,
-      dfvs: Dict[AnalysisNameT, NodeDfvL],
-  ) -> Tuple[Dict[AnalysisNameT, NodeDfvL], Dict[AnalysisNameT, NodeDfvL]]:
+      dfvs: Dict[AnNameT, NodeDfvL],
+  ) -> Tuple[Dict[AnNameT, NodeDfvL], Dict[AnNameT, NodeDfvL]]:
     localDfvs, nonLocalDfvs = dict(), dict()
     for aName, nDfv in dfvs.items():
       l, nl = nDfv.separateLocalNonLocalDfvs()
@@ -325,9 +355,9 @@ class IpaHost:
 
   def prepareCallNodeDfv(self,
       funcName: FuncNameT,
-      newCalleeBi: Dict[AnalysisNameT, NodeDfvL],
-      localDfvs: Dict[AnalysisNameT, NodeDfvL],
-  ) -> Dict[AnalysisNameT, NodeDfvL]:
+      newCalleeBi: Dict[AnNameT, NodeDfvL],
+      localDfvs: Dict[AnNameT, NodeDfvL],
+  ) -> Dict[AnNameT, NodeDfvL]:
     localizedDfvs = dict()
     for anName, localDfv in localDfvs.items():
       newCalleeDfv = newCalleeBi[anName]
@@ -339,8 +369,8 @@ class IpaHost:
   def analyzeFuncFinal(self,
       callSite: FuncNodeIdT,
       funcName: FuncNameT,
-      funcBi: Dict[AnalysisNameT, NodeDfvL],
-  ) -> Dict[AnalysisNameT, NodeDfvL]:
+      funcBi: Dict[AnNameT, NodeDfvL],
+  ) -> Dict[AnNameT, NodeDfvL]:
     """
     TODO:
     For problems where Value Context may not terminate,
@@ -366,7 +396,7 @@ class IpaHost:
 
     if self.reUsePrevValueContextHost:
       prevHost = self.getPrevValueContextHost(callSite, parentUid, vContext)
-      if prevHost: return prevHost, False
+      if prevHost and prevHost.func.name == vContext.funcName: return prevHost, False
 
     # vContext not present, hence create one and attach a Host instance
     if LS: LOG.debug("PrevValueContext(Fresh): id:%s, %s",
@@ -387,6 +417,7 @@ class IpaHost:
     """Returns the host object, and true if its present in the saved
     value contexts"""
     if LS: LOG.debug(f"PrevValueContext: MISS !! :(")
+    siteTup = callSite, vContext.funcName
     prevValueContext = self.getPrevValueContext(callSite, parentUid, vContext)
     if prevValueContext is not None:
       if LS: LOG.debug(f"PrevValueContext(Checking):"
@@ -403,7 +434,7 @@ class IpaHost:
                        f" Id:{id(prevValueContext)}, {prevValueContext}")
       tup = self.valueContextMap[prevValueContext]
       del self.valueContextMap[prevValueContext] # remove the old one
-      self.callSiteVContextMap[callSite][parentUid] = vContext # replace the old one
+      self.callSiteVContextMap[siteTup][parentUid] = vContext # replace the old one
       self.valueContextMap[vContext] = tup
       hostInstance = tup[1]
       hostInstance.setBoundaryResult(vContext.getCopy().dfvs)
@@ -417,10 +448,11 @@ class IpaHost:
       parentUid: int,
       vContext: ValueContext,
   ) -> Opt[ValueContext]:
-    if callSite in self.callSiteVContextMap:
-      val = self.callSiteVContextMap[callSite]
+    siteTup = callSite, vContext.funcName
+    if siteTup in self.callSiteVContextMap:
+      val = self.callSiteVContextMap[siteTup]
     else:
-      val = self.callSiteVContextMap[callSite] = {}
+      val = self.callSiteVContextMap[siteTup] = {}
 
     if parentUid in val:
       if LS: LOG.debug(f"PrevValueContext(fetch) prev context at"
@@ -438,20 +470,20 @@ class IpaHost:
 
 
   def freePrevValueContexts(self,
-      callSites: Set[FuncNodeIdT],
+      siteTups: Set[Tuple[FuncNodeIdT, FuncNameT]],
       parentUid: int,
   ) -> None:
-    for callSite in callSites:
-      if callSite in self.callSiteVContextMap:
-        val = self.callSiteVContextMap[callSite]
+    for siteTup in siteTups:
+      if siteTup in self.callSiteVContextMap:
+        val = self.callSiteVContextMap[siteTup]
         if parentUid in val:
           del val[parentUid]
 
 
   def prepareCalleeBi(self,
       funcName: FuncNameT,
-      bi: Dict[AnalysisNameT, NodeDfvL],
-  ) -> Dict[AnalysisNameT, NodeDfvL]:
+      bi: Dict[AnNameT, NodeDfvL],
+  ) -> Dict[AnNameT, NodeDfvL]:
     func = self.tUnit.getFuncObj(funcName)
     newBi = {}
 
@@ -464,7 +496,7 @@ class IpaHost:
     return newBi
 
 
-  def swapGlobalBiInOut(self, globalBi: Dict[AnalysisNameT, NodeDfvL]):
+  def swapGlobalBiInOut(self, globalBi: Dict[AnNameT, NodeDfvL]):
     """Swaps IN and OUT, because the OUT of the end node in
     the global function is the IN of the main() function."""
     for anName in globalBi.keys():
@@ -477,7 +509,7 @@ class IpaHost:
   def createHostInstance(self,
       funcName: FuncNameT,
       ipa: bool = True,
-      biDfv: Opt[Dict[AnalysisNameT, NodeDfvL]] = None,
+      biDfv: Opt[Dict[AnNameT, NodeDfvL]] = None,
       useDdm: bool = False,  #DDM
   ) -> Host:
     """Create an instance of Host for the given function"""

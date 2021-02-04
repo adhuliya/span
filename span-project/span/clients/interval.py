@@ -86,7 +86,10 @@ class ComponentL(dfv.ComponentL):
       elif self.isBooleanRange() and newDfv.isBooleanRange():
         return self.meet(newDfv)
       else:
-        return ComponentL(self.func, bot=True), Changed
+        wide = ComponentL(self.func, bot=True)
+        if LS and util.VV3: LOG.debug(" Widened: %s (w.r.t. %s) to %s ",
+                                      self, newDfv, wide)
+        return wide, Changed
     else:                 # no widening needed
       return self, not Changed
 
@@ -634,17 +637,25 @@ class IntervalA(analysis.ValueAnalysisAT):
   def genNodeDfvL(self,
       outDfvValues: Dict[types.VarNameT, dfv.ComponentL],
       nodeDfv: NodeDfvL,
+      callNode: bool = False, #IPA True if the node has a call expression
   ) -> NodeDfvL:
     """A convenience function to create and return the NodeDfvL."""
-    dfvIn = newOut = nodeDfv.dfvIn
-    dfvOutGetVal = nodeDfv.dfvOut.getVal  # the node's current dfvOut
-    if outDfvValues:
-      newOut = cast(dfv.OverallL, dfvIn.getCopy())
-      newOutSetVal = newOut.setVal
-      for name, value in outDfvValues.items():
-        oldOutValue: ComponentL = dfvOutGetVal(name)
-        newValue, _ = oldOutValue.widen(value)
-        newOutSetVal(name, newValue)
+    dfvIn = newOut = cast(OverallL, nodeDfv.dfvIn)
+    if callNode: #IPA modify the current dfvOut
+      newOut = nodeDfv.dfvOut
+      if outDfvValues:
+        newOutSetVal = newOut.setVal
+        for name, value in outDfvValues.items():
+            newOutSetVal(name, value)  # modify dfvOut in-place
+    else: #INTRA transfer current dfvIn to replace current dfvOut
+      dfvOutGetVal = nodeDfv.dfvOut.getVal  # the node's current dfvOut
+      if outDfvValues:
+        newOut = cast(dfv.OverallL, dfvIn.getCopy())
+        newOutSetVal = newOut.setVal
+        for name, value in outDfvValues.items():
+          oldOutValue: ComponentL = dfvOutGetVal(name)
+          newValue, _ = oldOutValue.widen(value)
+          newOutSetVal(name, newValue)
     return NodeDfvL(dfvIn, newOut)
 
 
