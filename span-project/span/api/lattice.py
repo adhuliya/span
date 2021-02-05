@@ -161,15 +161,6 @@ class DataLT(LatticeLT):
     raise NotImplementedError()
 
 
-  def addLocalDfv(self,
-      localDfv: 'DataLT',
-  ) -> 'DataLT':
-    """Creates a new dfv object.
-    Assumes default value is bot.
-    """
-    raise NotImplementedError()
-
-
   def localize(self, #IPA
       forFunc: constructs.Func,
       keepParams: bool = False,
@@ -178,19 +169,19 @@ class DataLT(LatticeLT):
     raise NotImplementedError
 
 
-  def updateFuncObj(self, funcObj: constructs.Func): #IPA #modifies self object
-    """Updates the self.func object reference (for all sub-objects too).
-    Modifies self object."""
-    raise NotImplementedError
-
-
-  def addLocals(self, #IPA #modifies self object
+  def addLocals(self, #IPA #modifies self in-place
       fromDfv: 'DataLT',
   ) -> None:
     """Adds the value of strictly local variables in self.func
     in fromDfv to self. It modifies self object.
     Modifies self object.
     """
+    raise NotImplementedError
+
+
+  def updateFuncObj(self, funcObj: constructs.Func): #IPA #modifies self in-place
+    """Updates the self.func object reference (for all sub-objects too).
+    Modifies self object."""
     raise NotImplementedError
 
 

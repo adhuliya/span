@@ -27,6 +27,7 @@ import span.ir.constructs as constructs
 import span.ir.ir as ir
 from span.tests.common import \
   (genFileMap,
+   genFileMapSpanir,
    genTranslationUnit,
    TestActionAndResult,
    evalTestCaseFile, )
@@ -50,25 +51,22 @@ class SpanIrTests(unittest.TestCase):
 
   def test_AABA_c2Spanir(self):
     """Checking the correctness of SpanIr on given programs."""
-    print("\nTesting spanir now.")
-    fileMap = genFileMap(self)
+    print("\nTesting spanir generation now. START.\n")
+    fileMap = genFileMapSpanir(self)
 
-    for cFile, pyFile in fileMap.items():
-      spanirActionPresent = False
+    for cFile, irFile in fileMap.items():
       print(f"Checking spanir of {cFile}.")
-      pyFileActions: List[TestActionAndResult] = evalTestCaseFile(pyFile)
-      for action in pyFileActions:
-        if action.action == "c2spanir":
-          spanirActionPresent = True
-          if self.checkSpanirConversion(cFile, action):
-            print("    Correct.")
-      if not spanirActionPresent:
-        print("    OK. (spanir check not requested)")
+      if self.checkSpanirConversion(cFile, irFile):
+        print("  Correct.")
+      else:
+        print("  Not Correct.")
+
+    print("\nTesting spanir generation now. END.\n")
 
 
   def test_AACA_ir_attributes(self):
     """Checking the correctness of SpanIr meta attributes on given programs."""
-    print("\nTesting spanir now (its attributes).")
+    print("\nTesting spanir attributes now. START.\n")
     fileMap = genFileMap(self)
 
     for cFileName, pyFile in fileMap.items():
@@ -96,14 +94,19 @@ class SpanIrTests(unittest.TestCase):
 
           print("   Correct.")
 
+    print("\nTesting spanir attributes now. END.\n")
+
 
   def checkSpanirConversion(self,
       cFileName: str,
-      action: TestActionAndResult
+      irFileName: str,
   ) -> bool:
     tUnit: ir.TranslationUnit = genTranslationUnit(cFileName)
+    tUnitTest: ir.TranslationUnit = ir.readSpanIr(irFileName)
 
-    self.assertTrue(action.results["ir.tunit"].isEqual(tUnit), msg=f"For {cFileName}")
+    self.assertTrue(tUnit.isEqual(tUnitTest),
+                    msg=f"Newly generated spanir file, '{cFileName}.spanir.py'"
+                        f"doesn't match against the test file '{irFileName}'")
     return True
 
 

@@ -637,7 +637,7 @@ class IntervalA(analysis.ValueAnalysisAT):
   def genNodeDfvL(self,
       outDfvValues: Dict[types.VarNameT, dfv.ComponentL],
       nodeDfv: NodeDfvL,
-      callNode: bool = False, #IPA True if the node has a call expression
+      callNode: bool = False, #IPA maybe True if a callE present.
   ) -> NodeDfvL:
     """A convenience function to create and return the NodeDfvL."""
     dfvIn = newOut = cast(OverallL, nodeDfv.dfvIn)

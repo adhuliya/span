@@ -312,22 +312,6 @@ class NodeDfvL(LatticeLT):
     return NodeDfvL(localDfvIn, localDfvOut), NodeDfvL(nonLocalDfvIn, nonLocalDfvOut)
 
 
-  def addLocalDfv(self,
-      localDfv: 'NodeDfvL',
-      direction: types.DirectionT,
-  ) -> 'NodeDfvL':
-    """For IPA -- adding local dfvs of the caller."""
-    if direction == conv.Forward:
-      newIn = self.dfvIn.addLocalDfv(localDfv.dfvIn)
-      newOut = self.dfvOut.addLocalDfv(localDfv.dfvIn)
-    elif direction == conv.Backward:
-      newIn = self.dfvIn.addLocalDfv(localDfv.dfvOut)
-      newOut = self.dfvOut.addLocalDfv(localDfv.dfvOut)
-    else:
-      assert False, f"{direction}: {localDfv}"
-    return NodeDfvL(newIn, newOut)
-
-
   def getCopy(self):
     dfvInCopy = self.dfvIn.getCopy()
     dfvOutCopy = self.dfvOut.getCopy()
@@ -714,7 +698,7 @@ class OverallL(DataLT):
     return localizedDfv
 
 
-  def updateFuncObj(self, funcObj: constructs.Func): #IPA #modifies self object
+  def updateFuncObj(self, funcObj: constructs.Func): #IPA #modifies self in-place
     self.func = funcObj
     if self.val:
       for vName in self.val:
@@ -723,7 +707,7 @@ class OverallL(DataLT):
         self.val[vName] = newVal
 
 
-  def addLocals(self, #IPA #modifies self object
+  def addLocals(self, #IPA #modifies self in-place
       fromDfv: 'OverallL',
   ) -> None:
     tUnit: tunit.TranslationUnit = self.func.tUnit

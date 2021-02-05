@@ -64,7 +64,7 @@ TestActionAndResult(
 
     "ir.names.1": ("global",
       None,
-      {"g:0d", "g:00", "g:1d", "v:main:arr"}),
+      {"g:0Null", "v:main:arr"}),
 
     "ir.names.2": ("f:main",
       types.Ptr(to=types.Int32),

@@ -796,6 +796,7 @@ if __name__ == "__main__":
                                     help="Run tests")
   testParser.set_defaults(func=testSpan)
   testParser.add_argument('-v', '--verbose', action='count', default=0)
+  testParser.add_argument('-c', '--check', action='count', default=0)
   testParser.add_argument("testType",
                           choices=["all","basic","spanir","ir","analysis"],
                           default="all")

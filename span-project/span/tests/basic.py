@@ -32,6 +32,7 @@ class SpanBasicTests(unittest.TestCase):
   def test_AACA_isCwdATestDirectory(self):
     """Does current directory contain the test and result files?"""
 
+    print("\nTest: Curr Directory is a test directory? START.\n")
     status, cfiles = \
       subp.getstatusoutput("ls spanTest[0-9][0-9][0-9].c")
     self.assertEqual(status, 0, consts.FAIL_C_TEST_FILES_NOT_PRESENT)
@@ -39,20 +40,25 @@ class SpanBasicTests(unittest.TestCase):
     status, resultFiles = \
       subp.getstatusoutput("ls spanTest[0-9][0-9][0-9].c.results.py")
     self.assertEqual(status, 0, consts.FAIL_C_RESULT_FILES_NOT_PRESENT)
+    print("\nTest: Curr Directory is a test directory? END.\n")
 
 
   def test_AADA_isClangInPath(self):
     """Is there a clang compiler in the current path? (False: if an error)"""
+    print("\nTest: Is 'clang' in path? START.\n")
     status, output = subp.getstatusoutput("clang")
     self.assertEqual(status, 1, consts.FAIL_NO_CLANG_IN_PATH)
+    print("\nTest: Is 'clang' in path? END.\n")
 
 
   def test_AAEA_isC2spanirPossible(self):
     """Does clang support SpanIr conversion? (False: if an error)"""
+    print("\nTest: Can 'clang' convert C(ClangAST) to SPANIR? START.\n")
     cmd = ("""echo "int main(){}" | clang -x c """
            "--analyze -Xanalyzer -analyzer-checker=core.span.SlangGenAst -")
     status, output = subp.getstatusoutput(cmd)
     self.assertEqual(status, 0, consts.FAIL_NO_C2SPANIR_SUPPORT)
+    print("\nTest: Can 'clang' convert C(ClangAST) to SPANIR? END.\n")
 
 
 def runTests():

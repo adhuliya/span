@@ -38,6 +38,7 @@ import span.clients.interval as interval
 TestFileName = str
 ResultFileName = str
 
+SPANIR_TEST_FILE_SUFFIX=".spanir.test.py" # example: test.c.spanir.test.py
 
 class TestActionAndResult:
   """
@@ -109,8 +110,49 @@ def genFileMap(testCase: unittest.TestCase) -> Dict[TestFileName, ResultFileName
   return fileMap
 
 
+def genFileMapSpanir(testCase: unittest.TestCase) -> Dict[TestFileName, ResultFileName]:
+  """Maps the *.c file to its *.c.spanir.test.py file.
+  A .c file with no corresponding .c.spanir.test.py file is silently avoided."""
+
+  # get all the test c files
+  status, cFiles = subp.getstatusoutput("ls spanTest[0-9][0-9][0-9].c")
+  testCase.assertEqual(status, 0, consts.FAIL_C_TEST_FILES_NOT_PRESENT)
+
+  fileMap: Dict[TestFileName, ResultFileName] = dict()
+  cFileList = cFiles.split()
+  for cFile in cFileList:
+    fileMap[cFile] = ""
+
+  # get all result files
+  suffix = SPANIR_TEST_FILE_SUFFIX
+  status, irFiles = subp.getstatusoutput(f"ls spanTest[0-9][0-9][0-9].c{suffix}")
+  testCase.assertEqual(status, 0, consts.FAIL_C_RESULT_FILES_NOT_PRESENT)
+
+  irFileNameList = irFiles.split()
+  for irFileName in irFileNameList:
+    cFileName = irFileName[:-(len(suffix))]
+    if cFileName in fileMap:
+      fileMap[cFileName] = irFileName
+
+  # clear all .c files with no result file
+  cFilesWithNoResultFile = [cFile for cFile, irFile in fileMap.items() if not irFile]
+  for cFile in cFilesWithNoResultFile:
+    del fileMap[cFile]
+
+  return fileMap
+
+
 def evalTestCaseFile(pyFileName: str) -> List[TestActionAndResult]:
   """Reads the content of the python .c.results.py files."""
   pyFileContent = cutil.readFromFile(pyFileName)
   pyFileActions: List[TestActionAndResult] = eval(pyFileContent)
   return pyFileActions
+
+
+def evalTestCaseSpanIrFile(spanirFileName: str) -> tunit.TranslationUnit:
+  """Reads the content of the python .spanir.test.py files."""
+  spanirFileContent = cutil.readFromFile(spanirFileName)
+  tUnit: tunit.TranslationUnit = eval(spanirFileContent)
+  return tUnit
+
+

@@ -30,3 +30,5 @@ def runTests(testType: str):
 
   runner = unittest.TextTestRunner()
   runner.run(suite)
+
+

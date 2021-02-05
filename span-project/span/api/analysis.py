@@ -8,6 +8,7 @@
 import logging
 
 from span.ir.tunit import TranslationUnit
+from span.util import ff
 
 LOG = logging.getLogger("span")
 from typing import List, Tuple, Set, Dict, Any, Type, Callable, cast
@@ -1765,14 +1766,13 @@ class ValueAnalysisAT(AnalysisAT):
       nodeDfv: Opt[NodeDfvL] = None,
       ipa: bool = False,
   ) -> NodeDfvL:
-    """TODO:
+    """
       * IPA/Intra: initialize all local (non-parameter) vars to Top.
       * IPA: initialize all non-initialized globals to Top
         only at the entry of the main function. (DONE)
       * Intra: initialize all globals to Bot. (as is done currently)
     """
-    if ipa and not nodeDfv:
-      raise ValueError(f"{ipa}, {nodeDfv}")
+    if ipa and not nodeDfv: raise ValueError(f"{ipa}, {nodeDfv}")
 
     if isDummyGlobalFunc(self.func):  # initialize all to Top
       inBi, outBi = self.overallTop, self.overallTop
@@ -1781,18 +1781,15 @@ class ValueAnalysisAT(AnalysisAT):
         inBi, outBi = nodeDfv.dfvIn, nodeDfv.dfvOut
       else:
         inBi, outBi = self.overallBot, self.overallBot
-      tUnit: TranslationUnit = self.func.tUnit
-      globalNames = tUnit.getNamesGlobal()
-      for vName in self.getAllVars() - set(self.func.paramNames):
-        if self.func.isLocalName(vName) and vName not in globalNames:
-          inBi.setVal(vName, self.componentTop) # initialize locals to Top
+
+      if ff.SET_LOCAL_ARRAYS_TO_TOP: # set arrays to a top initial value
+        tUnit: TranslationUnit = self.func.tUnit
+        localNames = tUnit.getNamesLocal(self.func)
+        for vName in localNames - set(self.func.paramNames):
+          if tUnit.getNameInfo(vName).hasArray:
+            inBi.setVal(vName, self.componentTop)
 
     nDfv1 = NodeDfvL(inBi, outBi)
-
-    if ipa and not isDummyGlobalFunc(self.func):
-      getDefaultVal = self.overallTop.getDefaultVal
-      nDfv2 = dfv.updateFuncObjInDfvs(self.func, nDfv1)
-      return dfv.removeNonEnvVars(nDfv2, getDefaultVal, self.getAllVars)
 
     return nDfv1
 
@@ -1814,24 +1811,11 @@ class ValueAnalysisAT(AnalysisAT):
     # Out is unchanged in Forward analyses
     outDfv = calleeBi.dfvOut if calleeBi else self.overallTop # unchanged Out
     newDfvIn = nodeDfv.dfvIn.localize(calleeFuncObj, keepParams=True)
+
     localized = NodeDfvL(newDfvIn, outDfv)
+    localized = self.getBoundaryInfo(localized, ipa=True)
     if LS: LOG.debug("CalleeCallSiteDfv(Localized): %s", localized)
     return localized
-
-
-  def cleanUpBoundaryInfo(self,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    """Removes the local variables explicitly set to top at Bi"""
-    inBi, outBi = nodeDfv.dfvIn.getCopy(), nodeDfv.dfvOut.getCopy()
-    tUnit: TranslationUnit = self.func.tUnit
-    globalNames = tUnit.getNamesGlobal()
-    defaultVal = self.overallTop.getDefaultVal()
-    for vName in self.getAllVars() - set(self.func.paramNames):
-      if self.func.isLocalName(vName) and vName not in globalNames:
-        inBi.setVal(vName, defaultVal) # initialize locals defaultVal
-
-    return NodeDfvL(inBi, outBi)
 
 
   def isAcceptedType(self, t: types.Type) -> bool:
@@ -1991,10 +1975,9 @@ class ValueAnalysisAT(AnalysisAT):
       if calleeBi: #IPA
         calleeOut = calleeBi.dfvOut
         newOut = calleeOut.localize(self.func)
-        if LS: LOG.debug("CalleeCallSiteDfv(LocalizedDfvOutForCaller): %s", newOut)
-        newOut.addLocals(dfvIn) # due to this widen is False
-        if LS: LOG.debug(
-          "CalleeCallSiteDfv(LocalizedDfvOutForCaller:addedLocals): %s", newOut)
+        if LS: LOG.debug("CallerCallSiteDfv(Out:noLocals): %s", newOut)
+        newOut.addLocals(dfvIn)
+        if LS: LOG.debug("CallerCallSiteDfv(Out:withLocals): %s", newOut)
         nodeDfv = NodeDfvL(dfvIn, newOut)
         callNode = True  #IPA
       else: #INTRA

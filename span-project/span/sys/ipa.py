@@ -353,19 +353,6 @@ class IpaHost:
     return localDfvs, nonLocalDfvs
 
 
-  def prepareCallNodeDfv(self,
-      funcName: FuncNameT,
-      newCalleeBi: Dict[AnNameT, NodeDfvL],
-      localDfvs: Dict[AnNameT, NodeDfvL],
-  ) -> Dict[AnNameT, NodeDfvL]:
-    localizedDfvs = dict()
-    for anName, localDfv in localDfvs.items():
-      newCalleeDfv = newCalleeBi[anName]
-      localizedDfv = newCalleeDfv.addLocalDfv(localDfv, clients.getAnDirection(anName))
-      localizedDfvs[anName] = localizedDfv
-    return localizedDfvs
-
-
   def analyzeFuncFinal(self,
       callSite: FuncNodeIdT,
       funcName: FuncNameT,
@@ -492,7 +479,7 @@ class IpaHost:
       analysisObj = AnalysisClass(func)
       newBi[anName] = analysisObj.getBoundaryInfo(nDfv, ipa=True)
 
-    if LS: LOG.debug("IpaBI: (%s): %s", funcName, newBi)
+    if LS: LOG.debug("IpaBi: (%s): %s", funcName, newBi)
     return newBi
 
 

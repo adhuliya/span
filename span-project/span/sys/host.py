@@ -2107,10 +2107,8 @@ class Host:
     startId = self.funcCfg.start.id
     endId = self.funcCfg.end.id
     for anName, res in self.anWorkDict.items():
-      anObj = self.anParticipating[anName]
       startIn = res.nidNdfvMap.get(startId).dfvIn  # type: ignore
       endOut = res.nidNdfvMap.get(endId).dfvOut  # type: ignore
-      # results[anName] = anObj.cleanUpBoundaryInfo(NodeDfvL(startIn, endOut)) #??
       results[anName] = NodeDfvL(startIn, endOut)
 
     return results

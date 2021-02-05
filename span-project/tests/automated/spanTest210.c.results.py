@@ -163,15 +163,11 @@ TestActionAndResult(
 
     'ir.names.1': ("global", # i.e. ALL variables
       types.Int32,
-      {'g:1d._mode', 'g:sys_nerr', 'g:1d._flags2', 'g:2d._flags', 'g:1d._fileno',
-       'g:2d._mode', 'g:2d._fileno', 'g:2d._flags2', 'g:1d._flags',
-       'v:main:1p.val', 'v:main:n2.val', 'v:main:n1.val'}
+      {'g:sys_nerr', 'v:main:1p.val', 'v:main:n2.val', 'v:main:n1.val'}
     ),
     'ir.names.2': ("f:main", # i.e. ALL function variables
       types.Int32,
-      {'g:1d._mode', 'g:sys_nerr', 'g:1d._flags2', 'g:2d._flags', 'g:1d._fileno',
-       'g:2d._mode', 'g:2d._fileno', 'g:2d._flags2', 'g:1d._flags',
-       "v:main:n1.val", "v:main:n2.val", "v:main:1p.val"}),
+      {'g:sys_nerr', "v:main:n1.val", "v:main:n2.val", "v:main:1p.val"}),
   }
 ),
 

@@ -3,7 +3,7 @@
 # "-.plist" and "<stdin>.spanir" are generated
 # when span tests for clang with spanir support
 
-# rm -Rf ./*.spanir
+rm -Rf ./*.spanir
 
 rm -Rf ./*.plist ./*.dot ./*.spanreport ./*.o ./*.s\
   ./*.spanir.processed
