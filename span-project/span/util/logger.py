@@ -55,8 +55,12 @@ LOG_FORMAT_2: str = ("   [%(asctime)s : %(levelname)8s : %(name)s : %(filename)s
                      "    Line %(lineno)4s : %(funcName)s()]\n"
                      "%(message)s")
 
-MAX_FILE_SIZE: int = 1 << 24  # in bytes 1 << 24 = 16 MB
-BACKUP_COUNT: int = 5  # 5 x 16MB = 80 MB logs + one extra current 16 MB logfile.
+LOG_FORMAT_3: str = ("\n[%(levelname)8s:%(name)s: %(filename)s :"
+                     " Line %(lineno)4s : %(funcName)s()]\n"
+                     "%(message)s")
+
+MAX_FILE_SIZE: int = 1 << 28  # in bytes (1 << 20 = 1 MiB)
+BACKUP_COUNT: int = 5  # 5 logs + one extra current logfile.
 
 import os
 import os.path as osp
@@ -121,8 +125,8 @@ def createDir(dirPath: str) -> Optional[str]:
 def initLogger(fileName: str = None,
     appName: str = DEFAULT_APP_NAME,
     logLevel: LogLevels = LogLevels.INFO,  # default logging level
-    logFormat: str = LOG_FORMAT_2,
-    maxFileSize: int = 1 << 26,
+    logFormat: str = LOG_FORMAT_3,
+    maxFileSize: int = MAX_FILE_SIZE,
     backupCount=BACKUP_COUNT
 ) -> bool:
   """Initializes the logging system.

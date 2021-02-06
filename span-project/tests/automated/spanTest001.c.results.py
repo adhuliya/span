@@ -27,72 +27,24 @@ TestActionAndResult(
     'ir.func.def.count': 1, # total functions with definitions
     'ir.func.dec.count': 0, # total functions with declaration only
     'ir.record.count': 0, # total functions with declaration only
-    'ir.tunit': tunit.TranslationUnit(
-      name = "spanTest001.c",
-      description = "Auto-Translated from Clang AST.",
-
-      globalInits = [],
-    
-      allVars = {
-        "v:main:x": types.Int32,
-      }, # end allVars dict
-
-      allRecords = {
-      }, # end allRecords dict
-    
-      allFunctions = {
-    
-        "f:main":
-          constructs.Func(
-            name = "f:main",
-            paramNames = [],
-            variadic = False,
-            returnType = types.Int32,
-    
-            # Note: -1 is always start/entry BB. (REQUIRED)
-            # Note: 0 is always end/exit BB (REQUIRED)
-            instrSeq = [
-                instr.AssignI(expr.VarE("v:main:x", Info(Loc(3,3))), expr.LitE(20, Info(Loc(3,7))), Info(Loc(3,3))),
-                instr.ReturnI(expr.VarE("v:main:x", Info(Loc(4,10))), Info(Loc(4,3))),
-            ], # instrSeq end.
-          ), # f:main() end. 
-    
-      }, # end allFunctions dict
-    ), # tunit.TranslationUnit() ends
-    'ir.names.1': ("global", # i.e. ALL variables
-      types.Int32,
-      set()),
-    'ir.names.2': ("f:main", # i.e. ALL function variables
-      types.Int32,
-      {"v:main:x"}),
   }
 ),
 
-# TestActionAndResult(
-#   action = "analyze", # analyze/diagnose/c2spanir
-#   analyses = ["LiveVarsA"], # which analyses to run
-#   diagnoses = [], # diagnoses to run (must initialize)
-#   results = {
-#     "analysis.results": {
-#       "LiveVarsA": {
-#         "f:main": {
-#           1 : dfv.NodeDfvL( # (return x)
-#             dfvIn= liveness.OverallL(None, val={
-#               "g:0.Null", "g:dummy/DMY",
-#             }),
-#             dfvOut= liveness.OverallL(None, bot=True) # all vars live
-#           ),
-#           2 : dfv.NodeDfvL( # (return x)
-#             dfvIn= liveness.OverallL(None, bot=True), # all vars live
-#             dfvOut= liveness.OverallL(None, val={
-#               "g:0.Null", "g:dummy/DMY",
-#             })
-#           ),
-#         }
-#       }, # end analysis LiveVarsA
-#     }, # end analysis.results
-#   } # end of results
-# ), # end TestActionAndResult
+TestActionAndResult(
+  action = "analyze", # analyze/ianalyze/ipa/iipa/diagnose/c2spanir
+  analyses = ["LiveVarsA"], # which analyses to run
+  diagnoses = [], # diagnoses to run (must initialize)
+  results = {
+    "analysis.results": {
+      "LiveVarsA": {
+        "f:main": { # data flow value at given node numbers
+          1 : ({"g:0Null"}, "Bot"), # IN/OUT values
+          2 : ("Bot", {"g:0Null"}), 
+        }
+      }, # end analysis LiveVarsA
+    }, # end analysis.results
+  } # end of results
+), # end TestActionAndResult
 
 ]
 # BLOCK END  : list of test actions and results

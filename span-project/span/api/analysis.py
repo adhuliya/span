@@ -23,6 +23,7 @@ import span.ir.cfg as cfg
 import span.ir.expr as expr
 import span.ir.instr as instr
 import span.ir.constructs as constructs
+import span.ir.conv as conv
 from span.ir.ir import \
   (getExprRValueNames, getExprLValueNames, getNamesEnv,
    filterNames, nameHasArray, getNamesPossiblyModifiedInCallExpr,
@@ -1818,12 +1819,17 @@ class ValueAnalysisAT(AnalysisAT):
     return localized
 
 
-  def isAcceptedType(self, t: types.Type) -> bool:
+  def isAcceptedType(self,
+      t: types.Type,
+      name: Opt[types.VarNameT] = None,
+  ) -> bool:
     """Returns True if the type of the instruction is
     of interest to the analysis.
     By default it selects only Numeric types.
     """
-    return t.isNumeric()
+    check1 = t.isNumeric()
+    check2 = not conv.isStringLitName(name) if name else True
+    return check1 and check2
 
 
   def getAllVars(self) -> Set[types.VarNameT]:
@@ -1958,8 +1964,10 @@ class ValueAnalysisAT(AnalysisAT):
       if LS: LOG.debug("Analysis %s: RhsDfvOfExpr: '%s' is %s, lhsVarNames are %s",
                        self.overallTop.name, rhs, rhsDfv, lhsVarNames)
       if not len(lhsVarNames):
-        if util.VV1: print(f"NO_LVALUE_NAMES: {func.name}, {lhs}, {lhs.info}")
-        if LS: LOG.warning(f"NO_LVALUE_NAMES: {func.name}, {lhs}, {lhs.info}"
+        if util.VV1: print(f"NO_LVALUE_NAMES: {self.__class__.__name__},"
+                           f" {func.name}, {lhs}, {lhs.info}")
+        if LS: LOG.warning(f"NO_LVALUE_NAMES: {self.__class__.__name__},"
+                           f" {func.name}, {lhs}, {lhs.info}"
                            f"\n  Hence treating it as NopI.")
         return NodeDfvL(dfvIn, dfvIn)  # i.e. NopI
 
@@ -2034,8 +2042,10 @@ class ValueAnalysisAT(AnalysisAT):
 
     lhsVarNames = self.getExprLValueNames(self.func, lhs, dfvIn)
     if not len(lhsVarNames):
-      if util.VV1: print(f"NO_LVALUE_NAMES: {self.func.name}, {lhs}, {lhs.info}")
-      if LS: LOG.warning(f"NO_LVALUE_NAMES: {self.func.name}, {lhs}, {lhs.info}"
+      if util.VV1: print(f"NO_LVALUE_NAMES: {self.__class__.__name__},"
+                         f" {self.func.name}, {lhs}, {lhs.info}")
+      if LS: LOG.warning(f"NO_LVALUE_NAMES: {self.__class__.__name__},"
+                         f" {self.func.name}, {lhs}, {lhs.info}"
                          f"\n  Hence treating it as NopI.")
       return {}  # i.e. NopI
     # assert len(lhsVarNames) >= 1, f"{lhs}: {lhsVarNames}"

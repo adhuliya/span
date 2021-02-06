@@ -221,7 +221,10 @@ class StrongLiveVarsA(AnalysisAT):
     return ir.getNamesEnv(self.func)
 
 
-  def isAcceptedType(self) -> bool:
+  def isAcceptedType(self,
+      t: Opt[types.Type] = None,
+      name: Opt[types.VarNameT] = None,
+  ) -> bool:
     return True  # liveness accepts all types
 
   ################################################

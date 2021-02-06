@@ -280,10 +280,10 @@ def filterNamesPointer(func: constructs.Func,
 
 def filterNames(func: constructs.Func,
     names: Set[types.VarNameT],
-    typeTest: Callable[[types.Type], bool],
+    nameTest: Callable[[types.Type, types.VarNameT], bool],
 ) -> Set[types.VarNameT]:
   inferType = cast(tunit.TranslationUnit, func.tUnit).inferTypeOfVal
-  augmentedTest = lambda name: typeTest(inferType(name))
+  augmentedTest = lambda name: nameTest(inferType(name), name)
   return set(filter(augmentedTest,  names))
 
 

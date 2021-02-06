@@ -70,10 +70,10 @@ class SpanIrTests(unittest.TestCase):
     fileMap = genFileMap(self)
 
     for cFileName, pyFile in fileMap.items():
+      print(f"Checking attributes: {cFileName}: ")
       pyFileActions: List[TestActionAndResult] = evalTestCaseFile(pyFile)
       for action in pyFileActions:
         if action.action == "c2spanir":
-          print(f"Checking attributes: {cFileName}: ")
           tUnit: ir.TranslationUnit = genTranslationUnit(cFileName)
           # Now check for the various attributes.
           # STEP 1: check the names api

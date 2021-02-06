@@ -386,7 +386,8 @@ class ComponentL(dfv.ComponentL):
       idStr = f"{id(self)}" #delit
       return f"{s}(id:{idStr})" if s else f"{self.val}(id:{idStr})" #delit
     else:
-      return s if s else f"{self.val}"
+      valStr = f"{self.val[0]}" if self.isConstant() else f"{self.val}"
+      return s if s else f"{valStr}"
 
 
   def __repr__(self):

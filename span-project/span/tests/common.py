@@ -10,30 +10,13 @@ files in this package.
 
 import subprocess as subp
 import unittest
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional as Opt
 
 from span.api.analysis import AnalysisNameT
 from span.api.diagnosis import DiagnosisNameT
 import span.util.common_util as cutil
 import span.ir.ir as ir
 import span.util.consts as consts
-
-# IMPORTANT imports for eval() to work
-from span.ir.types import Loc, Info
-import span.ir.types as types
-import span.ir.op as op
-import span.ir.expr as expr
-import span.ir.instr as instr
-import span.ir.constructs as constructs
-import span.ir.tunit as tunit
-import span.api.dfv as dfv
-
-# IMPORTANT imports for analyses/diagnoses
-import span.clients.pointsto as pointsto
-import span.clients.const as const
-import span.clients.evenodd as evenodd
-import span.clients.stronglive as liveness
-import span.clients.interval as interval
 
 TestFileName = str
 ResultFileName = str
@@ -55,23 +38,19 @@ class TestActionAndResult:
       analyses: List[AnalysisNameT],
       diagnoses: List[DiagnosisNameT],
       results: Dict[str, Any],
+      cascade: Opt[List[List[AnalysisNameT]]] = None,
+      ipaEnabled: bool = False,
+      ddmEnabled: bool = False,
+      simDisabled: bool = False,
   ):
     self.action = action
     self.analyses = analyses
     self.diagnoses = diagnoses
     self.results = results
-
-
-class FilePair:
-  """Test file name and its results file."""
-
-
-  def __init__(self,
-      testFile: str,
-      resultFile: str
-  ) -> None:
-    self.testFile = testFile
-    self.resultFile = resultFile
+    self.cascade = cascade
+    self.ipaEnabled = ipaEnabled
+    self.ddmEnabled = ddmEnabled
+    self.simDisabled = simDisabled
 
 
 def genTranslationUnit(cFileName: str) -> ir.TranslationUnit:
@@ -144,15 +123,18 @@ def genFileMapSpanir(testCase: unittest.TestCase) -> Dict[TestFileName, ResultFi
 
 def evalTestCaseFile(pyFileName: str) -> List[TestActionAndResult]:
   """Reads the content of the python .c.results.py files."""
+  # IMPORTANT imports for eval() to work
+  from span.ir.types import Loc, Info
+  import span.ir.types as types
+  import span.ir.op as op
+  import span.ir.expr as expr
+  import span.ir.instr as instr
+  import span.ir.constructs as constructs
+  import span.ir.tunit as tunit
+  import span.api.dfv as dfv
+
   pyFileContent = cutil.readFromFile(pyFileName)
   pyFileActions: List[TestActionAndResult] = eval(pyFileContent)
   return pyFileActions
-
-
-def evalTestCaseSpanIrFile(spanirFileName: str) -> tunit.TranslationUnit:
-  """Reads the content of the python .spanir.test.py files."""
-  spanirFileContent = cutil.readFromFile(spanirFileName)
-  tUnit: tunit.TranslationUnit = eval(spanirFileContent)
-  return tUnit
 
 

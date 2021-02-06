@@ -704,7 +704,7 @@ class TranslationUnit:
     if not e.name:
       self._stringLitCount += 1
       e.name = irConv.NAKED_STR_LIT_NAME.format(count=self._stringLitCount)
-      self._nameInfoMap[e.name] = types.VarNameInfo(e.name, eType, True)
+      self._nameInfoMap[e.name] = types.VarNameInfo(e.name, eType, True, True)
 
     return eType
 
@@ -975,6 +975,7 @@ class TranslationUnit:
 
     nonInitGlobals = globalObjs - objsInitialized
     for varName in sorted(nonInitGlobals):
+      if irConv.isStringLitName(varName): continue #avoid string literals
       objType = self.inferTypeOfVal(varName)
       defaultInitExpr = expr.getDefaultInitExpr(objType)
       if defaultInitExpr is not None:

@@ -10,8 +10,8 @@ for use in the rest of the system.
 """
 
 import logging
-
 LOG = logging.getLogger("span")
+
 from typing import Dict, Set, Optional as Opt, cast, Type
 import io
 import functools
@@ -188,6 +188,11 @@ def getAnDirnClass(anName: analysis.AnalysisNameT
     raise ValueError(f"Handled ForwBack direction yet?")
     # return analysis.ForwBackDT
   raise ValueError(f"UnknownDirection: {anName}, {dirn}")
+
+
+def isAnalysisPresent(anName: analysis.AnalysisNameT) -> bool:
+  """Is the given analysis name present in the system?"""
+  return anName in analyses
 
 
 # mainentry for this module

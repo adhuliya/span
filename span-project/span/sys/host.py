@@ -7,6 +7,7 @@
 
 import logging
 LOG = logging.getLogger("span")
+LDB, LIN, LER = LOG.debug, LOG.info, LOG.error
 
 from typing import Dict, Tuple, Set, List, Callable,\
   Optional as Opt, cast, Any, List
@@ -18,6 +19,7 @@ import functools
 from span.api import dfv
 import span.util.util as util
 from span.util.util import LS, AS, GD
+import span.util.ff as ff
 
 from span.ir.types import NodeIdT, VarNameT, FuncNameT, DirectionT
 from span.ir.conv import FalseEdge, TrueEdge
@@ -55,8 +57,6 @@ import span.ir.tunit as irTUnit
 import span.ir.constructs as constructs
 import span.ir.ir as ir
 
-
-MAX_ANALYSES: int = 16
 
 Reachability = bool
 Reachable: Reachability = True
@@ -173,7 +173,7 @@ class PriorityAnWorklist:
     """Add an analysis to worklist.
     neededBy should already be in self.anDepGraph.
     """
-    if LS: LOG.debug("AddedAnalysisToWl(Y/N): %s, (neededBy: %s)", anName, neededBy)
+    if util.LL4: LDB("AddedAnalysisToWl(Y/N): %s, (neededBy: %s)", anName, neededBy)
 
     self.addToAnDepGraph(anName, neededBy)
     participant = self.anDepGraph[anName]
@@ -182,9 +182,9 @@ class PriorityAnWorklist:
       self.wl.append(participant)
       self.wlSet.add(participant)
       self.wl.sort()
-      if LS: LOG.debug("AddedAnalysisToWl(YES): %s, (neededBy: %s)", anName, neededBy)
+      if util.LL4: LDB("AddedAnalysisToWl(YES): %s, (neededBy: %s)", anName, neededBy)
     else:
-      if LS: LOG.debug("AddedAnalysisToWl(NO2): %s, (neededBy: %s), (wlSet: %s)",
+      if util.LL4: LDB("AddedAnalysisToWl(NO2): %s, (neededBy: %s), (wlSet: %s)",
                        anName, neededBy, self.wlSet)
 
 
@@ -215,7 +215,7 @@ class PriorityAnWorklist:
 
   def updateWeight(self, participant: Participant) -> None:
     maxDepth = self.updateWeightRecursively(participant, {})
-    if LS: LOG.debug("MaxUpdateWeigthCallDepth: %s", maxDepth)
+    if util.LL4: LDB("MaxUpdateWeigthCallDepth: %s", maxDepth)
 
 
   def updateWeightRecursively(self, participant: Participant,
@@ -329,7 +329,7 @@ class Host:
       otherAnalyses: Opt[List[AnNameT]] = None, # these analyses must be run
       supportAnalyses: Opt[List[AnNameT]] = None, # analyses that are optional
       avoidAnalyses: Opt[List[AnNameT]] = None, # these are always avoided
-      maxNumOfAnalyses: int = MAX_ANALYSES, # max (participating) analyses at a time
+      maxNumOfAnalyses: int = ff.MAX_ANALYSES, # max (participating) analyses at a time
       anDfvs: Opt[Dict[AnNameT, DirectionDT]] = None, # pre-computed dfvs of some analyses
       transform: bool = False, # transform mode (for Cascading/Lerners)
       biDfv: Opt[Dict[AnNameT, NodeDfvL]] = None,  # custom boundary info
@@ -340,7 +340,7 @@ class Host:
   ) -> None:
     timer = util.Timer("HostSetup")
 
-    if LS: LOG.info(f"HostSetup ({func.name}): IPA: {ipaEnabled}, DDM: {useDdm}, "
+    if util.LL3: LIN(f"HostSetup ({func.name}): IPA: {ipaEnabled}, DDM: {useDdm}, "
                      f"SIM: {not disableSim}, TRANSFORM: {transform}")
 
     assert func.cfg and func.tUnit, f"{func}: {func.cfg}, {func.tUnit}"
@@ -358,7 +358,7 @@ class Host:
     #DDM demand driven method?
     self.useDdm: bool = useDdm
     if self.useDdm:
-      if LS: LOG.debug("UsingDDM:######## #DDM ################################")
+      if util.LL4: LDB("UsingDDM:######## #DDM ################################")
       self.ddmObj: ddm.DdMethod = ddm.DdMethod(func, self)
       # analyses dependent on a demand
       self.anDemandDep: Dict[ddm.AtomicDemand, Set[AnNameT]] = dict()
@@ -381,7 +381,7 @@ class Host:
     # BLOCK START: SomeChecks
     if not func.canBeAnalyzed():
       message = f"Function '{func.name}' cannot be analyzed (see Func.canBeAnalyzed())."
-      if LS: LOG.error(message)
+      if util.LL1: LER(message)
       raise ValueError(message)
 
     tmpList: List[AnNameT] = []
@@ -396,7 +396,7 @@ class Host:
       stop = False
       if anName not in clients.analyses:
         message = f"Analysis '{anName}' is not present/registered."
-        if LS: LOG.error(message)
+        if util.LL1: LER(message)
         stop = True
       if stop: raise ValueError(f"Analysis not present: {anName}")
     # BLOCK END  : SomeChecks
@@ -498,7 +498,7 @@ class Host:
     # Thus the execution of such analyses is optimized in useful ways.
     self.supportAnalyses: Opt[Set[AnNameT]] \
       = set(supportAnalyses) if supportAnalyses else None
-    if LS: LOG.debug(f"AddingParticipantAnalyses(HostSetup) START.")
+    if util.LL4: LDB(f"AddingParticipantAnalyses(HostSetup) START.")
     if otherAnalyses:
       for anName in reversed(otherAnalyses):
         self.mainAnalyses.add(anName)
@@ -506,7 +506,7 @@ class Host:
     # add the main analysis last (then it is picked up first)
     self.mainAnalyses.add(self.mainAnName)
     self.addParticipantAn(self.mainAnName)
-    if LS: LOG.debug(f"AddingParticipantAnalyses(HostSetup) END.")
+    if util.LL4: LDB(f"AddingParticipantAnalyses(HostSetup) END.")
 
     # Host writes to this map, IpaHost reads from this map
     self.callSiteDfvMap: \
@@ -516,9 +516,9 @@ class Host:
       Dict[Tuple[NodeIdT, FuncNameT], Dict[AnNameT, NodeDfvL]] = dict()
 
     # add nodes that have one or more feasible pred edge
-    if LS: LOG.debug(f"AddingFeasibleNodes(HostSetup) START.")
+    if util.LL4: LDB(f"AddingFeasibleNodes(HostSetup) START.")
     self.addNodes(self.ef.initFeasibility())
-    if LS: LOG.debug(f"AddingFeasibleNodes(HostSetup) END.")
+    if util.LL4: LDB(f"AddingFeasibleNodes(HostSetup) END.")
 
     timer.stopAndLog()
 
@@ -553,7 +553,7 @@ class Host:
       e, simName = tup2[0], tup2[1]  # tup2 type is (expr, simName)
       value = self.calculateSimValue(self.activeAnName, simName, node, e)
       changed = simRecord.setSimValue(value)  # update value
-      if LS: LOG.debug("SimOfExpr: '%s' with simRecord: %s, changed: %s",
+      if util.LL4: LDB("SimOfExpr: '%s' with simRecord: %s, changed: %s",
                        e, simRecord, changed)
       if changed:
         assert e, f"{tup2}"
@@ -596,7 +596,7 @@ class Host:
     changedDemands = self.ddmObj.getChangedDemands()
 
     for demand in changedDemands:
-      if LS: LOG.debug("ChangedDemand: %s", demand)
+      if util.LL4: LDB("ChangedDemand: %s", demand)
       if demand in self.anDemandDep:
         slice = self.ddmObj.propagateDemand(demand)  # gets slice from cache
         depAnalyses = self.anDemandDep[demand]
@@ -605,8 +605,8 @@ class Host:
           self.stats.nodeMapUpdateTimer.start()
           changed = wl.updateNodeMap(slice.nodeMap)  # add possible new nodes
           self.stats.nodeMapUpdateTimer.stop()
-          if changed and LS:
-            LOG.debug("UpdatedNodeMap(%s): %s", anName, wl)
+          if changed and util.LL4:
+            LDB("UpdatedNodeMap(%s): %s", anName, wl)
           if changed:
             self.addAnToWorklist(anName)
     if self.useDdm: self.ddmObj.timer.stop()
@@ -628,18 +628,18 @@ class Host:
     activeAnName = self.activeAnName
     for anName in anNames:
       if anName == activeAnName: continue  # don't add active analysis
-      if LS: LOG.debug("Adding_analyses_dependent_on %s to worklist. Adding: %s, Node %s",
+      if util.LL4: LDB("Adding_analyses_dependent_on %s to worklist. Adding: %s, Node %s",
                        self.activeAnName, anName, nid)
       self.addAnToWorklist(anName)
       self.anWorkDict[anName].add(node)
 
-    if LS:
+    if util.LL4:
       newAnCount = len(self.anWorkList.wlSet)
       if newAnCount == oldAnCount:
-        LOG.debug("Analyses_Worklist (Unchanged) (%s): %s (AnParticipating: %s)",
+        LDB("Analyses_Worklist (Unchanged) (%s): %s (AnParticipating: %s)",
                   self.activeAnName, self.anWorkList, self.anParticipating)
       else:
-        LOG.debug("Analyses_Worklist (Changed) (%s): %s",
+        LDB("Analyses_Worklist (Changed) (%s): %s",
                   self.activeAnName, self.anWorkList)
 
 
@@ -660,14 +660,14 @@ class Host:
   ) -> bool:
     """Adds a new analysis into the mix (if not already present)."""
     if anName in self.anParticipating:
-      if LS: LOG.debug("AddingNewAnalysis(AlreadyPresent): %s: False", anName)
+      if util.LL4: LDB("AddingNewAnalysis(AlreadyPresent): %s: False", anName)
       return False
     if self.currNumOfAnalyses >= self.maxNumOfAnalyses:
-      if LS: LOG.debug("AddingNewAnalysis(MaxAnalysesReached(%s)):"
+      if util.LL4: LDB("AddingNewAnalysis(MaxAnalysesReached(%s)):"
                        " %s: False", self.currNumOfAnalyses, anName)
       return False  # i.e. don't add any new analysis
     if anName in self.avoidAnalyses:
-      if LS: LOG.debug("AddingNewAnalysis(InAvoidList): %s: False", anName)
+      if util.LL4: LDB("AddingNewAnalysis(InAvoidList): %s: False", anName)
       return False  # i.e. dont add the analysis
 
     added: bool = False
@@ -675,7 +675,7 @@ class Host:
     if anName not in self.anParticipating:
       # Then add the analysis.
       self.currNumOfAnalyses += 1
-      if LS: LOG.debug("Adding %s. Needed by %s.", anName, neededBy)
+      if util.LL4: LDB("Adding %s. Needed by %s.", anName, neededBy)
       message = "If not in participants dict then should not be present at all."
       if AS and anName in self.anWorkDict:    raise Exception(message)
 
@@ -705,7 +705,7 @@ class Host:
     """Don't add self.activeAnName and analyses
     that failed to provide simplification"""
     if not ipa and anName == self.activeAnName:
-      if LS: LOG.debug("AddedAnalysisToWl(NO): Not adding ActiveAn:"
+      if util.LL4: LDB("AddedAnalysisToWl(NO): Not adding ActiveAn:"
                        " %s, (neededBy: %s)", anName, neededBy)
       return  # don't add active analysis again
     if anName in self.mainAnalyses:
@@ -716,7 +716,7 @@ class Host:
         self.anWorkList.add(anName, neededBy)
         return
 
-    if LS: LOG.debug("AddedAnalysisToWl(NO): An: %s, neededBy: %s, simSuccess: %s, ActiveAn: %s",
+    if util.LL4: LDB("AddedAnalysisToWl(NO): An: %s, neededBy: %s, simSuccess: %s, ActiveAn: %s",
                      anName, neededBy, self.anSimSuccessCount.get(anName, -1), self.activeAnName)
 
 
@@ -727,10 +727,10 @@ class Host:
     """Merge info at IN and OUT of a node."""
     nid = node.id
     if self.ef.isFeasibleNode(node):
-      if LS: LOG.debug("Before InOutMerge (Node_%s): NodeDfv: %s.",
+      if util.LL4: LDB("Before InOutMerge (Node_%s): NodeDfv: %s.",
                        nid, dirn.nidNdfvMap.get(nid, dirn.topNdfv))
       ndfv, inout = dirn.calcInOut(node, self.ef)
-      if LS: LOG.debug("After  InOutMerge (Node_%s): Change: %s, NodeDfv: %s.",
+      if util.LL4: LDB("After  InOutMerge (Node_%s): Change: %s, NodeDfv: %s.",
                        nid, inout, ndfv)
       return ndfv, inout, Reachable
     return dirn.topNdfv, OLD_INOUT, NotReachable
@@ -754,7 +754,7 @@ class Host:
     top = self.activeAnTop  # to shorten name
     dirn = self.anWorkDict[self.activeAnName]
 
-    if LS: LOG.debug("\nRUNNING_ANALYSIS: %s, Direction: %s,\nFunc: %s, Iteration: %s\n",
+    if util.LL4: LDB("\nRUNNING_ANALYSIS: %s, Direction: %s,\nFunc: %s, Iteration: %s\n",
                      anName, dirn, self.func.name, self.analysisCounter)
 
     # init boundary info for start and end nodes, if not already done
@@ -776,7 +776,7 @@ class Host:
       dirn.nidNdfvMap[startNodeId] = NodeDfvL(bi[0], top)
       dirn.nidNdfvMap[endNodeId] = NodeDfvL(top, bi[1])
       dirn.boundaryInfoInitialized = True
-      if LS: LOG.debug("Init_Boundary_Info (StartNode %s' In, EndNode %s' Out): %s.",
+      if util.LL4: LDB("Init_Boundary_Info (StartNode %s' In, EndNode %s' Out): %s.",
                        startNodeId, endNodeId, bi)
 
     self.stats.anSwitchTimer.stop()
@@ -788,8 +788,8 @@ class Host:
     """Starts the process of running the analysis synergy.
     Conditionally simulates SPAN approach"""
     timer = util.Timer("HostAnalyze")
-    if LS: LOG.info("AnalysisWorklist: %s", self.anWorkList)
-    if LS: LOG.info(f"MODE: IPA: {self.ipaEnabled}, DDM: {self.useDdm},"
+    if util.LL3: LIN("AnalysisWorklist: %s", self.anWorkList)
+    if util.LL3: LIN(f"MODE: IPA: {self.ipaEnabled}, DDM: {self.useDdm},"
                     f" SIM: {not self.disableSim}, TRANSFORM: {self.transform}")
 
     while not self.anWorkList.isEmpty():
@@ -803,7 +803,7 @@ class Host:
   def _analyze(self) -> None:
     """Runs the analysis with highest priority, on self.func."""
     anName = self.anWorkList.pop()  # pops the highest priority analysis
-    if LS: LOG.info("\nRUNNING_ANALYSIS: %s. on_function: %s\n",
+    if util.LL3: LIN("\nRUNNING_ANALYSIS: %s. on_function: %s\n",
                     anName, self.func.name)
     assert anName, f"{self.anWorkList}"
     dirn = self.setupActiveAnalysis(anName)
@@ -811,12 +811,12 @@ class Host:
 
     while True: #self.activeAnIsUseful:  #needs testing node visits are increasing
       node, treatAsNop, ddmVarSet = dirn.wl.pop()
-      if LS: LOG.debug("GetNextNodeFrom_Worklist (%s, %s): %s"
+      if util.LL4: LDB("GetNextNodeFrom_Worklist (%s, %s): %s"
                        "\n Got %s. %s",
                        self.func.name, self.activeAnName, "*" * 16,
                        f"Node_{node.id}" if node else None, dirn.wl)
       if node is None: break  # worklist is empty, so exit the loop
-      if LS: LOG.debug(" Node_%s: %s (info:%s) (TreatAsNop: %s, ddmVarSet: %s)",
+      if util.LL4: LDB(" Node_%s: %s (info:%s) (TreatAsNop: %s, ddmVarSet: %s)",
                        node.id, node.insn, node.insn.info, treatAsNop, ddmVarSet)
 
       nid = node.id
@@ -832,24 +832,24 @@ class Host:
 
         self.addDepAnToWorklist(node, inOutChange1)
 
-        if LS: LOG.debug("Curr_Node_Dfv (Before) (Node_%s): %s.", nid, nodeDfv)
+        if util.LL4: LDB("Curr_Node_Dfv (Before) (Node_%s): %s.", nid, nodeDfv)
         nodeDfv = self.analyzeInstr(node, node.insn, nodeDfv, treatAsNop)
-        if LS: LOG.debug("Curr_Node_Dfv (AnalysisResult) (Node_%s): %s", nid, nodeDfv)
+        if util.LL4: LDB("Curr_Node_Dfv (AnalysisResult) (Node_%s): %s", nid, nodeDfv)
 
         inOutChange2 = dirn.update(node, nodeDfv)
 
-        if LS: LOG.debug("Curr_Node_Dfv (AfterUpdate) (Node_%s): %s, change: %s.",
+        if util.LL4: LDB("Curr_Node_Dfv (AfterUpdate) (Node_%s): %s, change: %s.",
                          nid, nodeDfv, inOutChange2)
         self.addDepAnToWorklist(node, inOutChange2)
       else:
-        if LS: LOG.debug("Infeasible_Node: Func: %s, Node: %s.", self.func.name, node)
+        if util.LL4: LDB("Infeasible_Node: Func: %s, Node: %s.", self.func.name, node)
         continue
 
     # if LS: _log.debug("Analyses_Dependence: %s.", self.anDependence)
     # if LS: _log.debug("Analyses_Rev_Node_Dependence: %s.", self.anRevNodeDep)
-    if LS: LOG.debug("Analyses_Run_Sequence: %s.", self.anWorkList.popSequenceStr())
-    if LS: LOG.debug("Analyses_Worklist: %s.", self.anWorkList)
-    if LS: LOG.debug("Analyses_Participating: %s.", self.anParticipating.keys())
+    if util.LL4: LDB("Analyses_Run_Sequence: %s.", self.anWorkList.popSequenceStr())
+    if util.LL4: LDB("Analyses_Worklist: %s.", self.anWorkList)
+    if util.LL4: LDB("Analyses_Participating: %s.", self.anParticipating.keys())
 
     if GD: self.generateDot()
 
@@ -871,11 +871,11 @@ class Host:
       return self._analyzeInstr(node, insn, nodeDfv)
 
     # if here its a III instruction
-    if LS: LOG.debug("Analyzing_Instr (ParallelI) (Node_%s): %s", node.id, insn)
+    if util.LL4: LDB("Analyzing_Instr (ParallelI) (Node_%s): %s", node.id, insn)
 
     def ai(ins):
       nDfv = self._analyzeInstr(node, ins, nodeDfv)
-      if LS: LOG.debug(" FinalInstrDfv: %s", nDfv)
+      if util.LL4: LDB(" FinalInstrDfv: %s", nDfv)
       return nDfv
 
     res = mergeAll(ai(ins) for ins in insn.insns)
@@ -888,7 +888,7 @@ class Host:
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
     LLS, nid = LS, node.id
-    if LLS: LOG.debug("Analyzing_Instr (Node_%s): %s, iType: %s",
+    if util.LL4: LDB("Analyzing_Instr (Node_%s): %s, iType: %s",
                       nid, insn, insn.type)
 
     # is reachable (vs feasible) ?
@@ -908,7 +908,7 @@ class Host:
     transferFunc = getattr(activeAnObj, tFuncName)
     self.stats.funcSelectionTimer.stop()
 
-    if LLS: LOG.debug("Instr_identified_as: %s",
+    if util.LL4: LDB("Instr_identified_as: %s",
                       getattr(AnalysisAT, tFuncName).__doc__.strip())
     if not self.disableSim and transferFunc != activeAnObj.Nop_Instr:
       # is the instr a var assignment (not deref etc)
@@ -994,7 +994,7 @@ class Host:
         nDfv = self.processInstrWithCall(node, insn, nodeDfv,
                                          transferFunc, tFuncName)
       else:
-        if LS: LOG.debug("FinallyInvokingInstrFunc: %s.%s() on %s",
+        if util.LL4: LDB("FinallyInvokingInstrFunc: %s.%s() on %s",
                          self.activeAnName, tFuncName, insn)
         nDfv = transferFunc(nid, insn, nodeDfv)  # type: ignore
       self.stats.instrAnTimer.stop()
@@ -1014,7 +1014,7 @@ class Host:
     #            func which cannot be analyzed are handled intra-procedurally
     """
     assert self.ipaEnabled
-    if LS: LOG.debug(f" ProcessingIPACall(Host): {self.func.name}, {node.id}, {insn}")
+    if util.LL4: LDB(f" ProcessingIPACall(Host): {self.func.name}, {node.id}, {insn}")
 
     nid = node.id
     callE = instr.getCallExpr(insn)
@@ -1027,7 +1027,7 @@ class Host:
       if not func.canBeAnalyzed():
         return transferFunc(nid, insn, nodeDfv) # go #INTRA
 
-    if LS: LOG.debug("CalleeCallSiteDfv(CallerDfv): %s", nodeDfv)
+    if util.LL4: LDB("CalleeCallSiteDfv(CallerDfv): %s", nodeDfv)
 
     calleeBi = self.getCallSiteDfv(nid, calleeFuncName, self.activeAnName)
     if not calleeBi: # i.e. wait for the calleeBi to be some useful value
@@ -1040,13 +1040,13 @@ class Host:
       callDfv = self.processCallArguments(node, callE, nodeDfv)
       newCalleeBi = self.activeAnObj.getLocalizedCalleeBi(nid, insn, callDfv, calleeBi)
       self.setCallSiteDfv(nid, calleeFuncName, self.activeAnName, newCalleeBi)
-      if LS: LOG.debug("FinallyInvokingInstrFunc: %s.%s() on %s",
+      if util.LL4: LDB("FinallyInvokingInstrFunc: %s.%s() on %s",
                        self.activeAnName, tFuncName, insn)
       nodeDfv = transferFunc(nid, insn, nodeDfv, calleeBi)  # type: ignore
     else: # both for Backward and ForwBack
       assert False
       assert self.activeAnDirn in (Backward, ForwBack), f"{self.activeAnDirn}"
-      if LS: LOG.debug("FinallyInvokingInstrFunc: %s.%s() on %s",
+      if util.LL4: LDB("FinallyInvokingInstrFunc: %s.%s() on %s",
                        self.activeAnName, tFuncName, insn)
       nodeDfv = transferFunc(nid, insn, nodeDfv, calleeBi)  # type: ignore
       newCalleeBi = self.activeAnObj.getLocalizedCalleeBi(nid, insn, nodeDfv, calleeBi)
@@ -1080,7 +1080,7 @@ class Host:
       insn = instr.AssignI(lhs, arg, arg.info)
       self.tUnit.inferTypeOfInstr(insn)
       nextNodeDfv = self.analyzeInstr(node, insn, nextNodeDfv)
-      if LS: LOG.debug(" FinalInstrDfv(ParamAssign): %s", nextNodeDfv)
+      if util.LL4: LDB(" FinalInstrDfv(ParamAssign): %s", nextNodeDfv)
 
       # in/out of succ/pred becomes out/in of the current node
       if self.activeAnDirn == Forward:
@@ -1099,7 +1099,7 @@ class Host:
     else:
       raise ValueError(f"{self.activeAnDirn}")
 
-    if LS: LOG.debug("CalleeCallSiteDfv(AfterParams): %s", nextNodeDfv)
+    if util.LL4: LDB("CalleeCallSiteDfv(AfterParams): %s", nextNodeDfv)
 
     return nextNodeDfv
 
@@ -1107,7 +1107,7 @@ class Host:
   def handleNodeReachability(self, node, insn, nodeDfv) -> Opt[NodeDfvL]:
     nilSim = self.getSim(node, Node__to__Nil__Name)
     if nilSim is not None:
-      if LS: LOG.debug("Unreachable_Node: %s: %s", node.id, insn)
+      if util.LL4: LDB("Unreachable_Node: %s: %s", node.id, insn)
       return self.Barrier_Instr(node, node.insn, nodeDfv)
     return None
 
@@ -1164,10 +1164,10 @@ class Host:
     client = anName if demand is None else demand
     if client not in depSet:
       depSet.add(client)
-      if LS: LOG.debug("AddedSimDependence: (changed) (Node_%s), %s, %s, Set: %s",
+      if util.LL4: LDB("AddedSimDependence: (changed) (Node_%s), %s, %s, Set: %s",
                        nid, simName, client, depSet)
     else:
-      if LS: LOG.debug("AddedSimDependence: (unchanged) (Node_%s), %s, %s, Set: %s",
+      if util.LL4: LDB("AddedSimDependence: (unchanged) (Node_%s), %s, %s, Set: %s",
                        nid, simName, client, depSet)
 
 
@@ -1196,7 +1196,7 @@ class Host:
     else:
       enableLivenessSupport = self.activeAnAcceptsLivenessSim
 
-    if LS: LOG.debug("ProvidingLivenessSupport?: %s (LivenessSupportNeeded?: %s)",
+    if util.LL4: LDB("ProvidingLivenessSupport?: %s (LivenessSupportNeeded?: %s)",
                      enableLivenessSupport, needed)
     return enableLivenessSupport
 
@@ -1635,7 +1635,7 @@ class Host:
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
     # always handle conditional instruction
-    if LS: LOG.debug("FinallyInvokingInstrFunc: Conditional_Instr() on %s", insn)
+    if util.LL4: LDB("FinallyInvokingInstrFunc: Conditional_Instr() on %s", insn)
     self.stats.instrAnTimer.stop() # okay - excluding edge feasibility computation
     nodes = self.setEdgeFeasibility(node, insn.arg)
     self.addNodes(nodes)
@@ -1680,7 +1680,7 @@ class Host:
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
     """block all info from crossing (forw&back) from within the node."""
-    if LS: LOG.debug("FinallyInvokingInstrFunc (Node_%s): BarrierI()", node.id)
+    if util.LL4: LDB("FinallyInvokingInstrFunc (Node_%s): BarrierI()", node.id)
     # return self.activeAnObj.Barrier_Instr(nodeDfv)
     if GD: self.nodeInsnDot[node.id].append("block")
     return nodeDfv  # i.e. block the info
@@ -1703,7 +1703,7 @@ class Host:
       okToAdd = False  # avoid this analysis
     elif self.currNumOfAnalyses >= self.maxNumOfAnalyses:
       okToAdd = False  # max analysis count reached
-    if LS: LOG.debug("  CanAddAnalysis ToParticipate(%s): %s", anName, okToAdd)
+    if util.LL4: LDB("  CanAddAnalysis ToParticipate(%s): %s", anName, okToAdd)
     return okToAdd
 
 
@@ -1716,7 +1716,7 @@ class Host:
       okToAdd = True
     elif self.anDfvs and anName in self.anDfvs:
       okToAdd = True
-    if LS: LOG.debug("  CanAddAnalysis ToSimplify   (%s): %s", anName, okToAdd)
+    if util.LL4: LDB("  CanAddAnalysis ToSimplify   (%s): %s", anName, okToAdd)
     return okToAdd
 
 
@@ -1762,7 +1762,7 @@ class Host:
         self.attachDemandToSimAnalysis(node, simName, simAnName, e)
         simValue = self.calculateSimValue(simAnName, simName, node, e)
         sr = SimRecord(simName, simValue)
-        if LS: LOG.debug("InitialSimValue of '%s' for '%s' is %s (%s)",
+        if util.LL4: LDB("InitialSimValue of '%s' for '%s' is %s (%s)",
                          e, simName, simValue, sr)
         self.incSimSuccessCount(simAnName, self.activeAnName) #COUNT_HERE:INC
         if not sr: self.decSimSuccessCount(simAnName)   #COUNT_HERE:DEC
@@ -1807,7 +1807,7 @@ class Host:
     assert hasattr(anObj, simName), f"{simAnName}, {simName}"
     simFunction = getattr(anObj, simName)
 
-    if LS: LOG.debug("SimOfExpr: '%s' isAttemptedBy %s withDfv %s.", e, simAnName, nDfv)
+    if util.LL4: LDB("SimOfExpr: '%s' isAttemptedBy %s withDfv %s.", e, simAnName, nDfv)
     # Note: if e is None, it assumes sim works on node id
     val = value = simFunction(e if e else nid, nDfv, values)
     if val and self.transform: # and any simName #TRANSFORM
@@ -1815,7 +1815,7 @@ class Host:
       if not val and util.VV1:
         print(f"TRANSFORM: SimFailed: ({self.func.name, nid})"
               f" ({simName}) {e} {e.info} Vals: {value}") #delit
-    if LS: LOG.debug("SimOfExpr: '%s' is %s, by %s.", e, val, simAnName)
+    if util.LL4: LDB("SimOfExpr: '%s' is %s, by %s.", e, val, simAnName)
     return val
 
 
@@ -1879,10 +1879,10 @@ class Host:
     self.stats.nodeMapUpdateTimer.start()
     changed = wl.updateNodeMap(slice.nodeMap)
     self.stats.nodeMapUpdateTimer.stop()
-    if changed and LS:
-      LOG.debug("UpdatedNodeMap(%s): %s", anName, wl)
+    if changed and util.LL4:
+      LDB("UpdatedNodeMap(%s): %s", anName, wl)
     if changed:
-      if LS: LOG.debug("%s_WorkList: (WL_Changed): %s", anName, wl)
+      if util.LL4: LDB("%s_WorkList: (WL_Changed): %s", anName, wl)
       self.addAnToWorklist(anName)
 
     for dem in simDemands:
@@ -1913,7 +1913,7 @@ class Host:
       return self.filteredSimSrcs[tup]
 
     simAnNames = self.fetchSimSources(simName)
-    if LS: LOG.debug("SimAnalyses (unfiltered) for sim '%s' are %s",
+    if util.LL4: LDB("SimAnalyses (unfiltered) for sim '%s' are %s",
                      simName, simAnNames)
 
     filteredSimAnNames = set()
@@ -1925,7 +1925,7 @@ class Host:
       if simFunc(e) is not SimFailed:  # filtering away analyses here
         filteredSimAnNames.add(anName)
 
-    if LS: LOG.debug("SimAnalyses (filtered) for sim '%s' are %s",
+    if util.LL4: LDB("SimAnalyses (filtered) for sim '%s' are %s",
                      simName, filteredSimAnNames)
     self.filteredSimSrcs[tup] = filteredSimAnNames  # caching the results
     return filteredSimAnNames
@@ -1948,7 +1948,7 @@ class Host:
       self.stats.simTimer.stop()
       return SimFailed  # i.e. process_the_original_insn
 
-    if LS: LOG.debug("SimOfExpr (attempting): (Node_%s), %s, SimName: %s. (ForAn: %s)",
+    if util.LL4: LDB("SimOfExpr (attempting): (Node_%s), %s, SimName: %s. (ForAn: %s)",
                      node.id, e, simName, demand if demand else self.activeAnName)
 
     # record the dependence
@@ -1959,7 +1959,7 @@ class Host:
     res = self.collectAndMergeSimResults(anNames, simName, node, e)
     if res is not None and len(res) == 0: assert res is SimPending, f"{res}"
 
-    if LS: LOG.debug("SimOfExpr (merged): '%s' is %s.", e, res)
+    if util.LL4: LDB("SimOfExpr (merged): '%s' is %s.", e, res)
     self.stats.simTimer.stop()
     return res
 
@@ -1980,12 +1980,12 @@ class Host:
 
     # Step 1: Find the first useful result
     values: Opt[Set] = SimFailed
-    if LS: LOG.debug("SimAnalyses for %s: %s", simName, anNames)
+    if util.LL4: LDB("SimAnalyses for %s: %s", simName, anNames)
     for anName in anNames:    # loop to select the first working sim
       simRecord = self.anRevNodeDep[(anName, nid)][tup2]
       if simRecord is not None:
         values = simRecord.getSim()
-        if LS: LOG.debug("SelectedSim of %s for refinement: %s",
+        if util.LL4: LDB("SelectedSim of %s for refinement: %s",
                          anName, values)
         break  # break at the first useful value
     if values in (SimPending, SimFailed):
@@ -1993,13 +1993,13 @@ class Host:
 
     # Step 2: Refine the simplification
     assert values not in (SimPending, SimFailed), f"{values}"
-    if LS: LOG.debug("Refining(Start): %s", values)
+    if util.LL4: LDB("Refining(Start): %s", values)
     for anName in anNames:
       values = self.calculateSimValue(anName, simName, node, e, values)
       assert values != SimFailed, f"{anName}, {simName}, {node}, {e}, {values}"
       if values == SimPending:
         break  # no use to continue
-    if LS: LOG.debug("Refining(End): Refined value is %s", values)
+    if util.LL4: LDB("Refining(End): Refined value is %s", values)
     return values  # a refined result
 
 
@@ -2023,13 +2023,13 @@ class Host:
     elif len(res) > 1 and NULL_OBJ_NAME in res:
         res.remove(NULL_OBJ_NAME)
     elif len(res) == 1 and NULL_OBJ_NAME in res:
-      if LS: LOG.error("NullDerefEncountered (bad user program)(%s,%s): %s, %s",
+      if util.LL1: LER("NullDerefEncountered (bad user program)(%s,%s): %s, %s",
                        self.func.name, node.id, e.name, node)
       if util.VV0: print(f"NullDerefEncountered (bad user program)"
                          f"({self.func.name},{node.id}), {e}, {e.info}")
       res = SimFailed  # i.e. process_the_original_insn
 
-    if LS: LOG.debug("SimOfExpr (merged): '%s' is %s.", e.name, res)
+    if util.LL4: LDB("SimOfExpr (merged): '%s' is %s.", e.name, res)
     return res
 
 
@@ -2037,12 +2037,12 @@ class Host:
 
   def printOrLogResult(self):
     """prints the result of all analyses."""
-    if LS: LOG.debug("Stats:\n%s", self.stats)
+    if util.LL4: LDB("Stats:\n%s", self.stats)
     if self.useDdm:
-      if LS: LOG.debug("DDM Stats\n%s", self.ddmObj.timer)
-    if LS: LOG.debug("Stats:\n%s", self.tUnit.stats)
+      if util.LL4: LDB("DDM Stats\n%s", self.ddmObj.timer)
+    if util.LL4: LDB("Stats:\n%s", self.tUnit.stats)
 
-    if LS and GD: LOG.debug("AnWorklistDots:\n%s", self.getAnIterationDotString())
+    if util.LL4 and GD: LDB("AnWorklistDots:\n%s", self.getAnIterationDotString())
 
     if not util.VV2: return # i.e. then don't print what is below
     print() # some blank lines for neatness
@@ -2085,7 +2085,7 @@ class Host:
       else: raise TypeError("Analysis Direction ForwBack not handled.")
       inOutChange = dirnObj.update(node, updateDfv)
       if inOutChange:
-        if LS: LOG.debug("IPA_UpdatedWorklist: %s, %s", self.func.name, dirnObj.wl)
+        if util.LL4: LDB("IPA_UpdatedWorklist: %s, %s", self.func.name, dirnObj.wl)
         self.addAnToWorklist(anName, ipa=True)
         restart = True  # Should re-run the Host
 
@@ -2134,15 +2134,15 @@ class Host:
     if anName in dfvDict: # if already present, then try widening
       oldDfv = dfvDict[anName]
       if widen: nDfv, _ = oldDfv.widen(nodeDfv, ipa=True)
-      if LS: LOG.debug(f"CalleeCallSiteDfv(Old): {tup}: {oldDfv}")
-      if LS: LOG.debug(f"CalleeCallSiteDfv(New): {tup}: {nodeDfv}")
-      if widen and LS:
-        LOG.debug(f"CalleeCallSiteDfv(Widened): {tup}: {nDfv}")
+      if util.LL4: LDB(f"CalleeCallSiteDfv(Old): {tup}: {oldDfv}")
+      if util.LL4: LDB(f"CalleeCallSiteDfv(New): {tup}: {nodeDfv}")
+      if widen and util.LL4:
+        LDB(f"CalleeCallSiteDfv(Widened): {tup}: {nDfv}")
     else:
-      if LS: LOG.debug(f"CalleeCallSiteDfv(Old): {tup}: EMPTY.")
-      if LS: LOG.debug(f"CalleeCallSiteDfv(New): {tup}: {nodeDfv}")
-      if widen and LS:
-        LOG.debug(f"CalleeCallSiteDfv(Widened): {tup}: is New, as Old=EMPTY.")
+      if util.LL4: LDB(f"CalleeCallSiteDfv(Old): {tup}: EMPTY.")
+      if util.LL4: LDB(f"CalleeCallSiteDfv(New): {tup}: {nodeDfv}")
+      if widen and util.LL4:
+        LDB(f"CalleeCallSiteDfv(Widened): {tup}: is New, as Old=EMPTY.")
 
     dfvDict[anName] = nDfv
 
@@ -2208,8 +2208,8 @@ class Host:
     """
     Returns the NodeDfvL objects for each analysis at the call site nodes.
     """
-    if LS and util.VV3:
-      LOG.debug(f"CallSitesDfvs(Host): {self.func.name}: {self.callSiteDfvMap}")
+    if util.LL4:
+      LDB(f"CallSitesDfvs(Host): {self.func.name}: {self.callSiteDfvMap}")
     return self.callSiteDfvMap
 
 
@@ -2305,7 +2305,7 @@ class Host:
       simCache = self.instrSimCache[tup1]
       tup2 = (insn, e)
       if tup2 in simCache:
-        if LS: LOG.debug(f"Fetching CachedInsn(%s): (%s, %s): INSN: %s",
+        if util.LL4: LDB(f"Fetching CachedInsn(%s): (%s, %s): INSN: %s",
                          tup1, str(tup2[0]), str(tup2[1]), simCache[tup2])
         return simCache[tup2]
 
@@ -2328,7 +2328,7 @@ class Host:
       self.instrSimCache[tup1][tup2] = FAILED_INSN_SIM
     else:
       self.instrSimCache[tup1][tup2] = newInsn
-    if LS: LOG.debug(f"Added CachedInsn(%s): (%s, %s): INSN: %s",
+    if util.LL4: LDB(f"Added CachedInsn(%s): (%s, %s): INSN: %s",
                      tup1, str(tup2[0]), str(tup2[1]), newInsn)
 
 
@@ -2343,12 +2343,12 @@ class Host:
     tup1 = (nid, simName)
     if tup1 in self.instrSimCache:
       if insn is None:
-        if LS: LOG.debug("Removing CachedInsn(s)(All): %s", tup1)
+        if util.LL4: LDB("Removing CachedInsn(s)(All): %s", tup1)
         self.instrSimCache[tup1] = {}
       else:
         tup2 = (insn, e)
         if tup2 in self.instrSimCache[tup1]:
-          if LS: LOG.debug("Removing CachedInsn(%s): (%s, %s): INSN: %s",
+          if util.LL4: LDB("Removing CachedInsn(%s): (%s, %s): INSN: %s",
                            tup1, str(insn), str(e), self.instrSimCache[tup1][tup2])
           del self.instrSimCache[tup1][tup2]
 

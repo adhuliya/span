@@ -9,11 +9,12 @@ Assumes the basic tests were successful.
 """
 
 import unittest
-from typing import List, Dict
+from typing import List, Dict, Optional as Opt
 
 import span.ir.ir as ir
 from span.tests.common import \
   (genFileMap,
+   genFileMapSpanir,
    genTranslationUnit,
    TestActionAndResult,
    evalTestCaseFile, )
@@ -21,7 +22,8 @@ import span.sys.host as host
 import span.ir.cfg as cfg
 import span.api.dfv as dfv
 from span.api.analysis import AnalysisNameT
-from span.sys.clients import analyses as AllAnalyses
+import span.sys.clients as clients
+import span.sys.driver as driver
 
 
 class SpanAnalysisTests(unittest.TestCase):
@@ -39,31 +41,40 @@ class SpanAnalysisTests(unittest.TestCase):
 
   def test_AABA_analyze(self):
     """Checking analysis results on the given programs."""
-    print("\nTesting analysis results now.")
+    print("\nTesting analysis results now. START.\n")
     fileMap = genFileMap(self)
+    irFileMap = genFileMapSpanir(self)
 
     for cFile, pyFile in fileMap.items():
+      irFile = irFileMap[cFile] if cFile in irFileMap else None
       pyFileActions: List[TestActionAndResult] = evalTestCaseFile(pyFile)
       for action in pyFileActions:
         if action.action == "analyze":
-          print(f"Checking analysis results of {cFile},")
-          self.runAndCheckAnalysisResults(cFile, action)
+          print(f"Checking analysis results of: {cFile},")
+          self.runAndCheckAnalysisResults(cFile, irFile, action)
+    print("\nTesting analysis results now. END.\n")
 
 
   def allAnalysesPresent(self, analyses: List[AnalysisNameT]):
     """Returns True if all the given analyses are present in the system."""
+    allPresent = True
     for anName in analyses:
-      if anName not in AllAnalyses:
-        return False
-    return True
+      if not clients.isAnalysisPresent(anName):
+        print("  NOTE: AnalysisNotPresent:", anName)
+        allPresent = False
+    return allPresent
 
 
   def runAndCheckAnalysisResults(self,
       cFileName: str,
+      irFileName: Opt[str],
       action: TestActionAndResult
   ) -> None:
     """Runs the analyses and checks their results."""
-    tUnit: ir.TranslationUnit = genTranslationUnit(cFileName)
+    if irFileName:
+      tUnit: ir.TranslationUnit = ir.readSpanIr(irFileName)
+    else:
+      tUnit: ir.TranslationUnit = genTranslationUnit(cFileName)
 
     if not self.allAnalysesPresent(action.analyses):
       print(f"  SkippingTest(AnalysesNotPresent):", action.analyses)

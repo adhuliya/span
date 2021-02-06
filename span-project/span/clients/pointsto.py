@@ -226,7 +226,10 @@ class PointsToA(analysis.ValueAnalysisAT):
     super().__init__(func, ComponentL, OverallL)
 
 
-  def isAcceptedType(self, t: types.Type) -> bool:
+  def isAcceptedType(self,
+      t: types.Type,
+      name: Opt[types.VarNameT] = None,
+  ) -> bool:
     return t.isPointer()
 
   ################################################
