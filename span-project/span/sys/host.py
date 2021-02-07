@@ -22,7 +22,7 @@ from span.util.util import LS, AS, GD
 import span.util.ff as ff
 
 from span.ir.types import NodeIdT, VarNameT, FuncNameT, DirectionT
-from span.ir.conv import FalseEdge, TrueEdge
+from span.ir.conv import FalseEdge, TrueEdge, genFuncNodeId
 from span.ir.conv import Forward, Backward, ForwBack, NULL_OBJ_NAME
 import span.ir.op as op
 import span.ir.expr as expr
@@ -52,6 +52,7 @@ import span.sys.clients as clients
 import span.sys.ddm as ddm
 from span.sys.stats import HostStat, GST, GlobalStats
 from span.sys.sim import SimRecord
+from span.sys.common import CallSitePair, DfvDict
 import span.ir.cfg as cfg
 import span.ir.tunit as irTUnit
 import span.ir.constructs as constructs
@@ -332,7 +333,7 @@ class Host:
       maxNumOfAnalyses: int = ff.MAX_ANALYSES, # max (participating) analyses at a time
       anDfvs: Opt[Dict[AnNameT, DirectionDT]] = None, # pre-computed dfvs of some analyses
       transform: bool = False, # transform mode (for Cascading/Lerners)
-      biDfv: Opt[Dict[AnNameT, NodeDfvL]] = None,  # custom boundary info
+      biDfv: Opt[DfvDict] = None,  # custom boundary info
       ipaEnabled: bool = False,
       useDdm: bool = False,  # use demand driven approach
       disableSim: bool = False, # by default sims are enabled
@@ -368,7 +369,7 @@ class Host:
              Set[ddm.AtomicDemand]] = dict()
 
     #IPA inter-procedural analysis?
-    self.biDfv: Opt[Dict[AnNameT, NodeDfvL]] = biDfv  #IPA
+    self.biDfv: Opt[DfvDict] = biDfv  #IPA
     self.ipaEnabled: bool = ipaEnabled #IPA
     if self.ipaEnabled: assert biDfv, f"{biDfv}"  #IPA
 
@@ -509,11 +510,9 @@ class Host:
     if util.LL4: LDB(f"AddingParticipantAnalyses(HostSetup) END.")
 
     # Host writes to this map, IpaHost reads from this map
-    self.callSiteDfvMap: \
-      Dict[Tuple[NodeIdT, FuncNameT], Dict[AnNameT, NodeDfvL]] = dict()
+    self.callSiteDfvMap: Dict[CallSitePair, DfvDict] = dict()
     # IpaHost writes to this map, Host reads from this map
-    self.callSiteDfvMapIpaHost:\
-      Dict[Tuple[NodeIdT, FuncNameT], Dict[AnNameT, NodeDfvL]] = dict()
+    self.callSiteDfvMapIpaHost: Dict[CallSitePair, DfvDict] = dict()
 
     # add nodes that have one or more feasible pred edge
     if util.LL4: LDB(f"AddingFeasibleNodes(HostSetup) START.")
@@ -2065,7 +2064,7 @@ class Host:
 
 
   def setBoundaryResult(self,
-      boundaryInfo: Dict[AnNameT, NodeDfvL]
+      boundaryInfo: DfvDict,
   ) -> bool:
     """
     Update the results at the boundary.
@@ -2095,13 +2094,13 @@ class Host:
     return restart
 
 
-  def getBoundaryResult(self) -> Dict[AnNameT, NodeDfvL]:
+  def getBoundaryResult(self) -> DfvDict:
     """
     Returns the boundary result for all the analyses that participated.
     It returns the IN of start node, and OUT of end node for each analysis.
-    User should extract the relevant value as per analysis directionality.
+    User should extract the relevant value as per analysis' directionality.
     """
-    results = {}
+    results = DfvDict()
     assert self.funcCfg.start and self.funcCfg.end, f"{self.funcCfg}"
 
     startId = self.funcCfg.start.id
@@ -2119,32 +2118,25 @@ class Host:
       calleeName: FuncNameT,
       anName: AnNameT,
       nodeDfv: NodeDfvL,
-      widen: bool = False,
   ) -> None:
     """
     Update the results for the call site.
+    This method is only called by the Host.
     """
-    tup = (nodeId, calleeName)
-    if tup not in self.callSiteDfvMap:
-      dfvDict = self.callSiteDfvMap[tup] = dict()
+    callSitePair = CallSitePair(calleeName, genFuncNodeId(self.func.id, nodeId))
+    if callSitePair not in self.callSiteDfvMap:
+      dfvDict = self.callSiteDfvMap[callSitePair] = DfvDict()
     else:
-      dfvDict = self.callSiteDfvMap[tup]
+      dfvDict = self.callSiteDfvMap[callSitePair]
 
-    nDfv = nodeDfv
-    if anName in dfvDict: # if already present, then try widening
+    if anName in dfvDict:
       oldDfv = dfvDict[anName]
-      if widen: nDfv, _ = oldDfv.widen(nodeDfv, ipa=True)
-      if util.LL4: LDB(f"CalleeCallSiteDfv(Old): {tup}: {oldDfv}")
-      if util.LL4: LDB(f"CalleeCallSiteDfv(New): {tup}: {nodeDfv}")
-      if widen and util.LL4:
-        LDB(f"CalleeCallSiteDfv(Widened): {tup}: {nDfv}")
+      if util.LL4: LDB(f"CalleeCallSiteDfv(Old): {callSitePair}: {oldDfv}")
     else:
-      if util.LL4: LDB(f"CalleeCallSiteDfv(Old): {tup}: EMPTY.")
-      if util.LL4: LDB(f"CalleeCallSiteDfv(New): {tup}: {nodeDfv}")
-      if widen and util.LL4:
-        LDB(f"CalleeCallSiteDfv(Widened): {tup}: is New, as Old=EMPTY.")
+      if util.LL4: LDB(f"CalleeCallSiteDfv(Old): {callSitePair}: EMPTY.")
 
-    dfvDict[anName] = nDfv
+    if util.LL4: LDB(f"CalleeCallSiteDfv(New): {callSitePair}: {nodeDfv}")
+    dfvDict[anName] = nodeDfv
 
 
   def getCallSiteDfv(self, #IPA
@@ -2152,63 +2144,57 @@ class Host:
       calleeName: Opt[FuncNameT],
       anName: AnNameT,
   ) -> Opt[NodeDfvL]:
-    """
-    Gets the callee BI as provided by IpaHost to the Host.
+    """Gets the callee BI as provided by IpaHost to the Host.
+    This method is only called by the Host.
     """
     if not calleeName: return None # can happen in case of #INTRA analysis
-    tup = (nodeId, calleeName)
-    if tup not in self.callSiteDfvMapIpaHost:
+    callSitePair = CallSitePair(calleeName, genFuncNodeId(self.func.id, nodeId))
+    if callSitePair not in self.callSiteDfvMapIpaHost:
       return None
     else:
-      return self.callSiteDfvMapIpaHost[tup][anName]
+      return self.callSiteDfvMapIpaHost[callSitePair][anName]
 
 
   def setCallSiteDfvsIpaHost(self, #IPA
-      nodeId: NodeIdT,
-      calleeName: FuncNameT,
-      newResults: Dict[AnNameT, NodeDfvL]
+      callSitePair: CallSitePair,
+      newResults: DfvDict,
   ) -> bool:
     """
     Update the results for the call site.
     Returns true if there is a need to restart Host.
+    This method is only called by the IpaHost.
     """
-    restart = False
+    restart, node = False, self.funcCfg.nodeMap[callSitePair.getNodeId()]
 
-    node = self.funcCfg.nodeMap[nodeId]
-    tup = (nodeId, calleeName)
-    if tup not in self.callSiteDfvMapIpaHost:
-      oldResults = self.callSiteDfvMapIpaHost[tup] = dict()
+    if callSitePair not in self.callSiteDfvMapIpaHost:
+      oldResults = self.callSiteDfvMapIpaHost[callSitePair] = DfvDict()
       restart = True
     else:
-      oldResults = self.callSiteDfvMapIpaHost[tup]
+      oldResults = self.callSiteDfvMapIpaHost[callSitePair]
 
-    widenedResult = newResults.copy() # a shallow copy (important)
-    for anName in newResults.keys():
+    for anName, newDfv in newResults:
       restartAn = False
-      wideDfv = newDfv = newResults[anName]
       if anName not in oldResults:
         restart = restartAn = True
       else:
-        oldDfv = oldResults[anName]
-        wideDfv, changed = oldDfv.widen(newDfv)
-        if changed: restart = restartAn = True
-      widenedResult[anName] = wideDfv
+        if newDfv != oldResults[anName]:
+          restart = restartAn = True
 
       if restartAn: # then modify the analysis' worklist
         dirn = self.anWorkDict[anName]
-        if dirn.add(node):
-          self.addAnToWorklist(anName, ipa=True)
+        if dirn.add(node): self.addAnToWorklist(anName, ipa=True)
 
-    self.callSiteDfvMapIpaHost[tup] = widenedResult
+    self.callSiteDfvMapIpaHost[callSitePair] = newResults
     return restart
 
 
   def getCallSiteDfvsIpaHost(self,
-  ) -> Dict[Tuple[NodeIdT, FuncNameT], Dict[AnNameT, NodeDfvL]]:
+  ) -> Dict[CallSitePair, DfvDict]:
     """
     Returns the NodeDfvL objects for each analysis at the call site nodes.
     """
-    if util.LL4:
+
+    if util.LL5:
       LDB(f"CallSitesDfvs(Host): {self.func.name}: {self.callSiteDfvMap}")
     return self.callSiteDfvMap
 

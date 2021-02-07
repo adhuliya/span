@@ -21,6 +21,19 @@ SET_LOCAL_ARRAYS_TO_TOP: bool = True
 # Max number of analyses to be in synergy at a time
 MAX_ANALYSES: int = 16
 
+# IPA (ValueContext) Recursion Limit
+IPA_VC_RECURSION_LIMIT: int = 200
+
+# IPA (ValueContext) Reuse prev value context mapped Host? (optimization)
+RE_USE_PREV_VALUE_CONTEXT_HOST: bool = True
+
+# IPA (ValueContext) widen the value context? (for termination)
+WIDEN_VALUE_CONTEXT: bool = False
+
+# IPA (ValueContext) widen the value context? (for termination)
+IPA_MAX_WIDENING_DEPTH: int = 1
+
+
 ################################################################################
 ## BLOCK END  : GLOBAL_FEATURE_FLAGS_AND_VALUES
 ################################################################################
