@@ -8,7 +8,7 @@
 
 import logging
 
-from span.ir.types import FuncNameT, FuncNodeIdT, NodeIdT
+from span.ir.types import FuncNameT, FuncNodeIdT, NodeIdT, FuncIdT
 
 LOG = logging.getLogger("span")
 LDB, LIN = LOG.debug, LOG.info
@@ -16,7 +16,7 @@ LDB, LIN = LOG.debug, LOG.info
 from typing import Dict, Tuple, Set, List, cast, Optional as Opt
 
 import span.sys.clients as clients
-from span.ir.conv import Forward, Backward, getFuncNodeIdStr, getNodeId
+from span.ir.conv import Forward, Backward, getFuncNodeIdStr, getNodeId, getFuncId
 from span.api.analysis import AnalysisNameT as AnNameT
 from span.api.dfv import NodeDfvL
 
@@ -80,6 +80,10 @@ class CallSitePair:
 
   def tuple(self) -> Tuple[FuncNameT, FuncNodeIdT]:
     return self.funcName, self.callSite
+
+
+  def getFuncId(self) -> FuncIdT:
+    return getFuncId(self.callSite)
 
 
 class DfvDict:
@@ -177,7 +181,8 @@ class DfvDict:
 
   def __str__(self):
     idStr = "" if not util.VV5 else f"(id:{id(self)})"
-    return f"DfvDict(Depth:{self.depth}, {self.dfvs}){idStr}"
+    return f"DfvDict(Depth:{self.depth}," \
+           f" {sorted(self.dfvs.items(), key=lambda x: x[0])}{idStr}"
 
 
   def __repr__(self): return self.__str__()

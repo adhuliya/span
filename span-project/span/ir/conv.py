@@ -116,7 +116,7 @@ zero or NULL/nullptr assignment to a pointer.
 NULL_OBJ_NAME = "g:0Null"
 NULL_OBJ_TYPE = types.Void  ## Null object type is Void
 NULL_OBJ_PTR_TYPE = types.Ptr(NULL_OBJ_TYPE)
-NULL_OBJ_SET = {"g:0Null"}
+NULL_OBJ_SINGLETON_SET = {"g:0Null"}
 
 DUMMY_VAR_NAME = "g:{id}d"
 DUMMY_VAR_REGEX = re.compile(r"^(.*:|)\d+d$")

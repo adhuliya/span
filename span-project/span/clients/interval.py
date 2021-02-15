@@ -803,9 +803,9 @@ class IntervalA(analysis.ValueAnalysisAT):
     return ComponentL(self.func, val=val)
 
 
-  def calcTrueFalseDfv(self,
+  def calcFalseTrueDfv(self,
       arg: expr.SimpleET,
-      dfvIn: OverallL,
+      dfvIn: dfv.OverallL,
   ) -> Tuple[OverallL, OverallL]:  # dfvFalse, dfvTrue
     """Conditionally propagate data flow values."""
     assert isinstance(arg, expr.VarE), f"{arg}"

@@ -20,8 +20,8 @@ import span.ir.constructs as obj
 import span.ir.ir as ir
 from span.ir.ir import \
   (getNamesEnv, getNamesGlobal, getExprRValueNames,
-   getExprLValueNames, getNamesUsedInExprSyntactically,
-   getNamesUsedInExprNonSyntactically, inferTypeOfVal)
+   getNamesLValuesOfExpr, getNamesUsedInExprSyntactically,
+   getNamesInExprMentionedIndirectly, inferTypeOfVal)
 from span.api.lattice import \
   (ChangedT, Changed, DataLT, basicEqualTest, basicLessThanTest,
    getBasicString)
@@ -429,7 +429,7 @@ class StrongLiveVarsA(AnalysisAT):
     if dfvOut.bot or rhsIsCallExpr:
       rhsNamesAreLive = True
 
-    lhsNames = getExprLValueNames(self.func, lhs)
+    lhsNames = getNamesLValuesOfExpr(self.func, lhs)
     assert len(lhsNames) >= 1, f"{lhsNames}: {lhs}, {nodeDfv}"
     if dfvOut.val and set(lhsNames) & dfvOut.val:
       rhsNamesAreLive = True
@@ -443,7 +443,7 @@ class StrongLiveVarsA(AnalysisAT):
     if rhsIsCallExpr:
       rhsNames = self.processCallE(rhs)
     else:
-      rhsNames = getNamesUsedInExprNonSyntactically(self.func, rhs)\
+      rhsNames = getNamesInExprMentionedIndirectly(self.func, rhs) \
                  | getNamesUsedInExprSyntactically(rhs)
 
     # at least one side should name only one location (a SPAN IR check)

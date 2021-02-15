@@ -152,15 +152,6 @@ class DataLT(LatticeLT):
     pass
 
 
-  def separateLocalNonLocalDfvs(self
-  ) -> Tuple['DataLT', 'DataLT']:
-    """DFV with only the local variables of the current function,
-    and DFV without the local variables.
-    This is used in Value Context IPA analysis.
-    """
-    raise NotImplementedError()
-
-
   def localize(self, #IPA
       forFunc: constructs.Func,
       keepParams: bool = False,
@@ -169,7 +160,7 @@ class DataLT(LatticeLT):
     raise NotImplementedError
 
 
-  def addLocals(self, #IPA #modifies self in-place
+  def addLocals(self, #IPA #Mutates 'self'
       fromDfv: 'DataLT',
   ) -> None:
     """Adds the value of strictly local variables in self.func
@@ -179,7 +170,7 @@ class DataLT(LatticeLT):
     raise NotImplementedError
 
 
-  def updateFuncObj(self, funcObj: constructs.Func): #IPA #modifies self in-place
+  def updateFuncObj(self, funcObj: constructs.Func): #IPA #Mutates 'self'.
     """Updates the self.func object reference (for all sub-objects too).
     Modifies self object."""
     raise NotImplementedError

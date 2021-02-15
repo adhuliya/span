@@ -29,7 +29,9 @@ import span.ir.constructs as constructs
 from span.api.lattice import (ChangedT, Changed, DataLT,
                               basicLessThanTest, basicEqualTest)
 import span.api.dfv as dfv
-from span.api.dfv import NodeDfvL
+from span.api.dfv import (
+  NodeDfvL, Filter_Vars, ComponentL
+)
 import span.api.analysis as analysis
 from span.api.analysis import AnalysisAT, ValueAnalysisAT
 from span.ir.conv import (simplifyName, isCorrectNameFormat, genFuncNodeId, getNodeId,
@@ -255,7 +257,7 @@ class ReachingDefA(AnalysisAT):
       insn: instr.FilterI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
-    return dfv.Filter_Vars(self.func, insn.varNames, nodeDfv)
+    return Filter_Vars(insn.varNames, nodeDfv)
 
 
   def UnDefVal_Instr(self,
@@ -347,7 +349,7 @@ class ReachingDefA(AnalysisAT):
       outDfvValues = self.processLhsRecordType(nodeId, lhs, dfvInGetVal)
     else:
       func = self.func
-      lhsVarNames = ir.getExprLValueNames(func, lhs)
+      lhsVarNames = ir.getNamesLValuesOfExpr(func, lhs)
       assert len(lhsVarNames) >= 1, f"{lhs}: {lhsVarNames}"
       mustUpdate = len(lhsVarNames) == 1
 
@@ -379,7 +381,7 @@ class ReachingDefA(AnalysisAT):
 
     allMemberInfo = iType.getNamesOfType(None)
 
-    lhsVarNames = ir.getExprLValueNames(func, lhs)
+    lhsVarNames = ir.getNamesLValuesOfExpr(func, lhs)
     assert len(lhsVarNames) >= 1, f"{lhs}: {lhsVarNames}"
     mustUpdate: bool = len(lhsVarNames) == 1
 

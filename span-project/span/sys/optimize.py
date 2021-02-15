@@ -120,11 +120,11 @@ class TransformCode:
   ) -> Opt[TrInfo]:
     """Generate the transformation info for a statement."""
     nid, insn = node.id, node.insn
-    if insn.needsCondInstrSim():
+    if insn.hasCondExpr():
       trInfo = self.genTransformInfo_CondInstr(insn, node, func, funcResults)
-    elif insn.needsRhsNumVarSim():
+    elif insn.hasRhsNumVarExpr():
       trInfo = self.genTransformInfo_RhsVar(insn, node, func, funcResults)
-    elif insn.needsRhsNumBinaryExprSim():
+    elif insn.hasRhsNumBinaryExpr():
       trInfo = self.genTransformInfo_RhsNumBinary(insn, node, func, funcResults)
     else:
       trInfo = None
@@ -138,7 +138,7 @@ class TransformCode:
       func: Func,
       funcResults: Dict[AnalysisNameT, Dict[cfg.CfgNodeId, NodeDfvL]],
   ) -> Opt[TrInfo]:
-    assert insn.needsCondInstrSim(), f"{insn}, {node}, {func}"
+    assert insn.hasCondExpr(), f"{insn}, {node}, {func}"
     simName = AnalysisAT.Cond__to__UnCond.__name__
     res = collectAndMergeResults(simName, insn.arg, node, func, funcResults)
     if res and len(res) == 1:
@@ -153,7 +153,7 @@ class TransformCode:
       func: Func,
       funcResults: Dict[AnalysisNameT, Dict[cfg.CfgNodeId, NodeDfvL]],
   ) -> Opt[TrInfo]:
-    assert insn.needsRhsNumVarSim(), f"{insn}, {node}, {func}"
+    assert insn.hasRhsNumVarExpr(), f"{insn}, {node}, {func}"
     simName = AnalysisAT.Num_Var__to__Num_Lit.__name__
     res = collectAndMergeResults(simName, insn.rhs, node, func, funcResults)
     if res and len(res) == 1:
@@ -168,7 +168,7 @@ class TransformCode:
       func: Func,
       funcResults: Dict[AnalysisNameT, Dict[cfg.CfgNodeId, NodeDfvL]],
   ) -> Opt[TrInfo]:
-    assert insn.needsRhsNumBinaryExprSim(), f"{insn}, {node}, {func}"
+    assert insn.hasRhsNumBinaryExpr(), f"{insn}, {node}, {func}"
     simName = AnalysisAT.Num_Bin__to__Num_Lit.__name__
     res = collectAndMergeResults(simName, insn.rhs, node, func, funcResults)
     if res and len(res) == 1:

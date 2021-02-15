@@ -296,11 +296,20 @@ class Type:
 
 
   def isPointer(self) -> bool:
+    """Should return True for any type that the
+    points-to analysis needs to track the pointees of.
+    Currently only user-defined pointers and array of pointers
+    are considered a pointer here.
+    """
     return PTR32_TC <= self.typeCode <= PTR128_TC
 
 
   def isFunc(self) -> bool:
     return self.typeCode == FUNC_TC
+
+
+  def isFuncSig(self) -> bool:
+    return self.typeCode == FUNC_SIG_TC
 
 
   def isRecord(self) -> bool:

@@ -621,7 +621,7 @@ class EvenOddA(analysis.AnalysisAT):
     if isinstance(insn.arg.type, types.Ptr):
       return NodeDfvL(oldIn, oldIn)
 
-    dfvFalse, dfvTrue = self.calcTrueFalseDfv(insn.arg, oldIn)
+    dfvFalse, dfvTrue = self.calcFalseTrueDfv(insn.arg, oldIn)
 
     return NodeDfvL(oldIn, None, dfvTrue, dfvFalse)
 
@@ -713,7 +713,7 @@ class EvenOddA(analysis.AnalysisAT):
     if dfvIn.bot and not isinstance(rhs, expr.LitE):
       return NodeDfvL(dfvIn, dfvIn)
 
-    lhsvarNames = ir.getExprLValueNames(self.func, lhs)
+    lhsvarNames = ir.getNamesLValuesOfExpr(self.func, lhs)
     assert len(lhsvarNames) >= 1
 
     # Yet another Very Special Case
@@ -741,7 +741,7 @@ class EvenOddA(analysis.AnalysisAT):
           newOut.setVal(name, updatedDfv)
 
     if isinstance(rhs, expr.CallE):
-      names = ir.getNamesUsedInExprNonSyntactically(self.func, rhs)
+      names = ir.getNamesInExprMentionedIndirectly(self.func, rhs)
       names = ir.filterNamesInteger(self.func, names)
       for name in names:
         newOut.setVal(name, self.componentBot)
@@ -767,7 +767,7 @@ class EvenOddA(analysis.AnalysisAT):
       return dfvIn.getVal(rhs.name)
 
     elif isinstance(rhs, expr.DerefE):
-      names = ir.getNamesUsedInExprNonSyntactically(self.func, rhs)
+      names = ir.getNamesInExprMentionedIndirectly(self.func, rhs)
       for name in names:
         value, _ = value.meet(dfvIn.getVal(name))
       return value
@@ -827,7 +827,7 @@ class EvenOddA(analysis.AnalysisAT):
       return value
 
     elif isinstance(rhs, (expr.ArrayE, expr.MemberE)):
-      names = ir.getExprLValueNames(self.func, rhs)
+      names = ir.getNamesLValuesOfExpr(self.func, rhs)
       for name in names:
         value, _ = value.meet(dfvIn.getVal(name))
       return value
@@ -845,7 +845,7 @@ class EvenOddA(analysis.AnalysisAT):
   ) -> NodeDfvL:
     newOut = dfvIn.getCopy()
 
-    names = ir.getNamesUsedInExprNonSyntactically(self.func, e)
+    names = ir.getNamesInExprMentionedIndirectly(self.func, e)
     names = ir.filterNamesInteger(self.func, names)
     for name in names:
       newOut.setVal(name, self.componentBot)
@@ -853,7 +853,7 @@ class EvenOddA(analysis.AnalysisAT):
     return NodeDfvL(dfvIn, newOut)
 
 
-  def calcTrueFalseDfv(self,
+  def calcFalseTrueDfv(self,
       arg: expr.VarE,
       dfvIn: OverallL,
   ) -> Tuple[OverallL, OverallL]:  # dfvFalse, dfvTrue

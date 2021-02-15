@@ -128,19 +128,19 @@ class ExprET:
     return equal
 
 
-  def needsVarSim(self) -> bool: return False
+  def hasVarExpr(self) -> bool: return False
 
-  def needsNumVarSim(self) -> bool: return False
+  def hasNumVarExpr(self) -> bool: return False
 
-  def needsDerefSim(self) -> bool: return False
+  def hasDerefExpr(self) -> bool: return False
 
-  def needsMemDerefSim(self) -> bool: return False
+  def hasMemDerefExpr(self) -> bool: return False
 
-  def needsNumBinarySim(self) -> bool: return False
+  def hasNumBinaryExpr(self) -> bool: return False
 
-  def needsNumUnarySim(self) -> bool: return False
+  def hasNumUnaryExpr(self) -> bool: return False
 
-  def needsPtrCallSim(self) -> bool: return False
+  def hasPtrCall(self) -> bool: return False
 
 
 class SimpleET(ExprET):
@@ -313,9 +313,10 @@ class VarE(SimpleET, LocationET):
     return isinstance(self.type, types.FuncSig)
 
 
-  def needsVarSim(self) -> bool: return True
+  def hasVarExpr(self) -> bool: return True
 
-  def needsNumVarSim(self) -> bool: return self.type.isNumeric()
+
+  def hasNumVarExpr(self) -> bool: return self.type.isNumeric()
 
 
   def __eq__(self, other) -> bool:
@@ -481,7 +482,7 @@ class DerefE(UnaryET, DerefET):
     self.arg = arg
 
 
-  def needsDerefSim(self) -> bool: return True
+  def hasDerefExpr(self) -> bool: return True
 
 
   def getFormalStr(self) -> types.FormalStrT:
@@ -668,7 +669,7 @@ class MemberE(DerefET):
     return consts.MEMBER_E_STR
 
 
-  def needsMemDerefSim(self) -> bool:
+  def hasMemDerefExpr(self) -> bool:
     assert isinstance(self.of.type, types.Ptr), f"{self}, {self.of.type}"
     return True
 
@@ -770,7 +771,7 @@ class BinaryE(ExprET):
     return consts.BINARYARITH_E_STR
 
 
-  def needsNumBinarySim(self) -> bool:
+  def hasNumBinaryExpr(self) -> bool:
     return self.type.isNumeric()
 
 
@@ -854,7 +855,7 @@ class UnaryE(UnaryET):
     return consts.UNARYARITH_E_STR
 
 
-  def needsNumUnarySim(self) -> bool:
+  def hasNumUnaryExpr(self) -> bool:
     return self.type.isNumeric()
 
 
@@ -1243,7 +1244,7 @@ class CallE(ExprET):
     return consts.CALL_E_STR
 
 
-  def needsPtrCallSim(self) -> bool:
+  def hasPtrCall(self) -> bool:
     return self.hasDereference()
 
 

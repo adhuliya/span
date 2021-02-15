@@ -17,6 +17,7 @@ from typing import Tuple, Dict, List, Optional as Opt, Set, Callable, cast
 
 from span.util.util import LS
 
+from span.ir.tunit import TranslationUnit
 import span.ir.ir as ir
 import span.ir.types as types
 import span.ir.conv as irConv
@@ -30,8 +31,10 @@ from span.api.lattice import (ChangedT, Changed, basicLessThanTest,
 import span.api.dfv as dfv
 from span.api.dfv import NodeDfvL
 import span.api.analysis as analysis
-from span.api.analysis import SimFailed, SimPending, ValueTypeT, \
-  NumValue, NameValue, BoolValue, AnalysisAT
+from span.api.analysis import (
+  SimFailed, SimPending, ValueTypeT,
+  NumValue, NameValue, BoolValue,
+)
 
 ################################################
 # BOUND START: Points-to lattice.
@@ -54,8 +57,7 @@ class ComponentL(dfv.ComponentL):
       bot: bool = False
   ) -> None:
     super().__init__(func, val, top, bot)
-    # correct the state and type
-    self.val: Opt[Set[types.VarNameT]] = val
+    self.val: Opt[Set[types.VarNameT]] = val # to charm pycharm
     if self.val is not None and len(self.val) == 0:
       raise ValueError(f"{self}")
 
@@ -66,7 +68,6 @@ class ComponentL(dfv.ComponentL):
     if tup:
       return tup
     else:
-      assert self.val and other.val, f"{self}, {other}"
       new = self.getCopy()
       new.val.update(other.val)
       return new, Changed
@@ -96,10 +97,8 @@ class ComponentL(dfv.ComponentL):
       varName: types.VarNameT
   ) -> bool:
     """Given a valid varName, returns True if its a possible pointee."""
-    if self.top:
-      return False
-    if self.bot:
-      return True  # this is C, a pointer can point to anything
+    if self.top: return False
+    if self.bot: return True  # this is C, a pointer can point to anything
 
     assert self.val, f"{self}"
     return varName in self.val
@@ -108,34 +107,19 @@ class ComponentL(dfv.ComponentL):
   def addPointee(self,
       varName: types.VarNameT
   ) -> None:
-    """Adds a given pointee."""
-    if self.top:
-      self.top = False
-      self.val = set()
-      self.val.add(varName)
-
-    elif self.bot:
-      pass  # bot includes varName
-
-    else:
-      assert self.val, f"{self}"
-      self.val.add(varName)
+    """Adds a given pointee. Mutates 'self'."""
+    if   self.top: self.top, self.val = False, {varName}
+    elif self.bot: pass  # bot includes varName
+    else:  self.val.add(varName)
 
 
   def addPointees(self,
       varNames: Set[types.VarNameT]
   ) -> None:
-    """Adds the given set of pointees."""
-    if self.top:
-      self.top = False
-      self.val = set(varNames)  # copy forced
-
-    elif self.bot:
-      pass  # bot includes varName
-
-    else:
-      assert self.val is not None
-      self.val.update(varNames)
+    """Adds the given set of pointees. Mutates 'self'."""
+    if self.top: self.top, self.val = False, set(varNames)  # forced copy
+    elif self.bot: pass  # bot includes varNames
+    else: self.val.update(varNames)
 
 
   # def removePointee(self, varName) .... cannot be implemented because,
@@ -148,14 +132,14 @@ class ComponentL(dfv.ComponentL):
   def __lt__(self, other) -> bool:
     assert isinstance(other, ComponentL), f"{other}"
     lt = basicLessThanTest(self, other)
-    return self.val >= other.val if lt is None else lt  # other should be a subset
+    return (self.val >= other.val) if lt is None else lt  # other should be a subset
 
 
   def __eq__(self, other) -> bool:
     if not isinstance(other, ComponentL):
       return NotImplemented
     equal = basicEqualTest(self, other)
-    return self.val == other.val if equal is None else equal
+    return (self.val == other.val) if equal is None else equal
 
 
   def __hash__(self):
@@ -166,12 +150,11 @@ class ComponentL(dfv.ComponentL):
   def __str__(self):
     s = getBasicString(self)
     if s: return s
-    simpleName = {irConv.simplifyName(name) for name in self.val}
-    return f"{simpleName}"
+    simpleNames = sorted(irConv.simplifyName(name) for name in self.val)
+    return f"{simpleNames}"
 
 
-  def __repr__(self):
-    return self.__str__()
+  def __repr__(self): return self.__str__()
 
 
 class OverallL(dfv.OverallL):
@@ -187,12 +170,25 @@ class OverallL(dfv.OverallL):
     self.val: Opt[Dict[types.VarNameT, ComponentL]] = val  # type: ignore
 
 
-  def getAllVars(self) -> Set[types.VarNameT]:
-    """Return a set of vars the analysis is tracking.
-    One must override this method if variables are other
-    than numeric.
+  @classmethod
+  def isAcceptedType(cls,
+      t: types.Type,
+      name: Opt[types.VarNameT] = None,
+  ) -> bool:
+    """Returns True if the type of the instruction/variable is
+    of interest to the analysis, i.e. a pointer type.
     """
-    return ir.getNamesEnv(self.func, pointer=True)
+    check1 = t.isPointer()
+    return check1
+
+
+  @classmethod
+  def getAllVars(cls, func: constructs.Func) -> Set[types.VarNameT]:
+    """Returns all names which the points-to analysis is interested in.
+    All array names and function names are technically pointers,
+    but they are avoided as the associated info is trivial.
+    """
+    return ir.getNamesEnv(func, pointer=True)
 
 
 ################################################
@@ -218,6 +214,7 @@ class PointsToA(analysis.ValueAnalysisAT):
   needsCondToUnCondSim:   bool = True
   needsLhsVarToNilSim:    bool = True
   needsNodeToNilSim:      bool = False
+  needsFpCallSim:         bool = True
 
 
   def __init__(self,
@@ -225,12 +222,6 @@ class PointsToA(analysis.ValueAnalysisAT):
   ) -> None:
     super().__init__(func, ComponentL, OverallL)
 
-
-  def isAcceptedType(self,
-      t: types.Type,
-      name: Opt[types.VarNameT] = None,
-  ) -> bool:
-    return t.isPointer()
 
   ################################################
   # BOUND START: Special_Instructions
@@ -401,16 +392,6 @@ class PointsToA(analysis.ValueAnalysisAT):
   # BOUND START: Helper_Functions
   ################################################
 
-  def namesPossiblyModifiedInCallE(self,
-      e: expr.CallE,
-      dfvIn: OverallL,
-  ) -> Set[types.VarNameT]:
-    """Pointers that may be modified in a call (conservative)."""
-    names = PointsToA.getNamesUsedInExprNonSyntactically(self.func, e, dfvIn)
-    names = ir.filterNamesPointer(self.func, names)
-    return names
-
-
   def getExprDfv(self,
       rhs: expr.ExprET,
       dfvIn: OverallL,
@@ -431,25 +412,37 @@ class PointsToA(analysis.ValueAnalysisAT):
       else:
         return self.componentBot  # a sound over-approximation
 
-    if not isinstance(rhsType, (types.Ptr, types.ArrayT, types.FuncSig)): # FIXME
-      return self.componentBot  #FIXME: safe approximation
+    if not rhsType.isPointer() and not isinstance(rhsType, types.ArrayT):
+      # return self.componentBot  #FIXME: safe approximation
+      raise ValueError(f"{rhs}, {rhsType}, {rhs.info}")
 
-    if isinstance(rhs, expr.AddrOfE):
-      arg = rhs.arg
-      if isinstance(arg, expr.VarE):  # handles PseudoVarE too
-        return ComponentL(self.func, val={arg.name})
-      elif isinstance(arg, (expr.ArrayE, expr.MemberE, expr.DerefE)):
-        names = PointsToA.getNamesOfLValuesInExpr(self.func, arg, dfvIn)
-        return ComponentL(self.func, val=names) if names else self.componentTop
-
-    elif isinstance(rhs, expr.VarE):  # handles PseudoVarE too
+    if isinstance(rhs, expr.VarE):  # handles PseudoVarE too
       if isinstance(rhsType, types.Ptr):
         return dfvIn.getVal(rhs.name)
       elif isinstance(rhsType, (types.ArrayT, types.FuncSig)):
         return ComponentL(self.func, val={rhs.name})
       else:  # for all other types
-        if LS: LOG.error("%s", rhsType)
-        return self.componentBot
+        raise ValueError(f"{rhs}, {rhsType}, {rhs.info}")
+
+    elif isinstance(rhs, expr.DerefE):
+      if rhsType.isFuncSig():
+        names = {rhs.arg.name} # In *x add 'x' (as its pointees are func names)
+      else:
+        names = PointsToA.getNamesLValuesOfExpr(self.func, rhs, dfvIn)
+        names = ir.filterNamesPointer(self.func, names)
+
+      dfvInGetVal = dfvIn.getVal
+      for name in names:
+        value, _ = value.meet(dfvInGetVal(name))
+      return value
+
+    elif isinstance(rhs, expr.AddrOfE):
+      arg = rhs.arg
+      if isinstance(arg, expr.VarE):  # handles PseudoVarE, &arr, &func too
+        return ComponentL(self.func, val={arg.name})
+      elif isinstance(arg, (expr.ArrayE, expr.MemberE, expr.DerefE)):
+        names = PointsToA.getNamesLValuesOfExpr(self.func, arg, dfvIn)
+        return ComponentL(self.func, val=names) if names else self.componentTop
 
     elif isinstance(rhs, expr.SizeOfE):
       return self.componentBot
@@ -460,13 +453,6 @@ class PointsToA(analysis.ValueAnalysisAT):
         return self.getExprDfv(rhs.arg, dfvIn)
       else:
         return self.componentBot
-
-    elif isinstance(rhs, expr.DerefE):
-      names = PointsToA.getNamesUsedInExprNonSyntactically(self.func, rhs, dfvIn)
-      names = ir.filterNamesPointer(self.func, names)
-      for name in names:
-        value, _ = value.meet(dfvIn.getVal(name))
-      return value if names else self.componentTop
 
     elif isinstance(rhs, expr.UnaryE):
       return self.componentBot
@@ -481,9 +467,10 @@ class PointsToA(analysis.ValueAnalysisAT):
       return value
 
     elif isinstance(rhs, (expr.ArrayE, expr.MemberE)):
-      names = PointsToA.getNamesOfLValuesInExpr(self.func, rhs, dfvIn)
+      names = PointsToA.getNamesLValuesOfExpr(self.func, rhs, dfvIn)
+      dfvInGetVal = dfvIn.getVal
       for name in names:
-        value, _ = value.meet(dfvIn.getVal(name))
+        value, _ = value.meet(dfvInGetVal(name))
       return value
 
     elif isinstance(rhs, expr.CallE):
@@ -544,15 +531,25 @@ class PointsToA(analysis.ValueAnalysisAT):
     return newVal
 
 
+  def namesPossiblyModifiedInCallE(self,
+      e: expr.CallE,
+      dfvIn: OverallL,
+  ) -> Set[types.VarNameT]:
+    """Pointers that may be modified in a call (conservative)."""
+    names = PointsToA.getNamesInExprMentionedIndirectly(self.func, e, dfvIn)
+    names = ir.filterNamesPointer(self.func, names)
+    return names
+
+
   @staticmethod
-  def getNamesOfLValuesInExpr(func: constructs.Func,
+  def getNamesLValuesOfExpr(func: constructs.Func,
       e: expr.ExprET,
       dfvIn: OverallL = None
   ) -> Set[types.VarNameT]:
     """Returns the locations that may be modified,
     if this expression was on the LHS of an assignment."""
     if dfvIn is None:  # become conservative
-      return set(ir.getExprLValueNames(func, e))
+      return set(ir.getNamesLValuesOfExpr(func, e))
 
     names = set()
 
@@ -561,7 +558,6 @@ class PointsToA(analysis.ValueAnalysisAT):
       return names
 
     elif isinstance(e, expr.DerefE):
-      assert isinstance(e.arg, expr.VarE), f"{e}"
       names.update(PointsToA.getNamesOfPointees(func, e.arg.name, dfvIn))
       return names
 
@@ -573,7 +569,6 @@ class PointsToA(analysis.ValueAnalysisAT):
       return names
 
     elif isinstance(e, expr.MemberE):
-      assert e.hasDereference(), f"{e}"
       pointeeNames = PointsToA.getNamesOfPointees(func, e.of.name, dfvIn)
       for name in pointeeNames:
         names.add(f"{name}.{e.name}")
@@ -587,16 +582,11 @@ class PointsToA(analysis.ValueAnalysisAT):
       lhs: expr.ExprET,
       dfvIn: dfv.OverallL
   ) -> Set[types.VarNameT]:
-    """Points-to analysis overrides this function."""
-    names = PointsToA.getNamesUsedInExprNonSyntactically(func, lhs, dfvIn)
-    if not names:
-      return super().getExprLValueNames(func, lhs, dfvIn)
-    else:
-      return names
+    return PointsToA.getNamesLValuesOfExpr(func, lhs, dfvIn)
 
 
   @staticmethod
-  def getNamesUsedInExprNonSyntactically(
+  def getNamesInExprMentionedIndirectly(
       func: constructs.Func,
       e: expr.ExprET,
       dfvIn: OverallL = None,
@@ -609,32 +599,26 @@ class PointsToA(analysis.ValueAnalysisAT):
     by other modules. The func arg has been specially added for this.
     """
     if dfvIn is None:  # default to conservative behavior
-      return ir.getNamesUsedInExprNonSyntactically(func, e)
+      return ir.getNamesInExprMentionedIndirectly(func, e)
 
     varNames = set()
 
     if isinstance(e, expr.LitE) and e.isString():  # a string literal
       varNames.add(e.name)
-      return varNames
 
     elif isinstance(e, expr.DerefE):
-      assert isinstance(e.arg, expr.VarE), f"{e}"
       varNames.update(PointsToA.getNamesOfPointees(func, e.arg.name, dfvIn))
-      return varNames
 
     elif isinstance(e, expr.ArrayE):
       if e.hasDereference():
         varNames.update(PointsToA.getNamesOfPointees(func, e.of.name, dfvIn))
-      return varNames
 
     elif isinstance(e, expr.MemberE):
-      assert e.hasDereference(), f"{e}"
       pointeeNames = PointsToA.getNamesOfPointees(func, e.of.name, dfvIn)
       for name in pointeeNames:
         varNames.add(f"{name}.{e.name}")
-      return varNames
 
-    elif isinstance(e, expr.CallE):  # FIXME: check the logic
+    elif isinstance(e, expr.CallE): #INTRA
       for arg in e.args:  # iterate over the call arguments
         argType = arg.type
         if isinstance(argType, types.ArrayT):
@@ -643,13 +627,13 @@ class PointsToA(analysis.ValueAnalysisAT):
           if isinstance(arg, expr.AddrOfE):
             assert isinstance(arg.arg, expr.VarE), f"{arg}"
             varNames.add(arg.arg.name)
-            continue
+            arg = arg.arg
+            if not isinstance(arg, types.Ptr): continue
           assert isinstance(arg, expr.VarE), f"{arg}"
           names: Set[types.VarNameT] = set()
           PointsToA._getNamesOfArgPointeesPtr(func, arg.name, names, dfvIn)
           varNames.update(names)
       varNames.update(ir.getNamesGlobal(func))  # non-pointer vars included
-      return varNames
 
     return varNames
 
@@ -668,7 +652,7 @@ class PointsToA(analysis.ValueAnalysisAT):
     pointeeNames = PointsToA.getNamesOfPointees(func, varName, dfvIn)
     ptrPointeeNames = ir.filterNamesPointer(func, pointeeNames)
     for ptrName in ptrPointeeNames:
-      PointsToA._getNamesOfArgPointeesPtr(func, ptrName, names, dfvIn)
+      PointsToA._getNamesOfArgPointeesPtr(func, ptrName, names, dfvIn) #recurse
     names.update(ptrPointeeNames)
 
 
@@ -679,7 +663,7 @@ class PointsToA(analysis.ValueAnalysisAT):
       dfvIn: OverallL = None
   ) -> Set[types.VarNameT]:
     """Returns the pointee names of the given pointer name,
-    if dfvIn is None it returns conservative value."""
+    if dfvIn is None it returns a conservative value."""
 
     # Step 1: what type is the given name?
     varType = ir.inferTypeOfVal(func, varName)
@@ -702,7 +686,7 @@ class PointsToA(analysis.ValueAnalysisAT):
       return ir.getNamesEnv(func, pointeeType)
     else:                 # precise result
       assert varDfv.val, f"{varDfv}"
-      return varDfv.val - irConv.NULL_OBJ_SET
+      return varDfv.val - irConv.NULL_OBJ_SINGLETON_SET
 
   ################################################
   # BOUND END  : Helper_Functions

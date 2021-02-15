@@ -573,7 +573,7 @@ class DdMethod:
     if rhs.exprCode == expr.CALL_EXPR_EC:
       demandRhsNames = True
 
-    lhsNames = set(ir.getExprLValueNames(self.func, lhs))
+    lhsNames = set(ir.getNamesLValuesOfExpr(self.func, lhs))
     assert lhsNames, f"{lhs}"
     if LS: LOG.debug(f"{demandVar} in {lhsNames}: {demandVar in lhsNames}")
     if demandVar in lhsNames:
@@ -598,7 +598,7 @@ class DdMethod:
 
   def getRhsNames(self, rhs) -> Set[types.VarNameT]:
     return ir.getNamesUsedInExprSyntactically(rhs) | \
-           ir.getNamesUsedInExprNonSyntactically(self.func, rhs)
+           ir.getNamesInExprMentionedIndirectly(self.func, rhs)
 
 
   def _killGenBackward(self,

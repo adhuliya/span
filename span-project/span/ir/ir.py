@@ -202,21 +202,21 @@ def getExprRValueNames(func: constructs.Func,
     e: expr.ExprET
 ) -> Set[types.VarNameT]:
   assert func.tUnit is not None, f"{func}"
-  return func.tUnit.getExprRValueNames(func, e)
+  return func.tUnit.getNamesRValuesOfExpr(func, e)
 
 
-def getExprLValueNames(func: constructs.Func,
+def getNamesLValuesOfExpr(func: constructs.Func,
     e: expr.ExprET
 ) -> Set[types.VarNameT]:
   assert func.tUnit is not None, f"{func}"
-  return func.tUnit.getExprLValueNames(func, e)
+  return func.tUnit.getNamesLValuesOfExpr(func, e)
 
 
 def getNamesPossiblyModifiedInCallExpr(func: constructs.Func,
     e: expr.CallE
 ) -> Set[types.VarNameT]:
   assert func.tUnit is not None, f"{func}"
-  return func.tUnit.getNamesPossiblyModifiedInCallExpr(func, e)
+  return func.tUnit.getNamesPossiblyModifiedViaCallExpr(func, e)
 
 
 @functools.lru_cache(200)
@@ -293,12 +293,12 @@ def getNamesUsedInExprSyntactically(e: expr.ExprET
   return set(expr.getNamesUsedInExprSyntactically(e, forLiveness=True))
 
 
-def getNamesUsedInExprNonSyntactically(
+def getNamesInExprMentionedIndirectly(
     func: constructs.Func,
     e: expr.ExprET
 ) -> Set[types.VarNameT]:
   assert func.tUnit is not None, f"{func}"
-  return func.tUnit.getNamesUsedInExprNonSyntactically(func, e)
+  return func.tUnit.getNamesInExprMentionedIndirectly(func, e)
 
 
 def getSuffixes(func: constructs.Func,

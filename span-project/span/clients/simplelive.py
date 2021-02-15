@@ -416,7 +416,7 @@ class LiveVarsA(AnalysisAT):
       return NodeDfvL(oldOut, oldOut)
 
     varNames = ir.getNamesUsedInExprSyntactically(insn.arg) | \
-               ir.getNamesUsedInExprNonSyntactically(self.func, insn.arg)
+               ir.getNamesInExprMentionedIndirectly(self.func, insn.arg)
 
     return self._killGen(nodeDfv, gen=varNames)
 
@@ -525,11 +525,11 @@ class LiveVarsA(AnalysisAT):
     dfvOut = cast(OverallL, nodeDfv.dfvOut)  # dfv at OUT of a node
     rhsNamesAreLive: bool = True  # its simple liveness
 
-    lhsNames = ir.getExprLValueNames(self.func, lhs)
+    lhsNames = ir.getNamesLValuesOfExpr(self.func, lhs)
     assert len(lhsNames) >= 1, f"{lhs}: {lhsNames}"
 
     rhsNames = ir.getNamesUsedInExprSyntactically(rhs) | \
-               ir.getNamesUsedInExprNonSyntactically(self.func, rhs)
+               ir.getNamesInExprMentionedIndirectly(self.func, rhs)
 
     # at least one side should name only one location (a SPAN IR check)
     assert len(lhsNames) == 1 or len(rhsNames) == 1

@@ -7,7 +7,7 @@
 
 import logging
 LOG = logging.getLogger("span")
-LDB, LIN, LER = LOG.debug, LOG.info, LOG.error
+LDB, LIN, LER, LDW = LOG.debug, LOG.info, LOG.error, LOG.warning
 
 from typing import Dict, Tuple, Set, List, Callable,\
   Optional as Opt, cast, Any, List
@@ -22,7 +22,7 @@ from span.util.util import LS, AS, GD
 import span.util.ff as ff
 
 from span.ir.types import NodeIdT, VarNameT, FuncNameT, DirectionT
-from span.ir.conv import FalseEdge, TrueEdge, genFuncNodeId
+from span.ir.conv import FalseEdge, TrueEdge, genFuncNodeId, NULL_OBJ_SINGLETON_SET
 from span.ir.conv import Forward, Backward, ForwBack, NULL_OBJ_NAME
 import span.ir.op as op
 import span.ir.expr as expr
@@ -616,7 +616,7 @@ class Host:
       simName: SimNameT,
       e: expr.ExprET,
   ) -> None:
-    if LS: oldAnCount = len(self.anWorkList.wlSet)
+    if util.LL4: oldAnCount = len(self.anWorkList.wlSet)
 
     nid = node.id
     tup = (nid, simName, e)
@@ -759,16 +759,16 @@ class Host:
     # init boundary info for start and end nodes, if not already done
     if not dirn.boundaryInfoInitialized:
       assert dirn.cfg and dirn.cfg.start and dirn.cfg.end, f"{dirn}"
-      startNodeId = dirn.cfg.start.id
-      endNodeId = dirn.cfg.end.id
+      bi, startNodeId, endNodeId = None, dirn.cfg.start.id, dirn.cfg.end.id
       if self.ipaEnabled:  #IPA
         assert self.biDfv, f"{self.biDfv}"
         if self.activeAnName in self.biDfv:
           nDfv = self.biDfv[self.activeAnName]
           bi = (nDfv.dfvIn, nDfv.dfvOut)
-        else:
-          bi = (top, top)
-      else:
+
+      if bi is None: #INTRA (also for #IPA if bi of the analysis is absent)
+        if self.ipaEnabled and util.LL1:
+          LDW(f"ANALYSIS_BOUNDARY_INFO_MISSING!!!: {anName}, {self.func.name}")
         nDfv = self.activeAnObj.getBoundaryInfo()
         bi = (nDfv.dfvIn, nDfv.dfvOut)
 
@@ -911,49 +911,51 @@ class Host:
                       getattr(AnalysisAT, tFuncName).__doc__.strip())
     if not self.disableSim and transferFunc != activeAnObj.Nop_Instr:
       # is the instr a var assignment (not deref etc)
-      if activeAnObj.needsLhsVarToNilSim and insn.needsLhsVarSim():
+      if activeAnObj.needsLhsVarToNilSim and insn.hasLhsVarExpr():
         assert isinstance(insn, instr.AssignI), f"{nid}: {insn}"
         nDfv = self.handleLivenessSim(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
-      if activeAnObj.needsLhsDerefToVarsSim and insn.needsLhsDerefSim():
+      if activeAnObj.needsLhsDerefToVarsSim and insn.hasLhsDerefExpr():
         assert isinstance(insn, instr.AssignI), f"{nid}: {insn}"
         nDfv = self.handleLhsDerefSim(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
-      if activeAnObj.needsRhsDerefToVarsSim and insn.needsRhsDerefSim():
+      if activeAnObj.needsRhsDerefToVarsSim and insn.hasRhsDerefExpr():
         assert isinstance(insn, instr.AssignI), f"{nid}: {insn}"
         nDfv = self.handleRhsDerefSim(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
-      if activeAnObj.needsLhsDerefToVarsSim and insn.needsLhsMemDerefSim():
+      if activeAnObj.needsLhsDerefToVarsSim and insn.hasLhsMemDerefExpr():
         assert isinstance(insn, instr.AssignI), f"{nid}: {insn}"
         nDfv = self.handleLhsMemDerefSim(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
-      if activeAnObj.needsRhsDerefToVarsSim and insn.needsRhsMemDerefSim():
+      if activeAnObj.needsRhsDerefToVarsSim and insn.hasRhsMemDerefExpr():
         assert isinstance(insn, instr.AssignI), f"{nid}: {insn}"
         nDfv = self.handleRhsMemDerefSim(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
-      if activeAnObj.needsRhsDerefToVarsSim and insn.needsRhsPtrCallSim():
+      if self.ipaEnabled and activeAnObj.needsFpCallSim\
+          and insn.hasRhsFpCallExpr():
         assert isinstance(insn, instr.AssignI), f"{nid}: {insn}"
         nDfv = self.handleRhsPtrCallSim(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
-      if activeAnObj.needsFpCallSim and insn.needsPtrCallSim():
+      if self.ipaEnabled and activeAnObj.needsFpCallSim\
+          and insn.hasFpCallExpr():
         assert isinstance(insn, instr.CallI), f"{nid}: {insn}"
         nDfv = self.handlePtrCallSim(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
-      if activeAnObj.needsNumBinToNumLitSim and insn.needsRhsNumBinaryExprSim():
+      if activeAnObj.needsNumBinToNumLitSim and insn.hasRhsNumBinaryExpr():
         # rhs is a numeric bin expr, hence could be simplified
         assert isinstance(insn, instr.AssignI), f"{nid}: {insn}"
         nDfv = self.handleRhsBinArith(node, insn, nodeDfv)
@@ -964,14 +966,14 @@ class Host:
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
-      if activeAnObj.needsNumVarToNumLitSim and insn.needsRhsNumUnaryExprSim():
+      if activeAnObj.needsNumVarToNumLitSim and insn.hasRhsNumUnaryExpr():
         # rhs is a numeric unary expr, hence could be simplified
         assert isinstance(insn, instr.AssignI), f"{nid}: {insn}"
         nDfv = self.handleRhsUnaryArith(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
-      if activeAnObj.needsNumVarToNumLitSim and insn.needsRhsNumVarSim():
+      if activeAnObj.needsNumVarToNumLitSim and insn.hasRhsNumVarExpr():
         # rhs is a numeric var, hence could be simplified
         assert isinstance(insn, instr.AssignI), f"{nid}: {insn}"
         nDfv = self.handleRhsNumVar(node, insn, nodeDfv)
@@ -984,12 +986,12 @@ class Host:
       else:
         self.nodeInsnDot[nid].append(str(insn))
 
-    if insn.needsCondInstrSim():
+    if insn.hasCondExpr():
       assert isinstance(insn, instr.CondI), f"{nid}, {insn}"
       return self.Conditional_Instr(node, insn, nodeDfv)  # type: ignore
     else:
       self.stats.instrAnTimer.start()
-      if self.ipaEnabled and insn.hasCallExpr():
+      if self.ipaEnabled and insn.hasRhsCallExpr():
         nDfv = self.processInstrWithCall(node, insn, nodeDfv,
                                          transferFunc, tFuncName)
       else:
@@ -1015,8 +1017,7 @@ class Host:
     assert self.ipaEnabled
     if util.LL4: LDB(f" ProcessingIPACall(Host): {self.func.name}, {node.id}, {insn}")
 
-    nid = node.id
-    callE = instr.getCallExpr(insn)
+    nid, callE = node.id, instr.getCallExpr(insn)
     calleeFuncName = callE.getFuncName()
 
     if not calleeFuncName:
@@ -1043,7 +1044,7 @@ class Host:
                        self.activeAnName, tFuncName, insn)
       nodeDfv = transferFunc(nid, insn, nodeDfv, calleeBi)  # type: ignore
     else: # both for Backward and ForwBack
-      assert False
+      assert False #TODO
       assert self.activeAnDirn in (Backward, ForwBack), f"{self.activeAnDirn}"
       if util.LL4: LDB("FinallyInvokingInstrFunc: %s.%s() on %s",
                        self.activeAnName, tFuncName, insn)
@@ -2021,7 +2022,7 @@ class Host:
       res = SimFailed
     elif len(res) > 1 and NULL_OBJ_NAME in res:
         res.remove(NULL_OBJ_NAME)
-    elif len(res) == 1 and NULL_OBJ_NAME in res:
+    elif res == NULL_OBJ_SINGLETON_SET:
       if util.LL1: LER("NullDerefEncountered (bad user program)(%s,%s): %s, %s",
                        self.func.name, node.id, e.name, node)
       if util.VV0: print(f"NullDerefEncountered (bad user program)"
@@ -2043,7 +2044,7 @@ class Host:
 
     if util.LL4 and GD: LDB("AnWorklistDots:\n%s", self.getAnIterationDotString())
 
-    if not util.VV2: return # i.e. then don't print what is below
+    if not util.VV3: return # i.e. then don't print what is below
     print() # some blank lines for neatness
     print(self.func, "TUnit:", self.func.tUnit.name)
     print(f"MODE: IPA: {self.ipaEnabled}, DDM: {self.useDdm},"
@@ -2072,10 +2073,9 @@ class Host:
     """
     restart = False
 
-    for anName in boundaryInfo.keys():
+    for anName, nDfv in boundaryInfo:
       anDirn = clients.getAnDirection(anName)
       dirnObj = self.anWorkDict[anName]
-      nDfv = boundaryInfo[anName]
 
       nodeId = 1 if anDirn == Forward else len(self.funcCfg.nodeMap)
       node = self.funcCfg.nodeMap[nodeId]
@@ -2212,14 +2212,14 @@ class Host:
 
   def getAnalysisResults(self,
       anName: AnNameT,
-  ) -> Opt[DirectionDT]:
+  ) -> DirectionDT:
     """Returns the analysis results of the given analysis.
 
     Returns None if no information present.
     """
     if anName in self.anWorkDict:
       return self.anWorkDict[anName]
-    return None
+    raise ValueError("f{anName}")
 
 
   def getResults(self):

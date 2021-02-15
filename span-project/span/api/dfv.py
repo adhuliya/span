@@ -11,6 +11,7 @@ import logging
 import io
 
 from span.ir import tunit, conv
+from span.ir.conv import isStringLitName
 
 LOG = logging.getLogger("span")
 
@@ -23,6 +24,7 @@ from span.api.lattice import\
 import span.ir.constructs as constructs
 import span.ir.types as types
 import span.ir.ir as ir
+from span.ir.ir import filterNamesNumeric
 
 
 ################################################
@@ -85,7 +87,7 @@ class NewOldL(LatticeLT):
 
 
   def __str__(self):
-    return f"(IN={self._newIn}, OUT={self._newOut})"
+    return f"(IN={self._newIn}, ***** OUT={self._newOut})"
 
 
   def __repr__(self):
@@ -304,14 +306,6 @@ class NodeDfvL(LatticeLT):
     self.dfvOut.checkInvariants(level)
 
 
-  def separateLocalNonLocalDfvs(self
-  ) -> Tuple['NodeDfvL', 'NodeDfvL']:
-    # since call nodes don't have true/false edge so the logic is simple
-    localDfvIn, nonLocalDfvIn = self.dfvIn.separateLocalNonLocalDfvs()
-    localDfvOut, nonLocalDfvOut = self.dfvOut.separateLocalNonLocalDfvs()
-    return NodeDfvL(localDfvIn, localDfvOut), NodeDfvL(nonLocalDfvIn, nonLocalDfvOut)
-
-
   def getCopy(self):
     dfvInCopy = self.dfvIn.getCopy()
     dfvOutCopy = self.dfvOut.getCopy()
@@ -415,23 +409,25 @@ class OverallL(DataLT):
 
     # take meet of individual entities (variables)
     meet_val: Dict[types.VarNameT, ComponentL] = {}
-    vNames = set(self.val.keys())
-    vNames.update(other.val.keys())
+    vNames = set(self.val.keys()) | set(other.val.keys())
     selfValGet, otherValGet = self.val.get, other.val.get
+    defaultVal = self.getDefaultVal()
+
     for vName in vNames:
-      defaultVal = self.getDefaultVal(vName)
       dfv1: ComponentL = selfValGet(vName, defaultVal)
       dfv2: ComponentL = otherValGet(vName, defaultVal)
       dfv3, _ = dfv1.meet(dfv2)
-      if not dfv3 == defaultVal:
+      if dfv3 != defaultVal:
         meet_val[vName] = dfv3
 
     if meet_val:
       value = self.__class__(self.func, val=meet_val)
     elif self.isDefaultValBot():
       value = self.__class__(self.func, bot=True)
+    elif self.isDefaultValTop():
+      value = self.__class__(self.func, top=True)
     else:
-      value = self.__class__(self.func, val=None)
+      value = self.__class__(self.func, val=None) # useful
 
     return value, Changed
 
@@ -442,14 +438,34 @@ class OverallL(DataLT):
     lt = self.basicLessThanTest(other)
     if lt is not None: return lt
 
-    vNames = set(self.val.keys())
-    vNames.update(other.val.keys())
+    vNames = set(self.val.keys()) | set(other.val.keys())
     defaultVal = self.getDefaultVal()
     selfValGet, otherValGet = self.val.get, other.val.get
     for vName in vNames:
       dfv1, dfv2 = selfValGet(vName, defaultVal), otherValGet(vName, defaultVal)
       if not (dfv1 < dfv2): return False
     return True
+
+
+  @classmethod
+  def isAcceptedType(cls,
+      t: types.Type,
+      name: Opt[types.VarNameT] = None,
+  ) -> bool:
+    """Returns True if the type of the instruction/variable is
+    of interest to the analysis.
+    By default it selects only Numeric types.
+    """
+    check1 = t.isNumeric()
+    check2 = not isStringLitName(name) if name else True
+    return check1 and check2
+
+
+  @classmethod
+  def getAllVars(cls, func: constructs.Func) -> Set[types.VarNameT]:
+    """Gets all the variables of the accepted type."""
+    names = ir.getNamesEnv(func)
+    return ir.filterNames(func, names, cls.isAcceptedType)
 
 
   def __eq__(self, other) -> bool:
@@ -460,8 +476,7 @@ class OverallL(DataLT):
     equal = self.basicEqualTest(other)
     if equal is not None: return equal
 
-    vNames = set(self.val.keys())
-    vNames.update(other.val.keys())
+    vNames = set(self.val.keys()) | set(other.val.keys())
     defaultVal = self.getDefaultVal()
     selfGetVal, otherGetVal = self.val.get, other.val.get
     for vName in vNames:
@@ -476,71 +491,11 @@ class OverallL(DataLT):
 
 
   def checkInvariants(self, level: int = 0):
-    if level >= 0:
+    if level >= 1:
       if self.val:
         for k, v in self.val.items():
           v.checkInvariants()
           assert v is not None, f"{self.func.name}: {k}, {v}"
-
-
-  def separateLocalNonLocalDfvs(self
-  ) -> Tuple['OverallL', 'OverallL']:
-    """DFV with only the locally accessible variables of the current function,
-    and DFV with variables that can be accessed from outside the function.
-    This is used in Value Context IPA analysis.
-    """
-    if self.top or self.bot:
-      return self.getCopy(), self.getCopy()
-
-    assert self.val, f"{self.func}: {self.val}"
-    localVal, nonLocalVal = dict(), dict()
-
-    func: constructs.Func = self.func
-    tUnit: tunit.TranslationUnit = func.tUnit
-    for k, v in self.val.items():
-      assert v is not None, f"{k}, {v}"
-      l, g = func.isLocalName(k), tUnit.canBeGloballyAccessed(k)
-      if l and not g:  localVal[k] = v  # vars inaccessible outside the func
-      if not l or g:   nonLocalVal[k] = v
-
-    return self.getCopy(localVal), self.getCopy(nonLocalVal)
-
-
-  def addLocalDfv(self,
-      localDfv: 'OverallL',  #IPA: From the caller function
-  ) -> 'OverallL':
-    """Creates a new dfv object for IPA to use.
-    Assumes default value is bot.
-    """
-    if self.top and localDfv.top: return localDfv.getCopy()
-    if self.bot and localDfv.bot: return localDfv.getCopy()
-
-    callerFunc = localDfv.func
-    tUnit: tunit.TranslationUnit = self.func.tUnit
-    if self.top:
-      assert localDfv.componentTop is not None, f"{localDfv}"
-      val = {n: localDfv.componentTop for n in self.getAllVars()}
-      if localDfv.val: val.update(localDfv.val)
-      return self.__class__(callerFunc, val=val)
-    if self.val:
-      newDfv = self.getCopy()
-      newDfv.func = callerFunc
-      for vName in newDfv.val.keys():
-        val = newDfv.val[vName].getCopy()
-        val.func = callerFunc
-        newDfv.val[vName] = val
-      if localDfv.val: newDfv.val.update(localDfv.val)
-      return newDfv
-    if localDfv.top:
-      assert localDfv.componentTop is not None, f"{localDfv}"
-      val = {n: localDfv.componentTop
-             for n in localDfv.getAllVars()
-             if not tUnit.canBeGloballyAccessed(n)}
-      if self.val: val.update(self.val)
-      return self.__class__(callerFunc, val=val)
-
-    assert self.bot, f"{self}, {localDfv}"
-    return localDfv.getCopy()
 
 
   def isDefaultValBot(self):
@@ -562,7 +517,7 @@ class OverallL(DataLT):
 
   def isDefaultVal(self,
       val: ComponentL,
-      varName: types.VarNameT,
+      varName: Opt[types.VarNameT] = None,
   ) -> bool:
     return val == self.getDefaultVal(varName)
 
@@ -573,24 +528,24 @@ class OverallL(DataLT):
     """returns entity lattice value."""
     if self.top: return self.componentTop
     if self.bot: return self.componentBot
-    if self.getDefaultVal(): assert self.val, f"{self}"
-    defVal = self.getDefaultVal(varName)
-    return self.val.get(varName, defVal) if self.val else defVal
+    selfVal, defVal = self.val, self.getDefaultVal(varName)
+    return selfVal.get(varName, defVal) if selfVal else defVal
 
 
   def setVal(self,
       varName: types.VarNameT,
       val: ComponentL
   ) -> None:
-    """Mutates current object."""
+    """Mutates 'self'."""
     if self.top and val.top: return
     if self.bot and val.bot: return
 
     if self.val is None:
-      if not (self.top or self.bot) and val == self.getDefaultVal(varName):
+      if not (self.top or self.bot) and self.isDefaultVal(val, varName):
         return
       self.val = {}
-    defaultVal = self.getDefaultVal()
+
+    defaultVal = self.getDefaultVal(varName)
     if self.top and defaultVal != self.componentTop:
       top = self.componentTop
       self.val = {vName: top for vName in self.getAllVars()}
@@ -598,6 +553,7 @@ class OverallL(DataLT):
       bot = self.componentBot
       self.val = {vName: bot for vName in self.getAllVars()}
 
+    assert self.val is not None, f"{self}"
     self.top = self.bot = False  # if it was top/bot, then certainly its no more.
     topDefVal, botDefVal = self.isDefaultValTop(), self.isDefaultValBot()
     if self.isDefaultVal(val, varName):
@@ -619,6 +575,7 @@ class OverallL(DataLT):
     """
     selfVal = self.val
     if not selfVal: return  # nothing to do
+
     allVars = self.getAllVars()
     if len(selfVal) != len(allVars): return # nothing to do
 
@@ -635,8 +592,9 @@ class OverallL(DataLT):
 
 
   def getCopy(self, newVal: Opt[Dict] = None) -> 'OverallL':
-    """Returns a shallow copy of self."""
+    """Returns a shallow copy of self or a new object with newVal."""
     if newVal: return self.__class__(self.func, val=newVal)
+
     retTop, retBot = False, False
     if newVal is not None: # empty dict means top/bot depending on the default value
       retTop = bool(self.getDefaultVal().top)
@@ -660,7 +618,7 @@ class OverallL(DataLT):
 
 
   def filterVals(self, varNames: Set[types.VarNameT]) -> None:
-    """Mutates the self object.
+    """Mutates 'self'.
     All variable names in varNames are set to Top.
     """
     if self.top or not varNames:
@@ -684,60 +642,61 @@ class OverallL(DataLT):
   ) -> 'OverallL':
     """Returns self's copy localized for the given forFunc."""
     localizedDfv = self.getCopy()
+    localizedDfvVal, localizedDfvSetVal = localizedDfv.val, localizedDfv.setVal
 
     defaultVal = self.getDefaultVal()
-    if localizedDfv.val:
+    if localizedDfvVal:
       tUnit: tunit.TranslationUnit = self.func.tUnit
-      varNames = set(localizedDfv.val.keys())
+      varNames = set(localizedDfvVal.keys())
       keep = tUnit.getNamesGlobal() | (set(forFunc.paramNames) if keepParams else set())
-      varNames = varNames - keep
-      for vName in varNames:
-        localizedDfv.setVal(vName, defaultVal) # essentially removing the values
+      dropNames = varNames - keep
+      for vName in dropNames:
+        localizedDfvSetVal(vName, defaultVal) # essentially removing the values
 
     localizedDfv.updateFuncObj(forFunc)
     return localizedDfv
 
 
-  def updateFuncObj(self, funcObj: constructs.Func): #IPA #modifies self in-place
-    self.func = funcObj
-    if self.val:
-      for vName in self.val:
-        newVal = self.val[vName].getCopy()
-        newVal.func = funcObj
-        self.val[vName] = newVal
+  def updateFuncObj(self, funcObj: constructs.Func): #IPA #mutates 'self'
+    self.func, selfVal = funcObj, self.val # updating function object here 1
+    if not selfVal: return
+
+    for vName in selfVal:
+      newVal = selfVal[vName].getCopy()
+      newVal.func = funcObj  # updating function object here 2
+      selfVal[vName] = newVal
 
 
-  def addLocals(self, #IPA #modifies self in-place
+  def addLocals(self, #IPA #mutates 'self'
       fromDfv: 'OverallL',
   ) -> None:
     tUnit: tunit.TranslationUnit = self.func.tUnit
     localVars = tUnit.getNamesEnv(self.func) - tUnit.getNamesGlobal()
+    selfSetVal, fromDfvGetVal = self.setVal, fromDfv.getVal
     for vName in localVars:
-      val = fromDfv.getVal(vName)
-      self.setVal(vName, val)
+      selfSetVal(vName, fromDfvGetVal(vName))
 
 
   def __str__(self):
-    if util.VV5:
-      if self.top: return f"Top(id:{id(self)})"
-      if self.bot: return f"Bot(id:{id(self)})"
-    else:
-      if self.top: return "Top"
-      if self.bot: return "Bot"
+    idStr = f"(id:{id(self)})" if util.VV5 else ""
+
+    if self.top: return f"Top{idStr}"
+    if self.bot: return f"Bot{idStr}"
 
     if self.getDefaultVal(): assert self.val, f"{self.val}"
     string = io.StringIO()
     if self.val:
+      selfVal = self.val
       string.write("{")
       prefix = ""
-      for key in sorted(self.val.keys()):
-        val = self.val[key]
+      for key in sorted(selfVal.keys()):
+        val = selfVal[key]
         if val.top and not util.VV4: continue  # don't write Top values
         string.write(prefix)
         prefix = ", "
         #string.write(f"{simplifyName(key)}: {self.val[key]}")
-        string.write(f"{key}: {self.val[key]}")
-      string.write(f"}}(id:{id(self)})" if util.VV5 else "}")
+        string.write(f"{key}: {selfVal[key]}")
+      string.write(f"}}{idStr}" if util.VV5 else "}")
     else:
       string.write("Default")
     return string.getvalue()
@@ -812,17 +771,17 @@ def removeNonEnvVars(
 
 
 def Filter_Vars(
-    func: constructs.Func,
     varNames: Set[types.VarNameT],
     nodeDfv: NodeDfvL  # must contain an OverallL
 ) -> NodeDfvL:
+  """A default implementation for value analyses."""
   dfvIn = cast(OverallL, nodeDfv.dfvIn)
 
   if not varNames or dfvIn.top:  # i.e. nothing to filter or no DFV to filter == Nop
     return NodeDfvL(dfvIn, dfvIn)  # = NopI
 
   newDfvOut = dfvIn.getCopy()
-  newDfvOut.filterVals(ir.filterNamesNumeric(func, varNames))
+  newDfvOut.filterVals(varNames)
   return NodeDfvL(dfvIn, newDfvOut)
 
 

@@ -18,18 +18,25 @@ import io
 import span.util.util as util
 from span.util.util import LS, AS
 import span.ir.types as types
-from span.ir.conv import TrueEdge, FalseEdge, Forward, Backward
+from span.ir.conv import (
+  TrueEdge, FalseEdge, Forward,
+  Backward, isStringLitName,
+)
+
 import span.ir.cfg as cfg
 import span.ir.expr as expr
 import span.ir.instr as instr
 import span.ir.constructs as constructs
 import span.ir.conv as conv
 from span.ir.ir import \
-  (getExprRValueNames, getExprLValueNames, getNamesEnv,
+  (getExprRValueNames, getNamesLValuesOfExpr, getNamesEnv,
    filterNames, nameHasArray, getNamesPossiblyModifiedInCallExpr,
    isDummyGlobalFunc)
 
-from span.api.dfv import OLD_INOUT, NEW_IN, NodeDfvL, NewOldL
+from span.api.dfv import (
+  OLD_INOUT, NEW_IN, NodeDfvL, NewOldL,
+  Filter_Vars
+)
 import span.api.dfv as dfv
 from span.api.lattice import ChangedT, Changed, DataLT, mergeAll
 
@@ -1733,8 +1740,8 @@ simDirnMap = {  # the IN/OUT information needed for the sim
 ################################################
 
 class ValueAnalysisAT(AnalysisAT):
-  """A specialized value analysis with code common
-  to most value analyses."""
+  """A specialized (value) analysis implementation.
+  Common functionality to most value analyses and other similar ones."""
   __slots__ : List[str] = ["componentTop", "componentBot"]
   # redefine these variables as needed (see ConstA, IntervalA for examples)
   L: Type[dfv.OverallL] = dfv.OverallL  # the OverallL lattice used
@@ -1766,6 +1773,7 @@ class ValueAnalysisAT(AnalysisAT):
   def getBoundaryInfo(self,
       nodeDfv: Opt[NodeDfvL] = None,
       ipa: bool = False,
+      func: Opt[constructs.Func] = None,
   ) -> NodeDfvL:
     """
       * IPA/Intra: initialize all local (non-parameter) vars to Top.
@@ -1775,7 +1783,8 @@ class ValueAnalysisAT(AnalysisAT):
     """
     if ipa and not nodeDfv: raise ValueError(f"{ipa}, {nodeDfv}")
 
-    if isDummyGlobalFunc(self.func):  # initialize all to Top
+    func = func if func else self.func
+    if isDummyGlobalFunc(func):  # initialize all to Top
       inBi, outBi = self.overallTop, self.overallTop
     else:
       if nodeDfv:
@@ -1784,26 +1793,26 @@ class ValueAnalysisAT(AnalysisAT):
         inBi, outBi = self.overallBot, self.overallBot
 
       if ff.SET_LOCAL_ARRAYS_TO_TOP: # set arrays to a top initial value
-        tUnit: TranslationUnit = self.func.tUnit
+        tUnit: TranslationUnit = func.tUnit
         localNames = tUnit.getNamesLocal(self.func)
-        for vName in localNames - set(self.func.paramNames):
-          if tUnit.getNameInfo(vName).hasArray:
-            inBi.setVal(vName, self.componentTop)
+        inBiSetVal, tUnitGetNameInfo = inBi.setVal, tUnit.getNameInfo
+        for vName in localNames - set(func.paramNames):
+          if tUnitGetNameInfo(vName).hasArray:
+            inBiSetVal(vName, self.componentTop) #Mutates inBi
 
     nDfv1 = NodeDfvL(inBi, outBi)
-
     return nDfv1
 
 
   def getLocalizedCalleeBi(self, #IPA
       nodeId: types.NodeIdT,
       insn: instr.InstrIT,
-      nodeDfv: NodeDfvL,
+      nodeDfv: NodeDfvL,  # caller's node IN/OUT
       calleeBi: Opt[NodeDfvL] = None,  #IPA
   ) -> NodeDfvL:
     """Computes the value context of the callee, given
     the data flow value of the caller."""
-    assert insn.hasCallExpr(), f"{self.func.name}, {nodeId}, {insn}, {insn.info}"
+    assert insn.hasRhsCallExpr(), f"{self.func.name}, {nodeId}, {insn}, {insn.info}"
 
     calleeName = instr.getCalleeFuncName(insn)
     tUnit: TranslationUnit = self.func.tUnit
@@ -1814,28 +1823,10 @@ class ValueAnalysisAT(AnalysisAT):
     newDfvIn = nodeDfv.dfvIn.localize(calleeFuncObj, keepParams=True)
 
     localized = NodeDfvL(newDfvIn, outDfv)
-    localized = self.getBoundaryInfo(localized, ipa=True)
+    localized = self.getBoundaryInfo(localized, ipa=True, func=calleeFuncObj)
     if LS: LOG.debug("CalleeCallSiteDfv(Localized): %s", localized)
     return localized
 
-
-  def isAcceptedType(self,
-      t: types.Type,
-      name: Opt[types.VarNameT] = None,
-  ) -> bool:
-    """Returns True if the type of the instruction is
-    of interest to the analysis.
-    By default it selects only Numeric types.
-    """
-    check1 = t.isNumeric()
-    check2 = not conv.isStringLitName(name) if name else True
-    return check1 and check2
-
-
-  def getAllVars(self) -> Set[types.VarNameT]:
-    """Gets all the variables of the accepted type."""
-    names = getNamesEnv(self.func)
-    return filterNames(self.func, names, self.isAcceptedType)
 
   ################################################
   # BOUND START: Special_Instructions
@@ -1846,7 +1837,7 @@ class ValueAnalysisAT(AnalysisAT):
       insn: instr.FilterI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
-    return dfv.Filter_Vars(self.func, insn.varNames, nodeDfv)
+    return Filter_Vars(insn.varNames, nodeDfv)
 
 
   def UnDefVal_Instr(self,
@@ -1854,7 +1845,7 @@ class ValueAnalysisAT(AnalysisAT):
       insn: instr.UnDefValI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
-    if not self.isAcceptedType(insn.type):
+    if not self.L.isAcceptedType(insn.type):
       return self.Default_Instr(nodeId, insn, nodeDfv)
     newOut = dfvIn = cast(dfv.OverallL, nodeDfv.dfvIn)
     if not dfvIn.getVal(insn.lhsName).bot:
@@ -1904,7 +1895,7 @@ class ValueAnalysisAT(AnalysisAT):
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
     dfvIn = cast(dfv.OverallL, nodeDfv.dfvIn)
-    if not self.isAcceptedType(insn.arg.type):  # special case
+    if not self.L.isAcceptedType(insn.arg.type):  # special case
       return NodeDfvL(dfvIn, dfvIn)
     outDfvFalse, outDfvTrue = self.calcFalseTrueDfv(insn.arg, dfvIn)
     return NodeDfvL(dfvIn, None, outDfvTrue, outDfvFalse)
@@ -1917,7 +1908,7 @@ class ValueAnalysisAT(AnalysisAT):
       calleeBi: Opt[NodeDfvL] = None,  #IPA
   ) -> NodeDfvL:
     dfvIn = cast(dfv.OverallL, nodeDfv.dfvIn)
-    if not calleeBi: # handle intra-procedurally
+    if not calleeBi: #INTRA handle intra-procedurally
       return self.genNodeDfvL(self.processCallE(insn.arg, dfvIn), nodeDfv)
     else: # handle for #IPA
       newOut = calleeBi.dfvOut.localize(self.func)
@@ -1944,8 +1935,8 @@ class ValueAnalysisAT(AnalysisAT):
     """
     dfvIn = nodeDfv.dfvIn
     assert isinstance(dfvIn, dfv.OverallL), f"{type(dfvIn)}"
-    if LS: LOG.debug("ProcessingAssignInstr: %s = %s, iType: %s",
-                     lhs, rhs, lhs.type)
+    if LS: LOG.debug("ProcessingAssignInstr: %s = %s, iType: %s, %s",
+                     lhs, rhs, lhs.type, lhs.info)
 
     lhsType = lhs.type
     dfvInGetVal = cast(Callable[[types.VarNameT], dfv.ComponentL], dfvIn.getVal)
@@ -1954,7 +1945,7 @@ class ValueAnalysisAT(AnalysisAT):
     if isinstance(lhsType, types.RecordT):
       outDfvValues = self.processLhsRhsRecordType(lhs, rhs, dfvIn)
 
-    elif self.isAcceptedType(lhsType):
+    elif self.L.isAcceptedType(lhsType):
       func = self.func
       lhsVarNames = self.getExprLValueNames(func, lhs, dfvIn)
       # assert len(lhsVarNames) >= 1, f"{lhs}: {lhsVarNames}"
@@ -1965,9 +1956,9 @@ class ValueAnalysisAT(AnalysisAT):
                        self.overallTop.name, rhs, rhsDfv, lhsVarNames)
       if not len(lhsVarNames):
         if util.VV1: print(f"NO_LVALUE_NAMES: {self.__class__.__name__},"
-                           f" {func.name}, {lhs}, {lhs.info}")
+                           f" {func.name}, {lhs} = {rhs}, {lhs.info}")
         if LS: LOG.warning(f"NO_LVALUE_NAMES: {self.__class__.__name__},"
-                           f" {func.name}, {lhs}, {lhs.info}"
+                           f" {func.name}, {lhs} = {rhs}, {lhs.info}"
                            f"\n  Hence treating it as NopI.")
         return NodeDfvL(dfvIn, dfvIn)  # i.e. NopI
 
@@ -2000,7 +1991,7 @@ class ValueAnalysisAT(AnalysisAT):
       dfvIn: dfv.OverallL
   ) -> Set[types.VarNameT]:
     """Points-to analysis overrides this function."""
-    return getExprLValueNames(func, lhs)
+    return getNamesLValuesOfExpr(func, lhs)
 
 
   def genNodeDfvL(self,
@@ -2038,7 +2029,6 @@ class ValueAnalysisAT(AnalysisAT):
     assert isinstance(instrType, types.RecordT), f"{lhs}, {rhs}: {instrType}"
 
     dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL] = dfvIn.getVal
-    allMemberInfo = instrType.getNamesOfType(None)
 
     lhsVarNames = self.getExprLValueNames(self.func, lhs, dfvIn)
     if not len(lhsVarNames):
@@ -2049,32 +2039,37 @@ class ValueAnalysisAT(AnalysisAT):
                          f"\n  Hence treating it as NopI.")
       return {}  # i.e. NopI
     # assert len(lhsVarNames) >= 1, f"{lhs}: {lhsVarNames}"
-    strongUpdate: bool = len(lhsVarNames) == 1
+    mustUpdate: bool = len(lhsVarNames) == 1
 
     rhsVarNames = None
     if not isinstance(rhs, expr.CallE):  # IMPORTANT
       # call expression don't yield rhs names
       rhsVarNames = getExprRValueNames(self.func, rhs)
-      assert len(rhsVarNames) >= 1, f"{lhs}: {rhsVarNames}"
+      if not len(rhsVarNames):
+        if util.VV1: print(f"NO_RVALUE_NAMES: {self.__class__.__name__},"
+                           f" {self.func.name}, {rhs}, {rhs.info}")
+        if LS: LOG.warning(f"NO_RVALUE_NAMES: {self.__class__.__name__},"
+                           f" {self.func.name}, {rhs}, {rhs.info}"
+                           f"\n  Hence treating it as NopI.")
+        return {}  # i.e. NopI
 
+    allMemberInfo = instrType.getNamesOfType(None)
     outDfvValues: Dict[types.VarNameT, dfv.ComponentL] = {}
-    isAcceptedType = self.isAcceptedType
-    for memberInfo in allMemberInfo:
-      if isAcceptedType(memberInfo.type):
-        memName = memberInfo.name
-        for lhsName in lhsVarNames:
-          if rhsVarNames is not None:  # None only if rhs is CallE
-            rhsDfv = mergeAll(  # merge all rhs dfvs of the same member
-              dfvInGetVal(f"{rhsName}.{memName}")
-              for rhsName in rhsVarNames)
-          else:
-            rhsDfv = self.componentBot
-          fullLhsVarName = f"{lhsName}.{memName}"
-          oldLhsDfv = dfvInGetVal(fullLhsVarName)
-          if not strongUpdate or nameHasArray(self.func, fullLhsVarName):
-            rhsDfv, _ = oldLhsDfv.meet(rhsDfv)
-          if oldLhsDfv != rhsDfv:
-            outDfvValues[fullLhsVarName] = rhsDfv
+    isAcceptedType = self.L.isAcceptedType
+    for memberInfo in filter(lambda x: isAcceptedType(x.type), allMemberInfo):
+      memName = memberInfo.name
+      for lhsName in lhsVarNames:
+        if rhsVarNames is not None:  # None only if rhs is CallE
+          rhsDfv = mergeAll(  # merge all rhs dfvs of the same member
+            dfvInGetVal(f"{n}.{memName}") for n in rhsVarNames)
+        else:
+          rhsDfv = self.componentBot #INTRA #FIXME: for #IPA
+        fullLhsVarName = f"{lhsName}.{memName}"
+        oldLhsDfv = dfvInGetVal(fullLhsVarName)
+        if not mustUpdate or nameHasArray(self.func, fullLhsVarName):
+          rhsDfv, _ = oldLhsDfv.meet(rhsDfv)
+        if oldLhsDfv != rhsDfv:
+          outDfvValues[fullLhsVarName] = rhsDfv
     return outDfvValues
 
 
@@ -2092,16 +2087,15 @@ class ValueAnalysisAT(AnalysisAT):
     calleeName = e.getFuncName()
     if calleeName:
       calleeFuncObj = tUnit.getFuncObj(calleeName)
-      if tUnit.underApproxFunc(calleeFuncObj):
+      if tUnit.underApproxFunc(calleeFuncObj):  # should under-approx test ?
         return {}  # FIXME: too narrow an under-approximation
 
     names = getNamesPossiblyModifiedInCallExpr(self.func, e)
-    names = filterNames(self.func, names, self.isAcceptedType)
+    names = filterNames(self.func, names, self.L.isAcceptedType)
 
     if LS: LOG.debug(" OverApproximating: %s", list(sorted(names)))
 
-    bot = self.componentBot
-    dfvInGetVal = dfvIn.getVal
+    bot, dfvInGetVal = self.componentBot, dfvIn.getVal
     outDfvValues: Dict[types.VarNameT, dfv.ComponentL]\
       = {name: bot for name in names if dfvInGetVal(name) != bot}
     return outDfvValues
@@ -2197,8 +2191,8 @@ class ValueAnalysisAT(AnalysisAT):
   ) -> dfv.ComponentL:
     """A default implementation"""
     assert isinstance(e.arg, expr.VarE), f"{e}"
-    if self.isAcceptedType(e.arg.type):
-      return dfvInGetVal(e.arg.name)
+    if self.L.isAcceptedType(e.arg.type):
+      return dfvInGetVal(e.arg.name) #FIXME: very loose
     else:
       return self.componentBot
 
@@ -2241,6 +2235,8 @@ class ValueAnalysisAT(AnalysisAT):
       dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
   ) -> dfv.ComponentL:
     """A default implementation (assuming Constant Propagation)."""
+    if e.hasDereference():
+      return self.componentBot
     varNames = getExprRValueNames(self.func, e)
     assert varNames, f"{e}, {varNames}"
     return mergeAll(map(dfvInGetVal, varNames))
@@ -2251,7 +2247,7 @@ class ValueAnalysisAT(AnalysisAT):
       dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
   ) -> dfv.ComponentL:
     """A default implementation"""
-    return self.componentBot
+    return self.componentBot  # since e.hasDereference() == True
     # varNames = getExprRValueNames(self.func, e)
     # assert varNames, f"{e}, {varNames}"
     # return mergeAll(map(dfvInGetVal, varNames))
@@ -2272,10 +2268,9 @@ class ValueAnalysisAT(AnalysisAT):
     returnExprList = calleeFuncObj.getReturnExprList()
 
     if not returnExprList: return self.componentBot
-    val = self.componentTop
-    for e in returnExprList:
-      val, _ = val.meet(self.getExprDfv(e, outCalleeBi))
-    return val
+    val, selfGetExprDfv = self.componentTop, self.getExprDfv
+    mVal = mergeAll(selfGetExprDfv(e, outCalleeBi) for e in returnExprList)
+    return mVal
 
 
   def filterValues(self,
@@ -2285,6 +2280,7 @@ class ValueAnalysisAT(AnalysisAT):
       valueType: ValueTypeT = NumValue,
   ) -> Set[types.T]:
     """Depends on `self.filterTest`."""
+    assert values is not None, f"{dfvIn.func.name}, {e}, {e.info}"
     if not values:
       return values  # returns an empty set
     exprVal = self.getExprDfv(e, dfvIn)

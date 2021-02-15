@@ -87,30 +87,29 @@ class InstrIT:
     return self.instrCode in ARTIFICIAL_INSTR_CODES
 
 
-  def needsLhsVarSim(self) -> bool: return False
+  def hasLhsVarExpr(self) -> bool: return False
 
-  def needsRhsNumVarSim(self) -> bool: return False
+  def hasRhsNumVarExpr(self) -> bool: return False
 
-  def needsLhsDerefSim(self) -> bool: return False
+  def hasLhsDerefExpr(self) -> bool: return False
 
-  def needsRhsDerefSim(self) -> bool: return False
+  def hasRhsDerefExpr(self) -> bool: return False
 
-  def needsLhsMemDerefSim(self) -> bool: return False
+  def hasLhsMemDerefExpr(self) -> bool: return False
 
-  def needsRhsMemDerefSim(self) -> bool: return False
+  def hasRhsMemDerefExpr(self) -> bool: return False
 
-  def needsRhsNumBinaryExprSim(self) -> bool: return False
+  def hasRhsNumBinaryExpr(self) -> bool: return False
 
-  def needsRhsNumUnaryExprSim(self) -> bool: return False
+  def hasRhsNumUnaryExpr(self) -> bool: return False
 
-  def needsRhsPtrCallSim(self) -> bool: return False
+  def hasFpCallExpr(self) -> bool: return False
 
-  def needsPtrCallSim(self) -> bool: return False
+  def hasRhsFpCallExpr(self) -> bool: return False
 
-  def needsCondInstrSim(self) -> bool: return False
+  def hasCondExpr(self) -> bool: return False
 
-
-  def hasCallExpr(self) -> bool: return False
+  def hasRhsCallExpr(self) -> bool: return False
 
 
   def getFormalStr(self) -> types.FormalStrT:
@@ -172,26 +171,27 @@ class AssignI(InstrIT):
     self.rhs = rhs
 
 
-  def needsLhsVarSim(self) -> bool: return self.lhs.needsVarSim()
+  def hasLhsVarExpr(self) -> bool: return self.lhs.hasVarExpr()
 
-  def needsRhsNumVarSim(self) -> bool: return self.rhs.needsNumVarSim()
+  def hasRhsNumVarExpr(self) -> bool: return self.rhs.hasNumVarExpr()
 
-  def needsLhsDerefSim(self) -> bool: return self.lhs.needsDerefSim()
+  def hasLhsDerefExpr(self) -> bool: return self.lhs.hasDerefExpr()
 
-  def needsRhsDerefSim(self) -> bool: return self.rhs.needsDerefSim()
+  def hasRhsDerefExpr(self) -> bool: return self.rhs.hasDerefExpr()
 
-  def needsLhsMemDerefSim(self) -> bool: return self.lhs.needsMemDerefSim()
+  def hasLhsMemDerefExpr(self) -> bool: return self.lhs.hasMemDerefExpr()
 
-  def needsRhsMemDerefSim(self) -> bool: return self.rhs.needsMemDerefSim()
+  def hasRhsMemDerefExpr(self) -> bool: return self.rhs.hasMemDerefExpr()
 
-  def needsRhsNumBinaryExprSim(self) -> bool: return self.rhs.needsNumBinarySim()
+  def hasRhsNumBinaryExpr(self) -> bool: return self.rhs.hasNumBinaryExpr()
 
-  def needsRhsNumUnaryExprSim(self) -> bool: return self.rhs.needsNumUnarySim()
+  def hasRhsNumUnaryExpr(self) -> bool: return self.rhs.hasNumUnaryExpr()
 
-  def needsRhsPtrCallSim(self) -> bool: return self.rhs.needsPtrCallSim()
+  def hasFpCallExpr(self) -> bool: return self.rhs.hasPtrCall()
 
+  def hasRhsFpCallExpr(self) -> bool: return self.rhs.hasPtrCall()
 
-  def hasCallExpr(self) -> bool: return isinstance(self.rhs, expr.CallE)
+  def hasRhsCallExpr(self) -> bool: return isinstance(self.rhs, expr.CallE)
 
 
   def getFormalStr(self) -> types.FormalStrT:
@@ -430,7 +430,7 @@ class CondI(InstrIT):
     return consts.COND_I_STR
 
 
-  def needsCondInstrSim(self) -> bool: return True
+  def hasCondExpr(self) -> bool: return True
 
 
   def checkInvariants(self, level: int = 0):
@@ -594,10 +594,9 @@ class CallI(InstrIT):
     return consts.CALL_I_STR
 
 
-  def needsPtrCallSim(self) -> bool: return self.arg.needsPtrCallSim()
+  def hasFpCallExpr(self) -> bool: return self.arg.hasPtrCall()
 
-
-  def hasCallExpr(self) -> bool: return True
+  def hasRhsCallExpr(self) -> bool: return True
 
 
   def checkInvariants(self, level: int = 0):
@@ -948,18 +947,18 @@ class UnDefValI(InstrIT):
   __slots__ : List[str] = ["lhsName"]
 
   def __init__(self,
-      lhsName: types.VarNameT,  # deliberately named lhs
+      lhsName: types.VarNameT,
       info: Opt[types.Info] = None
   ) -> None:
     super().__init__(UNDEF_VAL_INSTR_IC, info)
-    self.lhsName: types.VarNameT = lhsName  # deliberately named lhs
+    self.lhsName: types.VarNameT = lhsName
 
 
   def getFormalStr(self) -> types.FormalStrT:
     return consts.UNDEFVAL_I_STR
 
 
-  def needsLhsVarSim(self) -> bool: return True
+  def hasLhsVarExpr(self) -> bool: return True
 
 
   def __eq__(self, other) -> bool:

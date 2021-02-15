@@ -8,8 +8,8 @@ void f(int c) {
 
 int main() {
   a = 30;
-  f(100);
-  f(100);
-  f(100);
-  return b;
+  f(100); // b is 100, a is 30
+  f(100); // b is 100, a is 30
+  f(100); // b is 100, a is 30
+  return b; // b is 100, a is 30
 }
