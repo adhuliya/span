@@ -15,7 +15,7 @@ int f2(int d) {
 int main(int argc, char** argv) {
   int b = 10;
   int (*f)(int);
-  f = argc ? f1 : f2;
+  f = argc ? *f1 : &f2;
   b = f(b);
-  return b;
+  return b; // a and b are (20, 30)
 }

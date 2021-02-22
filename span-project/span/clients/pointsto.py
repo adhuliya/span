@@ -12,6 +12,7 @@ This (and every) analysis subclasses,
 
 import logging
 LOG = logging.getLogger("span")
+LDB, LIN, LER, LWA = LOG.debug, LOG.info, LOG.error, LOG.warning
 
 from typing import Tuple, Dict, List, Optional as Opt, Set, Callable, cast
 
@@ -20,14 +21,16 @@ from span.util.util import LS
 from span.ir.tunit import TranslationUnit
 import span.ir.ir as ir
 import span.ir.types as types
-import span.ir.conv as irConv
+from span.ir.conv import (
+  simplifyName, Forward, NULL_OBJ_NAME, NULL_OBJ_SINGLETON_SET
+)
 import span.ir.op as op
 import span.ir.expr as expr
 import span.ir.instr as instr
 import span.ir.constructs as constructs
 
 from span.api.lattice import (ChangedT, Changed, basicLessThanTest,
-                              basicEqualTest, getBasicString)
+                              basicEqualTest, getBasicString, mergeAll, )
 import span.api.dfv as dfv
 from span.api.dfv import NodeDfvL
 import span.api.analysis as analysis
@@ -129,6 +132,21 @@ class ComponentL(dfv.ComponentL):
   #   Moreover, removePointee() doesn't make sense in pointer analysis.
 
 
+  def isZero(self) -> Tuple[bool, bool]:
+    """Returns,
+     * True, True. if NULL_OBJ_NAME is the only pointee.
+     * False, True. if NULL_OBJ_NAME is never the pointee.
+     * False, False. if can't say.
+     """
+    selfVal = self.val
+    if selfVal:
+      if len(selfVal) == 1 and NULL_OBJ_NAME in selfVal:
+        return True, True # its zero
+      elif NULL_OBJ_NAME not in selfVal:
+        return False, True # its never zero
+    return False, False # in all other cases it can't say
+
+
   def __lt__(self, other) -> bool:
     assert isinstance(other, ComponentL), f"{other}"
     lt = basicLessThanTest(self, other)
@@ -150,7 +168,7 @@ class ComponentL(dfv.ComponentL):
   def __str__(self):
     s = getBasicString(self)
     if s: return s
-    simpleNames = sorted(irConv.simplifyName(name) for name in self.val)
+    simpleNames = sorted(simplifyName(name) for name in self.val)
     return f"{simpleNames}"
 
 
@@ -199,12 +217,13 @@ class OverallL(dfv.OverallL):
 # BOUND START: Points-to Analysis.
 ################################################
 
+
 class PointsToA(analysis.ValueAnalysisAT):
   """Points-to Analysis."""
   __slots__ : List[str] = []
 
   L: type = OverallL
-  D: Opt[types.DirectionT] = irConv.Forward
+  D: Opt[types.DirectionT] = Forward
 
 
   needsRhsDerefToVarsSim: bool = False
@@ -235,13 +254,13 @@ class PointsToA(analysis.ValueAnalysisAT):
   # BOUND START: Normal_Instructions
   ################################################
 
-  def Num_Assign_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-      calleeBi: Opt[NodeDfvL] = None,  #IPA
-  ) -> NodeDfvL:
-    return self.Nop_Instr(nodeId, insn, nodeDfv)
+  # def Num_Assign_Instr(self,
+  #     nodeId: types.NodeIdT,
+  #     insn: instr.AssignI,
+  #     nodeDfv: NodeDfvL,
+  #     calleeBi: Opt[NodeDfvL] = None,  #IPA
+  # ) -> NodeDfvL:
+  #   return self.Nop_Instr(nodeId, insn, nodeDfv)
 
   ################################################
   # BOUND END  : Normal_Instructions
@@ -265,25 +284,23 @@ class PointsToA(analysis.ValueAnalysisAT):
       return SimFailed
 
     # STEP 2: If here, eval may be possible, hence attempt eval
-    if nodeDfv is None:
-      return SimPending
+    if nodeDfv is None: return SimPending
 
     # STEP 3: If here, either eval or filter the values
     dfvIn = cast(OverallL, nodeDfv.dfvIn)
     if values is not None:
       assert len(values), f"{e}, {values}"
-      return self.filterValues(e, values, dfvIn, NameValue) # filter the values
+      return self.filterValues(e, values, dfvIn, NameValue)
 
     # STEP 4: If here, eval the expression
     # special case (deref of array is the array itself)
     if isinstance(varType, types.ArrayT):
-      if LS: LOG.info("WARN: Deref_of_Array: %s, %s", e, varType)
+      if LS: LWA("Deref_of_Array: %s, %s", e, varType)
       return {varName}
 
     val = dfvIn.getVal(varName)
     if val.top: return SimPending
-    if val.bot:
-      return SimFailed
+    if val.bot: return SimFailed
     return val.val
 
 
@@ -293,7 +310,7 @@ class PointsToA(analysis.ValueAnalysisAT):
       values: Opt[Set[bool]] = None,
   ) -> Opt[Set[bool]]:
     # STEP 1: check if the expression can be evaluated
-    nameType = ir.inferTypeOfVal(self.func, e.name)
+    nameType = self.func.tUnit.inferTypeOfVal(e.name)
     if not isinstance(nameType, types.Ptr):
       return SimFailed  # i.e. no eval possible for the expression
 
@@ -314,17 +331,15 @@ class PointsToA(analysis.ValueAnalysisAT):
     if val.bot: return SimFailed  # cannot be evaluated
     if val.top: return SimPending  # can be evaluated, needs more info
 
-    if val.val and len(val.val) == 1 and irConv.NULL_OBJ_NAME in val.val:
-      return {False}
-    else:
-      return SimFailed
+    zero, certain = val.isZero()
+    return ({False} if zero else {True}) if certain else SimFailed
 
 
   def Num_Bin__to__Num_Lit(self,
       e: expr.BinaryE,
       nodeDfv: Opt[NodeDfvL] = None,
-      values: Opt[List[types.NumericT]] = None,
-  ) -> Opt[List[types.NumericT]]:
+      values: Opt[Set[types.NumericT]] = None,
+  ) -> Opt[Set[types.NumericT]]:
     """Specifically for expressions: x == y, x != y"""
     # STEP 1: check if the expression can be evaluated
     opCode = e.opr.opCode
@@ -357,7 +372,7 @@ class PointsToA(analysis.ValueAnalysisAT):
     elif len(leftArgDfv.val & rightArgDfv.val) == 0:  # not equal
         retVal = 0 if opCode == op.BO_EQ_OC else 1
 
-    return [retVal] if retVal is not None else SimFailed
+    return {retVal} if retVal is not None else SimFailed
 
 
   def filterTest(self,
@@ -372,7 +387,9 @@ class PointsToA(analysis.ValueAnalysisAT):
 
     elif valueType == BoolValue:
       def valueTestBoolean(boolVal: bool) -> bool:
-        return True
+        zero, certain = exprVal.isZero()
+        same = (not zero) == boolVal
+        return (True if same else False) if certain else True
       return valueTestBoolean  # return the test function
 
     elif valueType == NameValue:
@@ -400,7 +417,7 @@ class PointsToA(analysis.ValueAnalysisAT):
     """Returns the effective component dfv of the rhs.
     It expects the rhs to be pointer type or an array type."""
     value: dfv.ComponentL = self.componentTop
-    rhsType = rhs.type
+    rhsType, dfvInGetVal = rhs.type, dfvIn.getVal
     # assert isinstance(rhsType, (types.Ptr, types.ArrayT, types.FuncSig)), \
     #   f"{type(rhs)}: {rhsType}, {rhs}"
 
@@ -408,32 +425,33 @@ class PointsToA(analysis.ValueAnalysisAT):
       if rhs.isString():
         return ComponentL(self.func, val={rhs.name})
       elif rhs.val == 0:
-        return ComponentL(self.func, val={ir.NULL_OBJ_NAME})
+        return ComponentL(self.func, val=NULL_OBJ_SINGLETON_SET)
       else:
         return self.componentBot  # a sound over-approximation
 
-    if not rhsType.isPointer() and not isinstance(rhsType, types.ArrayT):
-      # return self.componentBot  #FIXME: safe approximation
-      raise ValueError(f"{rhs}, {rhsType}, {rhs.info}")
+    if not rhsType.isPointer() and \
+        not isinstance(rhsType, (types.ArrayT, types.FuncSig)):
+      return self.componentBot  #FIXME: safe approximation
+      #raise ValueError(f"{rhs}, {rhsType}, {rhs.info}")
 
     if isinstance(rhs, expr.VarE):  # handles PseudoVarE too
-      if isinstance(rhsType, types.Ptr):
-        return dfvIn.getVal(rhs.name)
+      if isinstance(rhsType, types.Ptr):  # don't use rhsType.isPointer()
+        return dfvInGetVal(rhs.name)
       elif isinstance(rhsType, (types.ArrayT, types.FuncSig)):
         return ComponentL(self.func, val={rhs.name})
       else:  # for all other types
         raise ValueError(f"{rhs}, {rhsType}, {rhs.info}")
 
     elif isinstance(rhs, expr.DerefE):
-      if rhsType.isFuncSig():
-        names = {rhs.arg.name} # In *x add 'x' (as its pointees are func names)
+      rhsArgType = rhs.arg.type
+      if rhsArgType.isFuncSig():
+        value = ComponentL(self.func, val={rhs.arg.name})
+      elif rhsType.isFuncSig(): # In *x add 'x' (as its pointees are func names)
+        value = dfvInGetVal(rhs.arg.name)
       else:
         names = PointsToA.getNamesLValuesOfExpr(self.func, rhs, dfvIn)
-        names = ir.filterNamesPointer(self.func, names)
-
-      dfvInGetVal = dfvIn.getVal
-      for name in names:
-        value, _ = value.meet(dfvInGetVal(name))
+        names = ir.filterNamesPointer(self.func, names, addFunc=True)
+        value = mergeAll(dfvInGetVal(name) for name in names)
       return value
 
     elif isinstance(rhs, expr.AddrOfE):
@@ -468,7 +486,6 @@ class PointsToA(analysis.ValueAnalysisAT):
 
     elif isinstance(rhs, (expr.ArrayE, expr.MemberE)):
       names = PointsToA.getNamesLValuesOfExpr(self.func, rhs, dfvIn)
-      dfvInGetVal = dfvIn.getVal
       for name in names:
         value, _ = value.meet(dfvInGetVal(name))
       return value
@@ -686,7 +703,7 @@ class PointsToA(analysis.ValueAnalysisAT):
       return ir.getNamesEnv(func, pointeeType)
     else:                 # precise result
       assert varDfv.val, f"{varDfv}"
-      return varDfv.val - irConv.NULL_OBJ_SINGLETON_SET
+      return varDfv.val - NULL_OBJ_SINGLETON_SET
 
   ################################################
   # BOUND END  : Helper_Functions

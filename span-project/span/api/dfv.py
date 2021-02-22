@@ -87,7 +87,7 @@ class NewOldL(LatticeLT):
 
 
   def __str__(self):
-    return f"(IN={self._newIn}, ***** OUT={self._newOut})"
+    return f"(IN={self._newIn}, OUT={self._newOut})"
 
 
   def __repr__(self):
@@ -339,14 +339,15 @@ class NodeDfvL(LatticeLT):
 
   def __str__(self):
     idStr = f"(id:{id(self)})" if util.VV5 else ""
+    sep = " ***** "
     if self.dfvOutTrue is self.dfvOutFalse and self.dfvOut is self.dfvOutTrue:
       if self.dfvIn is self.dfvOut:
         return f"{idStr} IN == OUT: {self.dfvIn}"
       else:
-        return f"{idStr} IN: {self.dfvIn}, OUT: {self.dfvOut}"
+        return f"{idStr} IN: {self.dfvIn}, {sep} OUT: {self.dfvOut}"
     else:
-      return f"{idStr} IN: {self.dfvIn}, OUT: {self.dfvOut}," \
-             f" TRUE: {self.dfvOutTrue}, FALSE: {self.dfvOutFalse}"
+      return f"{idStr} IN: {self.dfvIn}, {sep} OUT: {self.dfvOut}," \
+             f" {sep} TRUE: {self.dfvOutTrue}, {sep} FALSE: {self.dfvOutFalse}"
 
 
   def __repr__(self):
@@ -548,10 +549,10 @@ class OverallL(DataLT):
     defaultVal = self.getDefaultVal(varName)
     if self.top and defaultVal != self.componentTop:
       top = self.componentTop
-      self.val = {vName: top for vName in self.getAllVars()}
+      self.val = {vName: top for vName in self.getAllVars(self.func)}
     if self.bot and defaultVal != self.componentBot:
       bot = self.componentBot
-      self.val = {vName: bot for vName in self.getAllVars()}
+      self.val = {vName: bot for vName in self.getAllVars(self.func)}
 
     assert self.val is not None, f"{self}"
     self.top = self.bot = False  # if it was top/bot, then certainly its no more.
@@ -576,7 +577,7 @@ class OverallL(DataLT):
     selfVal = self.val
     if not selfVal: return  # nothing to do
 
-    allVars = self.getAllVars()
+    allVars = self.getAllVars(self.func)
     if len(selfVal) != len(allVars): return # nothing to do
 
     top = bot = True
@@ -609,14 +610,6 @@ class OverallL(DataLT):
       return self.__class__(self.func, val=self.val.copy())
 
 
-  def getAllVars(self) -> Set[types.VarNameT]:
-    """Return a set of vars the analysis is tracking.
-    One must override this method if variables are other
-    than numeric.
-    """
-    return ir.getNamesEnv(self.func, numeric=True)
-
-
   def filterVals(self, varNames: Set[types.VarNameT]) -> None:
     """Mutates 'self'.
     All variable names in varNames are set to Top.
@@ -624,7 +617,7 @@ class OverallL(DataLT):
     if self.top or not varNames:
       return None
 
-    if self.getAllVars() == varNames:
+    if self.getAllVars(self.func) == varNames:
       self.top, self.bot, self.val = True, False, None
       return None
 

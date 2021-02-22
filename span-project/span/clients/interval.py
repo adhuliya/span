@@ -52,6 +52,9 @@ class ComponentL(dfv.ComponentL):
   ) -> None:
     super().__init__(func, val, top, bot)
     self.val: Opt[Tuple[float, float]] = val
+    if val and val[0] == float("-inf") \
+        and val[1] == float("+inf"):
+      self.top, self.bot, self.val = False, True, None
 
 
   def meet(self,
@@ -291,8 +294,8 @@ class ComponentL(dfv.ComponentL):
           (otherLower - 1 if intType else otherLower)
         return newVal((float("-inf"), upper))
       else: # greaterThanOther
-        lower = otherUpper if equalToOther else \
-          (otherUpper + 1 if intType else otherUpper)
+        lower = otherLower if equalToOther else \
+          (otherLower + 1 if intType else otherLower)
         return newVal((lower, float("+inf")))
 
     assert self.val, f"{self}"
@@ -320,7 +323,7 @@ class ComponentL(dfv.ComponentL):
         return newVal((lower, selfUpper)) if lower <= selfUpper else topVal
       if selfLower <= otherLower: # obviously otherUpper > selfLower
         lower = otherLower if equalToOther else \
-          (otherUpper + 1 if intType else otherLower)
+          (otherLower + 1 if intType else otherLower)
         return newVal((lower, selfUpper)) if lower <= selfUpper else topVal
       if selfLower > otherLower:
         return self
@@ -330,7 +333,9 @@ class ComponentL(dfv.ComponentL):
 
   def getIntersectRange(self, other: 'ComponentL') -> 'ComponentL':
     """self and other must intersect"""
-    assert self.overlaps(other), f"NoOverlap: {self} and {other}"
+    #assert self.overlaps(other), f"NoOverlap: {self} and {other}"
+    if not self.overlaps(other): # return Top if no overlap (i.e. no intersection)
+      return ComponentL(self.func, top=True)
 
     if self < other: return self
     if other < self:  return other
@@ -497,13 +502,13 @@ class IntervalA(analysis.ValueAnalysisAT):
   # BOUND START: Normal_Instructions
   ################################################
 
-  def Ptr_Assign_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-      calleeBi: Opt[NodeDfvL] = None,  #IPA
-  ) -> NodeDfvL:
-    return self.Nop_Instr(nodeId, insn, nodeDfv)
+  # def Ptr_Assign_Instr(self,
+  #     nodeId: types.NodeIdT,
+  #     insn: instr.AssignI,
+  #     nodeDfv: NodeDfvL,
+  #     calleeBi: Opt[NodeDfvL] = None,  #IPA
+  # ) -> NodeDfvL:
+  #   return self.Nop_Instr(nodeId, insn, nodeDfv)
 
   ################################################
   # BOUND END  : Normal_Instructions
@@ -674,13 +679,13 @@ class IntervalA(analysis.ValueAnalysisAT):
       dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
   ) -> dfv.ComponentL:
     assert isinstance(e.arg, expr.VarE), f"{e}"
-    if self.isAcceptedType(e.arg.type):
+    if self.L.isAcceptedType(e.arg.type):
       value = dfvInGetVal(e.arg.name)
       if value.top or value.bot:
         return value
       else:
         eTo, val = e.to, value.val
-        assert self.isAcceptedType(eTo) and value.val, f"{e}, {value}"
+        assert self.L.isAcceptedType(eTo) and value.val, f"{e}, {value}"
         newValue = ComponentL(self.func,
                               val=(eTo.castValue(val[0]), eTo.castValue(val[1])))
         return newValue
@@ -784,7 +789,7 @@ class IntervalA(analysis.ValueAnalysisAT):
     elif opCode == op.BO_LT_OC:
       if lowerArg1:
         result = True
-      elif lowerArg2 or isEqual:
+      elif lowerArg2 or (isEqual and constArg1):
         result = False
     elif opCode == op.BO_GE_OC:
       if overlaps and constArg1 and constArg2:
@@ -794,7 +799,7 @@ class IntervalA(analysis.ValueAnalysisAT):
       elif lowerArg2:
         result = True
     elif opCode == op.BO_GT_OC:
-      if lowerArg1 or isEqual:
+      if lowerArg1 or (isEqual and constArg1):
         result = False
       elif lowerArg2:
         result = True
@@ -811,7 +816,6 @@ class IntervalA(analysis.ValueAnalysisAT):
     assert isinstance(arg, expr.VarE), f"{arg}"
 
     argName = arg.name
-    argInDfvVal = dfvIn.getVal(arg.name)
     zeroDfv = ComponentL(self.func, (0, 0))  # always zero on false branch
 
     dfvValTrue: Dict[types.VarNameT, ComponentL] = {}
@@ -819,7 +823,7 @@ class IntervalA(analysis.ValueAnalysisAT):
     dfvValFalse[argName] = zeroDfv
 
     tmpExpr = ir.getTmpVarExpr(self.func, arg.name)
-    true1 = true2 = false1 = false2 = None
+    true1 = true2 = false1 = false2 = None # 1 and 2 are for arg 1 and 2
     if tmpExpr and isinstance(tmpExpr, expr.BinaryE):
       arg1, arg2 = tmpExpr.arg1, tmpExpr.arg2
       arg1isInt, arg2isInt = arg1.type.isInteger(), arg2.type.isInteger()
@@ -863,6 +867,9 @@ class IntervalA(analysis.ValueAnalysisAT):
       if false1 and false2:
         dfvValFalse[arg1.name] = false1
         if arg2IsVarE: dfvValFalse[arg2.name] = false2
+
+    if argName == "v:fallbackSort:120if": #delit
+      print(f"AAAAAA: {arg}, {tmpExpr}, {dfvIn}, \nl: {true1}, {false1}, \nnblock: {true2}, {false2}") #delit
 
     return dfv.updateDfv(dfvValFalse, dfvIn), dfv.updateDfv(dfvValTrue, dfvIn)
 

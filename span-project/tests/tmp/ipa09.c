@@ -7,9 +7,9 @@ void f1(int i) {
     f1(i+1);
 }
 
-int main() {
+int main(int argc) {
   int a, b, c;
-  // a = 5; // make a bot
+  a = argc; // make 'a' bot
   p = &a;
   f1(a);
   f1(11);

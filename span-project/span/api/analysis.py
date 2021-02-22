@@ -741,7 +741,7 @@ class AnalysisAT:
   needsLhsDerefToVarsSim: bool = False
   needsNumVarToNumLitSim: bool = False
   needsNumBinToNumLitSim: bool = False
-  needsCondToUnCondSim: bool = False
+  needsCondToUnCondSim: bool = False #FIXME: see Host.setEdgeFeasibility, assumed True
   needsLhsVarToNilSim: bool = False
   needsNodeToNilSim: bool = False
   needsFpCallSim: bool = True
@@ -774,6 +774,8 @@ class AnalysisAT:
   def getBoundaryInfo(self,
       nodeDfv: Opt[NodeDfvL] = None,
       ipa: bool = False,
+      entryFunc: bool = False,
+      func: Opt[constructs.Func] = None,
   ) -> NodeDfvL:
     """Must generate a valid boundary info."""
     if ipa and not nodeDfv:
@@ -1640,7 +1642,7 @@ class AnalysisAT:
       nodeId: types.NodeIdT,
       nodeDfv: Opt[NodeDfvL] = None,
       values: Opt[bool] = None,
-  ) -> Opt[bool]:
+  ) -> Opt[Set[bool]]:
     """Node is simplified to Nil if its basically unreachable."""
     raise NotImplementedError()
 
@@ -1649,7 +1651,7 @@ class AnalysisAT:
       e: expr.VarE,
       nodeDfv: Opt[NodeDfvL] = None,
       values: Opt[List[bool]] = None,
-  ) -> Opt[List[bool]]:
+  ) -> Opt[Set[bool]]:
     """Returns a set of live variables at out of the node."""
     raise NotImplementedError()
 
@@ -1658,7 +1660,7 @@ class AnalysisAT:
       e: expr.BinaryE,
       nodeDfv: Opt[NodeDfvL] = None,
       values: Opt[List[types.NumericT]] = None,
-  ) -> Opt[List[types.NumericT]]:
+  ) -> Opt[Set[types.NumericT]]:
     """Simplify to a single literal if the expr can take that value."""
     raise NotImplementedError()
 
@@ -1667,7 +1669,7 @@ class AnalysisAT:
       e: expr.VarE,
       nodeDfv: Opt[NodeDfvL] = None,
       values: Opt[List[types.NumericT]] = None,
-  ) -> Opt[List[types.NumericT]]:
+  ) -> Opt[Set[types.NumericT]]:
     """Simplify to a single literal if the variable can take that value."""
     raise NotImplementedError()
 
@@ -1676,7 +1678,7 @@ class AnalysisAT:
       e: expr.VarE,
       nodeDfv: Opt[NodeDfvL] = None,
       values: Opt[bool] = None,
-  ) -> Opt[bool]:
+  ) -> Opt[Set[bool]]:
     """Simplify conditional jump to unconditional jump."""
     raise NotImplementedError()
 
@@ -1685,7 +1687,7 @@ class AnalysisAT:
       e: expr.VarE,
       nodeDfv: Opt[NodeDfvL] = None,
       values: Opt[List[types.VarNameT]] = None
-  ) -> Opt[List[types.VarNameT]]:
+  ) -> Opt[Set[types.VarNameT]]:
     """Simplify a deref expr de-referencing varName
     to a set of var pointees."""
     raise NotImplementedError()
@@ -1773,6 +1775,7 @@ class ValueAnalysisAT(AnalysisAT):
   def getBoundaryInfo(self,
       nodeDfv: Opt[NodeDfvL] = None,
       ipa: bool = False,
+      entryFunc: bool = False,
       func: Opt[constructs.Func] = None,
   ) -> NodeDfvL:
     """
@@ -1792,13 +1795,19 @@ class ValueAnalysisAT(AnalysisAT):
       else:
         inBi, outBi = self.overallBot, self.overallBot
 
+      tUnit: TranslationUnit = func.tUnit
+      inBiSetVal, tUnitGetNameInfo = inBi.setVal, tUnit.getNameInfo
+
       if ff.SET_LOCAL_ARRAYS_TO_TOP: # set arrays to a top initial value
-        tUnit: TranslationUnit = func.tUnit
         localNames = tUnit.getNamesLocal(self.func)
-        inBiSetVal, tUnitGetNameInfo = inBi.setVal, tUnit.getNameInfo
         for vName in localNames - set(func.paramNames):
           if tUnitGetNameInfo(vName).hasArray:
             inBiSetVal(vName, self.componentTop) #Mutates inBi
+
+      if entryFunc: # then set its parameters to Bot (main() function)
+        for vName in func.paramNames:
+          if self.L.isAcceptedType(tUnitGetNameInfo(vName).type):
+            inBiSetVal(vName, self.componentBot)
 
     nDfv1 = NodeDfvL(inBi, outBi)
     return nDfv1

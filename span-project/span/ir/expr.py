@@ -1575,7 +1575,7 @@ def getNamesUsedInExprSyntactically(
   raise ValueError(f"{e}")
 
 
-def reduceConstExpr(e: ExprET) -> ExprET:
+def evalExpr(e: ExprET) -> ExprET:
   """Converts: 5 + 6, 6 > 7, -5, +6, !7, ~9, ... to a single literal."""
   newExpr = e  # default value on return
 
@@ -1610,14 +1610,13 @@ def reduceConstExpr(e: ExprET) -> ExprET:
         newExpr = LitE(int(arg1.val > arg2.val), info=arg1.info)  # type: ignore
 
   elif isinstance(e, UnaryE):
-    arg = e.arg
-    opCode = e.opr.opCode
+    arg, opCode = e.arg, e.opr.opCode
 
     if isinstance(arg, LitE):
       if opCode == op.UO_PLUS_OC:
-        newExpr = e.arg
+        newExpr = arg
       elif opCode == op.UO_MINUS_OC:
-        newExpr = LitE(e.arg.val * -1, info=arg.info)  # type: ignore
+        newExpr = LitE(arg.val * -1, info=arg.info)  # type: ignore
       elif opCode == op.UO_LNOT_OC:
         newExpr = LitE(int(not (bool(arg.val))), info=arg.info)
       elif opCode == op.UO_BIT_NOT_OC:

@@ -1086,5 +1086,5 @@ def getDerefExpr(insn: InstrIT) -> Opt[expr.ExprET]:
 
 
 @functools.lru_cache(512)
-def getFormalStr(insn: InstrIT) -> types.FormalStrT:
+def getFormalInstrStr(insn: InstrIT) -> types.FormalStrT:
   return f"{insn.getFormalStr()}_Instr"

@@ -7,7 +7,7 @@
 
 import logging
 LOG = logging.getLogger("span")
-LDB, LIN, LER, LDW = LOG.debug, LOG.info, LOG.error, LOG.warning
+LDB, LIN, LER, LWA = LOG.debug, LOG.info, LOG.error, LOG.warning
 
 from typing import Dict, Tuple, Set, List, Callable,\
   Optional as Opt, cast, Any, List
@@ -24,17 +24,19 @@ import span.util.ff as ff
 from span.ir.types import NodeIdT, VarNameT, FuncNameT, DirectionT
 from span.ir.conv import FalseEdge, TrueEdge, genFuncNodeId, NULL_OBJ_SINGLETON_SET
 from span.ir.conv import Forward, Backward, ForwBack, NULL_OBJ_NAME
-import span.ir.op as op
-import span.ir.expr as expr
-import span.ir.instr as instr
-from span.ir.instr import (NOP_INSTR_IC, BARRIER_INSTR_IC, UNDEF_VAL_INSTR_IC,
-                           COND_READ_INSTR_IC, USE_INSTR_IC, EX_READ_INSTR_IC,
-                           ASSIGN_INSTR_IC, COND_INSTR_IC, RETURN_INSTR_IC, CALL_INSTR_IC,
-                           FILTER_INSTR_IC, FAILED_INSN_SIM)
-from span.ir.expr import (VAR_EXPR_EC, FUNC_EXPR_EC, LIT_EXPR_EC, UNARY_EXPR_EC,
-                          BINARY_EXPR_EC, ADDROF_EXPR_EC, MEMBER_EXPR_EC, ARR_EXPR_EC,
-                          SIZEOF_EXPR_EC, CALL_EXPR_EC, SELECT_EXPR_EC,
-                          CAST_EXPR_EC, DEREF_EXPR_EC, )
+
+from span.ir.instr import (
+  InstrIT, III, ExReadI, AssignI, CallI, CondI,
+  CondReadI, FilterI,
+  getFormalInstrStr, getCallExpr,
+  FAILED_INSN_SIM
+)
+
+from span.ir.expr import (
+  VarE, LitE, CallE, UnaryE, BinaryE,
+  ExprET, ArrayE, MemberE, DerefE,
+  evalExpr,
+)
 
 from span.api.dfv import NodeDfvL, NewOldL, OLD_INOUT
 from span.api.analysis import SimNameT, simDirnMap, SimFailed, SimPending
@@ -365,7 +367,7 @@ class Host:
       self.anDemandDep: Dict[ddm.AtomicDemand, Set[AnNameT]] = dict()
       # map of (nid, simName, expr) --to-> set of demands affected
       self.nodeInstrDemandSimDep: \
-        Dict[Tuple[NodeIdT, SimNameT, expr.ExprET],
+        Dict[Tuple[NodeIdT, SimNameT, ExprET],
              Set[ddm.AtomicDemand]] = dict()
 
     #IPA inter-procedural analysis?
@@ -449,17 +451,17 @@ class Host:
 
     # map of (nid, simName, expr) --to-> set of analyses affected
     self.nodeInstrSimDep:\
-      Dict[Tuple[NodeIdT, SimNameT, expr.ExprET], Set[AnNameT]] = dict()
+      Dict[Tuple[NodeIdT, SimNameT, ExprET], Set[AnNameT]] = dict()
 
     # simplifications that depend on the given analysis (active analysis)
     self.anRevNodeDep: \
       Dict[Tuple[AnNameT, NodeIdT],
-           Dict[Tuple[Opt[expr.ExprET], SimNameT], Opt[SimRecord]]] = dict()
+           Dict[Tuple[Opt[ExprET], SimNameT], Opt[SimRecord]]] = dict()
 
     # sim instruction cache: cache the instruction computed for a sim
     self.instrSimCache: \
       Dict[Tuple[NodeIdT, SimNameT],
-           Dict[Tuple[instr.InstrIT, Opt[expr.ExprET]], instr.InstrIT]] = dict()
+           Dict[Tuple[InstrIT, Opt[ExprET]], InstrIT]] = dict()
 
     self.stats: HostStat = HostStat(self, len(self.funcCfg.nodeMap))
 
@@ -468,7 +470,7 @@ class Host:
 
     # cache filtered sim sources
     self.filteredSimSrcs: \
-      Dict[Tuple[SimNameT, expr.ExprET, NodeIdT], Set[AnNameT]] = dict()
+      Dict[Tuple[SimNameT, ExprET, NodeIdT], Set[AnNameT]] = dict()
 
     # counts the net useful simplifications by an analysis
     # If a 'support' analysis's count goes zero, it is not run anymore.
@@ -570,7 +572,7 @@ class Host:
   def recomputeDemands(self, #DDM dedicated method
       node: cfg.CfgNode,
       simName: SimNameT,
-      e: expr.ExprET,
+      e: ExprET,
   ) -> None:
     """Recompute demands that depend on this simplification."""
     nid = node.id
@@ -614,7 +616,7 @@ class Host:
   def reAddAnalyses(self,
       node: cfg.CfgNode,
       simName: SimNameT,
-      e: expr.ExprET,
+      e: ExprET,
   ) -> None:
     if util.LL4: oldAnCount = len(self.anWorkList.wlSet)
 
@@ -768,7 +770,7 @@ class Host:
 
       if bi is None: #INTRA (also for #IPA if bi of the analysis is absent)
         if self.ipaEnabled and util.LL1:
-          LDW(f"ANALYSIS_BOUNDARY_INFO_MISSING!!!: {anName}, {self.func.name}")
+          LWA(f"ANALYSIS_BOUNDARY_INFO_MISSING!!!: {anName}, {self.func.name}")
         nDfv = self.activeAnObj.getBoundaryInfo()
         bi = (nDfv.dfvIn, nDfv.dfvOut)
 
@@ -855,7 +857,7 @@ class Host:
 
   def analyzeInstr(self,
       node: cfg.CfgNode,
-      insn: instr.InstrIT,
+      insn: InstrIT,
       nodeDfv: NodeDfvL,
       treatAsNop: Opt[bool] = False,
   ) -> NodeDfvL:
@@ -866,7 +868,7 @@ class Host:
     if treatAsNop:
       return self.activeAnObj.Nop_Instr(node.id, insn, nodeDfv)
 
-    if not isinstance(insn, instr.III):
+    if not isinstance(insn, III):
       return self._analyzeInstr(node, insn, nodeDfv)
 
     # if here its a III instruction
@@ -883,7 +885,7 @@ class Host:
 
   def _analyzeInstr(self,
       node: cfg.CfgNode,
-      insn: instr.InstrIT,  # could be a simplified form of node.insn
+      insn: InstrIT,  # could be a simplified form of node.insn
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
     LLS, nid = LS, node.id
@@ -901,7 +903,7 @@ class Host:
     assert activeAnObj, f"{self.activeAnName}"
 
     self.stats.funcSelectionTimer.start()
-    tFuncName = instr.getFormalStr(insn)
+    tFuncName = getFormalInstrStr(insn)
     assert hasattr(AnalysisAT, tFuncName), f"{tFuncName}, {insn}"
     assert hasattr(activeAnObj, tFuncName), f"{tFuncName}, {insn}, {activeAnObj}"
     transferFunc = getattr(activeAnObj, tFuncName)
@@ -912,52 +914,51 @@ class Host:
     if not self.disableSim and transferFunc != activeAnObj.Nop_Instr:
       # is the instr a var assignment (not deref etc)
       if activeAnObj.needsLhsVarToNilSim and insn.hasLhsVarExpr():
-        assert isinstance(insn, instr.AssignI), f"{nid}: {insn}"
+        assert isinstance(insn, AssignI), f"{nid}: {insn}"
         nDfv = self.handleLivenessSim(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
       if activeAnObj.needsLhsDerefToVarsSim and insn.hasLhsDerefExpr():
-        assert isinstance(insn, instr.AssignI), f"{nid}: {insn}"
+        assert isinstance(insn, AssignI), f"{nid}: {insn}"
         nDfv = self.handleLhsDerefSim(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
       if activeAnObj.needsRhsDerefToVarsSim and insn.hasRhsDerefExpr():
-        assert isinstance(insn, instr.AssignI), f"{nid}: {insn}"
+        assert isinstance(insn, AssignI), f"{nid}: {insn}"
         nDfv = self.handleRhsDerefSim(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
       if activeAnObj.needsLhsDerefToVarsSim and insn.hasLhsMemDerefExpr():
-        assert isinstance(insn, instr.AssignI), f"{nid}: {insn}"
+        assert isinstance(insn, AssignI), f"{nid}: {insn}"
         nDfv = self.handleLhsMemDerefSim(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
       if activeAnObj.needsRhsDerefToVarsSim and insn.hasRhsMemDerefExpr():
-        assert isinstance(insn, instr.AssignI), f"{nid}: {insn}"
+        assert isinstance(insn, AssignI), f"{nid}: {insn}"
         nDfv = self.handleRhsMemDerefSim(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
       if self.ipaEnabled and activeAnObj.needsFpCallSim\
           and insn.hasRhsFpCallExpr():
-        assert isinstance(insn, instr.AssignI), f"{nid}: {insn}"
+        assert isinstance(insn, AssignI), f"{nid}: {insn}"
         nDfv = self.handleRhsPtrCallSim(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
       if self.ipaEnabled and activeAnObj.needsFpCallSim\
-          and insn.hasFpCallExpr():
-        assert isinstance(insn, instr.CallI), f"{nid}: {insn}"
+          and insn.hasFpCallExpr() and isinstance(insn, CallI):
         nDfv = self.handlePtrCallSim(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
       if activeAnObj.needsNumBinToNumLitSim and insn.hasRhsNumBinaryExpr():
         # rhs is a numeric bin expr, hence could be simplified
-        assert isinstance(insn, instr.AssignI), f"{nid}: {insn}"
+        assert isinstance(insn, AssignI), f"{nid}: {insn}"
         nDfv = self.handleRhsBinArith(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         nDfv = self.handleRhsBinArithArgs(node, insn, nodeDfv, 1)
@@ -968,14 +969,14 @@ class Host:
 
       if activeAnObj.needsNumVarToNumLitSim and insn.hasRhsNumUnaryExpr():
         # rhs is a numeric unary expr, hence could be simplified
-        assert isinstance(insn, instr.AssignI), f"{nid}: {insn}"
+        assert isinstance(insn, AssignI), f"{nid}: {insn}"
         nDfv = self.handleRhsUnaryArith(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
       if activeAnObj.needsNumVarToNumLitSim and insn.hasRhsNumVarExpr():
         # rhs is a numeric var, hence could be simplified
-        assert isinstance(insn, instr.AssignI), f"{nid}: {insn}"
+        assert isinstance(insn, AssignI), f"{nid}: {insn}"
         nDfv = self.handleRhsNumVar(node, insn, nodeDfv)
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
@@ -987,7 +988,7 @@ class Host:
         self.nodeInsnDot[nid].append(str(insn))
 
     if insn.hasCondExpr():
-      assert isinstance(insn, instr.CondI), f"{nid}, {insn}"
+      assert isinstance(insn, CondI), f"{nid}, {insn}"
       return self.Conditional_Instr(node, insn, nodeDfv)  # type: ignore
     else:
       self.stats.instrAnTimer.start()
@@ -1004,7 +1005,7 @@ class Host:
 
   def processInstrWithCall(self, #IPA
       node: cfg.CfgNode,
-      insn: instr.InstrIT,
+      insn: InstrIT,
       nodeDfv: NodeDfvL,
       transferFunc: Callable,
       tFuncName: str,
@@ -1017,7 +1018,7 @@ class Host:
     assert self.ipaEnabled
     if util.LL4: LDB(f" ProcessingIPACall(Host): {self.func.name}, {node.id}, {insn}")
 
-    nid, callE = node.id, instr.getCallExpr(insn)
+    nid, callE = node.id, getCallExpr(insn)
     calleeFuncName = callE.getFuncName()
 
     if not calleeFuncName:
@@ -1058,7 +1059,7 @@ class Host:
 
   def processCallArguments(self,
       node: cfg.CfgNode,
-      callE: expr.CallE, # must not be a pointer-call
+      callE: CallE, # must not be a pointer-call
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
     """Analyzes the argument assignment to function params."""
@@ -1076,8 +1077,8 @@ class Host:
 
     for i, paramName in enumerate(funcObj.paramNames):
       arg = callE.args[i]
-      lhs = expr.VarE(paramName, arg.info)
-      insn = instr.AssignI(lhs, arg, arg.info)
+      lhs = VarE(paramName, arg.info)
+      insn = AssignI(lhs, arg, arg.info)
       self.tUnit.inferTypeOfInstr(insn)
       nextNodeDfv = self.analyzeInstr(node, insn, nextNodeDfv)
       if util.LL4: LDB(" FinalInstrDfv(ParamAssign): %s", nextNodeDfv)
@@ -1115,10 +1116,10 @@ class Host:
   def getCachedInstrSimResult(self,
       node: cfg.CfgNode,
       simName: SimNameT,
-      insn: instr.InstrIT,
-      e: expr.ExprET,
+      insn: InstrIT,
+      e: ExprET,
       demand: Opt[ddm.AtomicDemand] = None, #DDM
-  ) -> Tuple[Opt[instr.InstrIT], bool]:
+  ) -> Tuple[Opt[InstrIT], bool]:
     """Returns already computed instruction simplification."""
     self.stats.simTimer.start()
     nid = node.id
@@ -1145,7 +1146,7 @@ class Host:
   def addExprSimNeed(self,
       nid: NodeIdT,
       simName: SimNameT,
-      e: Opt[expr.ExprET] = None,
+      e: Opt[ExprET] = None,
       demand: Opt[ddm.AtomicDemand] = None,  #DDM exclusive argument
       anName: Opt[AnNameT] = None,
   ):
@@ -1174,9 +1175,9 @@ class Host:
   def handleNewInstr(self,
       node: cfg.CfgNode,
       simName: SimNameT,
-      insn: instr.InstrIT,
-      e: expr.ExprET,
-      newInsn: instr.InstrIT,
+      insn: InstrIT,
+      e: ExprET,
+      newInsn: InstrIT,
       nodeDfv: NodeDfvL,
   ) -> NodeDfvL:
     """Encapsulates common sequence of computation in many functions."""
@@ -1203,7 +1204,7 @@ class Host:
 
   def handleLivenessSim(self,
       node: cfg.CfgNode,
-      insn: instr.AssignI,
+      insn: AssignI,
       nodeDfv: NodeDfvL
   ) -> Opt[NodeDfvL]:
     """Handles liveness simplification for assignment instructions, where,
@@ -1229,12 +1230,12 @@ class Host:
 
     simVal: Opt[Set[VarNameT]] = simToLive.val
     if simToLive == SimPending:
-      newInsn = instr.FilterI(ir.getNamesEnv(self.func))
+      newInsn = FilterI(ir.getNamesEnv(self.func))
     elif simVal and lhs.name in simVal:
       self.setCachedInstrSim(node.id, simName, insn, lhs, insn)
       return None  # i.e. lhs is live, hence no simplification
     elif simVal is not None:
-      newInsn = instr.FilterI(ir.getNamesEnv(self.func) - simVal)
+      newInsn = FilterI(ir.getNamesEnv(self.func) - simVal)
     else:
       assert False, f"{simVal}"
 
@@ -1243,7 +1244,7 @@ class Host:
 
   def handleLhsDerefSim(self,
       node: cfg.CfgNode,
-      insn: instr.AssignI,  # lhs is expr.DerefE
+      insn: AssignI,  # lhs is DerefE
       nodeDfv: NodeDfvL
   ) -> Opt[NodeDfvL]:
     newInsn = self.getLhsDerefSimInstr(node, insn)
@@ -1255,10 +1256,10 @@ class Host:
 
   def getLhsDerefSimInstr(self,
       node: cfg.CfgNode,
-      insn: instr.AssignI,  # lhs is expr.DerefE
+      insn: AssignI,  # lhs is DerefE
       demand: Opt[ddm.AtomicDemand] = None, #DDM
-  ) -> Opt[instr.InstrIT]:
-    assert isinstance(insn.lhs, expr.DerefE), f"{node.id}: {insn}"
+  ) -> Opt[InstrIT]:
+    assert isinstance(insn.lhs, DerefE), f"{node.id}: {insn}"
     lhsArg, rhs, simName = insn.lhs.arg, insn.rhs, Deref__to__Vars__Name
 
     newInsn, valid = self.getCachedInstrSimResult(node, simName,
@@ -1270,11 +1271,15 @@ class Host:
       self.setCachedInstrSim(node.id, simName, insn, lhsArg, insn)
       return None  # i.e. process_the_original_insn
     elif values is SimPending:
-      newInsn = instr.ExReadI({lhsArg.name})
+      newInsn = ExReadI({lhsArg.name})
     else:  # take meet of the dfv of the set of instructions now possible
-      AssignI, VarE = instr.AssignI, expr.VarE
-      newInsn = instr.III([AssignI(VarE(vName), rhs) for vName in values])
-      newInsn.addInstr(instr.ExReadI({lhsArg.name}))
+      lhsType, varList = insn.lhs.type, []
+      for vName in values:
+        var = VarE(vName)
+        var.type = lhsType  # necessary in case of pseudo vars (site based allocation)
+        varList.append(var)
+      newInsn = III([AssignI(var, rhs) for var in varList])
+      newInsn.addInstr(ExReadI({lhsArg.name}))
 
     self.tUnit.inferTypeOfInstr(newInsn)
     self.setCachedInstrSim(node.id, simName, insn, lhsArg, newInsn)
@@ -1283,7 +1288,7 @@ class Host:
 
   def handleRhsDerefSim(self,
       node: cfg.CfgNode,
-      insn: instr.AssignI,
+      insn: AssignI,
       nodeDfv: NodeDfvL
   ) -> Opt[NodeDfvL]:
     newInsn = self.getRhsDerefSimInstr(node, insn)
@@ -1295,10 +1300,10 @@ class Host:
 
   def getRhsDerefSimInstr(self,
       node: cfg.CfgNode,
-      insn: instr.AssignI,
+      insn: AssignI,
       demand: Opt[ddm.AtomicDemand] = None, #DDM
-  ) -> Opt[instr.InstrIT]:
-    assert isinstance(insn.rhs, expr.DerefE), f"{node.id}: {insn}"
+  ) -> Opt[InstrIT]:
+    assert isinstance(insn.rhs, DerefE), f"{node.id}: {insn}"
     lhs, rhsArg, simName = insn.lhs, insn.rhs.arg, Deref__to__Vars__Name
 
     newInsn, valid = self.getCachedInstrSimResult(node, simName,
@@ -1310,12 +1315,16 @@ class Host:
       self.setCachedInstrSim(node.id, simName, insn, rhsArg, insn)
       return None  # i.e. process_the_original_insn
     elif values == SimPending:
-      newInsn = instr.CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhsArg))
+      newInsn = CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhsArg))
     else:  # take meet of the dfv of the set of instructions now possible
       assert values and len(values), f"{node}: {values}"
-      AssignI, VarE = instr.AssignI, expr.VarE
-      newInsn = instr.III([AssignI(lhs, VarE(vName)) for vName in values])
-      newInsn.addInstr(instr.CondReadI(
+      rhsType, varList = insn.rhs.type, []
+      for vName in values:
+        var = VarE(vName)
+        var.type = rhsType  # necessary in case of pseudo vars (site based allocation)
+        varList.append(var)
+      newInsn = III([AssignI(lhs, var) for var in varList])
+      newInsn.addInstr(CondReadI(
         lhs.name, ir.getNamesUsedInExprSyntactically(rhsArg)))
 
     self.tUnit.inferTypeOfInstr(newInsn)
@@ -1325,7 +1334,7 @@ class Host:
 
   def handleLhsMemDerefSim(self,
       node: cfg.CfgNode,
-      insn: instr.AssignI,
+      insn: AssignI,
       nodeDfv: NodeDfvL
   ) -> Opt[NodeDfvL]:
     newInsn = self.getLhsMemDerefSimInstr(node, insn)
@@ -1337,10 +1346,10 @@ class Host:
 
   def getLhsMemDerefSimInstr(self,
       node: cfg.CfgNode,
-      insn: instr.AssignI,
+      insn: AssignI,
       demand: Opt[ddm.AtomicDemand] = None, #DDM
-  ) -> Opt[instr.InstrIT]:
-    assert isinstance(insn.lhs, expr.MemberE), f"{node.id}: {insn}"
+  ) -> Opt[InstrIT]:
+    assert isinstance(insn.lhs, MemberE), f"{node.id}: {insn}"
     lhs, rhs, simName = insn.lhs, insn.rhs, Deref__to__Vars__Name
 
     newInsn, valid = self.getCachedInstrSimResult(node, simName,
@@ -1352,22 +1361,30 @@ class Host:
       self.setCachedInstrSim(node.id, simName, insn, lhs.of, insn)
       return None  # i.e. process_the_original_insn
     elif values is SimPending:
-      newInsn = instr.ExReadI({lhs.of.name})
+      newInsn = ExReadI({lhs.of.name})
     else:  # take meet of the dfv of the set of instructions now possible
       assert values, f"{node}: {values}"
-      AssignI, VarE = instr.AssignI, expr.VarE
-      newInsn = instr.III([AssignI(VarE(f"{varName}.{lhs.name}"), rhs)
-                           for varName in values])
-      newInsn.addInstr(instr.ExReadI({lhs.of.name}))
+      lhsName = lhs.name
+      lhsType, varList = insn.lhs.type, []
+      for vName in values:
+        var = VarE(f"{vName}.{lhsName}")
+        var.type = lhsType  # necessary in case of pseudo vars (site based allocation)
+        varList.append(var)
+      newInsn = III([AssignI(var, rhs) for var in varList])
+      newInsn.addInstr(ExReadI({lhs.of.name}))
 
-    self.tUnit.inferTypeOfInstr(newInsn)
+    try:
+      self.tUnit.inferTypeOfInstr(newInsn)
+    except Exception as e:
+      print(f"{newInsn}, {insn.info}, {self.func.name}")
+      raise e
     self.setCachedInstrSim(node.id, simName, insn, lhs.of, newInsn)
     return newInsn
 
 
   def handleRhsMemDerefSim(self,
       node: cfg.CfgNode,
-      insn: instr.AssignI,
+      insn: AssignI,
       nodeDfv: NodeDfvL
   ) -> Opt[NodeDfvL]:
     newInsn = self.getRhsMemDerefSimInstr(node, insn)
@@ -1379,10 +1396,10 @@ class Host:
 
   def getRhsMemDerefSimInstr(self,
       node: cfg.CfgNode,
-      insn: instr.AssignI,
+      insn: AssignI,
       demand: Opt[ddm.AtomicDemand] = None, #DDM
-  ) -> Opt[instr.InstrIT]:
-    assert isinstance(insn.rhs, expr.MemberE), f"{node.id}: {insn}"
+  ) -> Opt[InstrIT]:
+    assert isinstance(insn.rhs, MemberE), f"{node.id}: {insn}"
     lhs, rhs, simName = insn.lhs, insn.rhs, Deref__to__Vars__Name
 
     newInsn, valid = self.getCachedInstrSimResult(node, simName,
@@ -1394,13 +1411,17 @@ class Host:
       self.setCachedInstrSim(node.id, simName, insn, rhs.of, insn)
       return None  # i.e. process_the_original_insn
     elif values is SimPending:
-      newInsn = instr.CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs.of))
+      newInsn = CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs.of))
     else:  # take meet of the dfv of the set of instructions now possible
       assert values, f"{node}: {values}"
-      AssignI, VarE = instr.AssignI, expr.VarE
-      newInsn = instr.III([AssignI(lhs, VarE(f"{vName}.{rhs.name}"))
-                           for vName in values])
-      newInsn.addInstr(instr.CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs.of)))
+      rhsName = rhs.name
+      rhsType, varList = insn.rhs.type, []
+      for vName in values:
+        var = VarE(f"{vName}.{rhsName}")
+        var.type = rhsType  # necessary in case of pseudo vars (site based allocation)
+        varList.append(var)
+      newInsn = III([AssignI(lhs, var) for var in varList])
+      newInsn.addInstr(CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs.of)))
 
     self.tUnit.inferTypeOfInstr(newInsn)
     self.setCachedInstrSim(node.id, simName, insn, rhs.of, newInsn)
@@ -1409,7 +1430,7 @@ class Host:
 
   def handleRhsPtrCallSim(self,
       node: cfg.CfgNode,
-      insn: instr.AssignI,
+      insn: AssignI,
       nodeDfv: NodeDfvL
   ) -> Opt[NodeDfvL]:
     newInsn = self.getRhsPtrCallSimInstr(node, insn)
@@ -1421,10 +1442,10 @@ class Host:
 
   def getRhsPtrCallSimInstr(self,
       node: cfg.CfgNode,
-      insn: instr.AssignI,
+      insn: AssignI,
       demand: Opt[ddm.AtomicDemand] = None, #DDM
-  ) -> Opt[instr.InstrIT]:
-    assert isinstance(insn.rhs, expr.CallE), f"{node.id}: {insn}"
+  ) -> Opt[InstrIT]:
+    assert isinstance(insn.rhs, CallE), f"{node.id}: {insn}"
     lhs, rhsArg, simName = insn.lhs, insn.rhs.callee, Deref__to__Vars__Name
     rhs = insn.rhs
 
@@ -1437,14 +1458,13 @@ class Host:
       self.setCachedInstrSim(node.id, simName, insn, rhsArg, insn)
       return None  # i.e. process_the_original_insn
     elif values == SimPending:
-      newInsn = instr.CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhsArg))
+      newInsn = CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhsArg))
     else:  # take meet of the dfv of the set of instructions now possible
       assert values and len(values), f"{node}: {values}"
-      AssignI, VarE = instr.AssignI, expr.VarE
-      newInsn = instr.III(
-        [AssignI(lhs, expr.CallE(VarE(vName), rhs.args, rhs.info), insn.info)
-         for vName in values])
-      newInsn.addInstr(instr.CondReadI(
+      args, eInfo, iInfo = rhs.args, rhs.info, insn.info
+      newInsn = III([AssignI(lhs, CallE(VarE(n), args, eInfo), iInfo)
+                     for n in values])
+      newInsn.addInstr(CondReadI(
         lhs.name, ir.getNamesUsedInExprSyntactically(rhsArg)))
 
     self.tUnit.inferTypeOfInstr(newInsn)
@@ -1454,7 +1474,7 @@ class Host:
 
   def handlePtrCallSim(self,
       node: cfg.CfgNode,
-      insn: instr.CallI,
+      insn: CallI,
       nodeDfv: NodeDfvL
   ) -> Opt[NodeDfvL]:
     newInsn = self.getPtrCallSimInstr(node, insn)
@@ -1466,10 +1486,10 @@ class Host:
 
   def getPtrCallSimInstr(self,
       node: cfg.CfgNode,
-      insn: instr.CallI,
+      insn: CallI,
       demand: Opt[ddm.AtomicDemand] = None, #DDM
-  ) -> Opt[instr.InstrIT]:
-    assert isinstance(insn, instr.CallI), f"{node.id}: {insn}"
+  ) -> Opt[InstrIT]:
+    assert isinstance(insn, CallI), f"{node.id}: {insn}"
     callE, callee, simName = insn.arg, insn.arg.callee, Deref__to__Vars__Name
 
     newInsn, valid = self.getCachedInstrSimResult(node, simName,
@@ -1481,14 +1501,13 @@ class Host:
       self.setCachedInstrSim(node.id, simName, insn, callee, insn)
       return None  # i.e. process_the_original_insn
     elif values == SimPending:
-      newInsn = instr.ExReadI({callee.name})
+      newInsn = ExReadI({callee.name})
     else:  # take meet of the dfv of the set of instructions now possible
       assert values and len(values), f"{node}: {values}"
-      AssignI, VarE = instr.AssignI, expr.VarE
-      newInsn = instr.III(
-        [instr.CallI(expr.CallE(VarE(vName), callE.args, callE.info), insn.info)
-         for vName in values])
-      newInsn.addInstr(instr.ExReadI({callee.name}))
+      args, eInfo, iInfo = callE.args, callE.info, insn.info
+      newInsn = III([CallI(CallE(VarE(n), args, eInfo), iInfo)
+                     for n in values])
+      newInsn.addInstr(ExReadI({callee.name}))
 
     self.tUnit.inferTypeOfInstr(newInsn)
     self.setCachedInstrSim(node.id, simName, insn, callee, newInsn)
@@ -1497,10 +1516,10 @@ class Host:
 
   def handleRhsNumVar(self,
       node: cfg.CfgNode,
-      insn: instr.AssignI,
+      insn: AssignI,
       nodeDfv: NodeDfvL
   ) -> Opt[NodeDfvL]:
-    assert isinstance(insn.rhs, expr.VarE), f"{node.id}: {insn}"
+    assert isinstance(insn.rhs, VarE), f"{node.id}: {insn}"
     lhs, rhs, simName = insn.lhs, insn.rhs, Num_Var__to__Num_Lit__Name
 
     newInsn, valid = self.getCachedInstrSimResult(node, simName, insn, rhs)
@@ -1511,36 +1530,35 @@ class Host:
       self.setCachedInstrSim(node.id, simName, insn, rhs, insn)
       return None  # i.e. process_the_original_insn
     elif values is SimPending:
-      if isinstance(lhs, expr.VarE):
-        newInsn = instr.CondReadI(lhs.name, {rhs.name})
+      if isinstance(lhs, VarE):
+        newInsn = CondReadI(lhs.name, {rhs.name})
       elif lhs.hasDereference():
-        if isinstance(lhs, expr.ArrayE):
+        if isinstance(lhs, ArrayE):
           names = {lhs.of.name}
         else:
           names = ir.getNamesUsedInExprSyntactically(lhs)
-        newInsn = instr.ExReadI(names)
-      elif isinstance(lhs, expr.ArrayE):  # array expr without a pointer
+        newInsn = ExReadI(names)
+      elif isinstance(lhs, ArrayE):  # array expr without a pointer
         indexName = lhs.getIndexName()
         readVarNames = {indexName} if indexName else set()
-        newInsn = instr.CondReadI(lhs.of.name, {rhs.name} | readVarNames)
+        newInsn = CondReadI(lhs.of.name, {rhs.name} | readVarNames)
       else:
         raise ValueError(f"{insn}")
 
     else:  # there is some simplification
       if not self.activeAnIsSimAn and self.blockNonSimAn:
         return self.Barrier_Instr(node, node.insn, nodeDfv)
-      AssignI, LitE = instr.AssignI, expr.LitE
-      newInsn = instr.III([AssignI(lhs, LitE(val)) for val in values])
+      newInsn = III([AssignI(lhs, LitE(val)) for val in values])
 
     return self.handleNewInstr(node, simName, insn, rhs, newInsn, nodeDfv)
 
 
   def handleRhsUnaryArith(self,
       node: cfg.CfgNode,
-      insn: instr.AssignI,
+      insn: AssignI,
       nodeDfv: NodeDfvL
   ) -> Opt[NodeDfvL]:
-    assert isinstance(insn.rhs, expr.UnaryE), f"{node.id}: {insn}"
+    assert isinstance(insn.rhs, UnaryE), f"{node.id}: {insn}"
     lhs, rhsArg, simName = insn.lhs, insn.rhs.arg, Num_Var__to__Num_Lit__Name
 
     newInsn, valid = self.getCachedInstrSimResult(node, simName, insn, rhsArg)
@@ -1551,20 +1569,19 @@ class Host:
       self.setCachedInstrSim(node.id, simName, insn, rhsArg, insn)
       return None  # i.e. process_the_original_insn
     elif values is SimPending:
-      assert isinstance(rhsArg, expr.VarE), f"{node.id}: {insn}"
-      newInsn = instr.CondReadI(lhs.name, {rhsArg.name})
+      assert isinstance(rhsArg, VarE), f"{node.id}: {insn}"
+      newInsn = CondReadI(lhs.name, {rhsArg.name})
     else:
       rhs = insn.rhs
-      AssignI, UnaryE, LitE = instr.AssignI, expr.UnaryE, expr.LitE
-      newInsn = instr.III(
-        [AssignI(lhs, UnaryE(rhs.opr, LitE(val)).computeExpr()) for val in values])
+      newInsn = III([AssignI(lhs, evalExpr(UnaryE(rhs.opr, LitE(val))))
+                     for val in values])
 
     return self.handleNewInstr(node, simName, insn, rhsArg, newInsn, nodeDfv)
 
 
   def handleRhsBinArith(self,
       node: cfg.CfgNode,
-      insn: instr.AssignI,
+      insn: AssignI,
       nodeDfv: NodeDfvL
   ) -> Opt[NodeDfvL]:
     lhs, rhs, simName = insn.lhs, insn.rhs, Num_Bin__to__Num_Lit__Name
@@ -1577,12 +1594,10 @@ class Host:
       self.setCachedInstrSim(node.id, simName, insn, rhs, insn)
       return None  # i.e. process_the_original_insn
     elif values is SimPending:
-      newInsn = instr.CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs))
+      newInsn = CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs))
     else:
-      AssignI, LitE = instr.AssignI, expr.LitE
-      newInsn = instr.III(
-        [AssignI(lhs, LitE(val)) for val in values])
-      newInsn.addInstr(instr.CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs)))
+      newInsn = III([AssignI(lhs, LitE(val)) for val in values])
+      newInsn.addInstr(CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs)))
 
     nDfv = self.handleNewInstr(node, simName, insn, rhs, newInsn, nodeDfv)
     return nDfv
@@ -1590,16 +1605,16 @@ class Host:
 
   def handleRhsBinArithArgs(self,
       node: cfg.CfgNode,
-      insn: instr.AssignI,
+      insn: AssignI,
       nodeDfv: NodeDfvL,
       argPos: int,  # 1 or 2 only
   ) -> Opt[NodeDfvL]:
     assert argPos in (1, 2), f"{argPos}"
 
     lhs, rhs, simName = insn.lhs, insn.rhs, Num_Var__to__Num_Lit__Name
-    assert isinstance(rhs, expr.BinaryE), f"{node.id}: {insn}"
+    assert isinstance(rhs, BinaryE), f"{node.id}: {insn}"
     rhsArg = rhs.arg1 if argPos == 1 else rhs.arg2
-    if not isinstance(rhsArg, expr.VarE):
+    if not isinstance(rhsArg, VarE):
       return None  # i.e. process_the_original_insn
 
     newInsn, valid = self.getCachedInstrSimResult(node, simName, insn, rhsArg)
@@ -1610,19 +1625,17 @@ class Host:
       self.setCachedInstrSim(node.id, simName, insn, rhsArg, insn)
       return None  # i.e. process_the_original_insn
     elif values is SimPending:
-      newInsn = instr.CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs))
+      newInsn = CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs))
     else:
-      AssignI, LitE, BinaryE = instr.AssignI, expr.LitE, expr.BinaryE
+      opr, arg1, arg2 = rhs.opr, rhs.arg1, rhs.arg2
       if argPos == 1:
-        newInsn = instr.III(
-          [AssignI(lhs, expr.reduceConstExpr(BinaryE(LitE(val), rhs.opr, rhs.arg2)))
-           for val in values])
+        newInsn = III([AssignI(lhs, evalExpr(BinaryE(LitE(val), opr, arg2)))
+                       for val in values])
       else:
-        newInsn = instr.III(
-          [AssignI(lhs, expr.reduceConstExpr(BinaryE(rhs.arg1, rhs.opr, LitE(val))))
-           for val in values])
+        newInsn = III([AssignI(lhs, evalExpr(BinaryE(arg1, opr, LitE(val))))
+                       for val in values])
       newInsn.addInstr(
-        instr.CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs)))
+        CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs)))
 
     return self.handleNewInstr(node, simName, insn, rhsArg, newInsn, nodeDfv)
 
@@ -1631,7 +1644,7 @@ class Host:
 
   def Conditional_Instr(self,
       node: cfg.CfgNode,
-      insn: instr.CondI,
+      insn: CondI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
     # always handle conditional instruction
@@ -1648,7 +1661,7 @@ class Host:
     nodes = None
     if self.disableSim:
       nodes = self.ef.setAllSuccEdgesFeasible(node)
-    elif self.activeAnObj.needsCondToUnCondSim:
+    else: #if self.activeAnObj.needsCondToUnCondSim: # FIXME: assumed True always
       boolSim = self.getSim(node, Cond__to__UnCond__Name, arg)
       if boolSim is SimFailed:
         nodes = self.ef.setAllSuccEdgesFeasible(node)
@@ -1676,7 +1689,7 @@ class Host:
 
   def Barrier_Instr(self,
       node: cfg.CfgNode,  # redundant but needed
-      insn: instr.InstrIT,  # redundant but needed
+      insn: InstrIT,  # redundant but needed
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
     """block all info from crossing (forw&back) from within the node."""
@@ -1743,7 +1756,7 @@ class Host:
       node: cfg.CfgNode,
       simAnNames: Set[SimNameT],
       simName: SimNameT,
-      e: Opt[expr.ExprET] = None,  # None is a special case (Node__to__Nil)
+      e: Opt[ExprET] = None,  # None is a special case (Node__to__Nil)
   ) -> None:
     """Adds curr analysis' dependence on analyses providing simplification.
     Assumes that all simAnNames analyses have been setup before.
@@ -1792,7 +1805,7 @@ class Host:
       simAnName: str,
       simName: SimNameT,
       node: cfg.CfgNode,
-      e: Opt[expr.ExprET] = None,
+      e: Opt[ExprET] = None,
       values: Opt[Set] = None,
   ) -> Opt[Set]:
     """Calculates the simplification value for the given parameters."""
@@ -1823,7 +1836,7 @@ class Host:
   def fetchSimSourcesAndSetup(self,
       node: cfg.CfgNode,
       simName: SimNameT,
-      e: Opt[expr.ExprET] = None,
+      e: Opt[ExprET] = None,
       demand: Opt[ddm.AtomicDemand] = None,  #DDM
   ) -> Set[AnNameT]:
     """Adds analyses that can evaluate simName."""
@@ -1844,7 +1857,7 @@ class Host:
       node: cfg.CfgNode,
       simName: SimNameT,
       anName: AnNameT,
-      e: Opt[expr.ExprET] = None,
+      e: Opt[ExprET] = None,
   ):
     """Called after anName is added using self.addParticipantAn()
     and it returns True"""
@@ -1862,7 +1875,7 @@ class Host:
       node: cfg.CfgNode,
       simName: SimNameT,
       anName: AnNameT,
-      e: Opt[expr.ExprET] = None,
+      e: Opt[ExprET] = None,
   ):
     if not self.useDdm: return
     if anName in self.mainAnalyses: return
@@ -1898,7 +1911,7 @@ class Host:
   def fetchSimSourcesAndFilter(self,
       simName: SimNameT,
       nid: NodeIdT,
-      e: Opt[expr.ExprET] = None,
+      e: Opt[ExprET] = None,
   ) -> Set[AnNameT]:
     """
     Fetch the sim analyses and filters away analyses that
@@ -1936,7 +1949,7 @@ class Host:
   def getSim(self,
       node: cfg.CfgNode,
       simName: SimNameT,
-      e: Opt[expr.ExprET] = None,  # could be None (in case of Node__to__Nil)
+      e: Opt[ExprET] = None,  # could be None (in case of Node__to__Nil)
       demand: Opt[ddm.AtomicDemand] = None,  #DDM exclusive argument
   ) -> Opt[Set]:  # returns None if sim failed
     """Returns the simplification of the given expression.
@@ -1968,7 +1981,7 @@ class Host:
       anNames: Set[AnNameT],
       simName: SimNameT,
       node: cfg.CfgNode,
-      e: Opt[expr.ExprET],
+      e: Opt[ExprET],
   ) -> Opt[Set]:  # A None value indicates failed sim
     """Collects and merges the simplification by various analyses.
     Step 1: Select one working simplification from any one analysis.
@@ -2005,7 +2018,7 @@ class Host:
 
   def Calc_Deref__to__Vars(self,
       node: cfg.CfgNode,
-      e: expr.VarE,
+      e: VarE,
       demand: Opt[ddm.AtomicDemand] = None, #DDM
   ) -> Opt[Set[VarNameT]]:
     """
@@ -2045,6 +2058,7 @@ class Host:
     if util.LL4 and GD: LDB("AnWorklistDots:\n%s", self.getAnIterationDotString())
 
     if not util.VV3: return # i.e. then don't print what is below
+    if not self.func.name == "f:fallbackSort": return #delit
     print() # some blank lines for neatness
     print(self.func, "TUnit:", self.func.tUnit.name)
     print(f"MODE: IPA: {self.ipaEnabled}, DDM: {self.useDdm},"
@@ -2281,9 +2295,9 @@ class Host:
   def getCachedInstrSim(self,
       nid: NodeIdT,
       simName: SimNameT,
-      insn: instr.InstrIT,
-      e: expr.ExprET,
-  ) -> Opt[instr.InstrIT]:
+      insn: InstrIT,
+      e: ExprET,
+  ) -> Opt[InstrIT]:
     """Returns the cached instruction simplification for the given
     node, simName, insn, expression."""
     tup1 = (nid, simName)
@@ -2301,9 +2315,9 @@ class Host:
   def setCachedInstrSim(self,
       nid: NodeIdT,
       simName: SimNameT,
-      insn: instr.InstrIT,
-      e: expr.ExprET,
-      newInsn: instr.InstrIT,
+      insn: InstrIT,
+      e: ExprET,
+      newInsn: InstrIT,
   ) -> None:
     tup1 = (nid, simName)
     if tup1 not in self.instrSimCache:
@@ -2321,8 +2335,8 @@ class Host:
   def removeCachedInstrSim(self,
       nid: NodeIdT,
       simName: SimNameT,
-      insn: Opt[instr.InstrIT] = None,
-      e: Opt[expr.ExprET] = None,
+      insn: Opt[InstrIT] = None,
+      e: Opt[ExprET] = None,
   ) -> None:
     assert insn is None and e is None or (insn is not None), f"{nid}: {insn}: {e}"
 

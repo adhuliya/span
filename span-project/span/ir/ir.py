@@ -271,11 +271,12 @@ def filterNamesInteger(func: constructs.Func,
 
 
 def filterNamesPointer(func: constructs.Func,
-    names: Set[types.VarNameT]
+    names: Set[types.VarNameT],
+    addFunc: bool = False,
 ) -> Set[types.VarNameT]:
   """Remove names which are not pointers."""
   assert func.tUnit is not None, f"{func}"
-  return func.tUnit.filterNamesPointer(names)
+  return func.tUnit.filterNamesPointer(names, addFunc)
 
 
 def filterNames(func: constructs.Func,

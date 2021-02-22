@@ -413,10 +413,10 @@ class IpaHost:
           allCallSites.add(csPair)
 
           calleeBi = callSiteDfvs[csPair]
-          if util.LL2: LDB(f"CalleeBi(Old) ({callerName} --> {calleeName}):\n {calleeBi}")
+          if util.LL2: LDB(f"CalleeBi ({callerName} --> {calleeName})(Old):\n {calleeBi}")
           newCalleeBi = self.analyzeFunc(csPair, calleeBi, recursionDepth + 1,
                                          thisInvocationId) #recurse
-          if util.LL2: LDB(f"CalleeBi(New) ({callerName} --> {calleeName}):\n {newCalleeBi}")
+          if util.LL2: LDB(f"CalleeBi ({callerName} --> {calleeName})(New):\n {newCalleeBi}")
           reAnalyze = host.setCallSiteDfvsIpaHost(csPair, newCalleeBi)
 
           if util.VV2: self.printToDebug(calleeName, calleeBi, newCalleeBi, reAnalyze)
@@ -597,7 +597,7 @@ class IpaHost:
     for anName, nDfv in bi:
       AnalysisClass = clients.analyses[anName]
       analysisObj = AnalysisClass(func)
-      newBi[anName] = analysisObj.getBoundaryInfo(nDfv, ipa=True)
+      newBi[anName] = analysisObj.getBoundaryInfo(nDfv, ipa=True, entryFunc=True)
 
     if util.LL2: LDB("IpaBi: (%s): %s", funcName, newBi)
     return newBi
