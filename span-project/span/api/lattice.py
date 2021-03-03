@@ -53,8 +53,21 @@ class LatticeLT:
     return NotImplemented
 
 
+  def widen(self,  #for #IPA and for infinite lattice heights
+      other: Opt['LatticeLT'] = None,
+      ipa: bool = False,  # special case #IPA FIXME: is this needed?
+  ) -> Tuple['LatticeLT', ChangedT]:
+    """Apply widening w.r.t. the prev value.
+    MUST override this function if widening is needed.
+    """
+    raise NotImplementedError()
+
+
   def getCopy(self) -> 'LatticeLT':
-    """Return a copy of this lattice element."""
+    """Return a copy of this lattice element.
+    In the least, it should be a deep copy of mutable elements,
+    and a shallow copy of the immutable elements.
+    """
     raise NotImplementedError()
 
 
@@ -81,7 +94,7 @@ class LatticeLT:
     """
     if not isinstance(other, LatticeLT):
       return NotImplemented
-    res = basicEqualTest(self, other)
+    res = basicEqualsTest(self, other)
     assert res is not None, f"{res}, {self}, {other}"
     return res
 
@@ -135,14 +148,14 @@ class DataLT(LatticeLT):
 
 
   def widen(self,
-      newDfv: Opt['DataLT'] = None,
+      other: Opt['DataLT'] = None,
       ipa: bool = False,  # special case #IPA FIXME: is this needed?
   ) -> Tuple['DataLT', ChangedT]:
     """Apply widening w.r.t. the prev value.
     MUST override this function if widening is needed.
     """
-    if self != newDfv:
-      return newDfv, Changed
+    if self != other:
+      return other, Changed
     else:
       return self, not Changed
 
@@ -160,6 +173,12 @@ class DataLT(LatticeLT):
     raise NotImplementedError
 
 
+  def updateFuncObj(self, funcObj: constructs.Func): #IPA #Mutates 'self'.
+    """Updates the self.func object reference (for all sub-objects too).
+    Modifies self object."""
+    raise NotImplementedError
+
+
   def addLocals(self, #IPA #Mutates 'self'
       fromDfv: 'DataLT',
   ) -> None:
@@ -167,12 +186,6 @@ class DataLT(LatticeLT):
     in fromDfv to self. It modifies self object.
     Modifies self object.
     """
-    raise NotImplementedError
-
-
-  def updateFuncObj(self, funcObj: constructs.Func): #IPA #Mutates 'self'.
-    """Updates the self.func object reference (for all sub-objects too).
-    Modifies self object."""
     raise NotImplementedError
 
 
@@ -203,7 +216,7 @@ class DataLT(LatticeLT):
     If this fails the lattices can do more complicated tests.
     """
     assert self.__class__ == other.__class__, f"{self}, {other}"
-    equal = basicEqualTest(self, other)
+    equal = basicEqualsTest(self, other)
     if equal is not None: return equal
 
     assert self.val and other.val, f"{self}, {other}"
@@ -276,7 +289,7 @@ def basicLessThanTest(first: LatticeLT, second: LatticeLT) -> Opt[bool]:
   return None  # i.e. can't decide
 
 
-def basicEqualTest(first: LatticeLT, second: LatticeLT) -> Opt[bool]:
+def basicEqualsTest(first: LatticeLT, second: LatticeLT) -> Opt[bool]:
   """A basic equality test common to all lattices.
   If this fails the lattices can do more complicated tests.
   """

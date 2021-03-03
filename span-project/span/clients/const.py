@@ -69,6 +69,11 @@ class ComponentL(dfv.ComponentL):
       return ComponentL(self.func, bot=True), Changed
 
 
+  def isConstant(self):
+    """Returns True if self.val is a constant."""
+    return self.val is not None  # a simple check
+
+
   def __lt__(self, other: 'ComponentL') -> bool:
     """For documentation see: span.api.lattice.LatticeLT.__lt__.__doc__"""
     lt = lattice.basicLessThanTest(self, other)
@@ -79,7 +84,7 @@ class ComponentL(dfv.ComponentL):
     """For documentation see: `span.api.lattice.LatticeLT.__eq__`"""
     if not isinstance(other, ComponentL):
       return NotImplemented
-    equal = lattice.basicEqualTest(self, other)
+    equal = lattice.basicEqualsTest(self, other)
     return self.val == other.val if equal is None else equal
 
 
@@ -164,12 +169,13 @@ class ConstA(analysis.ValueAnalysisAT):
   # BOUND START: Normal_Instructions
   ################################################
 
-  def Ptr_Assign_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return self.Nop_Instr(nodeId, insn, nodeDfv)
+  # def Ptr_Assign_Instr(self,
+  #     nodeId: types.NodeIdT,
+  #     insn: instr.AssignI,
+  #     nodeDfv: NodeDfvL,
+  #     calleeBi: Opt[NodeDfvL] = None,  #IPA
+  # ) -> NodeDfvL:
+  #   return self.Nop_Instr(nodeId, insn, nodeDfv)
 
   ################################################
   # BOUND END  : Normal_Instructions
@@ -343,12 +349,12 @@ class ConstA(analysis.ValueAnalysisAT):
       dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
   ) -> dfv.ComponentL:
     assert isinstance(e.arg, expr.VarE), f"{e}"
-    if self.isAcceptedType(e.arg.type):
+    if self.L.isAcceptedType(e.arg.type):
       value = dfvInGetVal(e.arg.name)
       if value.top or value.bot:
         return value
       else:
-        assert self.isAcceptedType(e.to) and value.val, f"{e}, {value}"
+        assert self.L.isAcceptedType(e.to) and value.val, f"{e}, {value}"
         value.val = e.to.castValue(value.val)
         return value
     else:

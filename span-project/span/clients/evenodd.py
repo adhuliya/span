@@ -24,7 +24,7 @@ import span.ir.instr as instr
 import span.ir.constructs as constructs
 
 from span.api.lattice import DataLT, ChangedT, Changed,\
-  basicMeetOp, basicLessThanTest, basicEqualTest, getBasicString
+  basicMeetOp, basicLessThanTest, basicEqualsTest, getBasicString
 import span.api.dfv as dfv
 from span.api.dfv import NodeDfvL
 import span.api.analysis as analysis
@@ -83,7 +83,7 @@ class ComponentL(dfv.ComponentL):
   def __eq__(self, other) -> bool:
     if not isinstance(other, ComponentL):
       return NotImplemented
-    equal = basicEqualTest(self, other)
+    equal = basicEqualsTest(self, other)
     return self.val == other.val if equal is None else equal
 
 

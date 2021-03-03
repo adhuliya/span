@@ -6,11 +6,11 @@
 """The analysis interface."""
 
 import logging
+LOG = logging.getLogger("span")
 
 from span.ir.tunit import TranslationUnit
 from span.util import ff
 
-LOG = logging.getLogger("span")
 from typing import List, Tuple, Set, Dict, Any, Type, Callable, cast
 from typing import Optional as Opt
 import io
@@ -1990,7 +1990,12 @@ class ValueAnalysisAT(AnalysisAT):
         callNode = True  #IPA
       else: #INTRA
         outDfvValues.update(self.processCallE(rhs, dfvIn))
-    nDfv = self.genNodeDfvL(outDfvValues, nodeDfv, callNode)
+    try: #delit
+      nDfv = self.genNodeDfvL(outDfvValues, nodeDfv, callNode)
+    except Exception as e: #delit
+      print(f"{self.func.name}, {lhs}, {rhs}, {lhs.type},"
+            f" {lhs.info}, {outDfvValues}, {self.__class__.__name__}")
+      raise e
     return nDfv
 
 

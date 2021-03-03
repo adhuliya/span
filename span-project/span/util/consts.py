@@ -97,3 +97,5 @@ ALLOC_E_STR = "Alloc"  # added for completeness
 PHI_E_STR = "Phi"  # added for completeness
 
 
+AN_NOT_PRESENT = "AnNotPresent"
+ILLFORMED_AN_EXPR = "IllFormedAnExpr"

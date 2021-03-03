@@ -10,6 +10,7 @@ The basic tests necessary to run SPAN.
 import unittest
 import subprocess as subp
 import span.util.consts as consts
+import span.tests.common as common
 
 
 class SpanBasicTests(unittest.TestCase):
@@ -43,20 +44,21 @@ class SpanBasicTests(unittest.TestCase):
     print("\nTest: Curr Directory is a test directory? END.\n")
 
 
-  def test_AADA_isClangInPath(self):
-    """Is there a clang compiler in the current path? (False: if an error)"""
+  def test_AADA_isClangInPathAndSpanEnabled(self):
+    """Is there a clang compiler in the current path? (False: if an error)
+    Does clang support SpanIr conversion? (False: if an error)"""
     print("\nTest: Is 'clang' in path? START.\n")
     status, output = subp.getstatusoutput("clang")
+    if status != 1: common.SPAN_LLVM_AVAILABLE = False
     self.assertEqual(status, 1, consts.FAIL_NO_CLANG_IN_PATH)
     print("\nTest: Is 'clang' in path? END.\n")
 
-
-  def test_AAEA_isC2spanirPossible(self):
-    """Does clang support SpanIr conversion? (False: if an error)"""
+    # Does clang support SpanIr conversion? (False: if an error)
     print("\nTest: Can 'clang' convert C(ClangAST) to SPANIR? START.\n")
     cmd = ("""echo "int main(){}" | clang -x c """
            "--analyze -Xanalyzer -analyzer-checker=core.span.SlangGenAst -")
     status, output = subp.getstatusoutput(cmd)
+    if status != 0: common.SPAN_LLVM_AVAILABLE = False
     self.assertEqual(status, 0, consts.FAIL_NO_C2SPANIR_SUPPORT)
     print("\nTest: Can 'clang' convert C(ClangAST) to SPANIR? END.\n")
 

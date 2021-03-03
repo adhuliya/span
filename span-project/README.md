@@ -230,6 +230,25 @@ See the list of checkers available:
 5. On-demand analysis invocation.
 
 
+## Notes
+
+### C99 Incompatibilities
+* Varargs not supported.
+* Aggregate assignment not supported. E.g. arr[] = {1,2,3}.
+* size_t is assumed UINT64.
+* All floats are considered FLOAT64.
+* static initializations in functions? (TODO: check)
+
+### SPAN Features
+* Flow Insensitive (Easy to add. Maybe not efficient.)
+* Intra-Procedural (SPAN, Cascade, Lerner's)
+* Inter-Procedural (SPAN, Cascade, Lerner's)
+* Demand Driven Method (#DDM) (Intra) (Akshat)
+* Query Interface.
+* Test Framework.
+* Forward & Backward Support (TODO: Test BiDirectional)
+
 <br /> <br /> <br />
 &copy; 2020 Anshuman Dhuliya
 <br /> <br /> <br />
+

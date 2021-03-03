@@ -6,6 +6,9 @@
 """Interval (Range) Analysis."""
 
 import logging
+
+from span.ir.tunit import TranslationUnit
+
 LOG = logging.getLogger("span")
 
 from typing import Tuple, Dict, Set, List, Optional as Opt, cast, Callable, Type
@@ -21,11 +24,11 @@ from span.ir.conv import Forward
 from span.api.lattice import \
   (ChangedT,
    Changed,
-   basicEqualTest,
+   basicEqualsTest,
    basicLessThanTest,
    basicMeetOp,
    getBasicString,
-   )
+   DataLT, )
 import span.api.dfv as dfv
 from span.api.dfv import NodeDfvL
 import span.api.analysis as analysis
@@ -71,27 +74,27 @@ class ComponentL(dfv.ComponentL):
 
 
   def widen(self,
-      newDfv: Opt['ComponentL'] = None,
+      other: Opt['ComponentL'] = None,
       ipa: bool = False,  # special case #IPA
   ) -> Tuple['ComponentL', ChangedT]:
     """For docs see base class method."""
-    if newDfv is None: return self, not Changed
+    if other is None: return self, not Changed
 
-    if newDfv.top:        # no widening needed
+    if other.top:        # no widening needed
       return self, not Changed
     elif self.top:        # no widening needed
-      return (self, not Changed) if newDfv.top else (newDfv, Changed)
+      return (self, not Changed) if other.top else (other, Changed)
     elif self.bot:        # no widening needed
       return self, not Changed
-    elif self != newDfv:  # WIDEN-WIDEN # return self it its weaker
-      if self < newDfv:
+    elif self != other:  # WIDEN-WIDEN # return self it its weaker
+      if self < other:
         return self, not Changed
-      elif self.isBooleanRange() and newDfv.isBooleanRange():
-        return self.meet(newDfv)
+      elif self.isBooleanRange() and other.isBooleanRange():
+        return self.meet(other)
       else:
         wide = ComponentL(self.func, bot=True)
         if LS and util.VV3: LOG.debug(" Widened: %s (w.r.t. %s) to %s ",
-                                      self, newDfv, wide)
+                                      self, other, wide)
         return wide, Changed
     else:                 # no widening needed
       return self, not Changed
@@ -109,7 +112,7 @@ class ComponentL(dfv.ComponentL):
   def __eq__(self, other) -> bool:
     if not isinstance(other, ComponentL):
       return NotImplemented
-    equal = basicEqualTest(self, other)
+    equal = basicEqualsTest(self, other)
     return equal if equal is not None else self.val == other.val
 
 
@@ -421,20 +424,20 @@ class OverallL(dfv.OverallL):
 
 
   def widen(self,
-      newDfv: Opt['OverallL'] = None,
+      other: Opt['OverallL'] = None,
       ipa: bool = False,  # special case #IPA
   ) -> Tuple['OverallL', ChangedT]:
-    if newDfv is None: return self, not Changed
+    if other is None: return self, not Changed
 
-    if newDfv.top:        # no widening needed
+    if other.top:        # no widening needed
       return self, not Changed
     elif self.top:        # no widening needed
-      return (self, not Changed) if newDfv.top else (newDfv, Changed)
+      return (self, not Changed) if other.top else (other, Changed)
     elif self.bot:        # no widening needed
       return self, not Changed
-    elif self != newDfv:  # WIDEN-WIDEN
-      if newDfv.bot:
-        return newDfv, Changed
+    elif self != other:  # WIDEN-WIDEN
+      if other.bot:
+        return other, Changed
       else:
         pass # continues to the widening logic below...
     else:                 # no widening needed
@@ -443,8 +446,8 @@ class OverallL(dfv.OverallL):
     # widen individual entities (variables)
     widened_val: Dict[types.VarNameT, ComponentL] = {}
     vNames = set(self.val.keys())
-    vNames.update(newDfv.val.keys())
-    selfValGet, otherValGet = self.val.get, newDfv.val.get
+    vNames.update(other.val.keys())
+    selfValGet, otherValGet = self.val.get, other.val.get
     changed = False
     for vName in vNames:
       defaultVal = self.getDefaultVal(vName)
@@ -873,6 +876,65 @@ class IntervalA(analysis.ValueAnalysisAT):
 
     return dfv.updateDfv(dfvValFalse, dfvIn), dfv.updateDfv(dfvValTrue, dfvIn)
 
+
+  @staticmethod
+  def countSimCondToUncond(
+      func: constructs.Func,
+      dfvDict: Dict[types.NodeIdT, NodeDfvL]
+  ) -> int:
+    tUnit: TranslationUnit = func.tUnit
+    count = 0
+
+    for nid, node in func.cfg.nodeMap.items():
+      insn = node.insn
+
+      if nid not in dfvDict: # unreachable nodes might not be present
+        if isinstance(insn, instr.CondI):
+          count += 1 # count unreachable cond nodes as well
+        continue
+
+      if isinstance(insn, instr.CondI):
+        vName = insn.arg.name # must be a variable
+        dfvIn = dfvDict[nid].dfvIn
+        vDfv: ComponentL = dfvIn.getVal(vName)
+        if vDfv.isConstant():
+          print(f"XZSD: {func.name}, Insn: {insn}, {insn.info}, ArgType: {insn.arg.type}") #delit
+          count += 1
+
+    return count
+
+
+  @staticmethod
+  def test_dfv_assertion(
+      computed: DataLT,
+      strVal: str,  # a short string representation of the assertion (see tests)
+  ) -> bool:
+    """Returns true if assertion is correct."""
+
+    if strVal.startswith("any"):
+      return True
+
+    if strVal.startswith("is:"):
+      strVal = strVal[3:]
+      if strVal.strip() in {"bot", "Bot", "BOT"}:
+        return computed.bot
+      elif strVal.strip() in {"top", "Top", "TOP"}:
+        return computed.top
+      else: # must be a tuple
+        mapOfVarNames = eval(strVal)
+        return computed.val == mapOfVarNames
+
+    if strVal.startswith("has:"):
+      strVal = strVal[4:]
+      mapOfVarNames = eval(strVal)
+      correct = True
+      for vName, val in mapOfVarNames.items():
+        cputed = computed.getVal(vName)
+        correct = IntervalA.test_dfv_assertion(cputed, f"is: {val}")
+        if not correct: return False
+      return True
+
+    raise ValueError()
   ################################################
   # BOUND END  : helper_functions
   ################################################
@@ -880,3 +942,5 @@ class IntervalA(analysis.ValueAnalysisAT):
 ################################################
 # BOUND END  : interval_analysis
 ################################################
+
+

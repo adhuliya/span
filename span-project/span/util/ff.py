@@ -25,13 +25,14 @@ MAX_ANALYSES: int = 16
 IPA_VC_RECURSION_LIMIT: int = 200
 
 # IPA (ValueContext) Reuse prev value context mapped Host? (optimization)
-RE_USE_PREV_VALUE_CONTEXT_HOST: bool = True
+IPA_VC_RE_USE_PREV_VALUE_CONTEXT_HOST: bool = True
 
 # IPA (ValueContext) widen the value context? (for termination)
-WIDEN_VALUE_CONTEXT: bool = False
+IPA_VC_WIDEN_VALUE_CONTEXT: bool = False
 
-# IPA (ValueContext) widen the value context? (for termination)
-IPA_MAX_WIDENING_DEPTH: int = 1
+# IPA (ValueContext) widen the value context depth. (for termination)
+# depth = the max allowed count of a function in the current call string.
+IPA_VC_MAX_WIDENING_DEPTH: int = 1
 
 
 ################################################################################
@@ -44,7 +45,7 @@ filterNames = {
   "printModuleAttributes",
 }
 
-def filterAwayTheName(name: str) -> bool:
+def _filterAwayTheName(name: str) -> bool:
   filterIt = False
   if name in filterNames:
     filterIt = True
@@ -58,7 +59,7 @@ def printModuleAttributes() -> str:
   sio = io.StringIO()
   sio.write("Global Feature Flag Values (span.util.ff):\n")
   for key, val in globals().items():
-    if filterAwayTheName(key): continue
+    if _filterAwayTheName(key): continue
     sio.write(f"  {key}: {val}\n")
   return sio.getvalue()
 

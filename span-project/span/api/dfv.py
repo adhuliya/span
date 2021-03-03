@@ -20,7 +20,7 @@ import span.util.util as util
 from span.api.lattice import\
   (LatticeLT, DataLT, ChangedT, Changed,
    BoundLatticeLT, basicMeetOp, basicLessThanTest,
-   basicEqualTest, getBasicString)
+   basicEqualsTest, getBasicString)
 import span.ir.constructs as constructs
 import span.ir.types as types
 import span.ir.ir as ir

@@ -9,9 +9,11 @@ Assumes the basic tests were successful.
 """
 
 import unittest
-from typing import List, Dict, Optional as Opt
+from typing import List, Dict, Optional as Opt, Tuple
 
 import span.ir.ir as ir
+import span.tests.common as common #IMPORTANT
+from span.ir import types
 from span.tests.common import \
   (genFileMap,
    genFileMapSpanir,
@@ -24,6 +26,8 @@ import span.api.dfv as dfv
 from span.api.analysis import AnalysisNameT
 import span.sys.clients as clients
 import span.sys.driver as driver
+import span.util.consts as consts
+
 
 
 class SpanAnalysisTests(unittest.TestCase):
@@ -55,14 +59,17 @@ class SpanAnalysisTests(unittest.TestCase):
     print("\nTesting analysis results now. END.\n")
 
 
-  def allAnalysesPresent(self, analyses: List[AnalysisNameT]):
+  def allAnalysesPresent(self, analysesExpr: str) -> bool:
     """Returns True if all the given analyses are present in the system."""
-    allPresent = True
-    for anName in analyses:
-      if not clients.isAnalysisPresent(anName):
-        print("  NOTE: AnalysisNotPresent:", anName)
-        allPresent = False
-    return allPresent
+    import span.sys.driver as driver
+    try:
+      driver.parseSpanAnalysisExpr(analysesExpr)
+    except ValueError as ve:
+      msg = str(ve)
+      if consts.AN_NOT_PRESENT in msg:
+        print(msg)
+        return False # all not present
+    return True # all present
 
 
   def runAndCheckAnalysisResults(self,
@@ -74,49 +81,62 @@ class SpanAnalysisTests(unittest.TestCase):
     if irFileName:
       tUnit: ir.TranslationUnit = ir.readSpanIr(irFileName)
     else:
+      if not common.SPAN_LLVM_AVAILABLE:
+        print("\nClang/LLVM with SPAN support not present !!!!!!!!!!!!!!!!!!!!")
+        return
       tUnit: ir.TranslationUnit = genTranslationUnit(cFileName)
 
-    if not self.allAnalysesPresent(action.analyses):
-      print(f"  SkippingTest(AnalysesNotPresent):", action.analyses)
+    if not self.allAnalysesPresent(action.analysesExpr):
+      print(f"  SkippingTest(AnalysesNotPresent):", action.analysesExpr)
       return None
 
-    mainAnalysis = action.analyses[0]
-    otherAnalyses = action.analyses[1:]
-    analysisCount = len(action.analyses)
-    avoidAnalyses = None
+    parser = driver.getParser()
+    fileName = irFileName if irFileName else cFileName
+    args = parser.parse_args(args=[action.action, action.analysesExpr, fileName])
+    resultsDict: [types.FuncNameT, host.Host] = args.func(args)
 
-    for func in tUnit.yieldFunctionsWithBody():
-      syn1 = host.Host(func=func,
-                       mainAnName=mainAnalysis,
-                       otherAnalyses=otherAnalyses,
-                       avoidAnalyses=avoidAnalyses,
-                       maxNumOfAnalyses=analysisCount)
-      syn1.analyze()  # do the analysis
-      for anName in action.analyses:
-        if anName not in action.results["analysis.results"]: continue
-        if func.name not in action.results["analysis.results"][anName]: continue
-        anNameResults = syn1.getAnalysisResults(anName).nidNdfvMap
-        assert anNameResults, f"{anName}"
-        if self.compareAnalysisResults(anNameResults,
-                                       action.results["analysis.results"][anName][func.name],
-                                       cFileName):
-          print(f"    {cFileName}: {anName} on {func.name} is correct.")
-          print(f"        analyses={action.analyses}")
+    anRes = action.results["analysis.results"]
+    for anName, funcResMap in anRes.items():
+      for funcName, correctAnRes in funcResMap.items():
+        resHost: host.Host = resultsDict[funcName]
+        computedAnRes = resHost.getAnalysisResults(anName).nidNdfvMap
+        if self.compareAnResults(anName, computedAnRes, correctAnRes, cFileName):
+          print(f"    {cFileName}: {anName} on {funcName} is correct.")
+          print(f"        analyses={action.analysesExpr}")
 
 
-  def compareAnalysisResults(self,
-      results: Dict[cfg.CfgNodeId, dfv.NodeDfvL],
-      expectedResults: Dict[cfg.CfgNodeId, dfv.NodeDfvL],
+  def compareAnResults(self,
+      anName: AnalysisNameT,
+      computedAnRes: Dict[cfg.CfgNodeId, dfv.NodeDfvL],
+      correctAnRes: Dict[cfg.CfgNodeId, Tuple],
       cFileName: str,
   ) -> bool:
-    nodeIds = set(results.keys())
-    givenNodeIds = set(expectedResults.keys())
-    self.assertEqual(nodeIds >= givenNodeIds, True,
-                     f"{nodeIds} is not a superset of {givenNodeIds}.")
+    anClass = clients.analyses[anName]
+    for nid in correctAnRes.keys():
+      correctRes, computedRes = correctAnRes[nid], computedAnRes[nid]
+      if len(correctRes) >= 1 and correctRes[0] != "any": # i.e. compare the IN
+        if not anClass.test_dfv_assertion(computedRes.dfvIn, correctRes[0]):
+          self.assertEqual(False, True,
+                           f"({cFileName}) Node {nid}: IN: Correct:"
+                           f" {correctRes[0]}, Computed: {computedRes.dfvIn}")
 
-    for nid in givenNodeIds:
-      self.assertEqual(results[nid], expectedResults[nid],
-                       f"({cFileName}) Node {nid}")
+      if len(correctRes) >= 2 and correctRes[1] != "any": # i.e. compare the OUT
+        if not anClass.test_dfv_assertion(computedRes.dfvOut, correctRes[1]):
+          self.assertEqual(False, True,
+                           f"({cFileName}) Node {nid}: OUT: Correct:"
+                           f" {correctRes[1]}, Computed: {computedRes.dfvOut}")
+
+      if len(correctRes) >= 3 and correctRes[2] != "any": # i.e. compare the OUT(False)
+        if not anClass.test_dfv_assertion(computedRes.dfvOutFalse, correctRes[2]):
+          self.assertEqual(False, True,
+                           f"({cFileName}) Node {nid}: OUT(False): Correct:"
+                           f" {correctRes[2]}, Computed: {computedRes.dfvOutFalse}")
+
+      if len(correctRes) >= 4 and correctRes[3] != "any": # i.e. compare the OUT(True)
+        if not anClass.test_dfv_assertion(computedRes.dfvOutTrue, correctRes[3]):
+          self.assertEqual(False, True,
+                           f"({cFileName}) Node {nid}: OUT(True): Correct:"
+                           f" {correctRes[4]}, Computed: {computedRes.dfvOutTrue}")
 
     return True
 
@@ -143,3 +163,5 @@ def addTests(suite: unittest.TestSuite) -> None:
 if __name__ == "__main__":
   # unittest.main()
   runTests()
+
+

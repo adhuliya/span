@@ -786,8 +786,7 @@ class Host:
 
   #mainentry
   def analyze(self) -> float:
-    """Starts the process of running the analysis synergy.
-    Conditionally simulates SPAN approach"""
+    """Starts the process of running the analysis synergy."""
     timer = util.Timer("HostAnalyze")
     if util.LL3: LIN("AnalysisWorklist: %s", self.anWorkList)
     if util.LL3: LIN(f"MODE: IPA: {self.ipaEnabled}, DDM: {self.useDdm},"
@@ -2058,7 +2057,6 @@ class Host:
     if util.LL4 and GD: LDB("AnWorklistDots:\n%s", self.getAnIterationDotString())
 
     if not util.VV3: return # i.e. then don't print what is below
-    if not self.func.name == "f:fallbackSort": return #delit
     print() # some blank lines for neatness
     print(self.func, "TUnit:", self.func.tUnit.name)
     print(f"MODE: IPA: {self.ipaEnabled}, DDM: {self.useDdm},"

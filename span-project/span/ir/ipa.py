@@ -6,6 +6,11 @@
 """
 Inter-Procedural Analysis (IPA) IR module.
 Prepares the IR for the IPA.
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! AD: NOT USED ANYMORE. MODULE TO BE PURGED IN TIME  !!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 """
 
 import logging

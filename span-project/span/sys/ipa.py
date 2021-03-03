@@ -162,7 +162,7 @@ class ValueContextInfo:
    needed while using the method."""
 
   def __init__(self,
-      reUsePrevValueContextHost: bool = ff.RE_USE_PREV_VALUE_CONTEXT_HOST,
+      reUsePrevValueContextHost: bool = ff.IPA_VC_RE_USE_PREV_VALUE_CONTEXT_HOST,
   ):
     self.reUsePrevValueContextHost = reUsePrevValueContextHost
 
@@ -306,7 +306,7 @@ class IpaHost:
       disableAllSim: bool = False,
       useDdm: bool = False,
       reUsePrevValueContextHost: bool = True,
-      widenValueContext: bool = ff.WIDEN_VALUE_CONTEXT,
+      widenValueContext: bool = ff.IPA_VC_WIDEN_VALUE_CONTEXT,
   ) -> None:
     if tUnit is None or not tUnit.getFuncObj(entryFuncName):
       raise ValueError(f"No {entryFuncName} in translation unit {tUnit.name}.")
@@ -448,7 +448,7 @@ class IpaHost:
     wideDfvDict, prevStackCtx = None, vci.getCallStackCtx(callSitePair)
 
     if prevStackCtx:
-      if prevStackCtx.depth >= ff.IPA_MAX_WIDENING_DEPTH:
+      if prevStackCtx.depth >= ff.IPA_VC_MAX_WIDENING_DEPTH:
         if util.LL2: LDB(" Widening with ValueContext(PrevBi): %s", prevStackCtx)
         widenedBi = dict()
         for anName, prevNdfv in prevStackCtx.dfvs.items():
@@ -657,6 +657,27 @@ class IpaHost:
     if util.VV1: self.gst.print()
 
 
+  def printSimCounts(self, msg=""):
+    """Prints the number of simplifications done."""
+    assert self.vci.finalResult
+    finalResult = self.vci.finalResult
+    print(f"\n\nSimplificationCounts {msg}")
+
+    anName = "IntervalA"
+    condSimCount = 0
+    intervalA = clients.analyses[anName]
+
+    for funcName, allResults in finalResult.items():
+      func = self.tUnit.getFuncObj(funcName)
+      if anName in allResults:
+        intervalRes = allResults[anName]
+        condSimCount += intervalA.countSimCondToUncond(func, intervalRes)
+
+    print(f"  CondToUncondSims Count: {condSimCount}")
+
+
+
+
   def mergeFinalResults(self):
     """Computes the final result of an IPA computation.
     It merges all the results of all the contexts of a function
@@ -790,11 +811,14 @@ def diagnoseInterval(tUnit: TranslationUnit):
                         maxNumOfAnalyses=maxNumOfAnalyses
                         )
   ipaHostSpan.analyze()
+  if util.VV1: ipaHostSpan.printSimCounts("SPAN")
 
   #ipaHostLern = IpaHost(tUnit, analysisSeq=[[mainAnalysis] + otherAnalyses])
   #ipaHostLern = IpaHost(tUnit, analysisSeq=[[mainAnalysis]])
-  ipaHostLern = IpaHost(tUnit, mainAnName=mainAnalysis, maxNumOfAnalyses=1) # span with single analysis
+  ipaHostLern = IpaHost(tUnit, mainAnName=mainAnalysis,
+                        maxNumOfAnalyses=1) # span with single analysis
   ipaHostLern.analyze()
+  if util.VV1: ipaHostLern.printSimCounts("CASCADED")
 
   totalPPoints = 0  # total program points
   weakPPoints = 0  # weak program points

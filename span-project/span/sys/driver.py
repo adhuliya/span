@@ -13,11 +13,9 @@ which is exposed as command `span`.
 import span.util.logger as logger
 import logging
 # Initialize -- logger, etc.
-# FIXME(@PRODUCTION): change logging level to INFO or greater.
-# NOTE: span.util.util.LS also controls the logging
+# @PRODUCTION: use span.util.util.LL<0-5> to control logging.
 logger.initLogger(appName="span", logLevel=logger.LogLevels.DEBUG)
 
-from span.util.util import LS
 LOG: logging.Logger = logging.getLogger("span")
 
 import span.ir.callgraph
@@ -294,7 +292,7 @@ def parseSpanAnalysisExpr(anNamesExpr: str) -> Tuple[str, list, list, list, int]
     prefix = anName[0]
     onlyAnName = anName[1:]
     if onlyAnName not in clients.analyses:
-      raise ValueError(f"No analysis: {onlyAnName}")
+      raise ValueError(f"{consts.AN_NOT_PRESENT}: {onlyAnName}")
 
     if prefix == "+":
       analysisCount += 1
@@ -308,14 +306,14 @@ def parseSpanAnalysisExpr(anNamesExpr: str) -> Tuple[str, list, list, list, int]
       analysisCount += 1
       supportAnalyses.append(onlyAnName)
     else:
-      raise ValueError(f"Error in analysis expr: f{anNamesExpr}")
+      raise ValueError(f"{consts.ILLFORMED_AN_EXPR}: f{anNamesExpr}")
 
   maxAnalysisCount = max(analysisCount, maxAnalysisCount)
 
   return mainAnalysis, otherAnalyses, supportAnalyses, avoidAnalyses, maxAnalysisCount
 
 
-def parseCascadingAnalysisExpr(anNameExpr: str) -> Tuple[str, list, list, int]:
+def parseCascadingAnalysisExpr(anNamesExpr: str) -> Tuple[str, list, list, int]:
   """Parse the analysis expression as specified by
   `SPAN_AN_SPEC_REGEX` (for cascading/lerner) and return the result."""
   mainAnalysis      = ""
@@ -323,20 +321,20 @@ def parseCascadingAnalysisExpr(anNameExpr: str) -> Tuple[str, list, list, int]:
   avoidAnalyses     = []
   maxAnalysisCount  = ff.MAX_ANALYSES # a large number
 
-  if anNameExpr[0] == "/" and anNameExpr[-1] == "/":
+  if anNamesExpr[0] == "/" and anNamesExpr[-1] == "/":
     maxAnalysisCount = 0
-    if anNameExpr[0] == "/" and anNameExpr[-1] != "/" or \
-        anNameExpr[0] != "/" and anNameExpr[-1] == "/":
+    if anNamesExpr[0] == "/" and anNamesExpr[-1] != "/" or \
+        anNamesExpr[0] != "/" and anNamesExpr[-1] == "/":
       exit(20)
-    anNameExpr = anNameExpr[1:-1]
+    anNamesExpr = anNamesExpr[1:-1]
 
-  givenAnalyses = re.findall(r"[+-]\w+", anNameExpr)
+  givenAnalyses = re.findall(r"[+-]\w+", anNamesExpr)
 
   for anName in givenAnalyses:
     prefix = anName[0]
     onlyAnName = anName[1:]
     if onlyAnName not in clients.analyses:
-      raise ValueError(f"No analysis: {onlyAnName}")
+      raise ValueError(f"{consts.AN_NOT_PRESENT}: {onlyAnName}")
     if prefix == "+":
       maxAnalysisCount += 1
       if not mainAnalysis:
@@ -346,12 +344,12 @@ def parseCascadingAnalysisExpr(anNameExpr: str) -> Tuple[str, list, list, int]:
     elif anName[0] == "-":
       avoidAnalyses.append(onlyAnName)
     else:
-      raise ValueError(f"Error in analysis expr: f{anNameExpr}")
+      raise ValueError(f"{consts.ILLFORMED_AN_EXPR}: f{anNamesExpr}")
 
   return mainAnalysis, otherAnalyses, avoidAnalyses, maxAnalysisCount
 
 
-def analyzeSpanIrIpa(args: argparse.Namespace) -> None:
+def analyzeSpanIrIpa(args: argparse.Namespace) -> sysIpa.IpaHost:
   """Runs the given analyses on the whole spanir translation unit."""
   disableAllSim = True if args.subcommand == "ipa" else False
   util.setupLL(args.logging)
@@ -376,6 +374,7 @@ def analyzeSpanIrIpa(args: argparse.Namespace) -> None:
   timer = util.Timer("IpaAnalysis")
   ipa1.analyze()
   timer.stopAndLog(util.VV1)
+  return ipa1
 
 
 def analyzeSpanIr(args: argparse.Namespace) -> Dict[types.FuncNameT, host.Host]:
@@ -720,138 +719,150 @@ def getParser() -> argparse.ArgumentParser:
   subParser.required = True
 
   # subcommand: analyze
-  analyzeParser = subParser.add_parser("analyze",
-                                       help="Non-Synergistically analyze (interactions disabled)")
-  analyzeParser.set_defaults(func=analyzeSpanIr)
-  analyzeParser.add_argument('-l', '--logging', action='count', default=0)
-  analyzeParser.add_argument('-v', '--verbose', action='count', default=0)
-  analyzeParser.add_argument('-c', '--check', action='count', default=0)
-  analyzeParser.add_argument("analyses", type=spanAnSpecRegex, help=analysisSpecString)
-  analyzeParser.add_argument("functionName", nargs="?",
-                             help="Name of function (prefix 'f:' is optional)")
-  analyzeParser.add_argument("fileName", help=cOrSpanirFile)
+  subpar = subParser.add_parser("analyze",
+                                help="Non-Synergistically analyze (interactions disabled)")
+  subpar.set_defaults(func=analyzeSpanIr)
+  subpar.add_argument('-l', '--logging', action='count', default=0)
+  subpar.add_argument('-v', '--verbose', action='count', default=0)
+  subpar.add_argument('-d', '--detail', action='count', default=0)
+  subpar.add_argument('-c', '--check', action='count', default=0)
+  subpar.add_argument("analyses", type=spanAnSpecRegex, help=analysisSpecString)
+  subpar.add_argument("functionName", nargs="?",
+                      help="Name of function (prefix 'f:' is optional)")
+  subpar.add_argument("fileName", help=cOrSpanirFile)
 
   # subcommand: ianalyze
-  ianalyzeParser = subParser.add_parser("ianalyze",
-                                        help="Synergistically analyze (interactions enabled)")
-  ianalyzeParser.set_defaults(func=analyzeSpanIr)
-  ianalyzeParser.add_argument('-l', '--logging', action='count', default=0)
-  ianalyzeParser.add_argument('-v', '--verbose', action='count', default=0)
-  ianalyzeParser.add_argument('-c', '--check', action='count', default=0)
-  ianalyzeParser.add_argument("analyses", type=spanAnSpecRegex, help=analysisSpecString)
-  ianalyzeParser.add_argument("functionName", nargs="?",
-                              help="Name of function (prefix 'f:' is optional)")
-  ianalyzeParser.add_argument("fileName", help=cOrSpanirFile)
+  subpar = subParser.add_parser("ianalyze",
+                                help="Synergistically analyze (interactions enabled)")
+  subpar.set_defaults(func=analyzeSpanIr)
+  subpar.add_argument('-l', '--logging', action='count', default=0)
+  subpar.add_argument('-v', '--verbose', action='count', default=0)
+  subpar.add_argument('-d', '--detail', action='count', default=0)
+  subpar.add_argument('-c', '--check', action='count', default=0)
+  subpar.add_argument("analyses", type=spanAnSpecRegex, help=analysisSpecString)
+  subpar.add_argument("functionName", nargs="?",
+                      help="Name of function (prefix 'f:' is optional)")
+  subpar.add_argument("fileName", help=cOrSpanirFile)
 
   # subcommand: idemand
-  ianalyzeParser = subParser.add_parser("idemand",
-                                        help="Synergistically analyze (interactions enabled)")
-  ianalyzeParser.set_defaults(func=analyzeSpanIr)
-  ianalyzeParser.add_argument('-l', '--logging', action='count', default=0)
-  ianalyzeParser.add_argument('-v', '--verbose', action='count', default=0)
-  ianalyzeParser.add_argument('-c', '--check', action='count', default=0)
-  ianalyzeParser.add_argument("analyses", type=spanAnSpecRegex, help=analysisSpecString)
-  ianalyzeParser.add_argument("functionName", nargs="?",
-                              help="Name of function (prefix 'f:' is optional)")
-  ianalyzeParser.add_argument("fileName", help=cOrSpanirFile)
+  subpar = subParser.add_parser("idemand",
+                                help="Synergistically analyze (interactions enabled)")
+  subpar.set_defaults(func=analyzeSpanIr)
+  subpar.add_argument('-l', '--logging', action='count', default=0)
+  subpar.add_argument('-v', '--verbose', action='count', default=0)
+  subpar.add_argument('-d', '--detail', action='count', default=0)
+  subpar.add_argument('-c', '--check', action='count', default=0)
+  subpar.add_argument("analyses", type=spanAnSpecRegex, help=analysisSpecString)
+  subpar.add_argument("functionName", nargs="?",
+                      help="Name of function (prefix 'f:' is optional)")
+  subpar.add_argument("fileName", help=cOrSpanirFile)
 
   # subcommand: ipa
-  ianalyzeParser = subParser.add_parser("ipa",
-                                        help="Non-Synergistic IPA analysis (interactions disabled)")
-  ianalyzeParser.set_defaults(func=analyzeSpanIrIpa)
-  ianalyzeParser.add_argument('-l', '--logging', action='count', default=0)
-  ianalyzeParser.add_argument('-v', '--verbose', action='count', default=0)
-  ianalyzeParser.add_argument('-c', '--check', action='count', default=0)
-  ianalyzeParser.add_argument("analyses", help=analysisSpecString)
-  ianalyzeParser.add_argument("fileName", help=cOrSpanirFile)
+  subpar = subParser.add_parser("ipa",
+                                help="Non-Synergistic IPA analysis (interactions disabled)")
+  subpar.set_defaults(func=analyzeSpanIrIpa)
+  subpar.add_argument('-l', '--logging', action='count', default=0)
+  subpar.add_argument('-v', '--verbose', action='count', default=0)
+  subpar.add_argument('-d', '--detail', action='count', default=0)
+  subpar.add_argument('-c', '--check', action='count', default=0)
+  subpar.add_argument("analyses", help=analysisSpecString)
+  subpar.add_argument("fileName", help=cOrSpanirFile)
 
   # subcommand: iipa
-  ianalyzeParser = subParser.add_parser("iipa",
-                                        help="Synergistic IPA analysis (interactions enabled)")
-  ianalyzeParser.set_defaults(func=analyzeSpanIrIpa)
-  ianalyzeParser.add_argument('-l', '--logging', action='count', default=0)
-  ianalyzeParser.add_argument('-v', '--verbose', action='count', default=0)
-  ianalyzeParser.add_argument('-c', '--check', action='count', default=0)
-  ianalyzeParser.add_argument("analyses", help=analysisSpecString)
-  ianalyzeParser.add_argument("fileName", help=cOrSpanirFile)
+  subpar = subParser.add_parser("iipa",
+                                help="Synergistic IPA analysis (interactions enabled)")
+  subpar.set_defaults(func=analyzeSpanIrIpa)
+  subpar.add_argument('-l', '--logging', action='count', default=0)
+  subpar.add_argument('-v', '--verbose', action='count', default=0)
+  subpar.add_argument('-d', '--detail', action='count', default=0)
+  subpar.add_argument('-c', '--check', action='count', default=0)
+  subpar.add_argument("analyses", help=analysisSpecString)
+  subpar.add_argument("fileName", help=cOrSpanirFile)
 
   # subcommand: cascade
-  cascadeParser = subParser.add_parser("cascade",
-                                       help="Simulate cascading and lerners method")
-  cascadeParser.set_defaults(func=simulateCascading)
-  cascadeParser.add_argument('-l', '--logging', action='count', default=0)
-  cascadeParser.add_argument('-v', '--verbose', action='count', default=0)
-  cascadeParser.add_argument('-c', '--check', action='count', default=0)
-  cascadeParser.add_argument("analyses", help=analysisSpecString)
-  cascadeParser.add_argument("functionName", nargs="?",
-                             help="Name of function (prefix 'f:' is optional)")
-  cascadeParser.add_argument("fileName", help=cOrSpanirFile)
+  subpar = subParser.add_parser("cascade",
+                                help="Simulate cascading and lerners method")
+  subpar.set_defaults(func=simulateCascading)
+  subpar.add_argument('-l', '--logging', action='count', default=0)
+  subpar.add_argument('-v', '--verbose', action='count', default=0)
+  subpar.add_argument('-d', '--detail', action='count', default=0)
+  subpar.add_argument('-c', '--check', action='count', default=0)
+  subpar.add_argument("analyses", help=analysisSpecString)
+  subpar.add_argument("functionName", nargs="?",
+                      help="Name of function (prefix 'f:' is optional)")
+  subpar.add_argument("fileName", help=cOrSpanirFile)
 
   # subcommand: demand #DDM
-  sliceParser = subParser.add_parser("slice", help="Raise a demand to get a slice.")
-  sliceParser.set_defaults(func=sliceDemand)
-  sliceParser.add_argument('-l', '--logging', action='count', default=0)
-  sliceParser.add_argument('-v', '--verbose', action='count', default=0)
-  sliceParser.add_argument('-c', '--check', action='count', default=0)
-  sliceParser.add_argument("vars", help="Comma separated vars"
-                                        " e.g. 'a,b,c' (for globals specify prefix 'g:'")
-  sliceParser.add_argument("programpoint", type=slicePointRegex,
-                           help="<nodeId>['in'/'out'] e.g. 8 8in 10out (8 and 8in are same)")
-  sliceParser.add_argument("functionName", help="Name of function (prefix 'f:' is optional)")
-  sliceParser.add_argument("fileName", help=cOrSpanirFile)
+  subpar = subParser.add_parser("slice", help="Raise a demand to get a slice.")
+  subpar.set_defaults(func=sliceDemand)
+  subpar.add_argument('-l', '--logging', action='count', default=0)
+  subpar.add_argument('-v', '--verbose', action='count', default=0)
+  subpar.add_argument('-d', '--detail', action='count', default=0)
+  subpar.add_argument('-c', '--check', action='count', default=0)
+  subpar.add_argument("vars", help="Comma separated vars"
+                                   " e.g. 'a,b,c' (for globals specify prefix 'g:'")
+  subpar.add_argument("programpoint", type=slicePointRegex,
+                      help="<nodeId>['in'/'out'] e.g. 8 8in 10out (8 and 8in are same)")
+  subpar.add_argument("functionName", help="Name of function (prefix 'f:' is optional)")
+  subpar.add_argument("fileName", help=cOrSpanirFile)
 
   # subcommand: view
-  viewParser = subParser.add_parser("view", help="View graphs (needs xdot program)")
-  viewParser.add_argument('-l', '--logging', action='count', default=0)
-  viewParser.add_argument('-v', '--verbose', action='count', default=0)
-  viewParser.add_argument('-c', '--check', action='count', default=0)
-  viewParser.add_argument("graphType",
-                          choices=["cfg","cfg_nodes","callgraph","ipa-cfg"],
-                          nargs="?",
-                          default="cfg",
-                          help="The type of graph to view")
-  viewParser.add_argument("functionName", nargs="?",
-                          help="Name of function (prefix 'f:' is optional)")
-  viewParser.add_argument("fileName", help=cOrSpanirFile)
-  viewParser.set_defaults(func=viewDotFile)
+  subpar = subParser.add_parser("view", help="View graphs (needs xdot program)")
+  subpar.add_argument('-l', '--logging', action='count', default=0)
+  subpar.add_argument('-v', '--verbose', action='count', default=0)
+  subpar.add_argument('-d', '--detail', action='count', default=0)
+  subpar.add_argument('-c', '--check', action='count', default=0)
+  subpar.add_argument("graphType",
+                      choices=["cfg","cfg_nodes","callgraph","ipa-cfg"],
+                      nargs="?",
+                      default="cfg",
+                      help="The type of graph to view")
+  subpar.add_argument("functionName", nargs="?",
+                      help="Name of function (prefix 'f:' is optional)")
+  subpar.add_argument("fileName", help=cOrSpanirFile)
+  subpar.set_defaults(func=viewDotFile)
 
   # subcommand: c2spanir
-  c2SpanirParser = subParser.add_parser("c2spanir",
-                                        help="Convert .c file to .c.spanir file")
-  c2SpanirParser.set_defaults(func=c2spanirArgParse)
-  c2SpanirParser.add_argument('-l', '--logging', action='count', default=0)
-  c2SpanirParser.add_argument('-v', '--verbose', action='count', default=0)
-  c2SpanirParser.add_argument('-c', '--check', action='count', default=0)
-  c2SpanirParser.add_argument("fileName", help=cOrSpanirFile)
+  subpar = subParser.add_parser("c2spanir",
+                                help="Convert .c file to .c.spanir file")
+  subpar.set_defaults(func=c2spanirArgParse)
+  subpar.add_argument('-l', '--logging', action='count', default=0)
+  subpar.add_argument('-v', '--verbose', action='count', default=0)
+  subpar.add_argument('-d', '--detail', action='count', default=0)
+  subpar.add_argument('-c', '--check', action='count', default=0)
+  subpar.add_argument("fileName", help=cOrSpanirFile)
 
   # subcommand: dumpir
-  c2SpanirParser = subParser.add_parser("dumpir",
-                                        help="Dump spanir after pre-processing (used for testing)")
-  c2SpanirParser.set_defaults(func=dumpSpanIr)
-  c2SpanirParser.add_argument('-l', '--logging', action='count', default=0)
-  c2SpanirParser.add_argument('-v', '--verbose', action='count', default=0)
-  c2SpanirParser.add_argument('-c', '--check', action='count', default=0)
-  c2SpanirParser.add_argument("fileName", help=cOrSpanirFile)
+  subpar = subParser.add_parser("dumpir",
+                                help="Dump spanir after pre-processing (used for testing)")
+  subpar.set_defaults(func=dumpSpanIr)
+  subpar.add_argument('-l', '--logging', action='count', default=0)
+  subpar.add_argument('-v', '--verbose', action='count', default=0)
+  subpar.add_argument('-d', '--detail', action='count', default=0)
+  subpar.add_argument('-c', '--check', action='count', default=0)
+  subpar.add_argument("fileName", help=cOrSpanirFile)
 
   # subcommand: test
-  testParser = subParser.add_parser("test",
-                                    help="Run tests")
-  testParser.set_defaults(func=testSpan)
-  testParser.add_argument('-l', '--logging', action='count', default=0)
-  testParser.add_argument('-v', '--verbose', action='count', default=0)
-  testParser.add_argument('-c', '--check', action='count', default=0)
-  testParser.add_argument("testType",
-                          choices=["all","basic","spanir","ir","analysis"],
-                          default="all")
+  subpar = subParser.add_parser("test",
+                                help="Run tests")
+  subpar.set_defaults(func=testSpan)
+  subpar.add_argument('-l', '--logging', action='count', default=0)
+  subpar.add_argument('-v', '--verbose', action='count', default=0)
+  subpar.add_argument('-d', '--detail', action='count', default=0)
+  subpar.add_argument('-c', '--check', action='count', default=0)
+  subpar.add_argument("testType",
+                      choices=["all","basic","spanir","ir","analysis"],
+                      default="all")
 
   # subcommand: query
-  ianalyzeParser = subParser.add_parser("query",
-                                        help="Query the given translation unit for pre-defined properties")
-  ianalyzeParser.set_defaults(func=queryTranslationUnit)
-  ianalyzeParser.add_argument('-l', '--logging', action='count', default=0)
-  ianalyzeParser.add_argument('-v', '--verbose', action='count', default=0)
-  ianalyzeParser.add_argument('-c', '--check', action='count', default=0)
-  ianalyzeParser.add_argument("fileName", help=cOrSpanirFile)
+  subpar = subParser.add_parser("query",
+                                help="Query the given translation unit for pre-defined properties")
+  subpar.set_defaults(func=queryTranslationUnit)
+  subpar.add_argument('-l', '--logging', action='count', default=0)
+  subpar.add_argument('-v', '--verbose', action='count', default=0)
+  subpar.add_argument('-d', '--detail', action='count', default=0)
+  subpar.add_argument('-c', '--check', action='count', default=0)
+  subpar.add_argument("fileName", help=cOrSpanirFile)
 
   # # subcommand: bin2mem
   # bin2memParser = subParser.add_parser("bin2mem",
@@ -866,57 +877,61 @@ def getParser() -> argparse.ArgumentParser:
   # mem2binParser.add_argument("fileName", help=cOrSpanirFile)
 
   # subcommand: diagnose
-  diagnoseParser = subParser.add_parser("diagnose",
-                                        help="Diagnose the program")
-  diagnoseParser.set_defaults(func=diagnoseSpanIr)
-  diagnoseParser.add_argument('-l', '--logging', action='count', default=0)
-  diagnoseParser.add_argument('-v', '--verbose', action='count', default=0)
-  diagnoseParser.add_argument('-c', '--check', action='count', default=0)
-  diagnoseParser.add_argument("diagnosisName",
-                              help="Diagnosis to run",
-                              choices=getRegisteredDiagnosesList())
-  diagnoseParser.add_argument("diagnosisStyle",
-                              choices=["cascade","lerner","span"],
-                              default="span",
-                              help="The algorithm to use. (default is 'span')")
-  diagnoseParser.add_argument("fileName", help=cOrSpanirFile)
+  subpar = subParser.add_parser("diagnose",
+                                help="Diagnose the program")
+  subpar.set_defaults(func=diagnoseSpanIr)
+  subpar.add_argument('-l', '--logging', action='count', default=0)
+  subpar.add_argument('-v', '--verbose', action='count', default=0)
+  subpar.add_argument('-d', '--detail', action='count', default=0)
+  subpar.add_argument('-c', '--check', action='count', default=0)
+  subpar.add_argument("diagnosisName",
+                      help="Diagnosis to run",
+                      choices=getRegisteredDiagnosesList())
+  subpar.add_argument("diagnosisStyle",
+                      choices=["cascade","lerner","span"],
+                      default="span",
+                      help="The algorithm to use. (default is 'span')")
+  subpar.add_argument("fileName", help=cOrSpanirFile)
 
   # subcommand: ipadiagnose
-  ipaDiagnoseParser = subParser.add_parser("ipadiagnose",
-                                           help="IPA Diagnose the program")
-  ipaDiagnoseParser.set_defaults(func=ipaDiagnoseSpanIr)
-  ipaDiagnoseParser.add_argument('-l', '--logging', action='count', default=0)
-  ipaDiagnoseParser.add_argument('-v', '--verbose', action='count', default=0)
-  ipaDiagnoseParser.add_argument('-c', '--check', action='count', default=0)
-  ipaDiagnoseParser.add_argument("diagnosisName",
-                                 help="Diagnosis to run",
-                                 choices=["interval"])
-  ipaDiagnoseParser.add_argument("fileName", help=cOrSpanirFile)
+  subpar = subParser.add_parser("ipadiagnose",
+                                help="IPA Diagnose the program")
+  subpar.set_defaults(func=ipaDiagnoseSpanIr)
+  subpar.add_argument('-l', '--logging', action='count', default=0)
+  subpar.add_argument('-v', '--verbose', action='count', default=0)
+  subpar.add_argument('-d', '--detail', action='count', default=0)
+  subpar.add_argument('-c', '--check', action='count', default=0)
+  subpar.add_argument("diagnosisName",
+                      help="Diagnosis to run",
+                      choices=["interval"])
+  subpar.add_argument("fileName", help=cOrSpanirFile)
 
   # subcommand: optimize
-  optParser = subParser.add_parser("opt", help="Optimize the program")
-  optParser.set_defaults(func=optimizeSpanIr)
-  optParser.add_argument('-l', '--logging', action='count', default=0)
-  optParser.add_argument('-v', '--verbose', action='count', default=0)
-  optParser.add_argument('-c', '--check', action='count', default=0)
-  optParser.add_argument("optName",
-                         choices=["all"],
-                         default="all",
-                         nargs="?",
-                         help="Optimization to run (default is 'all')")
-  optParser.add_argument("optStyle",
-                         choices=["cascade","lerner","span"],
-                         default="span",
-                         nargs="?",
-                         help="The algorithm to use. (default is 'span')")
-  optParser.add_argument("fileName", help=cOrSpanirFile)
+  subpar = subParser.add_parser("opt", help="Optimize the program")
+  subpar.set_defaults(func=optimizeSpanIr)
+  subpar.add_argument('-l', '--logging', action='count', default=0)
+  subpar.add_argument('-v', '--verbose', action='count', default=0)
+  subpar.add_argument('-d', '--detail', action='count', default=0)
+  subpar.add_argument('-c', '--check', action='count', default=0)
+  subpar.add_argument("optName",
+                      choices=["all"],
+                      default="all",
+                      nargs="?",
+                      help="Optimization to run (default is 'all')")
+  subpar.add_argument("optStyle",
+                      choices=["cascade","lerner","span"],
+                      default="span",
+                      nargs="?",
+                      help="The algorithm to use. (default is 'span')")
+  subpar.add_argument("fileName", help=cOrSpanirFile)
 
   # subcommand: settings
-  spanSettings = subParser.add_parser("settings", help="Current settings in SPAN.")
-  spanSettings.set_defaults(func=dumpSpanSettings)
-  spanSettings.add_argument('-l', '--logging', action='count', default=0)
-  spanSettings.add_argument('-v', '--verbose', action='count', default=0)
-  spanSettings.add_argument('-c', '--check', action='count', default=0)
+  subpar = subParser.add_parser("settings", help="Current settings in SPAN.")
+  subpar.set_defaults(func=dumpSpanSettings)
+  subpar.add_argument('-l', '--logging', action='count', default=0)
+  subpar.add_argument('-v', '--verbose', action='count', default=0)
+  subpar.add_argument('-d', '--detail', action='count', default=0)
+  subpar.add_argument('-c', '--check', action='count', default=0)
 
   return parser
 

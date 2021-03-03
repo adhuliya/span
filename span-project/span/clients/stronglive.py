@@ -8,7 +8,7 @@
 import logging
 
 LOG = logging.getLogger("span")
-from typing import Optional as Opt, Set, Tuple, List, Callable, cast
+from typing import Optional as Opt, Set, Tuple, List, Callable, cast, Any
 
 from span.util.util import LS
 
@@ -23,7 +23,7 @@ from span.ir.ir import \
    getNamesLValuesOfExpr, getNamesUsedInExprSyntactically,
    getNamesInExprMentionedIndirectly, inferTypeOfVal)
 from span.api.lattice import \
-  (ChangedT, Changed, DataLT, basicEqualTest, basicLessThanTest,
+  (ChangedT, Changed, DataLT, basicEqualsTest, basicLessThanTest,
    getBasicString)
 from span.api.dfv import NodeDfvL
 from span.api.analysis import AnalysisAT, BackwardD, SimFailed, SimPending
@@ -138,7 +138,7 @@ class OverallL(DataLT):
   def __eq__(self, other) -> bool:
     if not isinstance(other, OverallL):
       return NotImplemented
-    equal = basicEqualTest(self, other)
+    equal = basicEqualsTest(self, other)
     return self.val == other.val if equal is None else equal
 
 
@@ -463,6 +463,40 @@ class StrongLiveVarsA(AnalysisAT):
     names = getNamesGlobal(self.func)
     names |= getNamesUsedInExprSyntactically(e)
     return names
+
+
+  @staticmethod
+  def test_dfv_assertion(
+      computed: OverallL,
+      strVal: str,  # a short string representation of the assertion (see tests)
+  ) -> bool:
+    """Returns true if assertion is correct."""
+
+    if strVal.startswith("any"):
+      return True
+
+    if strVal.startswith("is:"):
+      strVal = strVal[3:]
+      if strVal.strip() in {"bot", "Bot", "BOT"}:
+        return computed.bot
+      elif strVal.strip() in {"top", "Top", "TOP"}:
+        return computed.top
+      else: # must be a set
+        setOfVarNames = eval(strVal)
+        return computed.val == setOfVarNames
+
+    if strVal.startswith("has:"):
+      strVal = strVal[4:]
+      setOfVarNames = eval(strVal)
+      return setOfVarNames <= computed.val
+
+    raise ValueError()
+
+
+  @staticmethod
+  def evalString(evalThis: str) -> Any:
+    """A needed function to automate test cases."""
+    return eval(evalThis)
 
   ################################################
   # BOUND END  : Helper_Functions

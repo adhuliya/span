@@ -30,7 +30,7 @@ import span.ir.instr as instr
 import span.ir.constructs as constructs
 
 from span.api.lattice import (ChangedT, Changed, basicLessThanTest,
-                              basicEqualTest, getBasicString, mergeAll, )
+                              basicEqualsTest, getBasicString, mergeAll, DataLT, )
 import span.api.dfv as dfv
 from span.api.dfv import NodeDfvL
 import span.api.analysis as analysis
@@ -156,7 +156,7 @@ class ComponentL(dfv.ComponentL):
   def __eq__(self, other) -> bool:
     if not isinstance(other, ComponentL):
       return NotImplemented
-    equal = basicEqualTest(self, other)
+    equal = basicEqualsTest(self, other)
     return (self.val == other.val) if equal is None else equal
 
 
@@ -451,7 +451,7 @@ class PointsToA(analysis.ValueAnalysisAT):
       else:
         names = PointsToA.getNamesLValuesOfExpr(self.func, rhs, dfvIn)
         names = ir.filterNamesPointer(self.func, names, addFunc=True)
-        value = mergeAll(dfvInGetVal(name) for name in names)
+        value = mergeAll(dfvInGetVal(name) for name in names) if names else value
       return value
 
     elif isinstance(rhs, expr.AddrOfE):
@@ -705,6 +705,37 @@ class PointsToA(analysis.ValueAnalysisAT):
       assert varDfv.val, f"{varDfv}"
       return varDfv.val - NULL_OBJ_SINGLETON_SET
 
+
+  @staticmethod
+  def test_dfv_assertion(
+      computed: DataLT,
+      strVal: str,  # a short string representation of the assertion (see tests)
+  ) -> bool:
+    """Returns true if assertion is correct."""
+
+    if strVal.startswith("any"):
+      return True
+
+    if strVal.startswith("is:"):
+      strVal = strVal[3:]
+      if strVal.strip() in {"bot", "Bot", "BOT"}:
+        return computed.bot
+      elif strVal.strip() in {"top", "Top", "TOP"}:
+        return computed.top
+      else: # must be a tuple
+        mapOfVarNames = eval(strVal)
+        return computed.val == mapOfVarNames
+
+    if strVal.startswith("has:"):
+      strVal = strVal[4:]
+      mapOfVarNames = eval(strVal)
+      for vName, val in mapOfVarNames.items():
+        cputed = computed.getVal(vName)
+        correct = PointsToA.test_dfv_assertion(cputed, f"is: {val}")
+        if not correct: return False
+      return True
+
+    raise ValueError()
   ################################################
   # BOUND END  : Helper_Functions
   ################################################

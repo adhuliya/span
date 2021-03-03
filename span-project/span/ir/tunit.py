@@ -2163,7 +2163,10 @@ class TranslationUnit:
     if func.hasBody():
       underApprox = False
     elif "scanf" in funcName:
-        underApprox = False
+      underApprox = False
+    elif "f:stat" == funcName:
+      underApprox = False
+
 
     return underApprox
 

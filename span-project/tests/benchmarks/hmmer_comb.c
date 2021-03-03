@@ -7343,7 +7343,7 @@ void EmitConsensusSequence(struct plan7_s *hmm , char **ret_seq , char **ret_dsq
 #line 320
       if ((double )*(ip + k) >= 0.5) {
 #line 321
-        nins += (int )(1.f / (1.f - *(*(hmm->t + k) + 4)));
+        nins += (int )(1.0f / (1.0f - *(*(hmm->t + k) + 4)));
       }
     }
 #line 317

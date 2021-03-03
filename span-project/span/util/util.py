@@ -50,6 +50,19 @@ def setupVV(count):
   VV4 = VV >= 4 # prints Top values in dfv too
   VV5 = VV >= 5 # prints id() of dfv objects too
 
+DD:int = 0  # Detail. One of 0,1,2,3 (set via command line)
+DD0 = DD1 = DD2 = DD3 = DD4 = DD5 = False
+def setupDD(count):
+  """Call this function to enact global DD settings."""
+  global DD, DD0, DD1, DD2, DD3, DD4, DD5
+  DD = count
+  DD0 = DD >= 0
+  DD1 = DD >= 1
+  DD2 = DD >= 2
+  DD3 = DD >= 3 # shows widening logs too
+  DD4 = DD >= 4 # prints Top values in dfv too
+  DD5 = DD >= 5 # prints id() of dfv objects too
+
 CC:int = 0  # Constraint Checks. One of 0,1,2,3 (set via command line)
 CC0 = CC1 = CC2 = CC3 = False
 def setupCC(count):

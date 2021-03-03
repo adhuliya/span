@@ -23,6 +23,12 @@ ResultFileName = str
 
 SPANIR_TEST_FILE_SUFFIX=".spanir.test.py" # example: test.c.spanir.test.py
 
+################################################################################
+## GLOBAL_FLAGS ################################################################
+################################################################################
+SPAN_LLVM_AVAILABLE = True
+################################################################################
+
 class TestActionAndResult:
   """
   Represents the test action to be taken,
@@ -34,17 +40,17 @@ class TestActionAndResult:
 
 
   def __init__(self,
-      action: str,
-      analyses: List[AnalysisNameT],
-      diagnoses: List[DiagnosisNameT],
-      results: Dict[str, Any],
+      action: str, # generally a commmand line sub-command
+      analysesExpr: Opt[str] = None, # E.g.: /+LiveVarsA+PointsToA/
+      diagnoses: Opt[List[DiagnosisNameT]] = None,
+      results: Opt[Dict[str, Any]] = None,
       cascade: Opt[List[List[AnalysisNameT]]] = None,
       ipaEnabled: bool = False,
       ddmEnabled: bool = False,
       simDisabled: bool = False,
   ):
     self.action = action
-    self.analyses = analyses
+    self.analysesExpr = analysesExpr
     self.diagnoses = diagnoses
     self.results = results
     self.cascade = cascade
