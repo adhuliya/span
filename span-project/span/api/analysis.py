@@ -1773,8 +1773,8 @@ class ValueAnalysisAT(AnalysisAT):
 
 
   def getBoundaryInfo(self,
-      nodeDfv: Opt[NodeDfvL] = None,
-      ipa: bool = False,
+      nodeDfv: Opt[NodeDfvL] = None, # needs to be localized to the target func
+      ipa: bool = False,  #IPA
       entryFunc: bool = False,
       func: Opt[constructs.Func] = None,
   ) -> NodeDfvL:
@@ -1799,7 +1799,7 @@ class ValueAnalysisAT(AnalysisAT):
       inBiSetVal, tUnitGetNameInfo = inBi.setVal, tUnit.getNameInfo
 
       if ff.SET_LOCAL_ARRAYS_TO_TOP: # set arrays to a top initial value
-        localNames = tUnit.getNamesLocal(self.func)
+        localNames = tUnit.getNamesLocal(func)
         for vName in localNames - set(func.paramNames):
           if tUnitGetNameInfo(vName).hasArray:
             inBiSetVal(vName, self.componentTop) #Mutates inBi

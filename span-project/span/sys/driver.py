@@ -168,7 +168,7 @@ def c2spanir(cFileName: str = None) -> int:
   util.exitIfProgramDoesnotExist("clang")
 
   cmd = f"clang --analyze -Xanalyzer -analyzer-checker=core.span.SlangGenAst" \
-        f" {cFileName} 2> /dev/null"
+        f" {cFileName} 2> {cFileName}.clang.log"
 
   if util.VV1: print("running> ", cmd)
   completed = subp.run(cmd, shell=True)

@@ -326,7 +326,7 @@ class IpaHost:
     self.gst = GlobalStats()
 
     self.reUsePrevValueContextHost = reUsePrevValueContextHost
-    self.vci = ValueContextInfo(reUsePrevValueContextHost)
+    self.vci: ValueContextInfo = ValueContextInfo(reUsePrevValueContextHost)
 
     self.logUsefulInfo()
 
@@ -596,8 +596,14 @@ class IpaHost:
 
     for anName, nDfv in bi:
       AnalysisClass = clients.analyses[anName]
-      analysisObj = AnalysisClass(func)
-      newBi[anName] = analysisObj.getBoundaryInfo(nDfv, ipa=True, entryFunc=True)
+      anObj = AnalysisClass(func)
+
+      # localize the boundary info
+      newDfvIn = nDfv.dfvIn.localize(func, keepParams=True)
+      newDfvOut = nDfv.dfvOut.localize(func, keepParams=True)
+      localized = NodeDfvL(newDfvIn, newDfvOut)
+
+      newBi[anName] = anObj.getBoundaryInfo(localized, ipa=True, entryFunc=True)
 
     if util.LL2: LDB("IpaBi: (%s): %s", funcName, newBi)
     return newBi

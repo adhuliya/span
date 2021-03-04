@@ -16,7 +16,7 @@ from span.util.util import LS
 import span.ir.instr as instr
 import span.ir.expr as expr
 from span.ir.types import EdgeLabelT, BasicBlockIdT, FuncNameT
-from span.ir.conv import FalseEdge, TrueEdge, UnCondEdge
+from span.ir.conv import FalseEdge, TrueEdge, UnCondEdge, START_BB_ID, END_BB_ID
 import span.ir.types as types
 
 from span.util.consts import START_BB_ID_NOT_MINUS_ONE, END_BB_ID_NOT_ZERO
@@ -393,21 +393,21 @@ class Cfg(object):
     """Builds the complete Cfg structure."""
     assert inputBbMap and inputBbEdges, f"{len(inputBbMap)}, {len(inputBbEdges)}"
     # -1 is start bb id, 0 is the end bb id (MUST)
-    assert -1 in inputBbMap
-    assert 0 in inputBbMap
+    assert START_BB_ID in inputBbMap
+    assert END_BB_ID in inputBbMap
 
     # STEP 1: Create BBs in their dict.
     for bbId, instrSeq in inputBbMap.items():
       self.bbMap[bbId] = BB(id=bbId, instrSeq=instrSeq)
 
-    if -1 not in self.bbMap:
+    if START_BB_ID not in self.bbMap:
       if LS: LOG.error(START_BB_ID_NOT_MINUS_ONE)
 
-    if 0 not in self.bbMap:
+    if END_BB_ID not in self.bbMap:
       if LS: LOG.error(END_BB_ID_NOT_ZERO)
 
-    self.startBb = self.bbMap[-1]
-    self.endBb = self.bbMap[0]
+    self.startBb = self.bbMap[START_BB_ID]
+    self.endBb = self.bbMap[END_BB_ID]
     self.start = self.startBb.firstCfgNode
     self.end = self.endBb.lastCfgNode
 

@@ -755,8 +755,8 @@ class Host:
     top = self.activeAnTop  # to shorten name
     dirn = self.anWorkDict[self.activeAnName]
 
-    if util.LL4: LDB("\nRUNNING_ANALYSIS: %s, Direction: %s,\nFunc: %s, Iteration: %s\n",
-                     anName, dirn, self.func.name, self.analysisCounter)
+    if util.LL4: LDB("\nRUNNING_ANALYSIS: %s, Func: %s, Dirn: %s, Iter: %s\n",
+                     anName, self.func.name, dirn, self.analysisCounter)
 
     # init boundary info for start and end nodes, if not already done
     if not dirn.boundaryInfoInitialized:
@@ -803,7 +803,7 @@ class Host:
   def _analyze(self) -> None:
     """Runs the analysis with highest priority, on self.func."""
     anName = self.anWorkList.pop()  # pops the highest priority analysis
-    if util.LL3: LIN("\nRUNNING_ANALYSIS: %s. on_function: %s\n",
+    if util.LL3: LIN("\nRUNNING_ANALYSIS: %s, Func: %s\n",
                     anName, self.func.name)
     assert anName, f"{self.anWorkList}"
     dirn = self.setupActiveAnalysis(anName)

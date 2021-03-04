@@ -5,7 +5,6 @@
 
 """
 Tests to check correct spanir conversion.
-Assumes the basic tests were successful.
 """
 
 import unittest
@@ -15,6 +14,7 @@ from typing import Dict, List
 
 # IMPORTANT imports for eval() to work
 from span.ir import conv
+from span.ir.conv import FalseEdge, TrueEdge, UnCondEdge
 from span.ir.types import Loc
 import span.ir.types as types
 import span.ir.op as op
@@ -207,14 +207,87 @@ class SpanIrTests(unittest.TestCase):
       cFileName: str,
   ) -> None:
     funcObj = tUnit.getFuncObj(funcName)
+    funcCfg = funcObj.cfg
+    bbEdges = funcObj.bbEdges
 
-    propName = "ir.cfg.node.count"
+    propName = "ir.cfg.node.count" # node count: all
     res = results.get(propName, None)
     if res:
-      count = len(funcObj.cfg.nodeMap)
+      count = len(funcCfg.nodeMap)
       self.assertEqual(count, res,
                        msg=(f"{propName}({funcName}): {cFileName}: Computed:"
                             f" {count}, Correct: {res}"))
+
+    propName = "ir.cfg.bb.edge.count" # edge count: all
+    res = results.get(propName, None)
+    if res:
+      count = len(bbEdges)
+      self.assertEqual(count, res,
+                       msg=(f"{propName}({funcName}): {cFileName}: Computed:"
+                            f" {count}, Correct: {res}"))
+
+    propName = "ir.cfg.bb.edge.false.true.pair.count" # edge count: false
+    res = results.get(propName, None)
+    if res:
+      countFalse = len(list(1 for _,_,l in bbEdges if l == FalseEdge))
+      self.assertEqual(countFalse, res,
+                       msg=(f"{propName}({funcName}): {cFileName}: (FalseEdge) Computed:"
+                            f" {countFalse}, Correct: {res}"))
+      countTrue = len(list(1 for _,_,l in bbEdges if l == TrueEdge))
+      self.assertEqual(countTrue, res,
+                       msg=(f"{propName}({funcName}): {cFileName}: (TrueEdge) Computed:"
+                            f" {countTrue}, Correct: {res}"))
+
+    propName = "ir.cfg.bb.edge.true.count" # edge count: true
+    res = results.get(propName, None)
+    if res:
+      count = len(list(1 for _,_,l in bbEdges if l == TrueEdge))
+
+    propName = "ir.cfg.bb.edge.uncond.count" # edge count: uncond
+    res = results.get(propName, None)
+    if res:
+      count = len(list(1 for _,_,l in bbEdges if l == UnCondEdge))
+      self.assertEqual(count, res,
+                       msg=(f"{propName}({funcName}): {cFileName}: Computed:"
+                            f" {count}, Correct: {res}"))
+
+    propName = "ir.cfg.bb.has.edges" # contains the given edges
+    res = results.get(propName, None)
+    if res:
+      hasEdges = res <= set(bbEdges)
+      self.assertEqual(hasEdges, True,
+                       msg=(f"{propName}({funcName}): {cFileName}: Computed:"
+                            f" {bbEdges}, Correct: {res}"))
+
+    propName = "ir.cfg.bb.insn.count"  # count instructions in given BBs
+    res = results.get(propName, None)
+    if res:
+      for bbId, correctCount in res.items():
+        count = len(funcObj.basicBlocks[bbId])
+        self.assertEqual(count, correctCount,
+                         msg=(f"{propName}({funcName}): {cFileName}:"
+                              f" (BBId: {bbId}) Computed:"
+                              f" {count}, Correct: {correctCount}"))
+
+    propName = "ir.cfg.insn.nop.count" # count on NopI in the ir
+    res = results.get(propName, None)
+    if res:
+      count = len(list(1 for insn in funcObj.yieldInstrSeq() if isinstance(insn, instr.NopI)))
+      self.assertEqual(count, res,
+                       msg=(f"{propName}({funcName}): {cFileName}: Computed:"
+                            f" {count}, Correct: {res}"))
+
+    propName = "ir.cfg.start.end.node.is.insn.nop" # start, end node must be NopI
+    res = results.get(propName, None)
+    if res is not None:
+      startNop = isinstance(funcCfg.start.insn, instr.NopI)
+      self.assertEqual(startNop, res,
+                       msg=(f"{propName}({funcName}): {cFileName}: (StartNode) Computed:"
+                            f" {startNop}, Correct: {res}"))
+      endNop = isinstance(funcCfg.end.insn, instr.NopI)
+      self.assertEqual(endNop, res,
+                       msg=(f"{propName}({funcName}): {cFileName}: (EndNode) Computed:"
+                            f" {endNop}, Correct: {res}"))
 
 
   def checkSpanirConversion(self,

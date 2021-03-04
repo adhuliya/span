@@ -14,6 +14,7 @@ from typing import List, Dict, Optional as Opt, Tuple
 import span.ir.ir as ir
 import span.tests.common as common #IMPORTANT
 from span.ir import types
+from span.ir.types import FuncNameT, NodeIdT
 from span.tests.common import \
   (genFileMap,
    genFileMapSpanir,
@@ -23,7 +24,7 @@ from span.tests.common import \
 import span.sys.host as host
 import span.ir.cfg as cfg
 import span.api.dfv as dfv
-from span.api.analysis import AnalysisNameT
+from span.api.analysis import AnalysisNameT as AnNameT
 import span.sys.clients as clients
 import span.sys.driver as driver
 import span.util.consts as consts
@@ -45,7 +46,7 @@ class SpanAnalysisTests(unittest.TestCase):
 
   def test_AABA_analyze(self):
     """Checking analysis results on the given programs."""
-    print("\nTesting analysis results now. START.\n")
+    print("\nSTART: Testing analysis results.\n")
     fileMap = genFileMap(self)
     irFileMap = genFileMapSpanir(self)
 
@@ -53,10 +54,13 @@ class SpanAnalysisTests(unittest.TestCase):
       irFile = irFileMap[cFile] if cFile in irFileMap else None
       pyFileActions: List[TestActionAndResult] = evalTestCaseFile(pyFile)
       for action in pyFileActions:
-        if action.action == "analyze":
+        if "analyze" in action.action:
           print(f"Checking analysis results of: {cFile},")
-          self.runAndCheckAnalysisResults(cFile, irFile, action)
-    print("\nTesting analysis results now. END.\n")
+          self.runAndCheckAnalysisResultsIntra(cFile, irFile, action)
+        elif "ipa" in action.action:
+          print(f"Checking analysis results of: {cFile},")
+          self.runAndCheckAnalysisResultsIpa(cFile, irFile, action)
+    print("\nEND  : Testing analysis results.\n")
 
 
   def allAnalysesPresent(self, analysesExpr: str) -> bool:
@@ -72,19 +76,15 @@ class SpanAnalysisTests(unittest.TestCase):
     return True # all present
 
 
-  def runAndCheckAnalysisResults(self,
+  def runAndCheckAnalysisResultsIntra(self,
       cFileName: str,
       irFileName: Opt[str],
       action: TestActionAndResult
   ) -> None:
     """Runs the analyses and checks their results."""
-    if irFileName:
-      tUnit: ir.TranslationUnit = ir.readSpanIr(irFileName)
-    else:
-      if not common.SPAN_LLVM_AVAILABLE:
-        print("\nClang/LLVM with SPAN support not present !!!!!!!!!!!!!!!!!!!!")
-        return
-      tUnit: ir.TranslationUnit = genTranslationUnit(cFileName)
+    if not common.SPAN_LLVM_AVAILABLE:
+      print("\nClang/LLVM with SPAN support not present !!!!!!!!!!!!!!!!!!!!")
+      return
 
     if not self.allAnalysesPresent(action.analysesExpr):
       print(f"  SkippingTest(AnalysesNotPresent):", action.analysesExpr)
@@ -93,7 +93,7 @@ class SpanAnalysisTests(unittest.TestCase):
     parser = driver.getParser()
     fileName = irFileName if irFileName else cFileName
     args = parser.parse_args(args=[action.action, action.analysesExpr, fileName])
-    resultsDict: [types.FuncNameT, host.Host] = args.func(args)
+    resultsDict: [FuncNameT, host.Host] = args.func(args)
 
     anRes = action.results["analysis.results"]
     for anName, funcResMap in anRes.items():
@@ -105,8 +105,38 @@ class SpanAnalysisTests(unittest.TestCase):
           print(f"        analyses={action.analysesExpr}")
 
 
+  def runAndCheckAnalysisResultsIpa(self,
+      cFileName: str,
+      irFileName: Opt[str],
+      action: TestActionAndResult
+  ) -> None:
+    """Runs the analyses and checks their results."""
+    if not common.SPAN_LLVM_AVAILABLE:
+      print("\nClang/LLVM with SPAN support not present !!!!!!!!!!!!!!!!!!!!")
+      return
+
+    if not self.allAnalysesPresent(action.analysesExpr):
+      print(f"  SkippingTest(AnalysesNotPresent):", action.analysesExpr)
+      return None
+
+    parser = driver.getParser()
+    fileName = irFileName if irFileName else cFileName
+    args = parser.parse_args(args=[action.action, action.analysesExpr, fileName])
+    ipaHost = args.func(args)
+    resultsDict: Dict[FuncNameT, Dict[AnNameT, Dict[NodeIdT, dfv.NodeDfvL]]] \
+      = ipaHost.vci.finalResult
+
+    anRes = action.results["analysis.results"]
+    for anName, funcResMap in anRes.items():
+      for funcName, correctAnRes in funcResMap.items():
+        computedAnRes = resultsDict[funcName][anName]
+        if self.compareAnResults(anName, computedAnRes, correctAnRes, cFileName):
+          print(f"    {cFileName}: {anName} on {funcName} is correct.")
+          print(f"        analyses={action.analysesExpr}")
+
+
   def compareAnResults(self,
-      anName: AnalysisNameT,
+      anName: AnNameT,
       computedAnRes: Dict[cfg.CfgNodeId, dfv.NodeDfvL],
       correctAnRes: Dict[cfg.CfgNodeId, Tuple],
       cFileName: str,

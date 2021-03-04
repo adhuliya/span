@@ -5,15 +5,16 @@
 
 """The analysis' common data flow value declarations."""
 
+import logging
+LOG = logging.getLogger("span")
+
 from typing import Tuple, Optional as Opt, Dict, Any, Set,\
                    Type, TypeVar, List, cast, Callable
-import logging
 import io
 
 from span.ir import tunit, conv
 from span.ir.conv import isStringLitName
 
-LOG = logging.getLogger("span")
 
 from span.util.util import LS
 import span.util.util as util
@@ -557,6 +558,7 @@ class OverallL(DataLT):
     assert self.val is not None, f"{self}"
     self.top = self.bot = False  # if it was top/bot, then certainly its no more.
     topDefVal, botDefVal = self.isDefaultValTop(), self.isDefaultValBot()
+    if util.LL5: LOG.debug(f"{self.func.name}, {self.name}, {topDefVal}, {botDefVal}, {self.val}")
     if self.isDefaultVal(val, varName):
       if varName in self.val:
         del self.val[varName]  # since default value
@@ -676,7 +678,8 @@ class OverallL(DataLT):
     if self.top: return f"Top{idStr}"
     if self.bot: return f"Bot{idStr}"
 
-    if self.getDefaultVal(): assert self.val, f"{self.val}"
+    if self.getDefaultVal():
+      assert self.val, f"{self.func.name}, {self.name}, {self.val}"
     string = io.StringIO()
     if self.val:
       selfVal = self.val

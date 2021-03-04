@@ -927,7 +927,6 @@ class IntervalA(analysis.ValueAnalysisAT):
     if strVal.startswith("has:"):
       strVal = strVal[4:]
       mapOfVarNames = eval(strVal)
-      correct = True
       for vName, val in mapOfVarNames.items():
         cputed = computed.getVal(vName)
         correct = IntervalA.test_dfv_assertion(cputed, f"is: {val}")

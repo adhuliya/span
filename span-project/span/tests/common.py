@@ -139,6 +139,11 @@ def evalTestCaseFile(pyFileName: str) -> List[TestActionAndResult]:
   import span.ir.tunit as tunit
   import span.api.dfv as dfv
 
+  from span.ir.conv import (
+    START_BB_ID, END_BB_ID, UnCondEdge, FalseEdge, TrueEdge,
+    GLOBAL_INITS_FUNC_NAME,
+  )
+
   pyFileContent = cutil.readFromFile(pyFileName)
   pyFileActions: List[TestActionAndResult] = eval(pyFileContent)
   return pyFileActions

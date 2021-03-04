@@ -274,6 +274,14 @@ class TranslationUnit:
             rhsName, rhsType = rhs.name, rhs.type
             self._addrTakenSet.update(getSuffixes(None, rhsName, rhsType))
 
+        callE = getCallExpr(insn)
+        if callE:
+          for arg in callE.args:
+            if isinstance(arg, VarE) and isinstance(arg.type, ArrayT):
+              argName, argType = arg.name, arg.type
+              self._addrTakenSet.update(getSuffixes(None, argName, argType))
+
+
           # Expr &(x->y) must have been preceded by x = &z.
     self._addrTakenSet.add(NULL_OBJ_NAME)
 
@@ -388,7 +396,7 @@ class TranslationUnit:
         f"{cond}, {arg1}, {arg2}"
       e.cond, e.arg1, e.arg2 = cond, arg1, arg2
     else:
-      assert False, f"{e}"
+      assert False, f"{e} {type(e)}"
 
     return e
 
@@ -840,6 +848,8 @@ class TranslationUnit:
         funcSig = calleeType.getPointeeType()
         assert isinstance(funcSig, FuncSig), f"{funcSig}"
         eType = funcSig.returnType
+      for arg in e.args:
+        _ = self.inferTypeOfExpr(arg)
 
     else:
       # assert False, f"Unkown expression: {e} {type(e)}"
@@ -1044,8 +1054,13 @@ class TranslationUnit:
     for insn in func.yieldInstrSeq():
       if isinstance(insn, NopI): continue
       assert isinstance(insn, AssignI)
-      assert isinstance(insn.lhs, VarE), f"{insn.lhs}"
-      varNames.add(insn.lhs.name)
+      # assert isinstance(insn.lhs, VarE), f"{insn.lhs}"
+      if isinstance(insn.lhs, VarE):
+        varNames.add(insn.lhs.name)
+      elif isinstance(insn.lhs, ArrayE):
+        varNames.add(insn.lhs.getFullName())
+      else:
+        raise ValueError(f"{insn}")
 
     return varNames
 

@@ -35,8 +35,8 @@ NodeSiteTotalBitLen   = 32
 NodeSiteFuncIdBitLen  = 14
 NodeSiteNodeIdBitLen  = 18
 
-START_BB_ID: types.BasicBlockIdT = 0
-END_BB_ID:   types.BasicBlockIdT = -1
+START_BB_ID: types.BasicBlockIdT = -1
+END_BB_ID:   types.BasicBlockIdT = 0
 START_END_BBIDS: Tuple[types.BasicBlockIdT, types.BasicBlockIdT] =\
   (START_BB_ID, END_BB_ID)
 ################################################
