@@ -392,8 +392,8 @@ class Timer:
       self.stopCounts += 1
     return self
 
-  def stopAndLog(self, printAlso=False) -> None:
-    if LS: LOG.debug(self.stop())
+  def stopAndLog(self, printAlso=False, log=True) -> None:
+    if log: LOG.debug(self.stop())
     if printAlso: print(self.stop())
 
   def getDurationInMillisec(self) -> float:

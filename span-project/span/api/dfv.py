@@ -7,6 +7,7 @@
 
 import logging
 LOG = logging.getLogger("span")
+LDB = LOG.debug
 
 from typing import Tuple, Optional as Opt, Dict, Any, Set,\
                    Type, TypeVar, List, cast, Callable
@@ -258,15 +259,15 @@ class NodeDfvL(LatticeLT):
       dfvOutFalse, chOutTmp = self.dfvOutFalse.meet(other.dfvOutFalse)
       chOut = chOut or chOutTmp
 
-    if LS: LOG.debug("NodeDfv (meet with prev nodeDfv): In: %s, Out: %s.", chIn, chOut)
+    if util.LL4: LDB("NodeDfv (meet with prev nodeDfv): In: %s, Out: %s.", chIn, chOut)
     return NodeDfvL(dfvIn, dfvOut, dfvOutTrue, dfvOutFalse), chIn or chOut
 
 
   def widen(self,
-      other: 'NodeDfvL',
+      other: Opt['NodeDfvL'] = None,
       ipa: bool = False,  # special case #IPA FIXME: is this needed?
   ) -> Tuple['NodeDfvL', ChangedT]:
-    assert isinstance(other, NodeDfvL), f"{other}"
+    assert isinstance(other, NodeDfvL), f"{self.dfvIn.func}, {self}, {other}"
     if self is other:
       return self, not Changed
 
@@ -278,8 +279,6 @@ class NodeDfvL(LatticeLT):
     else:
       dfvIn, chIn = self.dfvIn.widen(other.dfvIn)
 
-    # dfvOut = dfvOutTrue = dfvOutFalse = None
-    # if self.dfvOut is not None:
     if self.dfvOut is other.dfvOut:
       dfvOut = self.dfvOut
     else:
@@ -298,7 +297,7 @@ class NodeDfvL(LatticeLT):
       dfvOutFalse, chOutTmp = self.dfvOutFalse.widen(other.dfvOutFalse)
       chOut = chOut or chOutTmp
 
-    if LS: LOG.debug("NodeDfv (widen with prev nodeDfv): In: %s, Out: %s.", chIn, chOut)
+    if util.LL4: LDB("NodeDfv (widened with prev nodeDfv): In: %s, Out: %s.", chIn, chOut)
     return NodeDfvL(dfvIn, dfvOut, dfvOutTrue, dfvOutFalse), chIn or chOut
 
 
@@ -558,7 +557,7 @@ class OverallL(DataLT):
     assert self.val is not None, f"{self}"
     self.top = self.bot = False  # if it was top/bot, then certainly its no more.
     topDefVal, botDefVal = self.isDefaultValTop(), self.isDefaultValBot()
-    if util.LL5: LOG.debug(f"{self.func.name}, {self.name}, {topDefVal}, {botDefVal}, {self.val}")
+    #if util.LL5: LDB(f"{self.func.name}, {self.name}, {topDefVal}, {botDefVal}, {self.val}")
     if self.isDefaultVal(val, varName):
       if varName in self.val:
         del self.val[varName]  # since default value

@@ -26,7 +26,7 @@ import os
 
 # mainentry - when this module is run
 if __name__ == "__main__":
-  if LS: LOG.info("\n\nSPAN_SYSTEM: STARTED!\n\n")
+  util.setupEnv()
 
   parser = driver.getParser()
 
@@ -38,14 +38,17 @@ if __name__ == "__main__":
     pass
 
   args = parser.parse_args()  # parse command line
+
+  if util.LL1: LOG.info("\n\nSPAN_SYSTEM: STARTED!\n\n")
+
   if util.VV1: print("SPAN is:", os.path.realpath(__file__))
   if util.VV1: print("RotatingLogFile: file://",
                      logger.ABS_LOG_FILE_NAME, "\n\n", sep="")
 
   timer = util.Timer("TotalTimeTaken")
   args.func(args)             # take action
-  timer.stopAndLog(util.VV1)
+  timer.stopAndLog(util.VV0, util.LL0)
 
-  if LS: LOG.info("\n\nSPAN_SYSTEM: FINISHED!\n\n")
+  if util.LL1: LOG.info("\n\nSPAN_SYSTEM: FINISHED!\n\n")
 
 

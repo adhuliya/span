@@ -300,6 +300,7 @@ class Type:
     points-to analysis needs to track the pointees of.
     Currently only user-defined pointers and array of pointers
     are considered a pointer here.
+    Override to change its behavior.
     """
     return PTR32_TC <= self.typeCode <= PTR128_TC
 

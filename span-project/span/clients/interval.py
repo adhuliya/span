@@ -871,9 +871,6 @@ class IntervalA(analysis.ValueAnalysisAT):
         dfvValFalse[arg1.name] = false1
         if arg2IsVarE: dfvValFalse[arg2.name] = false2
 
-    if argName == "v:fallbackSort:120if": #delit
-      print(f"AAAAAA: {arg}, {tmpExpr}, {dfvIn}, \nl: {true1}, {false1}, \nnblock: {true2}, {false2}") #delit
-
     return dfv.updateDfv(dfvValFalse, dfvIn), dfv.updateDfv(dfvValTrue, dfvIn)
 
 

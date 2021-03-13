@@ -66,6 +66,10 @@ class ExprET:
     self.type: types.Type = types.Void
 
 
+  def getDereferencedVarE(self) -> Opt['VarE']:
+    return None
+
+
   def hasDereference(self) -> bool:
     return False
 
@@ -526,6 +530,10 @@ class DerefE(UnaryET, DerefET):
     return True
 
 
+  def getDereferencedVarE(self) -> Opt['VarE']:
+    return self.arg
+
+
   def __hash__(self) -> int:
     return hash((self.arg, self.exprCode))
 
@@ -581,6 +589,13 @@ class ArrayE(DerefET):
     if self._hasPtrDeref is None:
       self._hasPtrDeref = isinstance(self.of.type, types.Ptr)
     return self._hasPtrDeref
+
+
+  def getDereferencedVarE(self) -> Opt['VarE']:
+    if self.hasDereference():
+      assert isinstance(self.of, VarE), f"{self}, {self.info}"
+      return self.of
+    return None
 
 
   def isCanonical(self) -> bool:
@@ -693,6 +708,12 @@ class MemberE(DerefET):
   def hasDereference(self) -> bool:
     """Does this member expressions as "->" in it?"""
     return isinstance(self.of.type, types.Ptr)
+
+
+  def getDereferencedVarE(self) -> Opt['VarE']:
+    if self.hasDereference():
+      return self.of
+    return None
 
 
   def __eq__(self, other) -> bool:
@@ -1001,6 +1022,10 @@ class AddrOfE(UnaryET):
     return self.arg.hasDereference()
 
 
+  def getDereferencedVarE(self) -> Opt['VarE']:
+    return self.arg.getDereferencedVarE()
+
+
   def __hash__(self) -> int:
     return hash((self.arg, self.exprCode))
 
@@ -1246,6 +1271,12 @@ class CallE(ExprET):
 
   def hasPtrCall(self) -> bool:
     return self.hasDereference()
+
+
+  def getDereferencedVarE(self) -> Opt['VarE']:
+    if self.hasDereference():
+      return self.callee
+    return None
 
 
   def checkInvariants(self, level: int = 0):
@@ -1504,6 +1535,8 @@ def getDefaultInitExpr(objType: types.Type) -> Opt[ExprET]:
 
 
 def getDerefExpr(e: ExprET) -> Opt[ExprET]:
+  if isinstance(e, AddrOfE):
+    e = e.arg
   if e.hasDereference():
     return e
   return None
@@ -1626,7 +1659,7 @@ def evalExpr(e: ExprET) -> ExprET:
     if isinstance(e.arg, LitE):
       newExpr = e.arg
       if isinstance(e.arg.val, (int, float)):
-        newVal = e.arg.type.castValue(e.arg.val)
+        newVal = e.type.castValue(e.arg.val)
         newExpr = LitE(newVal, info=e.arg.info)
 
   return newExpr

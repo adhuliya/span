@@ -10,6 +10,9 @@ Using the Value-Context Method.
 Note: All IR related processing for IPA is done in span.ir.ipa module.
 """
 import logging
+
+from span.ir.instr import getDerefExpr, AssignI
+
 LOG = logging.getLogger("span")
 LDB, LIN = LOG.debug, LOG.info
 
@@ -26,14 +29,14 @@ if TRACE_MALLOC:
 
 from span.sys.stats import GlobalStats
 import span.sys.clients as clients
-from span.ir import cfg
+from span.ir import cfg, expr, types
 import span.ir.conv as conv
 from span.ir.conv import (GLOBAL_INITS_FUNC_NAME,
                           Forward, Backward, GLOBAL_INITS_FUNC_ID,
                           genFuncNodeId)
 from span.ir.types import FuncNameT, FuncNodeIdT, NodeIdT
 from span.ir.tunit import TranslationUnit
-from span.api.analysis import AnalysisNameT as AnNameT, DirectionDT
+from span.api.analysis import AnalysisNameT as AnNameT, DirectionDT, AnalysisAT, SimFailed
 from span.api.dfv import NodeDfvL
 
 from span.sys.host import Host
@@ -304,6 +307,7 @@ class IpaHost:
       avoidAnalyses: Opt[List[AnNameT]] = None,
       maxNumOfAnalyses: int = ff.MAX_ANALYSES,
       disableAllSim: bool = False,
+      useTransformation: bool = False,
       useDdm: bool = False,
       reUsePrevValueContextHost: bool = True,
       widenValueContext: bool = ff.IPA_VC_WIDEN_VALUE_CONTEXT,
@@ -319,6 +323,7 @@ class IpaHost:
     self.avoidAnalyses = avoidAnalyses
     self.maxNumOfAnalyses = maxNumOfAnalyses
     self.disableAllSim = disableAllSim
+    self.useTransformation = useTransformation
     self.useDdm = useDdm
     self.widen = widenValueContext
 
@@ -637,6 +642,7 @@ class IpaHost:
       disableSim=self.disableAllSim,
       biDfv=biDfv,
       ipaEnabled=ipa,
+      useTransformation=self.useTransformation,
       useDdm=useDdm,
     )
 
@@ -679,9 +685,7 @@ class IpaHost:
         intervalRes = allResults[anName]
         condSimCount += intervalA.countSimCondToUncond(func, intervalRes)
 
-    print(f"  CondToUncondSims Count: {condSimCount}")
-
-
+    print(f"  CondToUncondSims Count: {condSimCount}\n")
 
 
   def mergeFinalResults(self):
@@ -696,10 +700,12 @@ class IpaHost:
 
     if util.LL1: LDB(f"MergingResultsOfFunctions:"
                      f" Total {len(allFuncNames):<5}"
-                     f" NotVisited: {sorted(notVisitedFuns)}")
+                     f" NotVisited({len(notVisitedFuns)}):"
+                     f" {sorted(notVisitedFuns)}")
     if util.VV1: print(f"MergingResultsOfFunctions:"
                        f" Total {len(allFuncNames):<5}"
-                       f" NotVisited: {sorted(notVisitedFuns)}")
+                       f" NotVisited({len(notVisitedFuns)}):"
+                       f" {sorted(notVisitedFuns)}")
 
     for i, funcName in enumerate(sorted(allFuncNames)):
       funcResult = {}
@@ -819,13 +825,34 @@ def diagnoseInterval(tUnit: TranslationUnit):
   ipaHostSpan.analyze()
   if util.VV1: ipaHostSpan.printSimCounts("SPAN")
 
-  #ipaHostLern = IpaHost(tUnit, analysisSeq=[[mainAnalysis] + otherAnalyses])
-  #ipaHostLern = IpaHost(tUnit, analysisSeq=[[mainAnalysis]])
-  ipaHostLern = IpaHost(tUnit, mainAnName=mainAnalysis,
-                        maxNumOfAnalyses=1) # span with single analysis
+  # ipaHostLern = IpaHost(tUnit,
+  #                       mainAnName=mainAnalysis,
+  #                       otherAnalyses=otherAnalyses,
+  #                       maxNumOfAnalyses=maxNumOfAnalyses,
+  #                       useTransformation=True,
+  #                       )
+  ipaHostLern = IpaHost(tUnit,
+                        mainAnName="PointsToA",
+                        otherAnalyses=None,
+                        maxNumOfAnalyses=1,
+                        )
+  #ipaHostLern = IpaHost(tUnit, mainAnName=mainAnalysis, maxNumOfAnalyses=1) # span with single analysis
   ipaHostLern.analyze()
-  if util.VV1: ipaHostLern.printSimCounts("CASCADED")
+  if util.VV1: ipaHostLern.printSimCounts("TRANSFORM")
 
+  # computeStats01("IntervalA", ipaHostSpan, ipaHostLern)
+  # computeStats01("PointsToA", ipaHostSpan, ipaHostLern, tUnit)
+  computeStatsAverageDeref("PointsToA", ipaHostSpan, ipaHostLern, tUnit)
+
+  takeTracemallocSnapshot()
+
+
+def computeStats01(
+    mainAnName: AnNameT,
+    ipaHostSpan: IpaHost,
+    ipaHostOther: IpaHost,
+    tUnit: TranslationUnit,
+):
   totalPPoints = 0  # total program points
   weakPPoints = 0  # weak program points
   totalPreciseComparisons1 = 0
@@ -836,32 +863,32 @@ def diagnoseInterval(tUnit: TranslationUnit):
   if util.VV1: print("=" * 48)
   for funcName in ipaHostSpan.vci.finalResult.keys():
     if not (funcName in ipaHostSpan.vci.finalResult and
-      funcName in ipaHostLern.vci.finalResult): continue
+      funcName in ipaHostOther.vci.finalResult): continue
 
-    interSpan = ipaHostSpan.vci.finalResult[funcName][mainAnalysis]
-    interLern = ipaHostLern.vci.finalResult[funcName][mainAnalysis]
+    interSpan = ipaHostSpan.vci.finalResult[funcName][mainAnName]
+    interOther = ipaHostOther.vci.finalResult[funcName][mainAnName]
 
     for nid in sorted(interSpan.keys()):
       nDfvSpan = interSpan[nid]
-      nDfvLern = interLern[nid]
+      nDfvOther = interOther[nid]
 
       totalPPoints += 2
 
-      if nDfvSpan.dfvIn != nDfvLern.dfvIn \
-          and nDfvLern.dfvIn < nDfvSpan.dfvIn:
+      if nDfvSpan.dfvIn != nDfvOther.dfvIn \
+          and nDfvOther.dfvIn < nDfvSpan.dfvIn:
         weakPPoints += 1
 
-      if nDfvSpan.dfvOut != nDfvLern.dfvOut:
+      if nDfvSpan.dfvOut != nDfvOther.dfvOut:
         valS = nDfvSpan.dfvOut.val
-        valL = nDfvLern.dfvOut.val
+        valL = nDfvOther.dfvOut.val
         if valS and valL:
           setS, setL = set(valS.items()), set(valL.items())
           if util.VV1: print(f"NOT_SAME ({nid})({funcName}):"
                 f"\n  S-L:{sorted(setS-setL)}\n  L-S:{sorted(setL-setS)}")
         else:
           if util.VV1: print(f"NOT_SAME ({nid})({funcName}): {valS} {valL}")
-      if nDfvSpan.dfvOut != nDfvLern.dfvOut \
-          and nDfvLern.dfvOut < nDfvSpan.dfvOut:
+      if nDfvSpan.dfvOut != nDfvOther.dfvOut \
+          and nDfvOther.dfvOut < nDfvSpan.dfvOut:
         weakPPoints += 1
 
       # # some queries
@@ -879,17 +906,97 @@ def diagnoseInterval(tUnit: TranslationUnit):
       #       val1 = nDfvSpan.dfvOut.getVal(name)
       #       if val1.isConstant():
       #         totalPreciseComparisons1 += 1
-      #       val2 = nDfvLern.dfvOut.getVal(name)
+      #       val2 = nDfvOther.dfvOut.getVal(name)
       #       if val2.isConstant():
       #         print(f"{node.id}: {name}: {val1}, {val2} ({insn.info})")
       #         totalPreciseComparisons2 += 1
 
-  print("\nTotalPPoints:", totalPPoints, "WeakPPoints:", weakPPoints)
-  print(f"TotalPreciseComparisons: {totalPreciseComparisons1}"
-        f" ({totalPreciseComparisons2}) / {total1}")
-
-  takeTracemallocSnapshot()
+  print(f"\n{mainAnName}: TotalPPoints:", totalPPoints, "WeakPPoints:", weakPPoints)
+  # print(f"TotalPreciseComparisons: {totalPreciseComparisons1}"
+  #       f" ({totalPreciseComparisons2}) / {total1}")
 
 
+
+def computeStatsAverageDeref(
+    mainAnName: AnNameT, # always a pointer analysis
+    ipaHostSpan: IpaHost,
+    ipaHostOther: IpaHost,
+    tUnit: TranslationUnit,
+):
+  """Compute "Average Deref" Metric."""
+  rhsDerefPointCount = 0
+  rhsDerefPointeesCount = [0, 0] # [0] Span, [1] Other
+  lhsDerefPointCount = 0
+  lhsDerefPointeesCount = [0, 0] # [0] Span, [1] Other
+
+  AnClass = clients.analyses[mainAnName]
+
+  for funcName in ipaHostSpan.vci.finalResult.keys():
+    #FIXME: skipping some functions here
+    if not (funcName in ipaHostSpan.vci.finalResult and
+            funcName in ipaHostOther.vci.finalResult): continue
+
+    interSpan = ipaHostSpan.vci.finalResult[funcName][mainAnName]
+    interOther = ipaHostOther.vci.finalResult[funcName][mainAnName]
+    fObj = tUnit.getFuncObj(funcName)
+    nodeMap = fObj.cfg.nodeMap
+
+    anObj: AnalysisAT = AnClass(fObj)
+
+    for nid in sorted(interSpan.keys()):
+      insn = nodeMap[nid].insn
+      if not getDerefExpr(insn): continue
+
+      assert isinstance(insn, AssignI), f"{funcName}, {nid}, {insn}, {insn.info}"
+      lhsDeref, rhsDeref = expr.getDerefExpr(insn.lhs), expr.getDerefExpr(insn.rhs)
+      derefE = lhsDeref if lhsDeref else rhsDeref
+      varE = derefE.getDereferencedVarE()
+      assert varE, f"{funcName}, {nid}, {insn}, {derefE}, {varE}, {insn.info}"
+
+      lhsDerefPointCount += 1 if lhsDeref else 0
+      rhsDerefPointCount += 1 if rhsDeref else 0
+
+      nDfvSpan = interSpan[nid]
+      nDfvOther = interOther[nid]
+
+      sims = anObj.Deref__to__Vars(varE, nDfvSpan), anObj.Deref__to__Vars(varE, nDfvOther)
+
+      for i, sim in enumerate(sims):
+        oldSim = sim
+        sim = SimFailed if i == 1 and simHasAbsVars(tUnit, sim) else sim
+
+        if sim: # some set of values
+          lhsDerefPointeesCount[i] += len(sim) if lhsDeref else 0
+          rhsDerefPointeesCount[i] += len(sim) if rhsDeref else 0
+        elif sim is SimFailed:
+          if util.VV2:
+            print(f"DEREF_FAILED {i}: {funcName}: {derefE}, {insn}, {insn.info}, {oldSim}")
+          allNames = tUnit.getNamesEnv(fObj, derefE.type)
+          lhsDerefPointeesCount[i] += len(allNames) if lhsDeref else 0
+          rhsDerefPointeesCount[i] += len(allNames) if rhsDeref else 0
+        # elif sim is SimPending: count 0
+
+  totalDerefPoints = lhsDerefPointCount + rhsDerefPointCount
+  totalDerefPointeesCount = [lhsDerefPointeesCount[0] + rhsDerefPointeesCount[0],
+                             lhsDerefPointeesCount[1] + rhsDerefPointeesCount[1]]
+  if True:
+    print(f"\nAverageDeref(Span) (Total): {totalDerefPointeesCount[0]/totalDerefPoints}")
+    print(  f"AverageDeref(Other)(Total): {totalDerefPointeesCount[1]/totalDerefPoints}")
+    print(f"\nAverageDeref(Span)   (LHS): {lhsDerefPointeesCount[0]/lhsDerefPointCount}")
+    print(  f"AverageDeref(Other)  (LHS): {lhsDerefPointeesCount[1]/lhsDerefPointCount}")
+    print(f"\nAverageDeref(Span)   (RHS): {rhsDerefPointeesCount[0]/rhsDerefPointCount}")
+    print(  f"AverageDeref(Other)  (RHS): {rhsDerefPointeesCount[1]/rhsDerefPointCount}")
+
+
+def simHasAbsVars(tUnit: TranslationUnit, sim: Set) -> bool:
+  if not sim:
+    return False
+
+  for vName in sim:
+    vType = tUnit.inferTypeOfVal(vName)
+    if isinstance(vType, types.ArrayT) or conv.isPseudoVar(vName):
+      return True
+
+  return False
 
 

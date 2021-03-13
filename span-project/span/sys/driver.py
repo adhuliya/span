@@ -154,6 +154,7 @@ def c2spanirArgParse(args: argparse.Namespace) -> int:
   util.setupLL(args.logging)
   util.setupVV(args.verbose)
   util.setupCC(args.check)
+  util.setupDD(args.detail)
   return c2spanir(args.fileName)
 
 
@@ -186,6 +187,7 @@ def ipaDiagnoseSpanIr(args: argparse.Namespace) -> None:
   fileName = args.fileName
   util.setupLL(args.logging)
   util.setupVV(args.verbose)
+  util.setupDD(args.detail)
   util.setupCC(args.check)
 
   spanirFileName = convertIfCFile(fileName)
@@ -202,6 +204,7 @@ def optimizeSpanIr(args: argparse.Namespace) -> None:
   optName = args.optName
   util.setupLL(args.logging)
   util.setupVV(args.verbose)
+  util.setupDD(args.detail)
   util.setupCC(args.check)
 
   currTUnit = parseTUnitObject(args.fileName, ipa=True)
@@ -219,6 +222,7 @@ def diagnoseSpanIr(args: argparse.Namespace) -> None:
   fileName = args.fileName
   util.setupLL(args.logging)
   util.setupVV(args.verbose)
+  util.setupDD(args.detail)
   util.setupCC(args.check)
 
   spanirFileName = convertIfCFile(fileName)
@@ -354,6 +358,7 @@ def analyzeSpanIrIpa(args: argparse.Namespace) -> sysIpa.IpaHost:
   disableAllSim = True if args.subcommand == "ipa" else False
   util.setupLL(args.logging)
   util.setupVV(args.verbose)
+  util.setupDD(args.detail)
   util.setupCC(args.check)
 
   mainAnalysis, otherAnalyses, supportAnalyses, avoidAnalyses, maxAnalysisCount = \
@@ -373,7 +378,7 @@ def analyzeSpanIrIpa(args: argparse.Namespace) -> sysIpa.IpaHost:
 
   timer = util.Timer("IpaAnalysis")
   ipa1.analyze()
-  timer.stopAndLog(util.VV1)
+  timer.stopAndLog(util.VV1, util.LL1)
   return ipa1
 
 
@@ -382,6 +387,7 @@ def analyzeSpanIr(args: argparse.Namespace) -> Dict[types.FuncNameT, host.Host]:
   disableAllSim = True if args.subcommand == "analyze" else False
   util.setupLL(args.logging)
   util.setupVV(args.verbose)
+  util.setupDD(args.detail)
   util.setupCC(args.check)
   idemand = True if args.subcommand == "idemand" else False
 
@@ -412,7 +418,7 @@ def analyzeSpanIr(args: argparse.Namespace) -> Dict[types.FuncNameT, host.Host]:
                                        useDdm=idemand)
   print()
   if util.VV1: print(f"TimeElapsed(SpanAnalysis(no   setups)): {analysisTime} ms")
-  timer.stopAndLog(util.VV1)
+  timer.stopAndLog(util.VV1, util.LL1)
   return res
 
 
@@ -464,6 +470,7 @@ def queryTranslationUnit(args: argparse.Namespace):
   fileName = args.fileName
   util.setupLL(args.logging)
   util.setupVV(args.verbose)
+  util.setupDD(args.detail)
   util.setupCC(args.check)
   currTUnit = parseTUnitObject(fileName)
 
@@ -476,6 +483,7 @@ def viewDotFile(args: argparse.Namespace):
   fileName = args.fileName
   util.setupLL(args.logging)
   util.setupVV(args.verbose)
+  util.setupDD(args.detail)
   util.setupCC(args.check)
 
   funcName = args.functionName
@@ -537,6 +545,7 @@ def testSpan(args: argparse.Namespace):
   testType = args.testType
   util.setupLL(args.logging)
   util.setupVV(args.verbose)
+  util.setupDD(args.detail)
   util.setupCC(args.check)
 
   import span.tests.run as run
@@ -554,6 +563,7 @@ def sliceDemand(args: argparse.Namespace):
   vars = args.vars
   util.setupLL(args.logging)
   util.setupVV(args.verbose)
+  util.setupDD(args.detail)
   util.setupCC(args.check)
 
   funcName = getCmdLineFuncName(args.functionName)
@@ -585,6 +595,7 @@ def simulateCascading(args: argparse.Namespace) -> Dict[types.FuncNameT, host.Ho
   anNameExpr = args.analyses
   util.setupLL(args.logging)
   util.setupVV(args.verbose)
+  util.setupDD(args.detail)
   util.setupCC(args.check)
 
   funcName = getCmdLineFuncName(args.functionName)
@@ -605,7 +616,7 @@ def simulateCascading(args: argparse.Namespace) -> Dict[types.FuncNameT, host.Ho
   res, _ = analyzeFunctions(currTUnit=currTUnit,
                             funcName=funcName,
                             analysisSeq=analysisSeq)
-  timer.stopAndLog(util.VV1)
+  timer.stopAndLog(util.VV1, util.LL1)
   return res
 
 
@@ -619,6 +630,7 @@ def dumpSpanIr(args: argparse.Namespace):
   fileName = args.fileName
   util.setupLL(args.logging)
   util.setupVV(args.verbose)
+  util.setupDD(args.detail)
   util.setupCC(args.check)
 
   spanIrFileName = convertIfCFile(fileName)
@@ -637,6 +649,7 @@ def dumpSpanSettings(args: argparse.Namespace):
   """Dumps the current settings of SPAN."""
   util.setupLL(args.logging)
   util.setupVV(args.verbose)
+  util.setupDD(args.detail)
   util.setupCC(args.check)
 
   import span.util.ff as ff
@@ -667,7 +680,7 @@ def parseTUnitObject(fileName: str, ipa=False) -> tunit.TranslationUnit:
   currTUnit: tunit.TranslationUnit = ir.readSpanIr(spanIrFileName)
   # if ipa: irIpa.preProcess(currTUnit)  # obsolete
 
-  timer.stopAndLog(util.VV1)
+  timer.stopAndLog(util.VV1, util.LL1)
   if util.VV1: print("TUnitObjSize:", util.getSize2(currTUnit))
   return currTUnit
 

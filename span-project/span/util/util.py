@@ -6,8 +6,11 @@
 """Project wide utility functions."""
 
 import logging
-
 LOG = logging.getLogger("span")
+
+import sys
+
+import span.util.ff as ff
 
 # Import just the entities that are being used in the current project:
 from span.util.common_util import \
@@ -57,10 +60,10 @@ def setupDD(count):
   global DD, DD0, DD1, DD2, DD3, DD4, DD5
   DD = count
   DD0 = DD >= 0
-  DD1 = DD >= 1
+  DD1 = DD >= 1 # prints Top values in dfv too
   DD2 = DD >= 2
-  DD3 = DD >= 3 # shows widening logs too
-  DD4 = DD >= 4 # prints Top values in dfv too
+  DD3 = DD >= 3 # shows full variable names
+  DD4 = DD >= 4
   DD5 = DD >= 5 # prints id() of dfv objects too
 
 CC:int = 0  # Constraint Checks. One of 0,1,2,3 (set via command line)
@@ -104,3 +107,6 @@ LS = US = AS = GD = False  # IMPORTANT
 ################################################
 
 
+def setupEnv():
+  """Setup some necessary things for the project globally."""
+  sys.setrecursionlimit(ff.RECURSION_LIMIT)

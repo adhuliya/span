@@ -334,7 +334,7 @@ class Host:
       avoidAnalyses: Opt[List[AnNameT]] = None, # these are always avoided
       maxNumOfAnalyses: int = ff.MAX_ANALYSES, # max (participating) analyses at a time
       anDfvs: Opt[Dict[AnNameT, DirectionDT]] = None, # pre-computed dfvs of some analyses
-      transform: bool = False, # transform mode (for Cascading/Lerners)
+      useTransformation: bool = False, # transform mode (for Cascading/Lerners)
       biDfv: Opt[DfvDict] = None,  # custom boundary info
       ipaEnabled: bool = False,
       useDdm: bool = False,  # use demand driven approach
@@ -344,7 +344,7 @@ class Host:
     timer = util.Timer("HostSetup")
 
     if util.LL3: LIN(f"HostSetup ({func.name}): IPA: {ipaEnabled}, DDM: {useDdm}, "
-                     f"SIM: {not disableSim}, TRANSFORM: {transform}")
+                     f"SIM: {not disableSim}, TRANSFORM: {useTransformation}")
 
     assert func.cfg and func.tUnit, f"{func}: {func.cfg}, {func.tUnit}"
 
@@ -377,7 +377,7 @@ class Host:
 
     # Set some more flags:
     self.disableSim: bool = disableSim  #SIM
-    self.transform: bool = transform    #TRANSFORM
+    self.useTransformation: bool = useTransformation    #TRANSFORM
     self.enableNodeReachabilitySim = False  # set to True if needed
     self.simFpCalls = simFpCalls  # simplify fp based calls
 
@@ -521,7 +521,7 @@ class Host:
     self.addNodes(self.ef.initFeasibility())
     if util.LL4: LDB(f"AddingFeasibleNodes(HostSetup) END.")
 
-    timer.stopAndLog()
+    timer.stopAndLog(util.VV1, util.LL1)
 
 
   def addNodes(self, nodes: Opt[List[cfg.CfgNode]]) -> None:
@@ -790,13 +790,13 @@ class Host:
     timer = util.Timer("HostAnalyze")
     if util.LL3: LIN("AnalysisWorklist: %s", self.anWorkList)
     if util.LL3: LIN(f"MODE: IPA: {self.ipaEnabled}, DDM: {self.useDdm},"
-                    f" SIM: {not self.disableSim}, TRANSFORM: {self.transform}")
+                    f" SIM: {not self.disableSim}, TRANSFORM: {self.useTransformation}")
 
     while not self.anWorkList.isEmpty():
       self.analysisCounter += 1
       self._analyze()
 
-    timer.stopAndLog()
+    timer.stopAndLog(util.VV1, util.LL1)
     return timer.getDurationInMillisec()
 
 
@@ -1822,7 +1822,7 @@ class Host:
     if util.LL4: LDB("SimOfExpr: '%s' isAttemptedBy %s withDfv %s.", e, simAnName, nDfv)
     # Note: if e is None, it assumes sim works on node id
     val = value = simFunction(e if e else nid, nDfv, values)
-    if val and self.transform: # and any simName #TRANSFORM
+    if val and self.useTransformation: # and any simName #TRANSFORM
       val = SimFailed if len(val) > 1 else val
       if not val and util.VV1:
         print(f"TRANSFORM: SimFailed: ({self.func.name, nid})"
@@ -2029,7 +2029,7 @@ class Host:
     if res is SimFailed:
       return SimFailed  # i.e. process_the_original_insn
 
-    if self.transform and len(res) > 1:  #TRANSFORM
+    if self.useTransformation and len(res) > 1:  #TRANSFORM
       if LS: print(f"SimFailed(TransformDeref): ({node.id}): {e}, {e.info}")
       res = SimFailed
     elif len(res) > 1 and NULL_OBJ_NAME in res:
@@ -2060,7 +2060,7 @@ class Host:
     print() # some blank lines for neatness
     print(self.func, "TUnit:", self.func.tUnit.name)
     print(f"MODE: IPA: {self.ipaEnabled}, DDM: {self.useDdm},"
-          f" SIM: {not self.disableSim}, TRANSFORM: {self.transform}")
+          f" SIM: {not self.disableSim}, TRANSFORM: {self.useTransformation}")
     print("========================================")
     for anName, res in self.anWorkDict.items():
       print(f"{anName}:(SimCount: {self.anSimSuccessCount[anName]})")

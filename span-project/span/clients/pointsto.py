@@ -6,7 +6,7 @@
 """Points-to analysis.
 
 This (and every) analysis subclasses,
-* span.sys.lattice.LatticeLT (to define its lattice)
+* span.sys.lattice.DataLT (to define its lattice)
 * span.sys.analysis.AnalysisAT (to define the analysis)
 """
 
@@ -17,6 +17,8 @@ LDB, LIN, LER, LWA = LOG.debug, LOG.info, LOG.error, LOG.warning
 from typing import Tuple, Dict, List, Optional as Opt, Set, Callable, cast
 
 from span.util.util import LS
+from span.util import util #IMPORTANT
+
 
 from span.ir.tunit import TranslationUnit
 import span.ir.ir as ir
@@ -168,7 +170,8 @@ class ComponentL(dfv.ComponentL):
   def __str__(self):
     s = getBasicString(self)
     if s: return s
-    simpleNames = sorted(simplifyName(name) for name in self.val)
+    simpleNames = sorted(name if util.DD1 else simplifyName(name)
+                         for name in self.val)
     return f"{simpleNames}"
 
 

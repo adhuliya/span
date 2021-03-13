@@ -12,7 +12,7 @@ for use in the rest of the system.
 import logging
 LOG = logging.getLogger("span")
 
-from typing import Dict, Set, Optional as Opt, cast, Type
+from typing import Dict, Set, Optional as Opt, cast, Type, TypeVar
 import io
 import functools
 
@@ -25,9 +25,11 @@ import span.ir.types as types
 
 LhsVar__to__Nil__Name = analysis.AnalysisAT.LhsVar__to__Nil.__name__
 
+AnAT = TypeVar('AnAT', bound=analysis.AnalysisAT)
+
 # list of all concrete analysis class given
 # this dictionary is used with in package span.sys only.
-analyses: Dict[analysis.AnalysisNameT, type] = dict()
+analyses: Dict[analysis.AnalysisNameT, Type[AnAT]] = dict()
 # record of analyses names, that implement a particular expr evaluation
 # NOTE: if no analysis simplifies a particular sim func, still
 # add an empty set corresponding to the key.
@@ -64,7 +66,7 @@ class Clients:
 
 
 # see its use.
-names = Clients()
+names: Clients = Clients()
 
 
 def initGlobals():
@@ -164,10 +166,21 @@ def getSimNamesNeeded(anClass: Type[analysis.AnalysisAT]) -> Set[str]:
     simNames.add(analysis.LhsVar__to__Nil__Name)
   if anClass.needsNodeToNilSim:
     simNames.add(analysis.Node__to__Nil__Name)
+  if anClass.needsFpCallSim:
+    simNames.add(analysis.Deref__to__Vars__Name)
 
   return simNames
 
-@functools.lru_cache(50)
+
+@functools.lru_cache(32)
+def getAnClass(anName: analysis.AnalysisNameT
+) -> Opt[Type[AnAT]]:
+  if anName in analyses:
+    return analyses[anName]
+  raise ValueError(f"UnknownAnalysis: {anName}")
+
+
+@functools.lru_cache(32)
 def getAnDirection(anName: analysis.AnalysisNameT
 ) -> Opt[types.DirectionT]:
   if anName in analyses:

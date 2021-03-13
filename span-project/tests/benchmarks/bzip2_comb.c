@@ -879,21 +879,6 @@ int main(int argc , char **argv )
   unsigned char *validate_array ;
   void *tmp ;
 
-//AD see line: static Int32 incs[14]; //AD
-incs[0] = 1; //AD
-incs[1] = 4; //AD
-incs[2] = 13; //AD
-incs[3] = 40;  //AD
-incs[4] = 121; //AD
-incs[5] = 364; //AD
-incs[6] = 1093; //AD
-incs[7] = 3280;  //AD
-incs[8] = 9841; //AD
-incs[9] = 29524; //AD
-incs[10] = 88573; //AD
-incs[11] = 265720; //AD
-incs[12] = 797161; //AD
-incs[13] = 2391484; //AD
 
   {
 #line 288
@@ -2126,13 +2111,13 @@ static Bool mainGtU(UInt32 i1 , UInt32 i2 , UChar *block , UInt16 *quadrant , UI
 }
 }
 #line 526 "blocksort.c"
-//AD static Int32 incs[14]  = 
+static Int32 incs[14]  = 
 #line 526
-//AD  {      1,      4,      13,      40, 
-//AD        121,      364,      1093,      3280, 
-//AD        9841,      29524,      88573,      265720, 
-//AD        797161,      2391484};
-//See initialization in main()
+{      1,      4,      13,      40, 
+      121,      364,      1093,      3280, 
+      9841,      29524,      88573,      265720, 
+      797161,      2391484};
+
 #line 531 "blocksort.c"
 static void mainSimpleSort(UInt32 *ptr , UChar *block , UInt16 *quadrant , Int32 nblock ,
                            Int32 lo , Int32 hi , Int32 d , Int32 *budget ) 

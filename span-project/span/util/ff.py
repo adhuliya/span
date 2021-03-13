@@ -15,6 +15,9 @@ import io
 ## BLOCK START: GLOBAL_FEATURE_FLAGS_AND_VALUES
 ################################################################################
 
+# Set recursion limit
+RECURSION_LIMIT = 5000
+
 # Initialize local arrays to a Top value for greater precision.
 SET_LOCAL_ARRAYS_TO_TOP: bool = True
 
@@ -41,7 +44,7 @@ IPA_VC_MAX_WIDENING_DEPTH: int = 1
 
 filterNames = {
   "io", "LOG", "logging",
-  "filterNames", "filterAwayTheName",
+  "filterNames", "_filterAwayTheName",
   "printModuleAttributes",
 }
 
