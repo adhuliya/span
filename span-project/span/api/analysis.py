@@ -758,19 +758,6 @@ class AnalysisAT:
     self.overallBot = self.L(func, bot=True)  # L is callable. pylint: disable=E
 
 
-  def Default_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.InstrIT,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
-    """The default behaviour for unimplemented instructions.
-    Analysis should override this method if unimplemented
-    instructions have to be handled in a way other than
-    like a NOP instruction.
-    """
-    return self.Nop_Instr(nodeId, insn, nodeDfv)
-
-
   def getBoundaryInfo(self,
       nodeDfv: Opt[NodeDfvL] = None,
       ipa: bool = False,
@@ -799,6 +786,40 @@ class AnalysisAT:
 
 
   # BOUND START: special_instructions_seven
+
+  def Any_Instr(self,
+      nodeId: types.NodeIdT,
+      insn: instr.InstrIT,
+      nodeDfv: NodeDfvL,
+      calleeBi: Opt[NodeDfvL] = None,  #IPA
+  ) -> NodeDfvL:
+    """For any SPAN IR instruction.
+    Default behaviour is to delegate the control to specialized functions.
+    """
+    if isinstance(insn, instr.AssignI):
+      return self.Assign_Instr(nodeId, insn, nodeDfv, calleeBi)
+    else:
+      memberFuncName = instr.getFormalInstrStr(insn)
+      f = getattr(self, memberFuncName)
+      if instr.getCallExpr(insn):
+        return f(nodeId, insn, nodeDfv, calleeBi)
+      else:
+        return f(nodeId, insn, nodeDfv)
+
+
+  def Default_Instr(self,
+      nodeId: types.NodeIdT,
+      insn: instr.InstrIT,
+      nodeDfv: NodeDfvL,
+      calleeBi: Opt[NodeDfvL] = None,  #IPA
+  ) -> NodeDfvL:
+    """The default behaviour for unimplemented instructions.
+    Analysis should override this method if unimplemented
+    instructions have to be handled in a way other than
+    like a NOP instruction.
+    """
+    return self.Nop_Instr(nodeId, insn, nodeDfv)
+
 
   def Nop_Instr(self,
       nodeId: types.NodeIdT,
@@ -884,6 +905,23 @@ class AnalysisAT:
   # BOUND START: regular_instructions
   # BOUND START: regular_insn__when_lhs_is_var
 
+  def Assign_Instr(self,
+      nodeId: types.NodeIdT,
+      insn: instr.AssignI,
+      nodeDfv: NodeDfvL,
+      calleeBi: Opt[NodeDfvL] = None,  #IPA
+  ) -> NodeDfvL:
+    iType = insn.type
+    if iType.isNumericOrVoid():
+      return self.Num_Assign_Instr(nodeId, insn, nodeDfv, calleeBi)
+    elif iType.isPointerOrVoid():
+      return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv, calleeBi)
+    elif iType.isRecordOrVoid():
+      return self.Record_Assign_Instr(nodeId, insn, nodeDfv, calleeBi)
+    else:
+      raise ValueError()
+
+
   def Num_Assign_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
@@ -894,7 +932,12 @@ class AnalysisAT:
     Convention:
       Type of lhs and rhs is numeric.
     """
-    return self.Default_Instr(nodeId, insn, nodeDfv)
+    memberFuncName = instr.getFormalInstrStr(insn)
+    f = getattr(self, memberFuncName)
+    if instr.getCallExpr(insn):
+      return f(nodeId, insn, nodeDfv, calleeBi)
+    else:
+      return f(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Instr(self,
@@ -907,7 +950,12 @@ class AnalysisAT:
     Convention:
       Type of lhs and rhs is a record.
     """
-    return self.Default_Instr(nodeId, insn, nodeDfv)
+    memberFuncName = instr.getFormalInstrStr(insn)
+    f = getattr(self, memberFuncName)
+    if instr.getCallExpr(insn):
+      return f(nodeId, insn, nodeDfv, calleeBi)
+    else:
+      return f(nodeId, insn, nodeDfv)
 
 
   def Record_Assign_Instr(self,
@@ -920,7 +968,12 @@ class AnalysisAT:
     Convention:
       Type of lhs and rhs is a record.
     """
-    return self.Default_Instr(nodeId, insn, nodeDfv)
+    memberFuncName = instr.getFormalInstrStr(insn)
+    f = getattr(self, memberFuncName)
+    if instr.getCallExpr(insn):
+      return f(nodeId, insn, nodeDfv, calleeBi)
+    else:
+      return f(nodeId, insn, nodeDfv)
 
 
   def Num_Assign_Var_Var_Instr(self,
@@ -932,7 +985,7 @@ class AnalysisAT:
     Convention:
       a and b are variables.
     """
-    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Var_Var_Instr(self,
@@ -944,7 +997,7 @@ class AnalysisAT:
     Convention:
       u and v are variables.
     """
-    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Var_FuncName_Instr(self,
@@ -957,7 +1010,7 @@ class AnalysisAT:
       u is a variable.
       f is a function name.
     """
-    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Record_Assign_Var_Var_Instr(self,
@@ -969,7 +1022,7 @@ class AnalysisAT:
     Convention:
       a and b are variables.
     """
-    return self.Record_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Num_Assign_Var_Lit_Instr(self,
@@ -982,7 +1035,7 @@ class AnalysisAT:
       a is a variable.
       b is a literal.
     """
-    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Var_Lit_Instr(self,
@@ -995,7 +1048,7 @@ class AnalysisAT:
       a is a variable.
       b is a literal.
     """
-    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Num_Assign_Var_SizeOf_Instr(self,
@@ -1008,7 +1061,7 @@ class AnalysisAT:
       a and b are both variables.
       b is of type: types.VarArray only.
     """
-    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Num_Assign_Var_UnaryArith_Instr(self,
@@ -1020,7 +1073,7 @@ class AnalysisAT:
     Convention:
       a and b are both variables.
     """
-    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Num_Assign_Var_BinArith_Instr(self,
@@ -1033,7 +1086,7 @@ class AnalysisAT:
       a is a variable.
       b, c: at least one of them is a variable.
     """
-    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Var_BinArith_Instr(self,
@@ -1046,7 +1099,7 @@ class AnalysisAT:
       a is a variable.
       b, c: at least one of them is a variable.
     """
-    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Num_Assign_Var_Deref_Instr(self,
@@ -1058,7 +1111,7 @@ class AnalysisAT:
     Convention:
       a and u are variables.
     """
-    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Var_Deref_Instr(self,
@@ -1070,7 +1123,7 @@ class AnalysisAT:
     Convention:
       u and v are variables.
     """
-    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Record_Assign_Var_Deref_Instr(self,
@@ -1082,7 +1135,7 @@ class AnalysisAT:
     Convention:
       v and u are variables.
     """
-    return self.Record_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Num_Assign_Var_Array_Instr(self,
@@ -1095,7 +1148,7 @@ class AnalysisAT:
       a and b are variables.
       i is a variable or a literal.
     """
-    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Var_Array_Instr(self,
@@ -1108,7 +1161,7 @@ class AnalysisAT:
       u and a are variables.
       i is a variable or a literal.
     """
-    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Record_Assign_Var_Array_Instr(self,
@@ -1121,7 +1174,7 @@ class AnalysisAT:
       u and a are variables.
       i is a variable or a literal.
     """
-    return self.Record_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Num_Assign_Var_Member_Instr(self,
@@ -1134,7 +1187,7 @@ class AnalysisAT:
       a and b are variables.
       x is a member/field of a record.
     """
-    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Var_Member_Instr(self,
@@ -1147,7 +1200,7 @@ class AnalysisAT:
       a and b are variables.
       x is a member/field of a record.
     """
-    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Record_Assign_Var_Member_Instr(self,
@@ -1160,7 +1213,7 @@ class AnalysisAT:
       a and b are variables.
       x is a member/field of a record.
     """
-    return self.Record_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Num_Assign_Var_Select_Instr(self,
@@ -1173,7 +1226,7 @@ class AnalysisAT:
       b, c, are always variables.
       d, e are variables or literals.
     """
-    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Var_Select_Instr(self,
@@ -1186,7 +1239,7 @@ class AnalysisAT:
       b, c, are always variables.
       d, e are variables or literals.
     """
-    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Record_Assign_Var_Select_Instr(self,
@@ -1198,7 +1251,7 @@ class AnalysisAT:
     Convention:
       b, c, d, e are always variables.
     """
-    return self.Record_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Num_Assign_Var_Call_Instr(self,
@@ -1213,7 +1266,7 @@ class AnalysisAT:
       func is a function pointer or a function name.
       args are either a variable, a literal or addrof expression.
     """
-    return self.Num_Assign_Instr(nodeId, insn, nodeDfv, calleeBi)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Var_Call_Instr(self,
@@ -1223,7 +1276,7 @@ class AnalysisAT:
       calleeBi: Opt[NodeDfvL] = None,  #IPA
   ) -> NodeDfvL:
     """Instr_Form: pointer: p = func()."""
-    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv, calleeBi)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Record_Assign_Var_Call_Instr(self,
@@ -1233,7 +1286,7 @@ class AnalysisAT:
       calleeBi: Opt[NodeDfvL] = None,  #IPA
   ) -> NodeDfvL:
     """Instr_Form: record: r = func()."""
-    return self.Record_Assign_Instr(nodeId, insn, nodeDfv, calleeBi)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Num_Assign_Var_CastVar_Instr(self,
@@ -1245,7 +1298,7 @@ class AnalysisAT:
     Convention:
       a and b are variables.
     """
-    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Var_CastVar_Instr(self,
@@ -1257,7 +1310,7 @@ class AnalysisAT:
     Convention:
       a and b are variables.
     """
-    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Var_CastArr_Instr(self,
@@ -1278,7 +1331,7 @@ class AnalysisAT:
         t3 = &t2[2];
         x = t3;
     """
-    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   # Ptr_Assign_Var_CastMember_Instr() is not part of IR.
@@ -1293,7 +1346,7 @@ class AnalysisAT:
     Convention:
       u and x are variables.
     """
-    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Var_AddrOfArray_Instr(self,
@@ -1306,7 +1359,7 @@ class AnalysisAT:
       u and a are variables.
       i is a variable of a literal.
     """
-    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Var_AddrOfMember_Instr(self,
@@ -1319,7 +1372,7 @@ class AnalysisAT:
       u and r are variables.
       x is a member/field of a record.
     """
-    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Var_AddrOfDeref_Instr(self,
@@ -1332,7 +1385,7 @@ class AnalysisAT:
       u is a pointer variable
       x is a pointer variable
     """
-    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Var_AddrOfFunc_Instr(self,
@@ -1345,7 +1398,7 @@ class AnalysisAT:
       u is a variable.
       f is function name.
     """
-    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   # BOUND END  : regular_insn__when_lhs_is_var
@@ -1360,7 +1413,7 @@ class AnalysisAT:
     Convention:
       u and b are variables.
     """
-    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Num_Assign_Deref_Lit_Instr(self,
@@ -1373,7 +1426,7 @@ class AnalysisAT:
       u is a variable.
       b is a literal.
     """
-    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Deref_Var_Instr(self,
@@ -1385,7 +1438,7 @@ class AnalysisAT:
     Convention:
       u and v are variables.
     """
-    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Deref_Lit_Instr(self,
@@ -1398,7 +1451,7 @@ class AnalysisAT:
       u is a variable.
       b is a literal.
     """
-    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Record_Assign_Deref_Var_Instr(self,
@@ -1410,7 +1463,7 @@ class AnalysisAT:
     Convention:
       u and v are variables.
     """
-    return self.Record_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   # BOUND END  : regular_insn__when_lhs_is_deref
@@ -1426,7 +1479,7 @@ class AnalysisAT:
       a and b are variables.
       i is either a variable or a literal.
     """
-    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Num_Assign_Array_Lit_Instr(self,
@@ -1440,7 +1493,7 @@ class AnalysisAT:
       i is either a variable or a literal.
       b is a literal.
     """
-    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Array_Var_Instr(self,
@@ -1453,7 +1506,7 @@ class AnalysisAT:
       a and b are variables.
       i is a variable or a literal.
     """
-    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Array_Lit_Instr(self,
@@ -1467,7 +1520,7 @@ class AnalysisAT:
       i is a variable or a literal.
       b is a literal.
     """
-    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Record_Assign_Array_Var_Instr(self,
@@ -1480,7 +1533,7 @@ class AnalysisAT:
       a and b are variables.
       i is a variable or a literal.
     """
-    return self.Record_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   # BOUND END  : regular_insn__when_lhs_is_array
@@ -1497,7 +1550,7 @@ class AnalysisAT:
       b is a variable.
       x is a member/field of a record.
     """
-    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Num_Assign_Member_Lit_Instr(self,
@@ -1511,7 +1564,7 @@ class AnalysisAT:
       b is a literal.
       x is a member/field of a record.
     """
-    return self.Num_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Member_Var_Instr(self,
@@ -1525,7 +1578,7 @@ class AnalysisAT:
       b is a variable.
       x is a member/field of a record.
     """
-    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Ptr_Assign_Member_Lit_Instr(self,
@@ -1539,7 +1592,7 @@ class AnalysisAT:
       b is a literal.
       x is a member/field of a record.
     """
-    return self.Ptr_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   def Record_Assign_Member_Var_Instr(self,
@@ -1552,7 +1605,7 @@ class AnalysisAT:
       r and b are variables.
       x is a member/field of a record.
     """
-    return self.Record_Assign_Instr(nodeId, insn, nodeDfv)
+    return self.Default_Instr(nodeId, insn, nodeDfv)
 
 
   # BOUND END  : regular_insn__when_lhs_is_member_expr
@@ -1790,9 +1843,9 @@ class ValueAnalysisAT(AnalysisAT):
     if isDummyGlobalFunc(func):  # initialize all to Top
       inBi, outBi = self.overallTop, self.overallTop
     else:
-      if nodeDfv:
+      if nodeDfv: #IPA or #INTRA
         inBi, outBi = nodeDfv.dfvIn, nodeDfv.dfvOut
-      else:
+      else: #INTRA
         inBi, outBi = self.overallBot, self.overallBot
 
       tUnit: TranslationUnit = func.tUnit

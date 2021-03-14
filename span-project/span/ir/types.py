@@ -274,25 +274,100 @@ class Type:
     self.typeCode = typeCode
 
 
+  def isIntegerOrVoid(self) -> bool:
+    tc = self.typeCode
+    return INT1_TC <= tc <= UINT128_TC or tc == VOID_TC
+
+
+  def isSignedOrVoid(self) -> bool:
+    tc = self.typeCode
+    return INT1_TC <= tc <= INT128_TC or tc == VOID_TC
+
+
+  def isUnsignedOrVoid(self) -> bool:
+    tc = self.typeCode
+    return UINT8_TC <= tc <= UINT128_TC or tc == VOID_TC
+
+
+  def isFloatOrVoid(self) -> bool:
+    tc = self.typeCode
+    return FLOAT16_TC <= tc <= FLOAT128_TC or tc == VOID_TC
+
+
+  def isNumericOrVoid(self) -> bool:
+    """Returns bool(isInteger() or isFloat())."""
+    tc = self.typeCode
+    return INT1_TC <= tc <= FLOAT128_TC or tc == VOID_TC
+
+
+  def isPointerOrVoid(self) -> bool:
+    """Should return True for any type that the
+    points-to analysis needs to track the pointees of.
+    Currently only user-defined pointers and array of pointers
+    are considered a pointer here.
+    Override to change its behavior.
+    """
+    tc = self.typeCode
+    return PTR32_TC <= tc <= PTR128_TC or tc == VOID_TC
+
+
+  def isFuncOrVoid(self) -> bool:
+    tc = self.typeCode
+    return tc == FUNC_TC or tc == VOID_TC
+
+
+  def isFuncSigOrVoid(self) -> bool:
+    tc = self.typeCode
+    return tc == FUNC_SIG_TC or tc == VOID_TC
+
+
+  def isRecordOrVoid(self) -> bool:
+    tc = self.typeCode
+    return tc in (STRUCT_TC, UNION_TC) or tc == VOID_TC
+
+
+  def isStructOrVoid(self) -> bool:
+    tc = self.typeCode
+    return tc == STRUCT_TC or tc == VOID_TC
+
+
+  def isUnionOrVoid(self) -> bool:
+    tc = self.typeCode
+    return tc == UNION_TC or tc == VOID_TC
+
+
+  def isArrayOrVoid(self) -> bool:
+    """This function is appropriately overridden by `ArrayT`."""
+    if self.typeCode == VOID_TC:
+      return True
+    else:
+      return self.isArray()
+
+
   def isInteger(self) -> bool:
-    return INT1_TC <= self.typeCode <= UINT128_TC
+    tc = self.typeCode
+    return INT1_TC <= tc <= UINT128_TC
 
 
   def isSigned(self) -> bool:
-    return INT1_TC <= self.typeCode <= INT128_TC
+    tc = self.typeCode
+    return INT1_TC <= tc <= INT128_TC
 
 
   def isUnsigned(self) -> bool:
-    return UINT8_TC <= self.typeCode <= UINT128_TC
+    tc = self.typeCode
+    return UINT8_TC <= tc <= UINT128_TC
 
 
   def isFloat(self) -> bool:
-    return FLOAT16_TC <= self.typeCode <= FLOAT128_TC
+    tc = self.typeCode
+    return FLOAT16_TC <= tc <= FLOAT128_TC
 
 
   def isNumeric(self) -> bool:
     """Returns bool(isInteger() or isFloat())."""
-    return INT1_TC <= self.typeCode <= FLOAT128_TC
+    tc = self.typeCode
+    return INT1_TC <= tc <= FLOAT128_TC
 
 
   def isPointer(self) -> bool:
@@ -302,36 +377,52 @@ class Type:
     are considered a pointer here.
     Override to change its behavior.
     """
-    return PTR32_TC <= self.typeCode <= PTR128_TC
+    tc = self.typeCode
+    return PTR32_TC <= tc <= PTR128_TC
 
 
   def isFunc(self) -> bool:
-    return self.typeCode == FUNC_TC
+    tc = self.typeCode
+    return tc == FUNC_TC
 
 
   def isFuncSig(self) -> bool:
-    return self.typeCode == FUNC_SIG_TC
+    tc = self.typeCode
+    return tc == FUNC_SIG_TC
 
 
   def isRecord(self) -> bool:
-    return self.typeCode in (STRUCT_TC, UNION_TC)
+    tc = self.typeCode
+    return tc in (STRUCT_TC, UNION_TC)
 
 
   def isStruct(self) -> bool:
-    return self.typeCode == STRUCT_TC
+    tc = self.typeCode
+    return tc == STRUCT_TC
 
 
   def isUnion(self) -> bool:
-    return self.typeCode == UNION_TC
+    tc = self.typeCode
+    return tc == UNION_TC
+
+
+  def isArray(self) -> bool:
+    """This function is appropriately overridden by `ArrayT`."""
+    return self.typeCode == VOID_TC
 
 
   def isVoid(self) -> bool:
     return self.typeCode == VOID_TC
 
 
-  def isArray(self) -> bool:
-    """This function is appropriately overridden by `ArrayT`."""
-    return False
+  def isEqualOrVoid(self, other: 'Type') -> bool:
+    """Adds the logic of Void being equal to any Type."""
+    if self is other: return True
+    if not isinstance(other, Type):
+      raise NotImplementedError()
+    if VOID_TC in (self.typeCode, other.typeCode):
+      return True # the void equal case
+    return self == other  # for normal cases (invokes __eq__)
 
 
   def getPointeeType(self) -> 'Type':
@@ -558,6 +649,8 @@ class Type:
       return True
     if not isinstance(other, Type):
       return NotImplemented
+    if self.typeCode == VOID_TC: #special case
+      return True # Void matches all types
     return self.typeCode == other.typeCode
 
 
@@ -989,6 +1082,57 @@ class ArrayT(Type):
   def getElementType(self) -> Type:
     """Returns the type of the array element."""
     return self.of
+
+
+  def isIntegerOrVoid(self) -> bool:
+    return self.of.isIntegerOrVoid()
+
+
+  def isSignedOrVoid(self) -> bool:
+    return self.of.isSignedOrVoid()
+
+
+  def isUnsignedOrVoid(self) -> bool:
+    return self.of.isUnsignedOrVoid()
+
+
+  def isFloatOrVoid(self) -> bool:
+    return self.of.isFloatOrVoid()
+
+
+  def isNumericOrVoid(self) -> bool:
+    """Returns bool(isInteger() or isFloat())."""
+    return self.of.isNumericOrVoid()
+
+
+  def isPointerOrVoid(self) -> bool:
+    """Should return True for any type that the
+    points-to analysis needs to track the pointees of.
+    Currently only user-defined pointers and array of pointers
+    are considered a pointer here.
+    Override to change its behavior.
+    """
+    return self.of.isPointerOrVoid()
+
+
+  def isFuncOrVoid(self) -> bool:
+    return self.of.isFuncOrVoid()
+
+
+  def isFuncSigOrVoid(self) -> bool:
+    return self.of.isFuncSigOrVoid()
+
+
+  def isRecordOrVoid(self) -> bool:
+    return self.of.isRecordOrVoid()
+
+
+  def isStructOrVoid(self) -> bool:
+    return self.of.isStructOrVoid()
+
+
+  def isUnionOrVoid(self) -> bool:
+    return self.of.isUnionOrVoid()
 
 
   def isInteger(self) -> bool:

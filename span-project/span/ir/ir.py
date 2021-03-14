@@ -47,12 +47,12 @@ from span.ir.conv import \
    isNormalTmpVar,
    getNullvarName,
    isNullvarName,
-   isPseudoVar,
+   isPpmsVar,
    getPrefixes,
    DUMMY_VAR_REGEX,
    MEMBER_EXPR_REGEX,
-   PSEUDO_VAR_REGEX,
-   PSEUDO_VAR_REGEX2,
+   PPMS_VAR_REGEX,
+   PPMS_VAR_REGEX2,
    NULL_OBJ_NAME,
    GLOBAL_INITS_FUNC_NAME,
    )
@@ -170,7 +170,7 @@ def hasMemberExpression(arrayExpr: expr.ArrayE) -> bool:
 def hasArrayExprOrPseudoVar(e: expr.ExprET) -> bool:
   """Does the given expression (mostly a name)
   contain an array expression or a pseudo var?"""
-  if isinstance(e, expr.PseudoVarE):
+  if isinstance(e, expr.PpmsVarE):
     return True
   elif isinstance(e, expr.ArrayE):
     return True

@@ -372,8 +372,8 @@ class VarE(SimpleET, LocationET):
     return f"expr.VarE({repr(self.name)}, {repr(self.info)})"
 
 
-class PseudoVarE(VarE):
-  """Holds a single pseudo variable name.
+class PpmsVarE(VarE):
+  """Holds a single PPMS variable name.
   Pseudo variables are used to name line
   and type based heap locations etc.
 
@@ -402,7 +402,7 @@ class PseudoVarE(VarE):
   def __eq__(self, other) -> bool:
     if self is other:
       return True
-    if not isinstance(other, PseudoVarE):
+    if not isinstance(other, PpmsVarE):
       return NotImplemented
     equal = True
     if not self.name == other.name:
@@ -416,7 +416,7 @@ class PseudoVarE(VarE):
       other: 'ExprET'
   ) -> bool:
     equal = True
-    if not isinstance(other, PseudoVarE):
+    if not isinstance(other, PpmsVarE):
       if LS: LOG.error("ObjectsIncomparable: %s, %s", self, other)
       return False
     if not self.name == other.name:

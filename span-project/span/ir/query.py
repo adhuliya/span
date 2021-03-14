@@ -108,7 +108,7 @@ def countMemoryAllocations(func: constructs.Func) -> int:
   for insn in func.yieldInstrSeq():
     if isinstance(insn, instr.AssignI):
       if isinstance(insn.rhs, expr.AddrOfE):
-        if isinstance(insn.rhs.arg, expr.PseudoVarE):
+        if isinstance(insn.rhs.arg, expr.PpmsVarE):
           memallocs += 1
       elif instr.getCalleeFuncName(insn) in ("f:calloc", "f:malloc"):
         memallocs += 1
@@ -121,7 +121,7 @@ def countMemoryAllocationsPseudoVar(func: constructs.Func) -> int:
   for insn in func.yieldInstrSeq():
     if isinstance(insn, instr.AssignI):
       if isinstance(insn.rhs, expr.AddrOfE):
-        if isinstance(insn.rhs.arg, expr.PseudoVarE):
+        if isinstance(insn.rhs.arg, expr.PpmsVarE):
           memallocs += 1
   return memallocs
 

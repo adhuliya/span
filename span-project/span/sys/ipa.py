@@ -994,7 +994,7 @@ def simHasAbsVars(tUnit: TranslationUnit, sim: Set) -> bool:
 
   for vName in sim:
     vType = tUnit.inferTypeOfVal(vName)
-    if isinstance(vType, types.ArrayT) or conv.isPseudoVar(vName):
+    if isinstance(vType, types.ArrayT) or conv.isPpmsVar(vName):
       return True
 
   return False

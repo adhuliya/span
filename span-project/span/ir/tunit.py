@@ -42,17 +42,17 @@ from span.ir.types import (
 )
 
 from span.ir.conv import (
-  NAKED_PSEUDO_VAR_NAME, NAKED_STR_LIT_NAME,
+  NAKED_PPMS_VAR_NAME, NAKED_STR_LIT_NAME,
   NULL_OBJ_NAME, NULL_OBJ_TYPE, NULL_OBJ_PTR_TYPE,
-  PSEUDO_VAR_REGEX, DUMMY_VAR_NAME,
+  PPMS_VAR_REGEX, DUMMY_VAR_NAME,
   START_END_BBIDS, COND_TMPVAR_GEN_STR,
   getSuffixes, setNodeSiteBits, isFuncName, extractFuncName,
   getPrefixShortest, extractOriginalFuncName, isStringLitName, isTmpVar,
   simplifyName, isNormalTmpVar, isCondTmpVar, isGlobalName,
   GLOBAL_INITS_FUNC_NAME, GLOBAL_INITS_FUNC_ID,
-  DEFAULT_PSEUDO_VAR_TYPE,
+  PPMS_VAR_TYPE,
   memAllocFunctions,
-)
+  FULL_PPMS_VAR_NAME, nameHasPpmsVar, )
 
 from span.ir.instr import (
   InstrIT, III, ExReadI, AssignI, CallI, CondI,
@@ -64,7 +64,7 @@ from span.ir.instr import (
 from span.ir.expr import (
   VarE, LitE, CallE, UnaryE, BinaryE,
   ExprET, ArrayE, MemberE, DerefE, CastE, SelectE,
-  SimpleET, AddrOfE, LocationET, PseudoVarE, SizeOfE,
+  SimpleET, AddrOfE, LocationET, PpmsVarE, SizeOfE,
   getDefaultInitExpr, evalExpr, AllocE,
 )
 
@@ -127,19 +127,20 @@ class TranslationUnit:
       Dict[VarNameT, VarNameInfo] = {}
 
     # The local pseudo variables in each function
-    self._localPseudoVars: \
+    self._localPpmsVars: \
       Dict[FuncNameT, Set[VarNameT]] = {}
 
     # Set of all pseudo vars in this translation unit.
     # Note: pseudo vars hide memory allocation with a variable name.
-    self._pseudoVars: Set[VarNameT] = set()
+    self._ppmsVars: Set[VarNameT] = set()
 
     # All the pseudo variables in the translation unit
-    self._allPseudoNames: Opt[Set[VarNameT]] = None
+    self._allPpmsNames: Opt[Set[VarNameT]] = None
 
     # stores the increasing counter for pseudo variables in the function
     # pseudo variables replace malloc/calloc calls as addressOf(pseudoVar)
-    self._funcPseudoCountMap: Dict[FuncNameT, int] = {}
+    self._funcPpmsCountMap: Dict[FuncNameT, int] = {}
+    self.ppmsCount = 0
 
     # map (func, givenType) to vars of givenType accessible in the func (local+global)
     # (func, None) holds all types of vars accessible in the func (local+global)
@@ -168,7 +169,7 @@ class TranslationUnit:
     self._addrTakenSet: Set[VarNameT] = set()
 
     # effective globals (actual globals + addr taken set)
-    self._globalsAndAddrTakenSet: Set[VarNameT] = set()
+    self._globalsPpmsAndAddrTakenSet: Set[VarNameT] = set()
 
     # type based globals and address taken set categorization
     self._globalsAndAddrTakenSetMap: \
@@ -209,6 +210,7 @@ class TranslationUnit:
     # STEP 4: Misc
     self.fillGlobalInitsFunction()  # MUST
     self.collectAddrTakenVars()  # MUST
+    self.addPpmsVarsToGlobals()  # MUST
     # FIXME: Don't add dummy vars: handle pointers with no possible pointees in the code.
     # self.addDummyObjects()  # MUST (after extractAllVarNames())
     self.genCfgs()  # MUST
@@ -285,7 +287,12 @@ class TranslationUnit:
           # Expr &(x->y) must have been preceded by x = &z.
     self._addrTakenSet.add(NULL_OBJ_NAME)
 
-    self._globalsAndAddrTakenSet = self._globalVarNames | self._addrTakenSet
+    self._globalsPpmsAndAddrTakenSet |= self._globalVarNames | self._addrTakenSet
+
+
+  def addPpmsVarsToGlobals(self):  # MUST
+    """Adds all PPMS Vars to the globals set."""
+    self._globalsPpmsAndAddrTakenSet |= self._ppmsVars
 
 
   def convertNonDerefMemberE(self):
@@ -429,10 +436,10 @@ class TranslationUnit:
     ld("AddrTakenVariables(total %s):\n%s", len(self._addrTakenSet), sio.getvalue())
 
     sio = io.StringIO()
-    for vName in sorted(self._globalsAndAddrTakenSet):
+    for vName in sorted(self._globalsPpmsAndAddrTakenSet):
       sio.write(f"    {vName!r},\n")
     ld("GlobalsAndAddrTakenVariables(total %s):\n%s",
-       len(self._globalsAndAddrTakenSet), sio.getvalue())
+       len(self._globalsPpmsAndAddrTakenSet), sio.getvalue())
 
     sio = io.StringIO()
     for rName in sorted(self.allRecords.keys()):
@@ -450,7 +457,7 @@ class TranslationUnit:
   def canBeGloballyAccessed(self, name: str):
     """Returns True (over-approximated) if a name can be
     potentially accessed globally (either directly or by pointer deref)"""
-    return name in self._globalsAndAddrTakenSet
+    return name in self._globalsPpmsAndAddrTakenSet
 
 
   def getPossiblePointees(self,
@@ -458,14 +465,14 @@ class TranslationUnit:
       cache: bool = True
   ) -> Set[VarNameT]:
     """Returns the possible pointees a type 't' var may point to."""
-    if t is None: return self._globalsAndAddrTakenSet
+    if t is None: return self._globalsPpmsAndAddrTakenSet
 
     pointeeType = t.getPointeeType()
     if pointeeType in self._globalsAndAddrTakenSetMap:
       return self._globalsAndAddrTakenSetMap[t]
 
     names = []
-    for varName in self._globalsAndAddrTakenSet:
+    for varName in self._globalsPpmsAndAddrTakenSet:
       if isFuncName(varName):
         nameType = self.allFunctions[varName].sig
       else:
@@ -495,7 +502,7 @@ class TranslationUnit:
         names = []
         namesAppend= names.append
         pointeeType = tmpType.getPointeeType()
-        for vName in self._globalsAndAddrTakenSet:
+        for vName in self._globalsPpmsAndAddrTakenSet:
           if isFuncName(vName):
             nameType = allFuncs[vName].sig
           else:
@@ -688,8 +695,11 @@ class TranslationUnit:
       if val in self._nameInfoMap:  # IMPORTANT (most likely case)
         return self._nameInfoMap[val].type
 
+      if nameHasPpmsVar(val):
+        return Void
+
       if val in self.allFunctions:
-        return self.allFunctions[val].sig
+        return self.allFunctions[val].sig # type signature of func
 
       if val in self.allVars:  # IMPORTANT for initial use in preProcess()
         return self.allVars[val]
@@ -1223,8 +1233,7 @@ class TranslationUnit:
 
 
   def replaceMemAllocations(self) -> None:
-    """Replace calloc(), malloc() with pseudo variables of type array.
-    Should be called when types for expressions have been inferred.
+    """Replace calloc(), malloc() with addr taken of Ppms variables.
     """
     for func in self.yieldFunctionsWithBody():
       for bb in func.basicBlocks.values():
@@ -1232,94 +1241,135 @@ class TranslationUnit:
           insn = bb[i]
           # SPAN IR separates a call and its cast into two statements.
           if isinstance(insn, AssignI) and isinstance(insn.rhs, CallE):
-            if self.isMemoryAllocationCall(insn.rhs):
-              memAllocInsn: AssignI = insn
-              if isTmpVar(memAllocInsn.lhs.name):  # stored in a void* temporary
-                # then next insn must be a cast and store to a non tmp variable
-                castInstr = bb[i + 1]
-                newInstr = self.conditionallyAddPseudoVar(func.name, castInstr, memAllocInsn)
-                if newInstr is not None:  # hence pseudo var has been added
-                  bb[i] = NopI()  # i.e. remove current instruction
-                  bb[i + 1] = newInstr
-              else:
-                newInstr = self.conditionallyAddPseudoVar(func.name, memAllocInsn)
-                if newInstr:
-                  bb[i] = newInstr
+            rhs = insn.rhs
+            if self.isMemoryAllocationCall(rhs):
+              pVarE = self.addPpmsVar(func.name, rhs.info, insn)
+              # replace rhs: malloc() with `&pVarE`
+              insn.rhs = AddrOfE(pVarE, info=rhs.info)
 
 
-  def conditionallyAddPseudoVar(self,
-      funcName: FuncNameT,
-      insn: AssignI,
-      prevInsn: AssignI = None,
-  ) -> Opt[InstrIT]:
-    """Modifies rhs to address of a pseudo var with the correct type.
-    Only two instruction forms should be in insn:
-      <ptr_var> = (<type>*) <tmp_var>; // cast insn
-      <ptr_var> = <malloc/calloc>(...); // memory alloc insn
-    """
-    lhs = insn.lhs
-    assert isinstance(lhs, VarE), f"{lhs}"
-    # if isTmpVar(lhs.name): return None
+#   def replaceMemAllocations(self) -> None:
+#     """Replace calloc(), malloc() with pseudo variables of type array.
+#     Should be called when types for expressions have been inferred.
+#     """
+#     for func in self.yieldFunctionsWithBody():
+#       for bb in func.basicBlocks.values():
+#         for i in range(len(bb) - 1):
+#           insn = bb[i]
+#           # SPAN IR separates a call and its cast into two statements.
+#           if isinstance(insn, AssignI) and isinstance(insn.rhs, CallE):
+#             if self.isMemoryAllocationCall(insn.rhs):
+#               memAllocInsn: AssignI = insn
+#               if isTmpVar(memAllocInsn.lhs.name):  # stored in a void* temporary
+#                 # then next insn must be a cast and store to a non tmp variable
+#                 castInstr = bb[i + 1]
+#                 newInstr = self.conditionallyAddPseudoVar(func.name, castInstr, memAllocInsn)
+#                 if newInstr is not None:  # hence pseudo var has been added
+#                   bb[i] = NopI()  # i.e. remove current instruction
+#                   bb[i + 1] = newInstr
+#               else:
+#                 newInstr = self.conditionallyAddPseudoVar(func.name, memAllocInsn)
+#                 if newInstr:
+#                   bb[i] = newInstr
+#
+#
+#   def conditionallyAddPseudoVar(self,
+#       funcName: FuncNameT,
+#       insn: AssignI,
+#       prevInsn: AssignI = None,
+#   ) -> Opt[InstrIT]:
+#     """Modifies rhs to address of a pseudo var with the correct type.
+#     Only two instruction forms should be in insn:
+#       <ptr_var> = (<type>*) <tmp_var>; // cast insn
+#       <ptr_var> = <malloc/calloc>(...); // memory alloc insn
+#     """
+#     lhs = insn.lhs
+#     assert isinstance(lhs, VarE), f"{lhs}"
+#     # if isTmpVar(lhs.name): return None
+#
+#     rhs = insn.rhs
+#     if isinstance(rhs, CastE):
+#       if not isTmpVar(rhs.arg.name):
+#         return None
+#       # if here, assume that the tmp var is assigned a heap location
+#
+#     if isinstance(rhs, (CastE, CallE)):
+#       # assume it is malloc/calloc (it should be) if it is a CallE
+#       lhsType = lhs.type
+#       assert isinstance(lhsType, Ptr), f"{lhsType}"
+#       pVar = self.genPseudoVar(funcName, rhs.info,
+#                                lhsType.getPointeeType(), insn, prevInsn)
+#       newInsn = AssignI(lhs, AddrOfE(pVar, rhs.info))
+#       self.inferTypeOfInstr(newInsn)
+#       if util.LL1: LDB(f"NewPseudoVar(Instr): {newInsn}, {pVar}, {funcName},"
+#                        f" {pVar.insns}, {pVar.info}")
+#       return newInsn
+#
+#     return None
 
-    rhs = insn.rhs
-    if isinstance(rhs, CastE):
-      if not isTmpVar(rhs.arg.name):
-        return None
-      # if here, assume that the tmp var is assigned a heap location
 
-    if isinstance(rhs, (CastE, CallE)):
-      # assume it is malloc/calloc (it should be) if it is a CallE
-      lhsType = lhs.type
-      assert isinstance(lhsType, Ptr), f"{lhsType}"
-      pVar = self.genPseudoVar(funcName, rhs.info,
-                               lhsType.getPointeeType(), insn, prevInsn)
-      newInsn = AssignI(lhs, AddrOfE(pVar, rhs.info))
-      self.inferTypeOfInstr(newInsn)
-      if util.LL1: LDB(f"NewPseudoVar(Instr): {newInsn}, {pVar}, {funcName},"
-                       f" {pVar.insns}, {pVar.info}")
-      return newInsn
-
-    return None
-
-
-  def genPseudoVar(self,
+  def addPpmsVar(self,
       funcName: FuncNameT,
       info: Opt[Info],
-      varType: Type,
       insn: AssignI,
-      prevInsn: AssignI = None,
-  ) -> PseudoVarE:
-    if funcName not in self._funcPseudoCountMap:
-      self._funcPseudoCountMap[funcName] = 1
-    currCount = self._funcPseudoCountMap[funcName]
-    self._funcPseudoCountMap[funcName] = currCount + 1
+  ) -> PpmsVarE:
+    self.ppmsCount += 1
 
-    nakedPvName = NAKED_PSEUDO_VAR_NAME.format(count=currCount)
+    nakedPvName = NAKED_PPMS_VAR_NAME.format(count=self.ppmsCount)
     pureFuncName = simplifyName(funcName)
-    pvName = f"v:{pureFuncName}:{nakedPvName}"
+    pvName = FULL_PPMS_VAR_NAME.format(fName=pureFuncName, name=nakedPvName)
 
-    self._pseudoVars.add(pvName)
-    if prevInsn is None:  # insn can never be None
-      sizeExpr = self.getMemAllocSizeExpr(insn)
-      insns = [insn]
-    else:
-      sizeExpr = self.getMemAllocSizeExpr(prevInsn)
-      insns = [prevInsn, insn]
+    self._ppmsVars.add(pvName)
+    insns = [insn]
 
-    sizeVal = self.getMemAllocSizeExprValue(sizeExpr)
-    sizeInBytes = varType.sizeInBytes()
-    pvType = DEFAULT_PSEUDO_VAR_TYPE(of=varType)
-    if sizeVal is not None:
-      if sizeVal < sizeInBytes*2:  # as mismatch may happen due to alignment spaces
-        pvType = varType
-    if util.LL1: LDB(f"NewPseudoVar(Var): {pvName}, {pvType}, {sizeVal}"
-                     f" (SpanTypeSize: {sizeInBytes})")
+    pvType = PPMS_VAR_TYPE
+    if util.LL1: LDB(f"NewPseudoVar(Var): {pvName}, {pvType},"
+                     f" (Insn: {insn})")
     self.addVarNames(pvName, pvType, True)
 
-    pVarE = PseudoVarE(pvName, info=info, insns=insns, sizeExpr=sizeExpr)
+    pVarE = PpmsVarE(pvName, info=info, insns=insns)
     pVarE.type = pvType
 
     return pVarE
+
+#   def genPseudoVar(self,
+#       funcName: FuncNameT,
+#       info: Opt[Info],
+#       varType: Type,
+#       insn: AssignI,
+#       prevInsn: AssignI = None,
+#   ) -> PseudoVarE:
+#     if funcName not in self._funcPseudoCountMap:
+#       self._funcPseudoCountMap[funcName] = 1
+#     currCount = self._funcPseudoCountMap[funcName]
+#     self._funcPseudoCountMap[funcName] = currCount + 1
+#
+#     nakedPvName = NAKED_PSEUDO_VAR_NAME.format(count=currCount)
+#     pureFuncName = simplifyName(funcName)
+#     pvName = f"v:{pureFuncName}:{nakedPvName}"
+#
+#     self._pseudoVars.add(pvName)
+#     if prevInsn is None:  # insn can never be None
+#       sizeExpr = self.getMemAllocSizeExpr(insn)
+#       insns = [insn]
+#     else:
+#       sizeExpr = self.getMemAllocSizeExpr(prevInsn)
+#       insns = [prevInsn, insn]
+#
+#     sizeVal = self.getMemAllocSizeExprValue(sizeExpr)
+#     sizeInBytes = varType.sizeInBytes()
+#     pvType = PPMS_VAR_TYPE(of=varType)
+#     if sizeVal is not None:
+#       if sizeVal < sizeInBytes*2:  # as mismatch may happen due to alignment spaces
+#         pvType = varType
+#     if util.LL1: LDB(f"NewPseudoVar(Var): {pvName}, {pvType}, {sizeVal}"
+#                      f" (SpanTypeSize: {sizeInBytes})")
+#     self.addVarNames(pvName, pvType, True)
+#
+#     pVarE = PseudoVarE(pvName, info=info, insns=insns, sizeExpr=sizeExpr)
+#     pVarE.type = pvType
+#
+#     return pVarE
 
 
   def getMemAllocSizeExpr(self, insn: AssignI) -> ExprET:
@@ -1431,7 +1481,7 @@ class TranslationUnit:
     newDummyName = DUMMY_VAR_NAME.format(id=self._dummyVarCount)
     # self.allVars[newDummyName] = givenType
     self.addVarNames(newDummyName, givenType, True)
-    self._globalsAndAddrTakenSet.add(newDummyName)
+    self._globalsPpmsAndAddrTakenSet.add(newDummyName)
     self._dummyVarCount += 1
     return newDummyName
 
@@ -1442,10 +1492,11 @@ class TranslationUnit:
     """Gets names of givenType in the whole tUnit (irrespective of scope)."""
     names = set()
     for objInfo in self._nameInfoMap.values():
-      if givenType == objInfo.type:
+      objType = objInfo.type
+      if givenType == objType:
         names.add(objInfo.name)
-      elif isinstance(objInfo.type, ArrayT):
-        if givenType == objInfo.type.getElementTypeFinal():
+      elif isinstance(objType, ArrayT):
+        if givenType == objType.getElementTypeFinal():
           names.add(objInfo.name)
     return names
 
@@ -1484,7 +1535,7 @@ class TranslationUnit:
     if isinstance(givenType, FuncSig):
       names.update(func.name for func in self.getFunctionsOfGivenSignature(givenType))
     else:
-      for objName in self._globalsAndAddrTakenSet:
+      for objName in self._globalsPpmsAndAddrTakenSet:
         objType = self.inferTypeOfVal(objName)
         nameInfos = objType.getNamesOfType(givenType, objName)
         for nameInfo in nameInfos:
@@ -1548,25 +1599,25 @@ class TranslationUnit:
     return names
 
 
-  def getNamesPseudoLocal(self,
+  def getNamesPpmsLocal(self,
       func: constructs.Func,
   ) -> Set[VarNameT]:
     """Returns set of pseudo variable names local to a function."""
     self.stats.getNamesTimer.start()
     funcName = func.name
-    if funcName in self._localPseudoVars:
+    if funcName in self._localPpmsVars:
       self.stats.getNamesTimer.stop()
-      return self._localPseudoVars[funcName]
+      return self._localPpmsVars[funcName]
 
     # use getLocalVars() to do most work
     localVars: Set[VarNameT] = self.getNamesLocal(func)
 
     vNameSet = set()
     for vName in localVars:
-      if PSEUDO_VAR_REGEX.fullmatch(vName):
+      if PPMS_VAR_REGEX.fullmatch(vName):
         vNameSet.add(vName)
 
-    self._localPseudoVars[funcName] = vNameSet  # cache the result
+    self._localPpmsVars[funcName] = vNameSet  # cache the result
     self.stats.getNamesTimer.stop()
     return vNameSet
 
@@ -1605,19 +1656,19 @@ class TranslationUnit:
     return envVars
 
 
-  def getNamesPseudoAll(self) -> Set[VarNameT]:
-    """Returns set of all pseudo var names in the translation unit."""
+  def getNamesPpmsAll(self) -> Set[VarNameT]:
+    """Returns set of all PPMS var names in the translation unit."""
     self.stats.getNamesTimer.start()
-    if self._allPseudoNames is not None:
+    if self._allPpmsNames is not None:
       self.stats.getNamesTimer.stop()
-      return self._allPseudoNames
+      return self._allPpmsNames
 
     varNames = set()
     for vName in self._nameInfoMap.keys():
-      if PSEUDO_VAR_REGEX.fullmatch(vName):
+      if PPMS_VAR_REGEX.fullmatch(vName):
         varNames.add(vName)
 
-    self._allPseudoNames = varNames
+    self._allPpmsNames = varNames
     self.stats.getNamesTimer.stop()
     return varNames
 
@@ -1903,11 +1954,11 @@ class TranslationUnit:
     filteredNames = set()
     for name in names:
       objType = self.inferTypeOfVal(name)
-      if objType.isNumeric():
+      if objType.isNumericOrVoid():
         filteredNames.add(name)
       elif isinstance(objType, ArrayT):
         arrayElementType = objType.getElementTypeFinal()
-        if arrayElementType.isNumeric():
+        if arrayElementType.isNumericOrVoid():
           filteredNames.add(name)
 
     return filteredNames
@@ -1920,11 +1971,11 @@ class TranslationUnit:
     filteredNames = set()
     for name in names:
       objType = self.inferTypeOfVal(name)
-      if objType.isInteger():
+      if objType.isIntegerOrVoid():
         filteredNames.add(name)
       elif isinstance(objType, ArrayT):
         arrayElementType = objType.getElementTypeFinal()
-        if arrayElementType.isInteger():
+        if arrayElementType.isIntegerOrVoid():
           filteredNames.add(name)
 
     return filteredNames
@@ -1939,7 +1990,7 @@ class TranslationUnit:
     filteredNames = set()
     for name in names:
       nameType = self.inferTypeOfVal(name)
-      if nameType.isPointer():
+      if nameType.isPointerOrVoid():
         filteredNames.add(name)
       elif addFunc and nameType.isFuncSig():
         # This is useful in case where: x = *arr;

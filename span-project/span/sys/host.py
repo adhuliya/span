@@ -836,6 +836,7 @@ class Host:
         nodeDfv = self.analyzeInstr(node, node.insn, nodeDfv, treatAsNop)
         if util.LL4: LDB("Curr_Node_Dfv (AnalysisResult) (Node_%s): %s", nid, nodeDfv)
 
+        if not nodeDfv: print(f"NODE: {node}, {node.insn}, {node.insn.info}") #delit
         inOutChange2 = dirn.update(node, nodeDfv)
 
         if util.LL4: LDB("Curr_Node_Dfv (AfterUpdate) (Node_%s): %s, change: %s.",
@@ -902,15 +903,14 @@ class Host:
     assert activeAnObj, f"{self.activeAnName}"
 
     self.stats.funcSelectionTimer.start()
-    tFuncName = getFormalInstrStr(insn)
+    tFuncName = getFormalInstrStr(insn) # just for printing etc.
     assert hasattr(AnalysisAT, tFuncName), f"{tFuncName}, {insn}"
     assert hasattr(activeAnObj, tFuncName), f"{tFuncName}, {insn}, {activeAnObj}"
-    transferFunc = getattr(activeAnObj, tFuncName)
     self.stats.funcSelectionTimer.stop()
 
     if util.LL4: LDB("Instr_identified_as: %s",
                       getattr(AnalysisAT, tFuncName).__doc__.strip())
-    if not self.disableSim and transferFunc != activeAnObj.Nop_Instr:
+    if not self.disableSim and not insn.isNopI():
       # is the instr a var assignment (not deref etc)
       if activeAnObj.needsLhsVarToNilSim and insn.hasLhsVarExpr():
         assert isinstance(insn, AssignI), f"{nid}: {insn}"
@@ -981,7 +981,7 @@ class Host:
         # if nDfv is None then work on the original instruction
 
     if GD:
-      if transferFunc == activeAnObj.Nop_Instr:
+      if insn.isNopI():
         self.nodeInsnDot[nid].append("nop")
       else:
         self.nodeInsnDot[nid].append(str(insn))
@@ -992,12 +992,11 @@ class Host:
     else:
       self.stats.instrAnTimer.start()
       if self.ipaEnabled and insn.hasRhsCallExpr():
-        nDfv = self.processInstrWithCall(node, insn, nodeDfv,
-                                         transferFunc, tFuncName)
+        nDfv = self.processInstrWithCall(node, insn, nodeDfv, tFuncName)
       else:
         if util.LL4: LDB("FinallyInvokingInstrFunc: %s.%s() on %s",
                          self.activeAnName, tFuncName, insn)
-        nDfv = transferFunc(nid, insn, nodeDfv)  # type: ignore
+        nDfv = activeAnObj.Any_Instr(nid, insn, nodeDfv)  # type: ignore
       self.stats.instrAnTimer.stop()
       return nDfv
 
@@ -1006,8 +1005,7 @@ class Host:
       node: cfg.CfgNode,
       insn: InstrIT,
       nodeDfv: NodeDfvL,
-      transferFunc: Callable,
-      tFuncName: str,
+      tFuncName: str, # just for logging
   ) -> NodeDfvL:
     """
     # Inter-procedural analysis does not process the instructions with call
@@ -1021,11 +1019,11 @@ class Host:
     calleeFuncName = callE.getFuncName()
 
     if not calleeFuncName:
-      return transferFunc(nid, insn, nodeDfv) # go #INTRA
+      return self.activeAnObj.Any_Instr(nid, insn, nodeDfv) # go #INTRA
     else:
       func = self.tUnit.getFuncObj(calleeFuncName)
       if not func.canBeAnalyzed():
-        return transferFunc(nid, insn, nodeDfv) # go #INTRA
+        return self.activeAnObj.Any_Instr(nid, insn, nodeDfv) # go #INTRA
 
     if util.LL4: LDB("CalleeCallSiteDfv(CallerDfv): %s", nodeDfv)
 
@@ -1042,13 +1040,13 @@ class Host:
       self.setCallSiteDfv(nid, calleeFuncName, self.activeAnName, newCalleeBi)
       if util.LL4: LDB("FinallyInvokingInstrFunc: %s.%s() on %s",
                        self.activeAnName, tFuncName, insn)
-      nodeDfv = transferFunc(nid, insn, nodeDfv, calleeBi)  # type: ignore
+      nodeDfv = self.activeAnObj.Any_Instr(nid, insn, nodeDfv, calleeBi)  # type: ignore
     else: # both for Backward and ForwBack
       assert False #TODO
       assert self.activeAnDirn in (Backward, ForwBack), f"{self.activeAnDirn}"
       if util.LL4: LDB("FinallyInvokingInstrFunc: %s.%s() on %s",
                        self.activeAnName, tFuncName, insn)
-      nodeDfv = transferFunc(nid, insn, nodeDfv, calleeBi)  # type: ignore
+      nodeDfv = self.activeAnObj.Any_Instr(nid, insn, nodeDfv, calleeBi)  # type: ignore
       newCalleeBi = self.activeAnObj.getLocalizedCalleeBi(nid, insn, nodeDfv, calleeBi)
       self.setCallSiteDfv(nid, calleeFuncName, self.activeAnName, newCalleeBi)
       # nodeDfv = self.processCallArguments(node, callE, nodeDfv)  #FIXME: think

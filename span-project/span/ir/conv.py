@@ -95,13 +95,16 @@ USER_VARIABLE_REGEX = re.compile(r"^(.*:|)\D[.\w]*$")
 
 # Both these variables are inter-related
 # One assigns a name the other detects the name.
-NAKED_PSEUDO_VAR_NAME = "{count}p"
-"""Format string to generate pseudo variable name."""
-PSEUDO_VAR_REGEX = re.compile(r"^(.*:|)\d+p$")
+NAKED_PPMS_VAR_NAME = "{count}p"
+"""Format string to generate pseudo variable name.
+PPMS = Pseudo Polymorphic Malloc Site (Variable)
+"""
+FULL_PPMS_VAR_NAME = "g:{fName}:{name}"
+PPMS_VAR_REGEX = re.compile(r"^(.*:|)\d+p$")
 """Regex to detect pseudo variable name."""
-PSEUDO_VAR_REGEX2 = re.compile(r"(:|^)\d+p(\.|$)")
+PPMS_VAR_REGEX2 = re.compile(r"(:|^)\d+p(\.|$)")
 """Regex to detect pseudo variable name."""
-DEFAULT_PSEUDO_VAR_TYPE = types.VarArray
+PPMS_VAR_TYPE = types.Void
 """Default pseudo variable type."""
 
 # String literal name regex (they are globals)
@@ -174,9 +177,9 @@ def isLogicalTmpVar(vName: types.VarNameT) -> bool:
   return False
 
 
-def isPseudoVar(vName: types.VarNameT) -> bool:
+def isPpmsVar(vName: types.VarNameT) -> bool:
   """Is it a pseudo var? (used to hide malloc/calloc)"""
-  if PSEUDO_VAR_REGEX.fullmatch(vName):
+  if PPMS_VAR_REGEX.fullmatch(vName):
     return True
   return False
 
@@ -263,9 +266,9 @@ def isFuncName(varName: types.VarNameT) -> bool:
   return False
 
 
-def nameHasPseudoVar(varName: types.VarNameT) -> bool:
+def nameHasPpmsVar(varName: types.VarNameT) -> bool:
   """Does the name like x.y.z contain a psudo variable?"""
-  return bool(PSEUDO_VAR_REGEX2.search(varName))
+  return bool(PPMS_VAR_REGEX2.search(varName))
 
 
 def getPrefixes(varName: types.VarNameT) -> Set[types.VarNameT]:

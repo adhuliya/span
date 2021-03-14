@@ -25,6 +25,10 @@ from span.api.lattice import\
    basicEqualsTest, getBasicString)
 import span.ir.constructs as constructs
 import span.ir.types as types
+from span.ir.types import (
+  FuncNameT, VarNameT
+)
+
 import span.ir.ir as ir
 from span.ir.ir import filterNamesNumeric
 
@@ -380,23 +384,22 @@ class ComponentL(DataLT):
 
 class OverallL(DataLT):
   """Common OverallL for numeric/value analyses."""
-  __slots__ : List[str] = ["componentTop", "componentBot", "name"]
-
+  __slots__ : List[str] = ["name"]
 
   def __init__(self,
       func: constructs.Func,
-      val: Opt[Dict[types.VarNameT, ComponentL]] = None,
+      val: Opt[Dict[VarNameT, ComponentL]] = None,
       top: bool = False,
       bot: bool = False,
       componentL: Type[ComponentL] = ComponentL,
-      name: str = "",
+      name: str = "", # unique analysis name
   ) -> None:
     super().__init__(func, val, top, bot)
-    self.componentTop = componentL(self.func, top=True)
-    self.componentBot = componentL(self.func, bot=True)
+    initTopBotComp(func, name, componentL)
+    initTopBotOverall(func, name, self.__class__)
     if not (self.top or self.bot) and self.isDefaultValBot(): # safety check
       assert val is not None, f"{func}, {val}, {top}, {bot}"
-    self.val: Opt[Dict[types.VarNameT, ComponentL]] = val
+    self.val: Opt[Dict[VarNameT, ComponentL]] = val
     assert componentL is not ComponentL,\
       f"Analysis should subclass dfv.ComponentL. Details: {func} {name}"
     self.name = name
@@ -409,7 +412,7 @@ class OverallL(DataLT):
     if tup: return tup
 
     # take meet of individual entities (variables)
-    meet_val: Dict[types.VarNameT, ComponentL] = {}
+    meetVal: Dict[VarNameT, ComponentL] = {}
     vNames = set(self.val.keys()) | set(other.val.keys())
     selfValGet, otherValGet = self.val.get, other.val.get
     defaultVal = self.getDefaultVal()
@@ -419,14 +422,14 @@ class OverallL(DataLT):
       dfv2: ComponentL = otherValGet(vName, defaultVal)
       dfv3, _ = dfv1.meet(dfv2)
       if dfv3 != defaultVal:
-        meet_val[vName] = dfv3
+        meetVal[vName] = dfv3
 
-    if meet_val:
-      value = self.__class__(self.func, val=meet_val)
+    if meetVal:
+      value = self.__class__(self.func, val=meetVal)
     elif self.isDefaultValBot():
-      value = self.__class__(self.func, bot=True)
+      value = getTopBotOverall(self.func, self.name, False)
     elif self.isDefaultValTop():
-      value = self.__class__(self.func, top=True)
+      value = getTopBotOverall(self.func, self.name, True)
     else:
       value = self.__class__(self.func, val=None) # useful
 
@@ -451,19 +454,19 @@ class OverallL(DataLT):
   @classmethod
   def isAcceptedType(cls,
       t: types.Type,
-      name: Opt[types.VarNameT] = None,
+      name: Opt[VarNameT] = None,
   ) -> bool:
     """Returns True if the type of the instruction/variable is
     of interest to the analysis.
     By default it selects only Numeric types.
     """
-    check1 = t.isNumeric()
+    check1 = t.isNumericOrVoid()
     check2 = not isStringLitName(name) if name else True
     return check1 and check2
 
 
   @classmethod
-  def getAllVars(cls, func: constructs.Func) -> Set[types.VarNameT]:
+  def getAllVars(cls, func: constructs.Func) -> Set[VarNameT]:
     """Gets all the variables of the accepted type."""
     names = ir.getNamesEnv(func)
     return ir.filterNames(func, names, cls.isAcceptedType)
@@ -495,46 +498,46 @@ class OverallL(DataLT):
     if level >= 1:
       if self.val:
         for k, v in self.val.items():
-          v.checkInvariants()
           assert v is not None, f"{self.func.name}: {k}, {v}"
+          v.checkInvariants()
 
 
   def isDefaultValBot(self):
-    return self.componentBot == self.getDefaultVal()
+    return self.getDefaultVal().bot
 
 
   def isDefaultValTop(self):
-    return self.componentTop == self.getDefaultVal()
+    return self.getDefaultVal().top
 
 
   def getDefaultVal(self,
-      varName: Opt[types.VarNameT] = None  # None default is important
+      varName: Opt[VarNameT] = None  # None default is important
   ) -> Opt[ComponentL]:
     """Default value when a variable is not present in the map.
     Override this function if the default implementation is not suitable.
     """
-    return self.componentBot
+    return getTopBotComp(self.func, self.name, False)
 
 
   def isDefaultVal(self,
       val: ComponentL,
-      varName: Opt[types.VarNameT] = None,
+      varName: Opt[VarNameT] = None,
   ) -> bool:
     return val == self.getDefaultVal(varName)
 
 
   def getVal(self,
-      varName: types.VarNameT
+      varName: VarNameT
   ) -> ComponentL:
     """returns entity lattice value."""
-    if self.top: return self.componentTop
-    if self.bot: return self.componentBot
+    if self.top: return getTopBotComp(self.func, self.name, True)
+    if self.bot: return getTopBotComp(self.func, self.name, False)
     selfVal, defVal = self.val, self.getDefaultVal(varName)
     return selfVal.get(varName, defVal) if selfVal else defVal
 
 
   def setVal(self,
-      varName: types.VarNameT,
+      varName: VarNameT,
       val: ComponentL
   ) -> None:
     """Mutates 'self'."""
@@ -547,11 +550,11 @@ class OverallL(DataLT):
       self.val = {}
 
     defaultVal = self.getDefaultVal(varName)
-    if self.top and defaultVal != self.componentTop:
-      top = self.componentTop
+    if self.top and not defaultVal.top:
+      top = getTopBotComp(self.func, self.name, True)
       self.val = {vName: top for vName in self.getAllVars(self.func)}
-    if self.bot and defaultVal != self.componentBot:
-      bot = self.componentBot
+    if self.bot and not defaultVal.bot:
+      bot = getTopBotComp(self.func, self.name, False)
       self.val = {vName: bot for vName in self.getAllVars(self.func)}
 
     assert self.val is not None, f"{self}"
@@ -611,7 +614,7 @@ class OverallL(DataLT):
       return self.__class__(self.func, val=self.val.copy())
 
 
-  def filterVals(self, varNames: Set[types.VarNameT]) -> None:
+  def filterVals(self, varNames: Set[VarNameT]) -> None:
     """Mutates 'self'.
     All variable names in varNames are set to Top.
     """
@@ -624,7 +627,7 @@ class OverallL(DataLT):
 
     self.val = self.val if self.val else {}
     self.bot = False
-    selfSetVal, cTop = self.setVal, self.componentTop
+    selfSetVal, cTop = self.setVal, getTopBotComp(self.func, self.name, True)
     for vName in varNames:
       selfSetVal(vName, cTop)
     return None
@@ -742,14 +745,14 @@ def updateFuncObjInDfvs(
 def removeNonEnvVars(
     nodeDfv: NodeDfvL,
     getDefaultVal: Callable[[str], ComponentL],
-    getAllVars: Callable[[], Set[types.VarNameT]],
+    getAllVars: Callable[[], Set[VarNameT]],
     direction: types.DirectionT = conv.Forward,
 ) -> NodeDfvL:
   """It removes the variables that are not in the env of func."""
   dfvIn = cast(OverallL, nodeDfv.dfvIn.getCopy())
   dfvOut = cast(OverallL, nodeDfv.dfvOut.getCopy())
 
-  vNames: Set[types.VarNameT] = getAllVars()
+  vNames: Set[VarNameT] = getAllVars()
 
   assert direction != conv.ForwBack
 
@@ -766,7 +769,7 @@ def removeNonEnvVars(
 
 
 def Filter_Vars(
-    varNames: Set[types.VarNameT],
+    varNames: Set[VarNameT],
     nodeDfv: NodeDfvL  # must contain an OverallL
 ) -> NodeDfvL:
   """A default implementation for value analyses."""
@@ -781,7 +784,7 @@ def Filter_Vars(
 
 
 def updateDfv(
-    dfvDict: Dict[types.VarNameT, ComponentL],
+    dfvDict: Dict[VarNameT, ComponentL],
     dfvIn: OverallL,
 ) -> OverallL:
   """Creates a new dfv from `dfvIn` using `newDfv` dict if needed."""
@@ -799,4 +802,59 @@ def updateDfv(
 # BOUND END  : Convenience_Functions
 ################################################
 
+################################################
+# BOUND START: Cache_Component_Top_Bot_Values
+################################################
+
+# cache the component Top/Bot values globally
+_componentTopBot: \
+  Dict[Tuple[FuncNameT, str, bool], ComponentL] = {}
+_overallTopBot: \
+  Dict[Tuple[FuncNameT, str, bool], OverallL] = {}
+
+def getTopBotComp(
+    func: constructs.Func,
+    anName: str,
+    topBot: bool = False, # False == Bot, True == Top
+) -> ComponentL:
+  tup, compDict = (func.name, anName, topBot), _componentTopBot
+  return compDict[tup] if tup in compDict else None
+
+
+def initTopBotComp(
+    func: constructs.Func,
+    anName: str,
+    componentL: Type[ComponentL],
+) -> None:
+  tupTop, compDict = (func.name, anName, True), _componentTopBot
+  if tupTop not in compDict: # then init
+    tupBot = (func.name, anName, False) # for bot
+    compDict[tupTop] = componentL(func, top=True)
+    compDict[tupBot] = componentL(func, bot=True)
+
+
+def getTopBotOverall(
+    func: constructs.Func,
+    anName: str,
+    topBot: bool = False, # False == Bot, True == Top
+) -> OverallL:
+  tup, overallDict = (func.name, anName, topBot), _overallTopBot
+  return overallDict[tup] if tup in overallDict else None
+
+
+def initTopBotOverall(
+    func: constructs.Func,
+    anName: str,
+    overallL: Type[OverallL],
+) -> None:
+  tupTop, overallDict = (func.name, anName, True), _overallTopBot
+  if tupTop not in overallDict: # then init
+    tupBot = (func.name, anName, False) # for bot
+    overallDict[tupTop] = overallL(func, top=True)
+    overallDict[tupBot] = overallL(func, bot=True)
+
+
+################################################
+# BOUND END  : Cache_Component_Top_Bot_Values
+################################################
 

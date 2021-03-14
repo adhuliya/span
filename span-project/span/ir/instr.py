@@ -72,6 +72,11 @@ class InstrIT:
     self.info = info
 
 
+  def isNopI(self):
+    """NopI overrides this function."""
+    return False
+
+
   def checkInvariants(self, level: int = 0):
     """Runs some invariant checks on self.
     Args:
@@ -1029,6 +1034,10 @@ class NopI(InstrIT):
       info: Opt[types.Info] = None
   ) -> None:
     super().__init__(NOP_INSTR_IC, info)
+
+
+  def isNopI(self):
+    return True
 
 
   def getFormalStr(self) -> types.FormalStrT:

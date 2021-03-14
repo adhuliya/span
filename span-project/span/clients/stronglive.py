@@ -298,7 +298,8 @@ class StrongLiveVarsA(AnalysisAT):
   def Num_Assign_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
+      nodeDfv: NodeDfvL,
+      calleeBi: Opt[NodeDfvL] = None,  #IPA
   ) -> NodeDfvL:
     """Instr_Form: numeric: lhs = rhs.
     Convention:
@@ -310,7 +311,8 @@ class StrongLiveVarsA(AnalysisAT):
   def Ptr_Assign_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
+      nodeDfv: NodeDfvL,
+      calleeBi: Opt[NodeDfvL] = None,  #IPA
   ) -> NodeDfvL:
     """Instr_Form: pointer: lhs = rhs.
     Convention:
@@ -322,7 +324,8 @@ class StrongLiveVarsA(AnalysisAT):
   def Record_Assign_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
+      nodeDfv: NodeDfvL,
+      calleeBi: Opt[NodeDfvL] = None,  #IPA
   ) -> NodeDfvL:
     """Instr_Form: record: lhs = rhs.
     Convention:
