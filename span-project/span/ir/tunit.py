@@ -172,7 +172,7 @@ class TranslationUnit:
     self._globalsPpmsAndAddrTakenSet: Set[VarNameT] = set()
 
     # type based globals and address taken set categorization
-    self._globalsAndAddrTakenSetMap: \
+    self._globalsPpmsAndAddrTakenSetMap: \
       Dict[Type, Set[VarNameT]] = dict()
 
     # function id list: id is the index in the list
@@ -210,7 +210,6 @@ class TranslationUnit:
     # STEP 4: Misc
     self.fillGlobalInitsFunction()  # MUST
     self.collectAddrTakenVars()  # MUST
-    self.addPpmsVarsToGlobals()  # MUST
     # FIXME: Don't add dummy vars: handle pointers with no possible pointees in the code.
     # self.addDummyObjects()  # MUST (after extractAllVarNames())
     self.genCfgs()  # MUST
@@ -288,11 +287,6 @@ class TranslationUnit:
     self._addrTakenSet.add(NULL_OBJ_NAME)
 
     self._globalsPpmsAndAddrTakenSet |= self._globalVarNames | self._addrTakenSet
-
-
-  def addPpmsVarsToGlobals(self):  # MUST
-    """Adds all PPMS Vars to the globals set."""
-    self._globalsPpmsAndAddrTakenSet |= self._ppmsVars
 
 
   def convertNonDerefMemberE(self):
@@ -468,8 +462,8 @@ class TranslationUnit:
     if t is None: return self._globalsPpmsAndAddrTakenSet
 
     pointeeType = t.getPointeeType()
-    if pointeeType in self._globalsAndAddrTakenSetMap:
-      return self._globalsAndAddrTakenSetMap[t]
+    if pointeeType in self._globalsPpmsAndAddrTakenSetMap:
+      return self._globalsPpmsAndAddrTakenSetMap[t]
 
     names = []
     for varName in self._globalsPpmsAndAddrTakenSet:
@@ -485,7 +479,7 @@ class TranslationUnit:
 
     namesSet = set(names)
     if cache:
-      self._globalsAndAddrTakenSetMap[pointeeType] = namesSet
+      self._globalsPpmsAndAddrTakenSetMap[pointeeType] = namesSet
 
     return namesSet
 
@@ -764,8 +758,9 @@ class TranslationUnit:
   def inferTypeOfExpr(self, e: ExprET) -> Type:
     """Infer expr type, store the type info
     in the object and return the type."""
-    eType = Void
-    exprCode = e.exprCode
+    eType = e.type
+
+    if not eType.isVoid(): return eType # type already set
 
     if isinstance(e, VarE):
       # for some pseduo vars like '1p.x', e.type is already set to avoid errors
@@ -877,7 +872,9 @@ class TranslationUnit:
     instruction should have its type inferred
     before any other work is done on it.
     """
-    iType = Void
+    iType = insn.type
+
+    if not iType.isVoid(): return iType # type already set
 
     if isinstance(insn, AssignI):
       t1 = self.inferTypeOfExpr(insn.lhs)
@@ -1247,6 +1244,8 @@ class TranslationUnit:
               # replace rhs: malloc() with `&pVarE`
               insn.rhs = AddrOfE(pVarE, info=rhs.info)
 
+    self._globalsPpmsAndAddrTakenSet |= self._ppmsVars
+
 
 #   def replaceMemAllocations(self) -> None:
 #     """Replace calloc(), malloc() with pseudo variables of type array.
@@ -1527,9 +1526,9 @@ class TranslationUnit:
     if integer: key = IntegerAny
     if pointer: key = PointerAny
 
-    if key in self._globalsAndAddrTakenSetMap:
+    if key in self._globalsPpmsAndAddrTakenSetMap:
       self.stats.getNamesTimer.stop()
-      return self._globalsAndAddrTakenSetMap[key]
+      return self._globalsPpmsAndAddrTakenSetMap[key]
 
     names: Set[VarNameT] = set()
     if isinstance(givenType, FuncSig):
@@ -1546,7 +1545,7 @@ class TranslationUnit:
     if pointer: names = self.filterNamesPointer(names)
 
     if cacheResult:
-      self._globalsAndAddrTakenSetMap[key] = names  # cache the result
+      self._globalsPpmsAndAddrTakenSetMap[key] = names  # cache the result
 
     self.stats.getNamesTimer.stop()
     return names
@@ -1777,14 +1776,14 @@ class TranslationUnit:
 
   def getNamesOfPointees(self,
       func: constructs.Func,
-      varName: VarNameT,
+      var: VarE,
       pointeeMap: Opt[Dict[VarNameT, Any]] = None,
   ) -> Set[VarNameT]:
     """Returns the pointee names of the given pointer name,
     if dfvIn is None it returns conservative value."""
 
     # Step 1: what type is the given name?
-    varType = self.inferTypeOfVal(varName)
+    varName, varType = var.name, var.type
     assert varType.isPointer(), f"{varName}, {varType}, {func}"
 
     if isinstance(varType, ArrayT):
@@ -1856,12 +1855,12 @@ class TranslationUnit:
       return names
 
     elif isinstance(e, DerefE):
-      names.update(self.getNamesOfPointees(func, e.arg.name, pointeeMap))
+      names.update(self.getNamesOfPointees(func, e.arg, pointeeMap))
       return names
 
     elif isinstance(e, ArrayE):
       if e.hasDereference():
-        names.update(self.getNamesOfPointees(func, e.of.name, pointeeMap))
+        names.update(self.getNamesOfPointees(func, e.of, pointeeMap))
       else:
         names.add(e.getFullName())
       return names
@@ -1869,7 +1868,7 @@ class TranslationUnit:
     elif isinstance(e, MemberE):
       of, memName = e.of, e.name
       assert isinstance(of.type, Ptr), f"{e}: {of.type}"
-      for name in self.getNamesOfPointees(func, of.name, pointeeMap):
+      for name in self.getNamesOfPointees(func, of, pointeeMap):
         names.add(f"{name}.{memName}")
       return names
 

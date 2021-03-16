@@ -6,6 +6,9 @@
 """The analysis' common data flow value declarations."""
 
 import logging
+
+from span.ir.tunit import TranslationUnit
+
 LOG = logging.getLogger("span")
 LDB = LOG.debug
 
@@ -14,8 +17,7 @@ from typing import Tuple, Optional as Opt, Dict, Any, Set,\
 import io
 
 from span.ir import tunit, conv
-from span.ir.conv import isStringLitName
-
+from span.ir.conv import isStringLitName, nameHasPpmsVar
 
 from span.util.util import LS
 import span.util.util as util
@@ -396,9 +398,6 @@ class OverallL(DataLT):
   ) -> None:
     super().__init__(func, val, top, bot)
     initTopBotComp(func, name, componentL)
-    initTopBotOverall(func, name, self.__class__)
-    if not (self.top or self.bot) and self.isDefaultValBot(): # safety check
-      assert val is not None, f"{func}, {val}, {top}, {bot}"
     self.val: Opt[Dict[VarNameT, ComponentL]] = val
     assert componentL is not ComponentL,\
       f"Analysis should subclass dfv.ComponentL. Details: {func} {name}"
@@ -415,24 +414,16 @@ class OverallL(DataLT):
     meetVal: Dict[VarNameT, ComponentL] = {}
     vNames = set(self.val.keys()) | set(other.val.keys())
     selfValGet, otherValGet = self.val.get, other.val.get
-    defaultVal = self.getDefaultVal()
 
     for vName in vNames:
+      defaultVal = self.getDefaultVal(vName)
       dfv1: ComponentL = selfValGet(vName, defaultVal)
       dfv2: ComponentL = otherValGet(vName, defaultVal)
       dfv3, _ = dfv1.meet(dfv2)
       if dfv3 != defaultVal:
         meetVal[vName] = dfv3
 
-    if meetVal:
-      value = self.__class__(self.func, val=meetVal)
-    elif self.isDefaultValBot():
-      value = getTopBotOverall(self.func, self.name, False)
-    elif self.isDefaultValTop():
-      value = getTopBotOverall(self.func, self.name, True)
-    else:
-      value = self.__class__(self.func, val=None) # useful
-
+    value = self.__class__(self.func, val=meetVal)
     return value, Changed
 
 
@@ -443,9 +434,9 @@ class OverallL(DataLT):
     if lt is not None: return lt
 
     vNames = set(self.val.keys()) | set(other.val.keys())
-    defaultVal = self.getDefaultVal()
     selfValGet, otherValGet = self.val.get, other.val.get
     for vName in vNames:
+      defaultVal = self.getDefaultVal(vName)
       dfv1, dfv2 = selfValGet(vName, defaultVal), otherValGet(vName, defaultVal)
       if not (dfv1 < dfv2): return False
     return True
@@ -467,7 +458,12 @@ class OverallL(DataLT):
 
   @classmethod
   def getAllVars(cls, func: constructs.Func) -> Set[VarNameT]:
-    """Gets all the variables of the accepted type."""
+    """Gets all the variables of the accepted type.
+    Note: PPMS vars with field sensitivity are never returned.
+          Vars like `1p.f` are added into the lattice as per
+          the occurrence of such variables.
+          Reason: PPMS vars type is not known beforehand.
+    """
     names = ir.getNamesEnv(func)
     return ir.filterNames(func, names, cls.isAcceptedType)
 
@@ -481,9 +477,9 @@ class OverallL(DataLT):
     if equal is not None: return equal
 
     vNames = set(self.val.keys()) | set(other.val.keys())
-    defaultVal = self.getDefaultVal()
     selfGetVal, otherGetVal = self.val.get, other.val.get
     for vName in vNames:
+      defaultVal = self.getDefaultVal(vName)
       dfv1, dfv2 = selfGetVal(vName, defaultVal), otherGetVal(vName, defaultVal)
       if not dfv1 == dfv2: return False
     return True
@@ -502,21 +498,21 @@ class OverallL(DataLT):
           v.checkInvariants()
 
 
-  def isDefaultValBot(self):
-    return self.getDefaultVal().bot
-
-
-  def isDefaultValTop(self):
-    return self.getDefaultVal().top
-
-
   def getDefaultVal(self,
-      varName: Opt[VarNameT] = None  # None default is important
+      varName: VarNameT,
   ) -> Opt[ComponentL]:
     """Default value when a variable is not present in the map.
     Override this function if the default implementation is not suitable.
     """
-    return getTopBotComp(self.func, self.name, False)
+    if varName:
+      if nameHasPpmsVar(varName):
+        topBot = True # i.e. Top
+      else:
+        tUnit: TranslationUnit = self.func.tUnit
+        topBot = tUnit.inferTypeOfVal(varName).isArray() # Top if its an Array
+    else:
+      topBot = False # i.e. Bot
+    return getTopBotComp(self.func, self.name, topBot)
 
 
   def isDefaultVal(self,
@@ -532,51 +528,61 @@ class OverallL(DataLT):
     """returns entity lattice value."""
     if self.top: return getTopBotComp(self.func, self.name, True)
     if self.bot: return getTopBotComp(self.func, self.name, False)
-    selfVal, defVal = self.val, self.getDefaultVal(varName)
-    return selfVal.get(varName, defVal) if selfVal else defVal
+    selfVal = self.val
+    if selfVal and varName in selfVal:
+      return selfVal[varName]
+    else:
+      return self.getDefaultVal(varName)
 
 
   def setVal(self,
       varName: VarNameT,
       val: ComponentL
   ) -> None:
-    """Mutates 'self'."""
+    """Mutates 'self'.
+    Changes accommodate PPMS vars whose value is assumed Top by default,
+    and their Bot value is explicitly kept in the dictionary.
+    """
+    # STEP 1: checks to avoid any explicit updates
     if self.top and val.top: return
-    if self.bot and val.bot: return
+    if self.bot and val.bot and self.getDefaultVal(varName).bot:
+      # as PPMS Vars default is Top, the bot state needs modification
+      # since getAllVars() never returns all the PPMS vars.
+      return
 
-    if self.val is None:
-      if not (self.top or self.bot) and self.isDefaultVal(val, varName):
-        return
-      self.val = {}
+    # STEP 2: if here, update of self.val is inevitable
+    self.val = {} if self.val is None else self.val
 
-    defaultVal = self.getDefaultVal(varName)
-    if self.top and not defaultVal.top:
+    if self.top: # and not defaultVal.top:
       top = getTopBotComp(self.func, self.name, True)
-      self.val = {vName: top for vName in self.getAllVars(self.func)}
-    if self.bot and not defaultVal.bot:
+      selfGetDefaultVal = self.getDefaultVal
+      self.val = {vName: top for vName in self.getAllVars(self.func)
+                  if not selfGetDefaultVal(vName).top}
+    if self.bot: # and not defaultVal.bot:
       bot = getTopBotComp(self.func, self.name, False)
-      self.val = {vName: bot for vName in self.getAllVars(self.func)}
+      selfGetDefaultVal = self.getDefaultVal
+      self.val = {vName: bot for vName in self.getAllVars(self.func)
+                  if not selfGetDefaultVal(vName).bot}
 
     assert self.val is not None, f"{self}"
-    self.top = self.bot = False  # if it was top/bot, then certainly its no more.
-    topDefVal, botDefVal = self.isDefaultValTop(), self.isDefaultValBot()
-    #if util.LL5: LDB(f"{self.func.name}, {self.name}, {topDefVal}, {botDefVal}, {self.val}")
+    self.top = self.bot = False  # if it was top/bot, then its no more.
     if self.isDefaultVal(val, varName):
       if varName in self.val:
         del self.val[varName]  # since default value
-        if not self.val:
-          self.val = None
-          self.top, self.bot = topDefVal, botDefVal
     else:
       self.val[varName] = val
 
-    if not (topDefVal or botDefVal): # important optimization check
-      self.explicateTopBot()
+    # don't explicate now, let self.val remain empty if it is so.
+    # self.explicateTopBot() # not needed since default val is var specific now
 
 
   def explicateTopBot(self):
     """Checks if all values are Top or Bot.
     Useful in cases where default value is not Top or Bot.
+
+    Note: This function is now redundant as default value is
+    now specific to variables.
+     e.g. PPMS vars are Top and non-PPMS vars are Bot by default.
     """
     selfVal = self.val
     if not selfVal: return  # nothing to do
@@ -596,22 +602,13 @@ class OverallL(DataLT):
     self.top, self.bot, self.val = top, bot, None
 
 
-  def getCopy(self, newVal: Opt[Dict] = None) -> 'OverallL':
+  def getCopy(self) -> 'OverallL':
     """Returns a shallow copy of self or a new object with newVal."""
-    if newVal: return self.__class__(self.func, val=newVal)
+    if self.top: return self.__class__(self.func, top=True)
+    if self.bot: return self.__class__(self.func, bot=True)
 
-    retTop, retBot = False, False
-    if newVal is not None: # empty dict means top/bot depending on the default value
-      retTop = bool(self.getDefaultVal().top)
-      retBot = bool(self.getDefaultVal().bot)
-    if self.top or retTop: return self.__class__(self.func, top=True)
-    if self.bot or retBot: return self.__class__(self.func, bot=True)
-
-    if not self.val:
-      assert not (self.isDefaultValTop() or self.isDefaultValBot()), f"{self}"
-      return self.__class__(self.func, val=None)
-    else:
-      return self.__class__(self.func, val=self.val.copy())
+    val = self.val.copy() if self.val is not None else None
+    return self.__class__(self.func, val=val)
 
 
   def filterVals(self, varNames: Set[VarNameT]) -> None:
@@ -641,13 +638,13 @@ class OverallL(DataLT):
     localizedDfv = self.getCopy()
     localizedDfvVal, localizedDfvSetVal = localizedDfv.val, localizedDfv.setVal
 
-    defaultVal = self.getDefaultVal()
     if localizedDfvVal:
       tUnit: tunit.TranslationUnit = self.func.tUnit
       varNames = set(localizedDfvVal.keys())
       keep = tUnit.getNamesGlobal() | (set(forFunc.paramNames) if keepParams else set())
       dropNames = varNames - keep
       for vName in dropNames:
+        defaultVal = self.getDefaultVal(vName)
         localizedDfvSetVal(vName, defaultVal) # essentially removing the values
 
     localizedDfv.updateFuncObj(forFunc)
@@ -675,26 +672,26 @@ class OverallL(DataLT):
 
 
   def __str__(self):
-    idStr = f"(id:{id(self)})" if util.VV5 else ""
+    DD1, DD3, DD5 = util.DD1, util.DD3, util.DD5
+    idStr = f"(id:{id(self)})" if DD5 else ""
 
     if self.top: return f"Top{idStr}"
     if self.bot: return f"Bot{idStr}"
 
-    if self.getDefaultVal():
-      assert self.val, f"{self.func.name}, {self.name}, {self.val}"
     string = io.StringIO()
     if self.val:
       selfVal = self.val
       string.write("{")
       prefix = ""
       for key in sorted(selfVal.keys()):
+        if not DD3 and key == conv.NULL_OBJ_NAME: continue
         val = selfVal[key]
-        if val.top and not util.VV4: continue  # don't write Top values
+        if val.top and not DD1: continue  # don't write Top values
         string.write(prefix)
         prefix = ", "
         #string.write(f"{simplifyName(key)}: {self.val[key]}")
         string.write(f"{key}: {selfVal[key]}")
-      string.write(f"}}{idStr}" if util.VV5 else "}")
+      string.write(f"}}{idStr}" if DD5 else "}")
     else:
       string.write("Default")
     return string.getvalue()
@@ -787,7 +784,7 @@ def updateDfv(
     dfvDict: Dict[VarNameT, ComponentL],
     dfvIn: OverallL,
 ) -> OverallL:
-  """Creates a new dfv from `dfvIn` using `newDfv` dict if needed."""
+  """Creates a new dfv from `dfvIn` using `dfvDict` if needed."""
   newDfv = dfvIn
   newDfvGetVal = newDfv.getVal
   for name, val in dfvDict.items():
@@ -816,7 +813,7 @@ def getTopBotComp(
     func: constructs.Func,
     anName: str,
     topBot: bool = False, # False == Bot, True == Top
-) -> ComponentL:
+) -> Opt[ComponentL]:
   tup, compDict = (func.name, anName, topBot), _componentTopBot
   return compDict[tup] if tup in compDict else None
 
@@ -837,7 +834,7 @@ def getTopBotOverall(
     func: constructs.Func,
     anName: str,
     topBot: bool = False, # False == Bot, True == Top
-) -> OverallL:
+) -> Opt[OverallL]:
   tup, overallDict = (func.name, anName, topBot), _overallTopBot
   return overallDict[tup] if tup in overallDict else None
 

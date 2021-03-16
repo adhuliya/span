@@ -100,6 +100,10 @@ class InstrIT:
 
   def hasRhsDerefExpr(self) -> bool: return False
 
+  def hasLhsArrayDerefExpr(self) -> bool: return False
+
+  def hasRhsArrayDerefExpr(self) -> bool: return False
+
   def hasLhsMemDerefExpr(self) -> bool: return False
 
   def hasRhsMemDerefExpr(self) -> bool: return False
@@ -183,6 +187,10 @@ class AssignI(InstrIT):
   def hasLhsDerefExpr(self) -> bool: return self.lhs.hasDerefExpr()
 
   def hasRhsDerefExpr(self) -> bool: return self.rhs.hasDerefExpr()
+
+  def hasLhsArrayDerefExpr(self) -> bool: return self.lhs.hasArrayDerefExpr()
+
+  def hasRhsArrayDerefExpr(self) -> bool: return self.rhs.hasArrayDerefExpr()
 
   def hasLhsMemDerefExpr(self) -> bool: return self.lhs.hasMemDerefExpr()
 

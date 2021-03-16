@@ -138,6 +138,8 @@ class ExprET:
 
   def hasDerefExpr(self) -> bool: return False
 
+  def hasArrayDerefExpr(self) -> bool: return False
+
   def hasMemDerefExpr(self) -> bool: return False
 
   def hasNumBinaryExpr(self) -> bool: return False
@@ -563,6 +565,10 @@ class ArrayE(DerefET):
     self._hasPtrDeref: Opt[bool] = None
 
 
+  def hasArrayDerefExpr(self) -> bool:
+    return self.hasDereference()
+
+
   def getFormalStr(self) -> types.FormalStrT:
     return consts.ARRAY_E_STR
 
@@ -587,7 +593,8 @@ class ArrayE(DerefET):
   def hasDereference(self) -> bool:
     """Is the array expression used on a pointer variable?"""
     if self._hasPtrDeref is None:
-      self._hasPtrDeref = isinstance(self.of.type, types.Ptr)
+      # Not considering Void as Pointer here
+      self._hasPtrDeref = self.of.type.isPointer()
     return self._hasPtrDeref
 
 

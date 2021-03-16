@@ -194,7 +194,7 @@ class DataLT(LatticeLT):
     tup = basicMeetOp(self, other)
     if tup: return tup
 
-    assert self.val and other.val, f"self: {self.val}, other: {other.val}"
+    #assert self.val and other.val, f"self: {self.val}, other: {other.val}"
     return None  # can't compute
 
 
@@ -207,7 +207,7 @@ class DataLT(LatticeLT):
     lt = basicLessThanTest(self, other)
     if lt is not None: return lt
 
-    assert self.val and other.val, f"{self}, {other}"
+    #assert self.val and other.val, f"{self}, {other}"
     return None  # i.e. can't decide
 
 
@@ -219,7 +219,7 @@ class DataLT(LatticeLT):
     equal = basicEqualsTest(self, other)
     if equal is not None: return equal
 
-    assert self.val and other.val, f"{self}, {other}"
+    #assert self.val and other.val, f"{self}, {other}"
     return None  # i.e. can't decide
 
 

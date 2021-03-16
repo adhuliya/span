@@ -249,7 +249,7 @@ class Func(ConstructT):
     that the function returns.
     If the function's return type is void, it returns None
     """
-    if self.sig.returnType == Void or not self.hasBody():
+    if self.sig.returnType.isVoid() or not self.hasBody():
       # a void function has no return expression
       # and so does a function with no body
       return None

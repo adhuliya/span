@@ -14,7 +14,7 @@ import logging
 LOG = logging.getLogger("span")
 LDB, LIN, LER, LWA = LOG.debug, LOG.info, LOG.error, LOG.warning
 
-from typing import Tuple, Dict, List, Optional as Opt, Set, Callable, cast
+from typing import Tuple, Dict, List, Optional as Opt, Set, Callable, cast, Type
 
 from span.util.util import LS
 from span.util import util #IMPORTANT
@@ -199,7 +199,7 @@ class OverallL(dfv.OverallL):
     """Returns True if the type of the instruction/variable is
     of interest to the analysis, i.e. a pointer type.
     """
-    check1 = t.isPointer()
+    check1 = t.isPointerOrVoid()
     return check1
 
 
@@ -225,8 +225,8 @@ class PointsToA(analysis.ValueAnalysisAT):
   """Points-to Analysis."""
   __slots__ : List[str] = []
 
-  L: type = OverallL
-  D: Opt[types.DirectionT] = Forward
+  L: Type[dfv.OverallL] = OverallL
+  D: types.DirectionT = Forward
 
 
   needsRhsDerefToVarsSim: bool = False
@@ -243,6 +243,7 @@ class PointsToA(analysis.ValueAnalysisAT):
       func: constructs.Func,
   ) -> None:
     super().__init__(func, ComponentL, OverallL)
+    dfv.initTopBotOverall(func, PointsToA.__name__, PointsToA.L)
 
 
   ################################################
@@ -283,7 +284,7 @@ class PointsToA(analysis.ValueAnalysisAT):
     # STEP 1: check if the expression can be evaluated
     varType = ir.inferTypeOfVal(self.func, varName)
 
-    if not isinstance(varType, (types.Ptr, types.ArrayT)):
+    if not (varType.isPointerOrVoid() or varType.isArrayOrVoid()):
       return SimFailed
 
     # STEP 2: If here, eval may be possible, hence attempt eval
@@ -313,8 +314,8 @@ class PointsToA(analysis.ValueAnalysisAT):
       values: Opt[Set[bool]] = None,
   ) -> Opt[Set[bool]]:
     # STEP 1: check if the expression can be evaluated
-    nameType = self.func.tUnit.inferTypeOfVal(e.name)
-    if not isinstance(nameType, types.Ptr):
+    varType = self.func.tUnit.inferTypeOfVal(e.name)
+    if not varType.isPointer():
       return SimFailed  # i.e. no eval possible for the expression
 
     # STEP 2: If here, eval may be possible, hence attempt eval
@@ -348,7 +349,7 @@ class PointsToA(analysis.ValueAnalysisAT):
     opCode = e.opr.opCode
     if opCode not in (op.BO_NE_OC, op.BO_EQ_OC):
       return SimFailed
-    if not isinstance(e.arg1.type, types.Ptr):
+    if not e.arg1.type.isPointer():
       return SimFailed
 
     # STEP 2: If here, eval may be possible, hence attempt eval
@@ -432,13 +433,13 @@ class PointsToA(analysis.ValueAnalysisAT):
       else:
         return self.componentBot  # a sound over-approximation
 
-    if not rhsType.isPointer() and \
+    if not rhsType.isPointerOrVoid() and \
         not isinstance(rhsType, (types.ArrayT, types.FuncSig)):
       return self.componentBot  #FIXME: safe approximation
       #raise ValueError(f"{rhs}, {rhsType}, {rhs.info}")
 
-    if isinstance(rhs, expr.VarE):  # handles PseudoVarE too
-      if isinstance(rhsType, types.Ptr):  # don't use rhsType.isPointer()
+    if isinstance(rhs, expr.VarE):  # handles PpmsVarE too
+      if isinstance(rhsType, types.Ptr) or rhsType.isVoid():  # don't use isPointer()
         return dfvInGetVal(rhs.name)
       elif isinstance(rhsType, (types.ArrayT, types.FuncSig)):
         return ComponentL(self.func, val={rhs.name})
@@ -470,7 +471,7 @@ class PointsToA(analysis.ValueAnalysisAT):
 
     elif isinstance(rhs, expr.CastE):
       #return self.componentBot
-      if isinstance(rhsType, types.Ptr):
+      if rhsType.isPointerOrVoid():
         return self.getExprDfv(rhs.arg, dfvIn)
       else:
         return self.componentBot
@@ -507,8 +508,7 @@ class PointsToA(analysis.ValueAnalysisAT):
     if not isinstance(binExpr.type, types.Ptr):
       return self.componentBot
 
-    arg1 = binExpr.arg1
-    arg2 = binExpr.arg2
+    arg1, arg2 = binExpr.arg1, binExpr.arg2
     ptrVarName: Opt[str] = None
     isArray = False
 
@@ -537,11 +537,11 @@ class PointsToA(analysis.ValueAnalysisAT):
     elif pointees.bot:
       newVal = self.componentBot
     else:
-      # Check if all the pointees are arrays.
+      # Check if all the pointees are arrays or PPMS Vars.
       assert pointees.val
       for pointee in pointees.val:
-        if not isinstance(ir.inferTypeOfVal(self.func, pointee), types.ArrayT):
-          # return bot even if one pointee is not an array
+        if not ir.inferTypeOfVal(self.func, pointee).isArrayOrVoid():
+          # return bot if any one pointee is not an array or PPMS
           newVal = self.componentBot
           break
       else:

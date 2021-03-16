@@ -308,9 +308,23 @@ def isVariadic(func: constructs.Func) -> bool:
   return func.sig.variadic
 
 
-def hasPointerReturnType(func: constructs.Func) -> bool:
+def hasReturnTypePtr(func: constructs.Func) -> bool:
   return isinstance(func.sig.returnType, types.Ptr)
 
+
+def hasReturnTypeVoidPtr(func: constructs.Func) -> bool:
+  retType = func.sig.returnType
+  if isinstance(retType, types.Ptr):
+    return retType.getPointeeTypeFinal().isVoid()
+  return False
+
+
+def hasReturnTypeRecord(func: constructs.Func) -> bool:
+  return isinstance(func.sig.returnType, types.RecordT)
+
+
+def hasReturnTypeVoid(func: constructs.Func) -> bool:
+  return func.sig.returnType.isVoid()
 
 ################################################
 # BLOCK END  : boolean_queries
@@ -376,16 +390,25 @@ def countOnFunctions(
 def executeAllQueries(tUnit: TranslationUnit):
   p = print
   p(f"Query Results on translation unit '{tUnit.name}'")
-  p("TotalFunctions:", countOnFunctions(tUnit, lambda _: 1))
-  p("TotalFunctions(WithDef):", countOnFunctions(tUnit, hasDefinition))
-  p("TotalFunctions(WithoutDef):",
+  p(f"Records: {len(tUnit.allRecords)}")
+  p()
+  p("Functions:", countOnFunctions(tUnit, lambda _: 1))
+  p("Functions(WithDef):", countOnFunctions(tUnit, hasDefinition))
+  p("Functions(WithoutDef):",
     countOnFunctions(tUnit, lambda x: not hasDefinition(x)))
-  p("TotalFunctions(Variadic):", countOnFunctions(tUnit, isVariadic, FUNC_WITH_BODY))
-  p("TotalFuncCalls(All):", countOnFunctions(tUnit, countAllFuncCalls, FUNC_WITH_BODY))
-  p("TotalFuncCalls(Non-Ptr):", countOnFunctions(tUnit, countNonPtrFuncCalls, FUNC_WITH_BODY))
-  p("TotalFuncCalls(Ptr):", countOnFunctions(tUnit, countPtrFuncCalls, FUNC_WITH_BODY))
+  p("Functions(Variadic):", countOnFunctions(tUnit, isVariadic, FUNC_WITH_BODY))
+  p("Functions(PtrReturnType):", countOnFunctions(tUnit, hasReturnTypePtr, FUNC_WITH_BODY))
+  p("Functions(RecordReturnType):", countOnFunctions(tUnit, hasReturnTypeRecord, FUNC_WITH_BODY))
+  p("Functions(VoidReturnType):", countOnFunctions(tUnit, hasReturnTypeVoid, FUNC_WITH_BODY))
+  p("Functions(VoidPtrReturnType):", countOnFunctions(tUnit, hasReturnTypeVoidPtr, FUNC_WITH_BODY))
+  p()
+  p("FuncCalls(All):", countOnFunctions(tUnit, countAllFuncCalls, FUNC_WITH_BODY))
+  p("FuncCalls(Non-Ptr):", countOnFunctions(tUnit, countNonPtrFuncCalls, FUNC_WITH_BODY))
+  p("FuncCalls(Ptr):", countOnFunctions(tUnit, countPtrFuncCalls, FUNC_WITH_BODY))
+  p()
   p("Nodes(total):", countOnFunctions(tUnit, countNodes, FUNC_WITH_BODY))
   p("Nodes(maxInAFunc):", tUnit.maxCfgNodesInAFunction())
+  p()
   p("DerefsUsed(all):", countOnFunctions(tUnit, countDerefsUsed, FUNC_WITH_BODY))
   p("DerefsUsed(Lhs):", countOnFunctions(tUnit, countDerefsUsedLhs, FUNC_WITH_BODY))
   p("DerefsUsed(Rhs):", countOnFunctions(tUnit, countDerefsUsedRhs, FUNC_WITH_BODY))
@@ -393,10 +416,13 @@ def executeAllQueries(tUnit: TranslationUnit):
   p("DerefsUsed(Num:Rhs):", countOnFunctions(tUnit, countNumericDerefsRhs, FUNC_WITH_BODY))
   p("DerefsUsed(Num:RhsNonChar):", countOnFunctions(tUnit, countNumericDerefsRhsNonChar, FUNC_WITH_BODY))
   p("DerefsUsed(Num:All):", countOnFunctions(tUnit, countNumericDerefs, FUNC_WITH_BODY))
+  p("DerefsUsed(all):", countOnFunctions(tUnit, countDerefsUsed, FUNC_WITH_BODY))
+  p()
   p("TotalModOperations:", countOnFunctions(tUnit, countModOperators, FUNC_WITH_BODY))
   p("TotalModByTwoOperations:", countOnFunctions(tUnit, countModByTwoOperators, FUNC_WITH_BODY))
   p("TotalFuncWithModByTwoOperations:",
     len(filterFunctions(tUnit, lambda x: bool(countModByTwoOperators(x)))))
+  p()
   p("TotalMemAllocations:", countOnFunctions(tUnit, countMemoryAllocations, FUNC_WITH_BODY))
   p("TotalMemAllocationsPseudoVar:",
     countOnFunctions(tUnit, countMemoryAllocationsPseudoVar, FUNC_WITH_BODY))
@@ -406,12 +432,14 @@ def executeAllQueries(tUnit: TranslationUnit):
     #len(filterFunctions(tUnit, lambda x: bool(countMemoryAllocations(x)))))
     list(map(lambda x: x.name, filterFunctions(tUnit, lambda x: bool(countMemoryAllocations(x))))))
 
+  p()
   p("TotalIfCondWithConstComparison:",
     countOnFunctions(tUnit, countIfCondWithConstComparison, FUNC_WITH_BODY))
   p("TotalIfCondWithComparison:",
     countOnFunctions(tUnit, countIfCondWithComparison, FUNC_WITH_BODY))
   p("TotalIfCond:",
     countOnFunctions(tUnit, countIfCond, FUNC_WITH_BODY))
+  p()
   p("TotalRelationalExprs:",
     countOnFunctions(tUnit, countRelExpressions, FUNC_WITH_BODY))
 

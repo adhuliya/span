@@ -930,6 +930,18 @@ class Host:
         if nDfv is not None: return nDfv
         # if nDfv is None then work on the original instruction
 
+      if activeAnObj.needsLhsDerefToVarsSim and insn.hasLhsArrayDerefExpr():
+        assert isinstance(insn, AssignI), f"{nid}: {insn}"
+        nDfv = self.handleLhsArrayDerefSim(node, insn, nodeDfv)
+        if nDfv is not None: return nDfv
+        # if nDfv is None then work on the original instruction
+
+      if activeAnObj.needsRhsDerefToVarsSim and insn.hasRhsArrayDerefExpr():
+        assert isinstance(insn, AssignI), f"{nid}: {insn}"
+        nDfv = self.handleRhsArrayDerefSim(node, insn, nodeDfv)
+        if nDfv is not None: return nDfv
+        # if nDfv is None then work on the original instruction
+
       if activeAnObj.needsLhsDerefToVarsSim and insn.hasLhsMemDerefExpr():
         assert isinstance(insn, AssignI), f"{nid}: {insn}"
         nDfv = self.handleLhsMemDerefSim(node, insn, nodeDfv)
@@ -1028,28 +1040,23 @@ class Host:
     if util.LL4: LDB("CalleeCallSiteDfv(CallerDfv): %s", nodeDfv)
 
     calleeBi = self.getCallSiteDfv(nid, calleeFuncName, self.activeAnName)
-    if not calleeBi: # i.e. wait for the calleeBi to be some useful value
-      callDfv = self.processCallArguments(node, callE, nodeDfv)
-      newCalleeBi = self.activeAnObj.getLocalizedCalleeBi(nid, insn, callDfv, calleeBi)
-      self.setCallSiteDfv(nid, calleeFuncName, self.activeAnName, newCalleeBi)
-      return self.Barrier_Instr(node, insn, nodeDfv)
-
     if self.activeAnDirn == Forward:
       callDfv = self.processCallArguments(node, callE, nodeDfv)
       newCalleeBi = self.activeAnObj.getLocalizedCalleeBi(nid, insn, callDfv, calleeBi)
       self.setCallSiteDfv(nid, calleeFuncName, self.activeAnName, newCalleeBi)
+    else: #TODO for backward analysis
+      assert False #TODO
+      # assert self.activeAnDirn in (Backward, ForwBack), f"{self.activeAnDirn}"
+
+    if not calleeBi: # i.e. wait for the calleeBi to be some useful value
+      nodeDfv = self.Barrier_Instr(node, insn, nodeDfv)
+
+    elif self.activeAnDirn == Forward:
       if util.LL4: LDB("FinallyInvokingInstrFunc: %s.%s() on %s",
                        self.activeAnName, tFuncName, insn)
       nodeDfv = self.activeAnObj.Any_Instr(nid, insn, nodeDfv, calleeBi)  # type: ignore
     else: # both for Backward and ForwBack
       assert False #TODO
-      assert self.activeAnDirn in (Backward, ForwBack), f"{self.activeAnDirn}"
-      if util.LL4: LDB("FinallyInvokingInstrFunc: %s.%s() on %s",
-                       self.activeAnName, tFuncName, insn)
-      nodeDfv = self.activeAnObj.Any_Instr(nid, insn, nodeDfv, calleeBi)  # type: ignore
-      newCalleeBi = self.activeAnObj.getLocalizedCalleeBi(nid, insn, nodeDfv, calleeBi)
-      self.setCallSiteDfv(nid, calleeFuncName, self.activeAnName, newCalleeBi)
-      # nodeDfv = self.processCallArguments(node, callE, nodeDfv)  #FIXME: think
 
     return nodeDfv
 
@@ -1273,7 +1280,7 @@ class Host:
       lhsType, varList = insn.lhs.type, []
       for vName in values:
         var = VarE(vName)
-        var.type = lhsType  # necessary in case of pseudo vars (site based allocation)
+        var.type = lhsType  # necessary for #PPMS vars
         varList.append(var)
       newInsn = III([AssignI(var, rhs) for var in varList])
       newInsn.addInstr(ExReadI({lhsArg.name}))
@@ -1318,7 +1325,7 @@ class Host:
       rhsType, varList = insn.rhs.type, []
       for vName in values:
         var = VarE(vName)
-        var.type = rhsType  # necessary in case of pseudo vars (site based allocation)
+        var.type = rhsType # necessary for #PPMS vars
         varList.append(var)
       newInsn = III([AssignI(lhs, var) for var in varList])
       newInsn.addInstr(CondReadI(
@@ -1326,6 +1333,98 @@ class Host:
 
     self.tUnit.inferTypeOfInstr(newInsn)
     self.setCachedInstrSim(node.id, simName, insn, rhsArg, newInsn)
+    return newInsn
+
+
+  def handleLhsArrayDerefSim(self,
+      node: cfg.CfgNode,
+      insn: AssignI,  # lhs is ArrayE with dereference
+      nodeDfv: NodeDfvL
+  ) -> Opt[NodeDfvL]:
+    newInsn = self.getLhsArrayDerefSimInstr(node, insn)
+    if newInsn is None:
+      return None  # i.e. process_the_original_insn
+    else:
+      return self.analyzeInstr(node, newInsn, nodeDfv)
+
+
+  def getLhsArrayDerefSimInstr(self,
+      node: cfg.CfgNode,
+      insn: AssignI,  # lhs is ArrayE with dereference
+      demand: Opt[ddm.AtomicDemand] = None, #DDM
+  ) -> Opt[InstrIT]:
+    assert isinstance(insn.lhs, ArrayE), f"{node.id}: {insn}"
+    lhs, rhs = insn.lhs, insn.rhs
+    lhsOf, simName = lhs.of, Deref__to__Vars__Name
+
+    newInsn, valid = self.getCachedInstrSimResult(node, simName,
+                                                  insn, lhsOf, demand)
+    if valid: return newInsn
+
+    values = self.Calc_Deref__to__Vars(node, lhsOf)
+    if values is SimFailed:
+      self.setCachedInstrSim(node.id, simName, insn, lhsOf, insn)
+      return None  # i.e. process_the_original_insn
+    elif values is SimPending:
+      newInsn = ExReadI({lhsOf.name})
+    else:  # take meet of the dfv of the set of instructions now possible
+      lhsType, lhsList = insn.lhs.type, []
+      for vName in values:
+        var = VarE(vName)
+        newLhs = ArrayE(lhs.index, of=var)
+        var.type, newLhs.type = lhsOf.type.getPointeeType(), lhsType  # for #PPMS vars
+        lhsList.append(newLhs)
+      newInsn = III([AssignI(l, rhs) for l in lhsList])
+      newInsn.addInstr(ExReadI({lhsOf.name}))
+
+    self.tUnit.inferTypeOfInstr(newInsn)
+    self.setCachedInstrSim(node.id, simName, insn, lhsOf, newInsn)
+    return newInsn
+
+
+  def handleRhsArrayDerefSim(self,
+      node: cfg.CfgNode,
+      insn: AssignI,  # rhs is ArrayE with dereference
+      nodeDfv: NodeDfvL
+  ) -> Opt[NodeDfvL]:
+    newInsn = self.getRhsArrayDerefSimInstr(node, insn)
+    if newInsn is None:
+      return None  # i.e. process_the_original_insn
+    else:
+      return self.analyzeInstr(node, newInsn, nodeDfv)
+
+
+  def getRhsArrayDerefSimInstr(self,
+      node: cfg.CfgNode,
+      insn: AssignI,  # lhs is ArrayE with dereference
+      demand: Opt[ddm.AtomicDemand] = None, #DDM
+  ) -> Opt[InstrIT]:
+    assert isinstance(insn.rhs, ArrayE), f"{node.id}: {insn}"
+    lhs, rhs = insn.lhs, insn.rhs
+    rhsOf, simName = rhs.of, Deref__to__Vars__Name
+
+    newInsn, valid = self.getCachedInstrSimResult(node, simName,
+                                                  insn, rhsOf, demand)
+    if valid: return newInsn
+
+    values = self.Calc_Deref__to__Vars(node, rhsOf)
+    if values is SimFailed:
+      self.setCachedInstrSim(node.id, simName, insn, rhsOf, insn)
+      return None  # i.e. process_the_original_insn
+    elif values is SimPending:
+      newInsn = ExReadI({rhsOf.name})
+    else:  # take meet of the dfv of the set of instructions now possible
+      rhsType, rhsList = insn.rhs.type, []
+      for vName in values:
+        var = VarE(vName)
+        newRhs = ArrayE(rhs.index, of=var)
+        var.type, newRhs.type = rhsOf.type.getPointeeType(), rhsType  # for #PPMS vars
+        rhsList.append(newRhs)
+      newInsn = III([AssignI(lhs, r) for r in rhsList])
+      newInsn.addInstr(ExReadI({rhsOf.name}))
+
+    self.tUnit.inferTypeOfInstr(newInsn)
+    self.setCachedInstrSim(node.id, simName, insn, rhsOf, newInsn)
     return newInsn
 
 
@@ -1365,7 +1464,7 @@ class Host:
       lhsType, varList = insn.lhs.type, []
       for vName in values:
         var = VarE(f"{vName}.{lhsName}")
-        var.type = lhsType  # necessary in case of pseudo vars (site based allocation)
+        var.type = lhsType # necessary for #PPMS vars
         varList.append(var)
       newInsn = III([AssignI(var, rhs) for var in varList])
       newInsn.addInstr(ExReadI({lhs.of.name}))
@@ -1415,7 +1514,7 @@ class Host:
       rhsType, varList = insn.rhs.type, []
       for vName in values:
         var = VarE(f"{vName}.{rhsName}")
-        var.type = rhsType  # necessary in case of pseudo vars (site based allocation)
+        var.type = rhsType # necessary for #PPMS vars
         varList.append(var)
       newInsn = III([AssignI(lhs, var) for var in varList])
       newInsn.addInstr(CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs.of)))

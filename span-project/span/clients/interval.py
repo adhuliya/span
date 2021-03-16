@@ -460,13 +460,7 @@ class OverallL(dfv.OverallL):
 
     if not changed:
       return self, not Changed
-    elif widened_val:
-      value = OverallL(self.func, val=widened_val)
-    elif self.isDefaultValBot():
-      value = OverallL(self.func, bot=True)
-    else:
-      value = OverallL(self.func, val=None)
-
+    value = OverallL(self.func, val=widened_val)
     return value, Changed
 
 
@@ -482,15 +476,16 @@ class IntervalA(analysis.ValueAnalysisAT):
   """Even-Odd (Parity) Analysis."""
   __slots__ : List[str] = []
   # concrete lattice class of the analysis
-  L: Opt[Type[dfv.DataLT]] = OverallL
+  L: Type[dfv.OverallL] = OverallL
   # direction of the analysis
-  D: Opt[types.DirectionT] = Forward
+  D: types.DirectionT = Forward
 
 
   def __init__(self,
       func: constructs.Func,
   ) -> None:
     super().__init__(func, ComponentL, OverallL)
+    dfv.initTopBotOverall(func, IntervalA.__name__, IntervalA.L)
 
 
   ################################################
@@ -527,7 +522,8 @@ class IntervalA(analysis.ValueAnalysisAT):
       values: Opt[Set[types.NumericT]] = None,
   ) -> Opt[Set[types.NumericT]]:
     # STEP 1: tell the system if the expression can be evaluated
-    if not e.type.isNumeric() or e.type.isArray():
+    eType = e.type
+    if not eType.isNumericOrVoid() or eType.isArrayOrVoid():
       return SimFailed
 
     # STEP 2: If here, eval may be possible, hence attempt eval
@@ -906,7 +902,10 @@ class IntervalA(analysis.ValueAnalysisAT):
       computed: DataLT,
       strVal: str,  # a short string representation of the assertion (see tests)
   ) -> bool:
-    """Returns true if assertion is correct."""
+    """Returns true if assertion is correct.
+    strVal Examples,
+    "is: bot", "is: top", "has: {'v:main:b': 'top'}"
+    """
 
     if strVal.startswith("any"):
       return True
@@ -917,7 +916,7 @@ class IntervalA(analysis.ValueAnalysisAT):
         return computed.bot
       elif strVal.strip() in {"top", "Top", "TOP"}:
         return computed.top
-      else: # must be a tuple
+      else: # must be of type computed.val
         mapOfVarNames = eval(strVal)
         return computed.val == mapOfVarNames
 

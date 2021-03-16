@@ -408,7 +408,7 @@ class Type:
 
   def isArray(self) -> bool:
     """This function is appropriately overridden by `ArrayT`."""
-    return self.typeCode == VOID_TC
+    return False
 
 
   def isVoid(self) -> bool:
@@ -442,7 +442,7 @@ class Type:
     return fstr
 
 
-  @functools.lru_cache(256)
+  #@functools.lru_cache(256)
   def getNamesOfType(self,
       givenType: Opt['Type'],
       prefix: str,  # the name of the array
@@ -1043,7 +1043,7 @@ class ArrayT(Type):
     self.of = of
 
 
-  @functools.lru_cache(256)
+  #@functools.lru_cache(256)
   def getNamesOfType(self,
       givenType: Opt[Type],
       prefix: Opt[str] = None,  # the name of the array
@@ -1063,7 +1063,7 @@ class ArrayT(Type):
       for nameInfo in nameInfos:
         nameInfo.hasArray = True  # the name has array!
 
-    if givenType in (None, self) and prefix:
+    if givenType in (None, self, of) and prefix:
       nameInfos.add(VarNameInfo(prefix, self, True, bySpan))
 
     assert nameInfos is not None, f"{givenType}, {prefix} and {self}"
@@ -1450,7 +1450,7 @@ class RecordT(ConstructT):
     raise ValueError(f"{memberName} not present in {self}")
 
 
-  @functools.lru_cache(256)
+  #@functools.lru_cache(256)
   def getNamesOfType(self,
       givenType: Opt[Type],
       prefix: Opt[str] = None,
@@ -1476,7 +1476,7 @@ class RecordT(ConstructT):
     return prefixedNameInfos
 
 
-  @functools.lru_cache(64)
+  #@functools.lru_cache(64)
   def _getNamesOfType(self,
       givenType: Opt[Type],
   ) -> Set[VarNameInfo]:
