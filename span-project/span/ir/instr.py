@@ -77,12 +77,12 @@ class InstrIT:
     return False
 
 
-  def checkInvariants(self, level: int = 0):
+  def checkInvariants(self):
     """Runs some invariant checks on self.
     Args:
       level: An argument to help invoke specific checks in future.
     """
-    if level >= 0:
+    if util.CC1:
       assert self.instrCode is not None, f"{self}"
       assert self.type is not None, f"{self}"
 
@@ -120,6 +120,7 @@ class InstrIT:
 
   def hasRhsCallExpr(self) -> bool: return False
 
+  def getRValueNames(self) -> Set[types.VarNameT]: return set()
 
   def getFormalStr(self) -> types.FormalStrT:
     """Returns the formal name of this instruction.
@@ -180,6 +181,9 @@ class AssignI(InstrIT):
     self.rhs = rhs
 
 
+  def getRValueNames(self) -> Opt[Set[types.VarNameT]]:
+    return self.rhs.getRValueNames()
+
   def hasLhsVarExpr(self) -> bool: return self.lhs.hasVarExpr()
 
   def hasRhsNumVarExpr(self) -> bool: return self.rhs.hasNumVarExpr()
@@ -215,11 +219,11 @@ class AssignI(InstrIT):
     return formalStr
 
 
-  def checkInvariants(self, level: int = 0):
-    super().checkInvariants(level)
-    if level >= 0:
-      self.lhs.checkInvariants(level)
-      self.rhs.checkInvariants(level)
+  def checkInvariants(self):
+    super().checkInvariants()
+    if util.CC1:
+      self.lhs.checkInvariants()
+      self.rhs.checkInvariants()
 
 
   def __eq__(self, other) -> bool:
@@ -446,11 +450,11 @@ class CondI(InstrIT):
   def hasCondExpr(self) -> bool: return True
 
 
-  def checkInvariants(self, level: int = 0):
-    super().checkInvariants(level)
-    if level >= 0:
+  def checkInvariants(self):
+    super().checkInvariants()
+    if util.CC1:
       assert isinstance(self.arg, expr.VarE), f"{self}"
-      self.arg.checkInvariants(level)
+      self.arg.checkInvariants()
 
 
   def __eq__(self, other) -> bool:
@@ -524,12 +528,12 @@ class ReturnI(InstrIT):
     return f"{consts.RETURN_I_STR}_{argStr}"
 
 
-  def checkInvariants(self, level: int = 0):
-    super().checkInvariants(level)
-    if level >= 0:
+  def checkInvariants(self):
+    super().checkInvariants()
+    if util.CC1:
       assert self.arg is None \
              or isinstance(self.arg, (expr.VarE, expr.LitE)), f"{self}"
-      if self.arg: self.arg.checkInvariants(level)
+      if self.arg: self.arg.checkInvariants()
 
 
   def __eq__(self, other) -> bool:
@@ -612,11 +616,11 @@ class CallI(InstrIT):
   def hasRhsCallExpr(self) -> bool: return True
 
 
-  def checkInvariants(self, level: int = 0):
-    super().checkInvariants(level)
-    if level >= 0:
+  def checkInvariants(self):
+    super().checkInvariants()
+    if util.CC1:
       assert self.arg is not None, f"{self}"
-      self.arg.checkInvariants(level)
+      self.arg.checkInvariants()
 
 
   def __eq__(self, other) -> bool:

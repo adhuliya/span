@@ -30,7 +30,7 @@ Num_Bin__to__Num_Lit__Name: str = analysis.AnalysisAT.Num_Bin__to__Num_Lit.__nam
 Deref__to__Vars__Name: str = analysis.AnalysisAT.Deref__to__Vars.__name__
 
 
-class HostStat:
+class HostStats:
   def __init__(self, host, totalCfgNodes=0):
     self.host = host
     self.simChangeCacheHits = cutil.CacheHits("SimUnChanged")

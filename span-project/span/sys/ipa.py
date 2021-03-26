@@ -89,7 +89,7 @@ class ValueContext:
       equal = False
     else:
       for anName, nDfvSelf in self.dfvDict:
-        direction = clients.getAnDirection(anName)
+        direction = clients.getAnDirn(anName)
         nDfvOther = other.dfvDict[anName]
         if direction == Forward:
           if not nDfvSelf.dfvIn == nDfvOther.dfvIn:
@@ -107,7 +107,7 @@ class ValueContext:
   def __hash__(self) -> int:
     theHash = hash(self.funcName)
     for anName, nDfvSelf in self.dfvDict:
-      direction = clients.getAnDirection(anName)
+      direction = clients.getAnDirn(anName)
       if direction == Forward:
         theHash = hash((theHash, nDfvSelf.dfvIn))
       elif direction == Backward:
@@ -825,17 +825,17 @@ def diagnoseInterval(tUnit: TranslationUnit):
   ipaHostSpan.analyze()
   if util.VV1: ipaHostSpan.printSimCounts("SPAN")
 
-  # ipaHostLern = IpaHost(tUnit,
-  #                       mainAnName=mainAnalysis,
-  #                       otherAnalyses=otherAnalyses,
-  #                       maxNumOfAnalyses=maxNumOfAnalyses,
-  #                       useTransformation=True,
-  #                       )
   ipaHostLern = IpaHost(tUnit,
-                        mainAnName="PointsToA",
-                        otherAnalyses=None,
-                        maxNumOfAnalyses=1,
+                        mainAnName=mainAnalysis,
+                        otherAnalyses=otherAnalyses,
+                        maxNumOfAnalyses=maxNumOfAnalyses,
+                        useTransformation=True,
                         )
+  # ipaHostLern = IpaHost(tUnit,
+  #                       mainAnName="PointsToA",
+  #                       otherAnalyses=None,
+  #                       maxNumOfAnalyses=1,
+  #                       )
   #ipaHostLern = IpaHost(tUnit, mainAnName=mainAnalysis, maxNumOfAnalyses=1) # span with single analysis
   ipaHostLern.analyze()
   if util.VV1: ipaHostLern.printSimCounts("TRANSFORM")
@@ -843,6 +843,7 @@ def diagnoseInterval(tUnit: TranslationUnit):
   # computeStats01("IntervalA", ipaHostSpan, ipaHostLern)
   # computeStats01("PointsToA", ipaHostSpan, ipaHostLern, tUnit)
   computeStatsAverageDeref("PointsToA", ipaHostSpan, ipaHostLern, tUnit)
+  computeStatsIntervalPrecision("IntervalA", ipaHostSpan, ipaHostLern, tUnit)
 
   takeTracemallocSnapshot()
 
@@ -931,10 +932,13 @@ def computeStatsAverageDeref(
 
   AnClass = clients.analyses[mainAnName]
 
-  for funcName in ipaHostSpan.vci.finalResult.keys():
+  for funcName in sorted(ipaHostSpan.vci.finalResult.keys()):
     #FIXME: skipping some functions here
+    if util.VV1: print(f"FUNC_NAME (ForAvgDerefCompute): {funcName}")
     if not (funcName in ipaHostSpan.vci.finalResult and
-            funcName in ipaHostOther.vci.finalResult): continue
+            funcName in ipaHostOther.vci.finalResult):
+      if util.VV1: print(f"  SKIPPING_FUNC (ForAvgDerefCompute): {funcName}")
+      continue
 
     interSpan = ipaHostSpan.vci.finalResult[funcName][mainAnName]
     interOther = ipaHostOther.vci.finalResult[funcName][mainAnName]
@@ -963,14 +967,17 @@ def computeStatsAverageDeref(
 
       for i, sim in enumerate(sims):
         oldSim = sim
-        sim = SimFailed if i == 1 and simHasAbsVars(tUnit, sim) else sim
+        # sim = SimFailed if i == 1 and tUnit.hasAbstractVars(sim) else sim
+        # sim = SimFailed if sim and i == 1 and len(sim) > 1 else sim
+
+        if i == 1 and util.VV1 and sim != sims[0]:
+          print(f"DEREF_DIFFERENCE {funcName} (DIFF): {derefE}, {insn}, {insn.info}:"
+                f"\n  Other( NO ): {oldSim},\n  Span( YES ): {sims[0]}")
 
         if sim: # some set of values
           lhsDerefPointeesCount[i] += len(sim) if lhsDeref else 0
           rhsDerefPointeesCount[i] += len(sim) if rhsDeref else 0
         elif sim is SimFailed:
-          if util.VV2:
-            print(f"DEREF_FAILED {i}: {funcName}: {derefE}, {insn}, {insn.info}, {oldSim}")
           allNames = tUnit.getNamesEnv(fObj, derefE.type)
           lhsDerefPointeesCount[i] += len(allNames) if lhsDeref else 0
           rhsDerefPointeesCount[i] += len(allNames) if rhsDeref else 0
@@ -988,15 +995,48 @@ def computeStatsAverageDeref(
     print(  f"AverageDeref(Other)  (RHS): {rhsDerefPointeesCount[1]/rhsDerefPointCount}")
 
 
-def simHasAbsVars(tUnit: TranslationUnit, sim: Set) -> bool:
-  if not sim:
-    return False
+def computeStatsIntervalPrecision(
+    mainAnName: AnNameT, # always Interval Analysis
+    ipaHostSpan: IpaHost,
+    ipaHostOther: IpaHost,
+    tUnit: TranslationUnit,
+):
+  """Compute Interval Precision Comparison"""
+  rValuePointsPrecise = 0
+  rValuePointsTotal = 0
 
-  for vName in sim:
-    vType = tUnit.inferTypeOfVal(vName)
-    if isinstance(vType, types.ArrayT) or conv.isPpmsVar(vName):
-      return True
+  AnClass = clients.analyses[mainAnName]
 
-  return False
+  for funcName in sorted(ipaHostSpan.vci.finalResult.keys()):
+    #FIXME: skipping some functions here
+    if util.VV1: print(f"FUNC_NAME (ForIntervalPrecision): {funcName}")
+    if not (funcName in ipaHostSpan.vci.finalResult and
+            funcName in ipaHostOther.vci.finalResult):
+      if util.VV1: print(f"  SKIPPING_FUNC (ForIntervalPrecision): {funcName}")
+      continue
+
+    interSpan = ipaHostSpan.vci.finalResult[funcName][mainAnName]
+    interOther = ipaHostOther.vci.finalResult[funcName][mainAnName]
+    fObj = tUnit.getFuncObj(funcName)
+    nodeMap = fObj.cfg.nodeMap
+
+    for nid in sorted(interSpan.keys()):
+      insn = nodeMap[nid].insn
+      rValueVars = insn.getRValueNames()
+
+      nDfvInSpan = interSpan[nid].dfvIn
+      nDfvInOther = interOther[nid].dfvIn
+
+      for vName in rValueVars:
+        rValuePointsTotal += 1
+        valSpan = nDfvInSpan.getVal(vName)
+        valOther = nDfvInOther.getVal(vName)
+        if valOther < valSpan and valOther != valSpan:
+          rValuePointsPrecise += 1
+          if util.VV1:
+            print(f"MORE_PRECISE: ({funcName}): {insn}, Var: {vName}"
+                  f"\n SPAN : {valSpan},\n OTHER: {valOther}")
+
+  print(f"TOTAL_PRECISION (IntervalA): {rValuePointsPrecise}/{rValuePointsTotal}")
 
 

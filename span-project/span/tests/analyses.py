@@ -92,7 +92,9 @@ class SpanAnalysisTests(unittest.TestCase):
 
     parser = driver.getParser()
     fileName = irFileName if irFileName else cFileName
-    args = parser.parse_args(args=[action.action, action.analysesExpr, fileName])
+    argList = [action.action, action.analysesExpr, fileName]
+    print(f"  {cFileName}: Args: span {argList}")
+    args = parser.parse_args(args=argList)
     resultsDict: [FuncNameT, host.Host] = args.func(args)
 
     anRes = action.results["analysis.results"]
@@ -101,8 +103,7 @@ class SpanAnalysisTests(unittest.TestCase):
         resHost: host.Host = resultsDict[funcName]
         computedAnRes = resHost.getAnalysisResults(anName).nidNdfvMap
         if self.compareAnResults(anName, computedAnRes, correctAnRes, cFileName):
-          print(f"    {cFileName}: {anName} on {funcName} is correct.")
-          print(f"        analyses={action.analysesExpr}")
+          print(f"    {anName} on {funcName} is correct.")
 
 
   def runAndCheckAnalysisResultsIpa(self,
@@ -121,7 +122,9 @@ class SpanAnalysisTests(unittest.TestCase):
 
     parser = driver.getParser()
     fileName = irFileName if irFileName else cFileName
-    args = parser.parse_args(args=[action.action, action.analysesExpr, fileName])
+    argList = [action.action, action.analysesExpr, fileName]
+    print(f"    {cFileName}: Args: span {argList}")
+    args = parser.parse_args(args=argList)
     ipaHost = args.func(args)
     resultsDict: Dict[FuncNameT, Dict[AnNameT, Dict[NodeIdT, dfv.NodeDfvL]]] \
       = ipaHost.vci.finalResult
@@ -131,8 +134,7 @@ class SpanAnalysisTests(unittest.TestCase):
       for funcName, correctAnRes in funcResMap.items():
         computedAnRes = resultsDict[funcName][anName]
         if self.compareAnResults(anName, computedAnRes, correctAnRes, cFileName):
-          print(f"    {cFileName}: {anName} on {funcName} is correct.")
-          print(f"        analyses={action.analysesExpr}")
+          print(f"    {anName} on {funcName} is correct.")
 
 
   def compareAnResults(self,

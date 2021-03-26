@@ -10,10 +10,11 @@ Tests to check correct spanir conversion.
 import unittest
 import sys
 import subprocess as subp
-from typing import Dict, List
+from typing import Dict, List, Any, Optional as Opt
 
 # IMPORTANT imports for eval() to work
-from span.ir import conv
+from span.ir import conv, callgraph
+from span.ir.callgraph import CallGraph
 from span.ir.conv import FalseEdge, TrueEdge, UnCondEdge
 from span.ir.types import Loc
 import span.ir.types as types
@@ -87,7 +88,7 @@ class SpanIrTests(unittest.TestCase):
       for action in pyFileActions:
         if action.action == "ir.checks":
           tUnit: ir.TranslationUnit = genTranslationUnit(cFileName)
-          self.checkAttributesAll(action.results, tUnit, cFileName)
+          self.checkAttributesAll(action.results, tUnit, cFileName, pyFile)
           # Now check for the various attributes.
           # STEP 1: check the names api
           for key in action.results.keys():
@@ -114,7 +115,10 @@ class SpanIrTests(unittest.TestCase):
       results: Dict,
       tUnit: tunit.TranslationUnit,
       cFileName: str,
+      pyFile: str,
   ) -> None:
+
+    self.checkAttributesCallGraph(results, tUnit, cFileName)
 
     # STEP 1: check the names api
     for key in results.keys():
@@ -136,6 +140,32 @@ class SpanIrTests(unittest.TestCase):
                                 f"Exptected: {tup[2]}"))
         else:
           self.assertTrue(False, "Should not reach here.")
+
+
+  def checkAttributesCallGraph(self,
+      results: Dict,
+      tUnit: tunit.TranslationUnit,
+      cFileName: str,
+  ) -> None:
+    callGraph: Opt[CallGraph] = None
+
+    propName = "callgraph.edges.count"
+    res = results.get(propName, None)
+    if res:
+      callGraph = callgraph.generateCallGraph(tUnit) if not callGraph else callGraph
+      count = callGraph.getCountEdges()
+      self.assertEqual(count, res,
+                       msg=(f"{propName}: {cFileName}: Computed:"
+                            f" {count}, Correct: {res}"))
+
+    propName = "callgraph.nodes.count"
+    res = results.get(propName, None)
+    if res:
+      callGraph = callgraph.generateCallGraph(tUnit) if not callGraph else callGraph
+      count = callGraph.getCountNodes()
+      self.assertEqual(count, res,
+                       msg=(f"{propName}: {cFileName}: Computed:"
+                            f" {count}, Correct: {res}"))
 
 
   def checkAttributesTUnit(self,

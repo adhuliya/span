@@ -1,0 +1,3598 @@
+
+RESULTS: When excluding Abstract Vars and Multiple-pointers.
+==================================================================
+
+FUNC_NAME (ForAvgDerefCompute): f:BZ2_bzCompressInit
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (DIFF): strm->bzalloc, 17t = strm->bzalloc; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(4229,23),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (DIFF): strm->bzalloc, strm->bzalloc = 22t; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(4231,5),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (DIFF): strm->bzfree, 23t = strm->bzfree; Ptr(types.FuncSig(types.Void, [types.Ptr(types.Void, 1), types.Ptr(types.Void, 1)], False), 1), Info(Loc(4234,23),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (DIFF): strm->bzfree, strm->bzfree = 28t; Ptr(types.FuncSig(types.Void, [types.Ptr(types.Void, 1), types.Ptr(types.Void, 1)], False), 1), Info(Loc(4236,5),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (DIFF): strm->bzalloc, 29t = strm->bzalloc; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(4239,16),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (SAME): *29t, 30t = *29t; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(4239,14),0):
+  Other( NO ): {'f:default_bzalloc'},
+  Span( YES ): {'f:default_bzalloc'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (DIFF): strm->opaque, 31t = strm->opaque; Ptr(VOID, 1), Info(Loc(4239,32),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (SAME): 30t(31t,32t,1), tmp___0 = 30t(31t,32t,1); Ptr(VOID, 1), Info(Loc(4239,3),0):
+  Other( NO ): {'f:default_bzalloc'},
+  Span( YES ): {'f:default_bzalloc'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (DIFF): s->strm, s->strm = strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(4248,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (DIFF): s->arr1, s->arr1 = 39t; Ptr(UINT32, 1), Info(Loc(4250,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (DIFF): s->arr2, s->arr2 = 41t; Ptr(UINT32, 1), Info(Loc(4252,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (DIFF): s->ftab, s->ftab = 43t; Ptr(UINT32, 1), Info(Loc(4254,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (DIFF): strm->bzalloc, 44t = strm->bzalloc; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(4258,16),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (DIFF): strm->opaque, 46t = strm->opaque; Ptr(VOID, 1), Info(Loc(4258,32),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+FUNC_NAME (ForAvgDerefCompute): f:BZ2_bzDecompressInit
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (DIFF): strm->bzalloc, 15t = strm->bzalloc; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(5000,23),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (DIFF): strm->bzalloc, strm->bzalloc = 20t; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(5002,5),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (DIFF): strm->bzfree, 21t = strm->bzfree; Ptr(types.FuncSig(types.Void, [types.Ptr(types.Void, 1), types.Ptr(types.Void, 1)], False), 1), Info(Loc(5005,23),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (DIFF): strm->bzfree, strm->bzfree = 26t; Ptr(types.FuncSig(types.Void, [types.Ptr(types.Void, 1), types.Ptr(types.Void, 1)], False), 1), Info(Loc(5007,5),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (DIFF): strm->bzalloc, 27t = strm->bzalloc; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(5010,16),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): *27t, 28t = *27t; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(5010,14),0):
+  Other( NO ): {'f:default_bzalloc'},
+  Span( YES ): {'f:default_bzalloc'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (DIFF): strm->opaque, 29t = strm->opaque; Ptr(VOID, 1), Info(Loc(5010,32),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): 28t(29t,30t,1), tmp___0 = 28t(29t,30t,1); Ptr(VOID, 1), Info(Loc(5010,3),0):
+  Other( NO ): {'f:default_bzalloc'},
+  Span( YES ): {'f:default_bzalloc'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (DIFF): s->strm, s->strm = strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(5019,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (DIFF): strm->state, strm->state = 36t; Ptr(VOID, 1), Info(Loc(5021,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (DIFF): s->state, s->state = 10; INT32, Info(Loc(5023,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (DIFF): s->bsLive, s->bsLive = 0; INT32, Info(Loc(5025,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (DIFF): s->bsBuff, s->bsBuff = 37t; UINT32, Info(Loc(5027,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (DIFF): s->calculatedCombinedCRC, s->calculatedCombinedCRC = 38t; UINT32, Info(Loc(5029,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (DIFF): strm->total_in_lo32, strm->total_in_lo32 = 0; UINT32, Info(Loc(5031,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (DIFF): strm->total_in_hi32, strm->total_in_hi32 = 0; UINT32, Info(Loc(5033,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (DIFF): strm->total_out_lo32, strm->total_out_lo32 = 0; UINT32, Info(Loc(5035,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (DIFF): strm->total_out_hi32, strm->total_out_hi32 = 0; UINT32, Info(Loc(5037,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (DIFF): s->smallDecompress, s->smallDecompress = 39t; UINT8, Info(Loc(5039,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (DIFF): s->ll4, s->ll4 = 41t; Ptr(UINT8, 1), Info(Loc(5041,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (DIFF): s->ll16, s->ll16 = 43t; Ptr(UINT16, 1), Info(Loc(5043,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (DIFF): s->tt, s->tt = 45t; Ptr(UINT32, 1), Info(Loc(5045,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (DIFF): s->currBlockNo, s->currBlockNo = 0; INT32, Info(Loc(5047,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (DIFF): s->verbosity, s->verbosity = verbosity___0; INT32, Info(Loc(5049,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+FUNC_NAME (ForAvgDerefCompute): f:BZ2_bzRead
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(6873,5),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): {'v:uncompressStream:bzerr'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6878,5),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): *bzerror, *bzerror = 22t; INT32, Info(Loc(6896,7),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): {'v:uncompressStream:bzerr'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->lastErr, bzf->lastErr = 27t; INT32, Info(Loc(6901,7),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->writing, 28if = bzf->writing; UINT8, Info(Loc(6907,7),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): *bzerror, *bzerror = 33t; INT32, Info(Loc(6911,7),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->lastErr, bzf->lastErr = 38t; INT32, Info(Loc(6916,7),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(6926,7),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6931,7),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->strm, 48t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6937,3),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): 48t->avail_out, 48t->avail_out = 49t; UINT32, Info(Loc(6937,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->strm, 50t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6939,3),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): 50t->next_out, 50t->next_out = 51t; Ptr(INT8, 1), Info(Loc(6939,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->strm, 52t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6943,9),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): 52t->avail_in, 53t = 52t->avail_in; UINT32, Info(Loc(6943,9),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->handle, 55t = bzf->handle; INT32, Info(Loc(6945,24),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->buf, 57t = bzf->buf; Ptr(INT8, 1), Info(Loc(6949,42),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->handle, 60t = bzf->handle; INT32, Info(Loc(6949,81),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->bufN, bzf->bufN = n; INT32, Info(Loc(6951,9),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->bufN, 61t = bzf->bufN; INT32, Info(Loc(6953,45),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->strm, 62t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6953,9),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): 62t->avail_in, 62t->avail_in = 63t; UINT32, Info(Loc(6953,9),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->strm, 64t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6955,9),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->buf, 65t = bzf->buf; Ptr(INT8, 1), Info(Loc(6955,29),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): 64t->next_in, 64t->next_in = 65t; Ptr(INT8, 1), Info(Loc(6955,9),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->strm, 66t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6959,28),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): *bzerror, *bzerror = ret; INT32, Info(Loc(6967,11),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->lastErr, bzf->lastErr = ret; INT32, Info(Loc(6972,11),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->handle, 78t = bzf->handle; INT32, Info(Loc(6981,28),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->strm, 79t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6985,13),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): 79t->avail_in, 80t = 79t->avail_in; UINT32, Info(Loc(6985,13),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->strm, 82t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6987,15),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): 82t->avail_out, 83t = 82t->avail_out; UINT32, Info(Loc(6987,15),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): *bzerror, *bzerror = 89t; INT32, Info(Loc(6991,15),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->lastErr, bzf->lastErr = 94t; INT32, Info(Loc(6996,15),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): *bzerror, *bzerror = 4; INT32, Info(Loc(7009,9),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->lastErr, bzf->lastErr = 4; INT32, Info(Loc(7014,9),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->strm, 104t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(7017,43),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): 104t->avail_out, 106t = 104t->avail_out; UINT32, Info(Loc(7017,43),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->strm, 109t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(7020,9),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): 109t->avail_out, 110t = 109t->avail_out; UINT32, Info(Loc(7020,9),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(7024,9),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(7029,9),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+FUNC_NAME (ForAvgDerefCompute): f:BZ2_bzReadClose
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadClose (DIFF): *bzerror, *bzerror = 0; INT32, Info(Loc(6810,5),0):
+  Other( NO ): {'v:uncompressStream:bzerr_dummy', 'v:uncompressStream:bzerr'},
+  Span( YES ): {'v:uncompressStream:bzerr_dummy'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadClose (DIFF): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6815,5),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadClose (DIFF): *bzerror, *bzerror = 0; INT32, Info(Loc(6822,7),0):
+  Other( NO ): {'v:uncompressStream:bzerr_dummy', 'v:uncompressStream:bzerr'},
+  Span( YES ): {'v:uncompressStream:bzerr_dummy'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadClose (DIFF): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6827,7),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadClose (DIFF): bzf->writing, 21if = bzf->writing; UINT8, Info(Loc(6833,7),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadClose (DIFF): *bzerror, *bzerror = 26t; INT32, Info(Loc(6837,7),0):
+  Other( NO ): {'v:uncompressStream:bzerr_dummy', 'v:uncompressStream:bzerr'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadClose (DIFF): bzf->lastErr, bzf->lastErr = 31t; INT32, Info(Loc(6842,7),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadClose (DIFF): bzf->initialisedOk, 32if = bzf->initialisedOk; UINT8, Info(Loc(6848,7),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadClose (DIFF): bzf->strm, 33t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6850,25),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+FUNC_NAME (ForAvgDerefCompute): f:BZ2_bzReadOpen
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(6645,5),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): {'v:uncompressStream:bzerr'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6650,5),0):
+  Other( NO ): {'g:0Null'},
+  Span( YES ): {'g:0Null'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): *bzerror, *bzerror = 32t; INT32, Info(Loc(6704,9),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): {'v:uncompressStream:bzerr'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->lastErr, bzf->lastErr = 37t; INT32, Info(Loc(6709,9),0):
+  Other( NO ): {'g:0Null'},
+  Span( YES ): {'g:0Null'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): *bzerror, *bzerror = 48t; INT32, Info(Loc(6725,7),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): {'v:uncompressStream:bzerr'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (DIFF): bzf->lastErr, bzf->lastErr = 53t; INT32, Info(Loc(6730,7),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(6738,5),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): {'v:uncompressStream:bzerr'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (DIFF): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6743,5),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (DIFF): bzf->initialisedOk, bzf->initialisedOk = 63t; UINT8, Info(Loc(6746,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (DIFF): bzf->handle, bzf->handle = f; INT32, Info(Loc(6748,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (DIFF): bzf->bufN, bzf->bufN = 0; INT32, Info(Loc(6750,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (DIFF): bzf->writing, bzf->writing = 64t; UINT8, Info(Loc(6752,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (DIFF): bzf->strm, 66t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6754,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (DIFF): 66t->bzalloc, 66t->bzalloc = 67t; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(6754,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (DIFF): bzf->strm, 69t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6756,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (DIFF): 69t->bzfree, 69t->bzfree = 70t; Ptr(types.FuncSig(types.Void, [types.Ptr(types.Void, 1), types.Ptr(types.Void, 1)], False), 1), Info(Loc(6756,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (DIFF): bzf->strm, 71t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6758,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (DIFF): 71t->opaque, 71t->opaque = 72t; Ptr(VOID, 1), Info(Loc(6758,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (DIFF): *74t, 75t = *74t; UINT8, Info(Loc(6762,34),0):
+  Other( NO ): {'v:uncompressStream:unused'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (DIFF): bzf->buf, 76t = bzf->buf; Ptr(INT8, 1), Info(Loc(6762,5),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (DIFF): bzf->bufN, 77t = bzf->bufN; INT32, Info(Loc(6762,14),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (DIFF): bzf->bufN, 79t = bzf->bufN; INT32, Info(Loc(6764,6),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (DIFF): bzf->bufN, 80t = bzf->bufN; INT32, Info(Loc(6764,6),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (DIFF): bzf->bufN, bzf->bufN = 81t; INT32, Info(Loc(6764,5),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (DIFF): bzf->strm, 85t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6771,30),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): *bzerror, *bzerror = ret; INT32, Info(Loc(6777,7),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): {'v:uncompressStream:bzerr'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (DIFF): bzf->lastErr, bzf->lastErr = ret; INT32, Info(Loc(6782,7),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (DIFF): bzf->bufN, 97t = bzf->bufN; INT32, Info(Loc(6790,39),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (DIFF): bzf->strm, 98t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6790,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (DIFF): 98t->avail_in, 98t->avail_in = 99t; UINT32, Info(Loc(6790,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (DIFF): bzf->strm, 100t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6792,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (DIFF): bzf->buf, 101t = bzf->buf; Ptr(INT8, 1), Info(Loc(6792,23),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (DIFF): 100t->next_in, 100t->next_in = 101t; Ptr(INT8, 1), Info(Loc(6792,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (DIFF): bzf->initialisedOk, bzf->initialisedOk = 102t; UINT8, Info(Loc(6794,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+FUNC_NAME (ForAvgDerefCompute): f:BZ2_bzWrite
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(6303,5),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): {'v:compressStream:bzerr'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6308,5),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): *bzerror, *bzerror = 22t; INT32, Info(Loc(6326,7),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): {'v:compressStream:bzerr'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->lastErr, bzf->lastErr = 27t; INT32, Info(Loc(6331,7),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->writing, 28t = bzf->writing; UINT8, Info(Loc(6337,9),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): *bzerror, *bzerror = 34t; INT32, Info(Loc(6341,7),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->lastErr, bzf->lastErr = 39t; INT32, Info(Loc(6346,7),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(6356,7),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6361,7),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->strm, 49t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6367,3),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): 49t->avail_in, 49t->avail_in = 50t; UINT32, Info(Loc(6367,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->strm, 51t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6369,3),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): 51t->next_in, 51t->next_in = 52t; Ptr(INT8, 1), Info(Loc(6369,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->strm, 53t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6373,5),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): 53t->avail_out, 53t->avail_out = 5000; UINT32, Info(Loc(6373,5),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->strm, 54t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6375,5),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->buf, 55t = bzf->buf; Ptr(INT8, 1), Info(Loc(6375,26),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): 54t->next_out, 54t->next_out = 55t; Ptr(INT8, 1), Info(Loc(6375,5),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->strm, 56t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6377,26),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): *bzerror, *bzerror = ret; INT32, Info(Loc(6383,9),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->lastErr, bzf->lastErr = ret; INT32, Info(Loc(6388,9),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->strm, 66t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6394,9),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): 66t->avail_out, 67t = 66t->avail_out; UINT32, Info(Loc(6394,9),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->strm, 69t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6396,28),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): 69t->avail_out, 70t = 69t->avail_out; UINT32, Info(Loc(6396,28),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->buf, 72t = bzf->buf; Ptr(INT8, 1), Info(Loc(6398,51),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->handle, 76t = bzf->handle; INT32, Info(Loc(6399,27),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): *bzerror, *bzerror = 82t; INT32, Info(Loc(6411,11),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->lastErr, bzf->lastErr = 87t; INT32, Info(Loc(6416,11),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->strm, 88t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6423,9),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): 88t->avail_in, 89t = 88t->avail_in; UINT32, Info(Loc(6423,9),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(6427,9),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6432,9),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+FUNC_NAME (ForAvgDerefCompute): f:BZ2_bzWriteClose64
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): *bzerror, *bzerror = 0; INT32, Info(Loc(6473,7),0):
+  Other( NO ): {'v:compressStream:bzerr', 'v:compressStream:bzerr_dummy'},
+  Span( YES ): {'v:compressStream:bzerr', 'v:compressStream:bzerr_dummy'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6478,7),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->writing, 13t = bzf->writing; UINT8, Info(Loc(6484,9),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): *bzerror, *bzerror = 19t; INT32, Info(Loc(6488,7),0):
+  Other( NO ): {'v:compressStream:bzerr', 'v:compressStream:bzerr_dummy'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->lastErr, bzf->lastErr = 24t; INT32, Info(Loc(6493,7),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): *nbytes_in_lo32, *nbytes_in_lo32 = 0; UINT32, Info(Loc(6501,5),0):
+  Other( NO ): {'v:compressStream:nbytes_in_lo32'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): *nbytes_in_hi32, *nbytes_in_hi32 = 0; UINT32, Info(Loc(6506,5),0):
+  Other( NO ): {'v:compressStream:nbytes_in_hi32'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): *nbytes_out_lo32, *nbytes_out_lo32 = 0; UINT32, Info(Loc(6511,5),0):
+  Other( NO ): {'v:compressStream:nbytes_out_lo32'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): *nbytes_out_hi32, *nbytes_out_hi32 = 0; UINT32, Info(Loc(6516,5),0):
+  Other( NO ): {'v:compressStream:nbytes_out_hi32'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->lastErr, 42t = bzf->lastErr; INT32, Info(Loc(6521,9),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->strm, 44t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6525,9),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): 44t->avail_out, 44t->avail_out = 5000; UINT32, Info(Loc(6525,9),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->strm, 45t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6527,9),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->buf, 46t = bzf->buf; Ptr(INT8, 1), Info(Loc(6527,30),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): 45t->next_out, 45t->next_out = 46t; Ptr(INT8, 1), Info(Loc(6527,9),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->strm, 47t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6529,30),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): *bzerror, *bzerror = ret; INT32, Info(Loc(6537,15),0):
+  Other( NO ): {'v:compressStream:bzerr', 'v:compressStream:bzerr_dummy'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->lastErr, bzf->lastErr = ret; INT32, Info(Loc(6542,15),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->strm, 58t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6549,13),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): 58t->avail_out, 59t = 58t->avail_out; UINT32, Info(Loc(6549,13),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->strm, 61t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6551,32),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): 61t->avail_out, 62t = 61t->avail_out; UINT32, Info(Loc(6551,32),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->buf, 64t = bzf->buf; Ptr(INT8, 1), Info(Loc(6553,55),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->handle, 68t = bzf->handle; INT32, Info(Loc(6554,31),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): *bzerror, *bzerror = 74t; INT32, Info(Loc(6566,15),0):
+  Other( NO ): {'v:compressStream:bzerr', 'v:compressStream:bzerr_dummy'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->lastErr, bzf->lastErr = 79t; INT32, Info(Loc(6571,15),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->strm, 86t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6596,23),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): 86t->total_in_lo32, 87t = 86t->total_in_lo32; UINT32, Info(Loc(6596,23),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): *nbytes_in_lo32, *nbytes_in_lo32 = 87t; UINT32, Info(Loc(6596,5),0):
+  Other( NO ): {'v:compressStream:nbytes_in_lo32'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->strm, 92t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6601,23),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): 92t->total_in_hi32, 93t = 92t->total_in_hi32; UINT32, Info(Loc(6601,23),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): *nbytes_in_hi32, *nbytes_in_hi32 = 93t; UINT32, Info(Loc(6601,5),0):
+  Other( NO ): {'v:compressStream:nbytes_in_hi32'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->strm, 98t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6606,24),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): 98t->total_out_lo32, 99t = 98t->total_out_lo32; UINT32, Info(Loc(6606,24),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): *nbytes_out_lo32, *nbytes_out_lo32 = 99t; UINT32, Info(Loc(6606,5),0):
+  Other( NO ): {'v:compressStream:nbytes_out_lo32'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->strm, 104t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6611,24),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): 104t->total_out_hi32, 105t = 104t->total_out_hi32; UINT32, Info(Loc(6611,24),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): *nbytes_out_hi32, *nbytes_out_hi32 = 105t; UINT32, Info(Loc(6611,5),0):
+  Other( NO ): {'v:compressStream:nbytes_out_hi32'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): *bzerror, *bzerror = 0; INT32, Info(Loc(6616,5),0):
+  Other( NO ): {'v:compressStream:bzerr', 'v:compressStream:bzerr_dummy'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6621,5),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->strm, 114t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6624,21),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+FUNC_NAME (ForAvgDerefCompute): f:BZ2_bzWriteOpen
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(6160,5),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): {'v:compressStream:bzerr'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6165,5),0):
+  Other( NO ): {'g:0Null'},
+  Span( YES ): {'g:0Null'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): *bzerror, *bzerror = 23t; INT32, Info(Loc(6203,7),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): {'v:compressStream:bzerr'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->lastErr, bzf->lastErr = 28t; INT32, Info(Loc(6208,7),0):
+  Other( NO ): {'g:0Null'},
+  Span( YES ): {'g:0Null'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): *bzerror, *bzerror = 39t; INT32, Info(Loc(6223,7),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): {'v:compressStream:bzerr'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (DIFF): bzf->lastErr, bzf->lastErr = 44t; INT32, Info(Loc(6228,7),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(6236,5),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): {'v:compressStream:bzerr'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (DIFF): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6241,5),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (DIFF): bzf->initialisedOk, bzf->initialisedOk = 54t; UINT8, Info(Loc(6244,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (DIFF): bzf->bufN, bzf->bufN = 0; INT32, Info(Loc(6246,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (DIFF): bzf->handle, bzf->handle = f; INT32, Info(Loc(6248,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (DIFF): bzf->writing, bzf->writing = 55t; UINT8, Info(Loc(6250,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (DIFF): bzf->strm, 57t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6252,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (DIFF): 57t->bzalloc, 57t->bzalloc = 58t; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(6252,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (DIFF): bzf->strm, 60t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6254,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (DIFF): 60t->bzfree, 60t->bzfree = 61t; Ptr(types.FuncSig(types.Void, [types.Ptr(types.Void, 1), types.Ptr(types.Void, 1)], False), 1), Info(Loc(6254,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (DIFF): bzf->strm, 62t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6256,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (DIFF): 62t->opaque, 62t->opaque = 63t; Ptr(VOID, 1), Info(Loc(6256,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (DIFF): bzf->strm, 65t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6263,28),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): *bzerror, *bzerror = ret; INT32, Info(Loc(6269,7),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): {'v:compressStream:bzerr'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (DIFF): bzf->lastErr, bzf->lastErr = ret; INT32, Info(Loc(6274,7),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (DIFF): bzf->strm, 77t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6282,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (DIFF): 77t->avail_in, 77t->avail_in = 0; UINT32, Info(Loc(6282,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (DIFF): bzf->initialisedOk, bzf->initialisedOk = 78t; UINT8, Info(Loc(6284,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+FUNC_NAME (ForAvgDerefCompute): f:bz_config_ok
+FUNC_NAME (ForAvgDerefCompute): f:cleanUpAndFail
+FUNC_NAME (ForAvgDerefCompute): f:compressStream
+FUNC_NAME (ForAvgDerefCompute): f:configError
+FUNC_NAME (ForAvgDerefCompute): f:debug_time
+FUNC_NAME (ForAvgDerefCompute): f:default_bzalloc
+FUNC_NAME (ForAvgDerefCompute): f:init_RL
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+FUNC_NAME (ForAvgDerefCompute): f:main
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:main (DIFF): 11t->limit, 11t->limit = 12t; INT32, Info(Loc(924,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:main (DIFF): 13t->limit, 13t->limit = 14t; INT32, Info(Loc(926,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:main (DIFF): 15t->limit, 15t->limit = 16t; INT32, Info(Loc(928,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:main (DIFF): 22t->len, 23t = 22t->len; INT32, Info(Loc(943,76),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:main (DIFF): 36t->buf, 37t = 36t->buf; Ptr(UINT8, 1), Info(Loc(962,31),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:main (DIFF): *39t, 41t = *39t; UINT8, Info(Loc(962,29),0):
+  Other( NO ): {'g:0Null', 'g:spec_init:5p'},
+  Span( YES ): {'g:0Null', 'g:spec_init:5p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:main (DIFF): *40t, *40t = 41t; UINT8, Info(Loc(962,5),0):
+  Other( NO ): {'g:main:4p'},
+  Span( YES ): {'g:main:4p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:main (DIFF): 48t->len, 49t = 48t->len; INT32, Info(Loc(987,14),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:main (DIFF): 54t->len, 55t = 54t->len; INT32, Info(Loc(1008,14),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:main (DIFF): *59t, 60t = *59t; UINT8, Info(Loc(1015,17),0):
+  Other( NO ): {'g:main:4p'},
+  Span( YES ): {'g:main:4p'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:main (DIFF): 61t->buf, 62t = 61t->buf; Ptr(UINT8, 1), Info(Loc(1015,50),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:main (DIFF): *64t, 65t = *64t; UINT8, Info(Loc(1015,48),0):
+  Other( NO ): {'g:0Null', 'g:spec_init:5p'},
+  Span( YES ): {'g:0Null', 'g:spec_init:5p'}
+FUNC_NAME (ForAvgDerefCompute): f:myfeof
+FUNC_NAME (ForAvgDerefCompute): f:panic
+FUNC_NAME (ForAvgDerefCompute): f:prepare_new_block
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+FUNC_NAME (ForAvgDerefCompute): f:setExit
+FUNC_NAME (ForAvgDerefCompute): f:showFileNames
+FUNC_NAME (ForAvgDerefCompute): f:spec_compress
+FUNC_NAME (ForAvgDerefCompute): f:spec_fread
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_fread (DIFF): 7t->pos, 9t = 7t->pos; INT32, Info(Loc(613,7),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_fread (DIFF): 8t->len, 10t = 8t->len; INT32, Info(Loc(613,26),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_fread (DIFF): 15t->pos, 16t = 15t->pos; INT32, Info(Loc(623,7),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_fread (DIFF): 18t->len, 20t = 18t->len; INT32, Info(Loc(623,39),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_fread (DIFF): 22t->len, 24t = 22t->len; INT32, Info(Loc(625,11),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_fread (DIFF): 23t->pos, 25t = 23t->pos; INT32, Info(Loc(625,29),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_fread (DIFF): 28t->buf, 30t = 28t->buf; Ptr(UINT8, 1), Info(Loc(631,66),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_fread (DIFF): 29t->pos, 31t = 29t->pos; INT32, Info(Loc(631,84),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_fread (DIFF): 35t->pos, 37t = 35t->pos; INT32, Info(Loc(634,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_fread (DIFF): 35t->pos, 35t->pos = 38t; INT32, Info(Loc(634,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+FUNC_NAME (ForAvgDerefCompute): f:spec_fwrite
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_fwrite (DIFF): 7t->buf, 9t = 7t->buf; Ptr(UINT8, 1), Info(Loc(825,32),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_fwrite (DIFF): 8t->pos, 10t = 8t->pos; INT32, Info(Loc(825,50),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_fwrite (DIFF): 16t->len, 18t = 16t->len; INT32, Info(Loc(828,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_fwrite (DIFF): 16t->len, 16t->len = 19t; INT32, Info(Loc(828,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_fwrite (DIFF): 20t->pos, 22t = 20t->pos; INT32, Info(Loc(830,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_fwrite (DIFF): 20t->pos, 20t->pos = 23t; INT32, Info(Loc(830,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+FUNC_NAME (ForAvgDerefCompute): f:spec_getc
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_getc (DIFF): 6t->pos, 8t = 6t->pos; INT32, Info(Loc(667,7),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_getc (DIFF): 7t->len, 9t = 7t->len; INT32, Info(Loc(667,26),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_getc (DIFF): 14t->pos, tmp = 14t->pos; INT32, Info(Loc(677,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_getc (DIFF): 15t->pos, 16t = 15t->pos; INT32, Info(Loc(679,4),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_getc (DIFF): 15t->pos, 17t = 15t->pos; INT32, Info(Loc(679,4),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_getc (DIFF): 15t->pos, 15t->pos = 18t; INT32, Info(Loc(679,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_getc (DIFF): 19t->buf, 20t = 19t->buf; Ptr(UINT8, 1), Info(Loc(681,16),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_getc (DIFF): *21t, 22t = *21t; UINT8, Info(Loc(681,14),0):
+  Other( NO ): {'g:0Null', 'g:spec_init:5p'},
+  Span( YES ): {'g:0Null', 'g:spec_init:5p'}
+FUNC_NAME (ForAvgDerefCompute): f:spec_init
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_init (DIFF): 4t->limit, limit = 4t->limit; INT32, Info(Loc(351,5),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_init (DIFF): 7t->limit, 7t->limit = limit; INT32, Info(Loc(355,5),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_init (DIFF): 9t->buf, 9t->buf = 10t; Ptr(UINT8, 1), Info(Loc(357,5),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_init (DIFF): 11t->buf, 12t = 11t->buf; Ptr(UINT8, 1), Info(Loc(362,25),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_init (DIFF): 19t->buf, 20t = 19t->buf; Ptr(UINT8, 1), Info(Loc(373,9),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_init (DIFF): *21t, *21t = 22t; UINT8, Info(Loc(373,7),0):
+  Other( NO ): {'g:0Null', 'g:spec_init:5p'},
+  Span( YES ): {'g:0Null', 'g:spec_init:5p'}
+FUNC_NAME (ForAvgDerefCompute): f:spec_initbufs
+FUNC_NAME (ForAvgDerefCompute): f:spec_load
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_load (DIFF): 6t->len, 6t->len = tmp___1; INT32, Info(Loc(477,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_load (DIFF): 7t->pos, 7t->pos = tmp___1; INT32, Info(Loc(479,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_load (DIFF): 9t->buf, 10t = 9t->buf; Ptr(UINT8, 1), Info(Loc(485,33),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_load (DIFF): 19t->len, 20t = 19t->len; INT32, Info(Loc(506,5),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_load (DIFF): 19t->len, 19t->len = 21t; INT32, Info(Loc(506,5),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_load (DIFF): 22t->len, 23t = 22t->len; INT32, Info(Loc(513,10),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_load (DIFF): 25t->len, 26t = 25t->len; INT32, Info(Loc(515,22),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_load (DIFF): 27t->len, 28t = 27t->len; INT32, Info(Loc(517,19),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_load (DIFF): 30t->len, tmp___5 = 30t->len; INT32, Info(Loc(519,7),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_load (DIFF): 33t->buf, 35t = 33t->buf; Ptr(UINT8, 1), Info(Loc(527,34),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_load (DIFF): 34t->len, 36t = 34t->len; INT32, Info(Loc(527,53),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_load (DIFF): 39t->buf, 40t = 39t->buf; Ptr(UINT8, 1), Info(Loc(527,101),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_load (DIFF): 43t->len, 44t = 43t->len; INT32, Info(Loc(530,5),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_load (DIFF): 43t->len, 43t->len = 45t; INT32, Info(Loc(530,5),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+FUNC_NAME (ForAvgDerefCompute): f:spec_reset
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_reset (DIFF): 1t->buf, 2t = 1t->buf; Ptr(UINT8, 1), Info(Loc(757,18),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_reset (DIFF): 4t->len, 5t = 4t->len; INT32, Info(Loc(757,47),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_reset (DIFF): 7t->len, 7t->len = tmp; INT32, Info(Loc(761,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_reset (DIFF): 8t->pos, 8t->pos = tmp; INT32, Info(Loc(763,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+FUNC_NAME (ForAvgDerefCompute): f:spec_rewind
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_rewind (DIFF): 1t->pos, 1t->pos = 0; INT32, Info(Loc(745,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+FUNC_NAME (ForAvgDerefCompute): f:spec_uncompress
+FUNC_NAME (ForAvgDerefCompute): f:spec_ungetc
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_ungetc (DIFF): 6t->pos, 7t = 6t->pos; INT32, Info(Loc(713,7),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_ungetc (DIFF): 11t->pos, 12t = 11t->pos; INT32, Info(Loc(716,13),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_ungetc (DIFF): 13t->pos, 14t = 13t->pos; INT32, Info(Loc(721,4),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_ungetc (DIFF): 13t->pos, 15t = 13t->pos; INT32, Info(Loc(721,4),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_ungetc (DIFF): 13t->pos, 13t->pos = 16t; INT32, Info(Loc(721,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_ungetc (DIFF): 17t->buf, 19t = 17t->buf; Ptr(UINT8, 1), Info(Loc(723,15),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_ungetc (DIFF): 18t->pos, 20t = 18t->pos; INT32, Info(Loc(723,33),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+HAS_ABSTRACT_VARS: True
+DEREF_DIFFERENCE f:spec_ungetc (DIFF): *21t, 22t = *21t; UINT8, Info(Loc(723,13),0):
+  Other( NO ): {'g:0Null', 'g:spec_init:5p'},
+  Span( YES ): {'g:0Null', 'g:spec_init:5p'}
+FUNC_NAME (ForAvgDerefCompute): f:uncompressStream
+HAS_ABSTRACT_VARS: True
+
+RESULTS: When excluding Abstract Vars and Multiple-pointers.
+==================================================================
+AverageDeref(Span) (Total): 1.165289256198347   (*x -> a | b  (2))
+AverageDeref(Other)(Total): 49.146005509641874  (*x -> *x     (N))
+
+AverageDeref(Span)   (LHS): 0.5932203389830508
+AverageDeref(Other)  (LHS): 54.48587570621469
+
+AverageDeref(Span)   (RHS): 1.7096774193548387
+AverageDeref(Other)  (RHS): 44.064516129032256
+TimeElapsed(TotalTimeTaken): 21133.067846298218 ms (Starts: 1, Stops: 1)
+
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): *bzerror, *bzerror = 0; INT32, Info(Loc(6473,7),0):
+  Other( NO ): {'v:compressStream:bzerr', 'v:compressStream:bzerr_dummy'},
+  Span( YES ): {'v:compressStream:bzerr', 'v:compressStream:bzerr_dummy'}
+
+RESULTS: When excluding Multiple-pointers only.
+==================================================================
+
+FUNC_NAME (ForAvgDerefCompute): f:BZ2_bzCompressInit
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (SAME): strm->bzalloc, 17t = strm->bzalloc; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(4229,23),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (SAME): strm->bzalloc, strm->bzalloc = 22t; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(4231,5),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (SAME): strm->bzfree, 23t = strm->bzfree; Ptr(types.FuncSig(types.Void, [types.Ptr(types.Void, 1), types.Ptr(types.Void, 1)], False), 1), Info(Loc(4234,23),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (SAME): strm->bzfree, strm->bzfree = 28t; Ptr(types.FuncSig(types.Void, [types.Ptr(types.Void, 1), types.Ptr(types.Void, 1)], False), 1), Info(Loc(4236,5),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (SAME): strm->bzalloc, 29t = strm->bzalloc; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(4239,16),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (SAME): *29t, 30t = *29t; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(4239,14),0):
+  Other( NO ): {'f:default_bzalloc'},
+  Span( YES ): {'f:default_bzalloc'}
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (SAME): strm->opaque, 31t = strm->opaque; Ptr(VOID, 1), Info(Loc(4239,32),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (SAME): 30t(31t,32t,1), tmp___0 = 30t(31t,32t,1); Ptr(VOID, 1), Info(Loc(4239,3),0):
+  Other( NO ): {'f:default_bzalloc'},
+  Span( YES ): {'f:default_bzalloc'}
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (SAME): s->strm, s->strm = strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(4248,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (SAME): s->arr1, s->arr1 = 39t; Ptr(UINT32, 1), Info(Loc(4250,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (SAME): s->arr2, s->arr2 = 41t; Ptr(UINT32, 1), Info(Loc(4252,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (SAME): s->ftab, s->ftab = 43t; Ptr(UINT32, 1), Info(Loc(4254,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (SAME): strm->bzalloc, 44t = strm->bzalloc; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(4258,16),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (SAME): strm->opaque, 46t = strm->opaque; Ptr(VOID, 1), Info(Loc(4258,32),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+FUNC_NAME (ForAvgDerefCompute): f:BZ2_bzDecompressInit
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): strm->bzalloc, 15t = strm->bzalloc; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(5000,23),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): strm->bzalloc, strm->bzalloc = 20t; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(5002,5),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): strm->bzfree, 21t = strm->bzfree; Ptr(types.FuncSig(types.Void, [types.Ptr(types.Void, 1), types.Ptr(types.Void, 1)], False), 1), Info(Loc(5005,23),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): strm->bzfree, strm->bzfree = 26t; Ptr(types.FuncSig(types.Void, [types.Ptr(types.Void, 1), types.Ptr(types.Void, 1)], False), 1), Info(Loc(5007,5),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): strm->bzalloc, 27t = strm->bzalloc; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(5010,16),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): *27t, 28t = *27t; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(5010,14),0):
+  Other( NO ): {'f:default_bzalloc'},
+  Span( YES ): {'f:default_bzalloc'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): strm->opaque, 29t = strm->opaque; Ptr(VOID, 1), Info(Loc(5010,32),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): 28t(29t,30t,1), tmp___0 = 28t(29t,30t,1); Ptr(VOID, 1), Info(Loc(5010,3),0):
+  Other( NO ): {'f:default_bzalloc'},
+  Span( YES ): {'f:default_bzalloc'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): s->strm, s->strm = strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(5019,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): strm->state, strm->state = 36t; Ptr(VOID, 1), Info(Loc(5021,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): s->state, s->state = 10; INT32, Info(Loc(5023,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): s->bsLive, s->bsLive = 0; INT32, Info(Loc(5025,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): s->bsBuff, s->bsBuff = 37t; UINT32, Info(Loc(5027,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): s->calculatedCombinedCRC, s->calculatedCombinedCRC = 38t; UINT32, Info(Loc(5029,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): strm->total_in_lo32, strm->total_in_lo32 = 0; UINT32, Info(Loc(5031,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): strm->total_in_hi32, strm->total_in_hi32 = 0; UINT32, Info(Loc(5033,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): strm->total_out_lo32, strm->total_out_lo32 = 0; UINT32, Info(Loc(5035,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): strm->total_out_hi32, strm->total_out_hi32 = 0; UINT32, Info(Loc(5037,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): s->smallDecompress, s->smallDecompress = 39t; UINT8, Info(Loc(5039,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): s->ll4, s->ll4 = 41t; Ptr(UINT8, 1), Info(Loc(5041,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): s->ll16, s->ll16 = 43t; Ptr(UINT16, 1), Info(Loc(5043,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): s->tt, s->tt = 45t; Ptr(UINT32, 1), Info(Loc(5045,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): s->currBlockNo, s->currBlockNo = 0; INT32, Info(Loc(5047,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): s->verbosity, s->verbosity = verbosity___0; INT32, Info(Loc(5049,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+FUNC_NAME (ForAvgDerefCompute): f:BZ2_bzRead
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(6873,5),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): {'v:uncompressStream:bzerr'}
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6878,5),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'}
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): *bzerror, *bzerror = 22t; INT32, Info(Loc(6896,7),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): {'v:uncompressStream:bzerr'}
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->lastErr, bzf->lastErr = 27t; INT32, Info(Loc(6901,7),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'}
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->writing, 28if = bzf->writing; UINT8, Info(Loc(6907,7),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'}
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): *bzerror, *bzerror = 33t; INT32, Info(Loc(6911,7),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->lastErr, bzf->lastErr = 38t; INT32, Info(Loc(6916,7),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(6926,7),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6931,7),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->strm, 48t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6937,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): 48t->avail_out, 48t->avail_out = 49t; UINT32, Info(Loc(6937,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->strm, 50t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6939,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): 50t->next_out, 50t->next_out = 51t; Ptr(INT8, 1), Info(Loc(6939,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->strm, 52t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6943,9),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): 52t->avail_in, 53t = 52t->avail_in; UINT32, Info(Loc(6943,9),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->handle, 55t = bzf->handle; INT32, Info(Loc(6945,24),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->buf, 57t = bzf->buf; Ptr(INT8, 1), Info(Loc(6949,42),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->handle, 60t = bzf->handle; INT32, Info(Loc(6949,81),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->bufN, bzf->bufN = n; INT32, Info(Loc(6951,9),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->bufN, 61t = bzf->bufN; INT32, Info(Loc(6953,45),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->strm, 62t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6953,9),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): 62t->avail_in, 62t->avail_in = 63t; UINT32, Info(Loc(6953,9),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->strm, 64t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6955,9),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->buf, 65t = bzf->buf; Ptr(INT8, 1), Info(Loc(6955,29),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): 64t->next_in, 64t->next_in = 65t; Ptr(INT8, 1), Info(Loc(6955,9),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->strm, 66t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6959,28),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): *bzerror, *bzerror = ret; INT32, Info(Loc(6967,11),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->lastErr, bzf->lastErr = ret; INT32, Info(Loc(6972,11),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->handle, 78t = bzf->handle; INT32, Info(Loc(6981,28),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->strm, 79t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6985,13),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): 79t->avail_in, 80t = 79t->avail_in; UINT32, Info(Loc(6985,13),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->strm, 82t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6987,15),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): 82t->avail_out, 83t = 82t->avail_out; UINT32, Info(Loc(6987,15),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): *bzerror, *bzerror = 89t; INT32, Info(Loc(6991,15),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->lastErr, bzf->lastErr = 94t; INT32, Info(Loc(6996,15),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): *bzerror, *bzerror = 4; INT32, Info(Loc(7009,9),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->lastErr, bzf->lastErr = 4; INT32, Info(Loc(7014,9),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->strm, 104t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(7017,43),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): 104t->avail_out, 106t = 104t->avail_out; UINT32, Info(Loc(7017,43),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->strm, 109t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(7020,9),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): 109t->avail_out, 110t = 109t->avail_out; UINT32, Info(Loc(7020,9),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(7024,9),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (DIFF): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(7029,9),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+FUNC_NAME (ForAvgDerefCompute): f:BZ2_bzReadClose
+DEREF_DIFFERENCE f:BZ2_bzReadClose (DIFF): *bzerror, *bzerror = 0; INT32, Info(Loc(6810,5),0):
+  Other( NO ): {'v:uncompressStream:bzerr', 'v:uncompressStream:bzerr_dummy'},
+  Span( YES ): {'v:uncompressStream:bzerr_dummy'}
+DEREF_DIFFERENCE f:BZ2_bzReadClose (DIFF): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6815,5),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'}
+DEREF_DIFFERENCE f:BZ2_bzReadClose (DIFF): *bzerror, *bzerror = 0; INT32, Info(Loc(6822,7),0):
+  Other( NO ): {'v:uncompressStream:bzerr', 'v:uncompressStream:bzerr_dummy'},
+  Span( YES ): {'v:uncompressStream:bzerr_dummy'}
+DEREF_DIFFERENCE f:BZ2_bzReadClose (DIFF): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6827,7),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'}
+DEREF_DIFFERENCE f:BZ2_bzReadClose (DIFF): bzf->writing, 21if = bzf->writing; UINT8, Info(Loc(6833,7),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'}
+DEREF_DIFFERENCE f:BZ2_bzReadClose (DIFF): *bzerror, *bzerror = 26t; INT32, Info(Loc(6837,7),0):
+  Other( NO ): {'v:uncompressStream:bzerr', 'v:uncompressStream:bzerr_dummy'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzReadClose (DIFF): bzf->lastErr, bzf->lastErr = 31t; INT32, Info(Loc(6842,7),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzReadClose (DIFF): bzf->initialisedOk, 32if = bzf->initialisedOk; UINT8, Info(Loc(6848,7),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzReadClose (DIFF): bzf->strm, 33t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6850,25),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+FUNC_NAME (ForAvgDerefCompute): f:BZ2_bzReadOpen
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(6645,5),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): {'v:uncompressStream:bzerr'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6650,5),0):
+  Other( NO ): {'g:0Null'},
+  Span( YES ): {'g:0Null'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): *bzerror, *bzerror = 32t; INT32, Info(Loc(6704,9),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): {'v:uncompressStream:bzerr'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->lastErr, bzf->lastErr = 37t; INT32, Info(Loc(6709,9),0):
+  Other( NO ): {'g:0Null'},
+  Span( YES ): {'g:0Null'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): *bzerror, *bzerror = 48t; INT32, Info(Loc(6725,7),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): {'v:uncompressStream:bzerr'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->lastErr, bzf->lastErr = 53t; INT32, Info(Loc(6730,7),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(6738,5),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): {'v:uncompressStream:bzerr'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6743,5),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->initialisedOk, bzf->initialisedOk = 63t; UINT8, Info(Loc(6746,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->handle, bzf->handle = f; INT32, Info(Loc(6748,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->bufN, bzf->bufN = 0; INT32, Info(Loc(6750,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->writing, bzf->writing = 64t; UINT8, Info(Loc(6752,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->strm, 66t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6754,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): 66t->bzalloc, 66t->bzalloc = 67t; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(6754,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->strm, 69t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6756,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): 69t->bzfree, 69t->bzfree = 70t; Ptr(types.FuncSig(types.Void, [types.Ptr(types.Void, 1), types.Ptr(types.Void, 1)], False), 1), Info(Loc(6756,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->strm, 71t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6758,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): 71t->opaque, 71t->opaque = 72t; Ptr(VOID, 1), Info(Loc(6758,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): *74t, 75t = *74t; UINT8, Info(Loc(6762,34),0):
+  Other( NO ): {'v:uncompressStream:unused'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->buf, 76t = bzf->buf; Ptr(INT8, 1), Info(Loc(6762,5),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->bufN, 77t = bzf->bufN; INT32, Info(Loc(6762,14),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->bufN, 79t = bzf->bufN; INT32, Info(Loc(6764,6),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->bufN, 80t = bzf->bufN; INT32, Info(Loc(6764,6),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->bufN, bzf->bufN = 81t; INT32, Info(Loc(6764,5),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->strm, 85t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6771,30),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): *bzerror, *bzerror = ret; INT32, Info(Loc(6777,7),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): {'v:uncompressStream:bzerr'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->lastErr, bzf->lastErr = ret; INT32, Info(Loc(6782,7),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->bufN, 97t = bzf->bufN; INT32, Info(Loc(6790,39),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->strm, 98t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6790,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): 98t->avail_in, 98t->avail_in = 99t; UINT32, Info(Loc(6790,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->strm, 100t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6792,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->buf, 101t = bzf->buf; Ptr(INT8, 1), Info(Loc(6792,23),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): 100t->next_in, 100t->next_in = 101t; Ptr(INT8, 1), Info(Loc(6792,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->initialisedOk, bzf->initialisedOk = 102t; UINT8, Info(Loc(6794,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+FUNC_NAME (ForAvgDerefCompute): f:BZ2_bzWrite
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(6303,5),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): {'v:compressStream:bzerr'}
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6308,5),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'}
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): *bzerror, *bzerror = 22t; INT32, Info(Loc(6326,7),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): {'v:compressStream:bzerr'}
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->lastErr, bzf->lastErr = 27t; INT32, Info(Loc(6331,7),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'}
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->writing, 28t = bzf->writing; UINT8, Info(Loc(6337,9),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'}
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): *bzerror, *bzerror = 34t; INT32, Info(Loc(6341,7),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->lastErr, bzf->lastErr = 39t; INT32, Info(Loc(6346,7),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(6356,7),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6361,7),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->strm, 49t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6367,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): 49t->avail_in, 49t->avail_in = 50t; UINT32, Info(Loc(6367,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->strm, 51t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6369,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): 51t->next_in, 51t->next_in = 52t; Ptr(INT8, 1), Info(Loc(6369,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->strm, 53t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6373,5),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): 53t->avail_out, 53t->avail_out = 5000; UINT32, Info(Loc(6373,5),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->strm, 54t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6375,5),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->buf, 55t = bzf->buf; Ptr(INT8, 1), Info(Loc(6375,26),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): 54t->next_out, 54t->next_out = 55t; Ptr(INT8, 1), Info(Loc(6375,5),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->strm, 56t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6377,26),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): *bzerror, *bzerror = ret; INT32, Info(Loc(6383,9),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->lastErr, bzf->lastErr = ret; INT32, Info(Loc(6388,9),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->strm, 66t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6394,9),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): 66t->avail_out, 67t = 66t->avail_out; UINT32, Info(Loc(6394,9),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->strm, 69t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6396,28),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): 69t->avail_out, 70t = 69t->avail_out; UINT32, Info(Loc(6396,28),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->buf, 72t = bzf->buf; Ptr(INT8, 1), Info(Loc(6398,51),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->handle, 76t = bzf->handle; INT32, Info(Loc(6399,27),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): *bzerror, *bzerror = 82t; INT32, Info(Loc(6411,11),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->lastErr, bzf->lastErr = 87t; INT32, Info(Loc(6416,11),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->strm, 88t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6423,9),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): 88t->avail_in, 89t = 88t->avail_in; UINT32, Info(Loc(6423,9),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(6427,9),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (DIFF): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6432,9),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+FUNC_NAME (ForAvgDerefCompute): f:BZ2_bzWriteClose64
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): *bzerror, *bzerror = 0; INT32, Info(Loc(6473,7),0):
+  Other( NO ): {'v:compressStream:bzerr', 'v:compressStream:bzerr_dummy'},
+  Span( YES ): {'v:compressStream:bzerr', 'v:compressStream:bzerr_dummy'}
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6478,7),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'}
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->writing, 13t = bzf->writing; UINT8, Info(Loc(6484,9),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'}
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): *bzerror, *bzerror = 19t; INT32, Info(Loc(6488,7),0):
+  Other( NO ): {'v:compressStream:bzerr', 'v:compressStream:bzerr_dummy'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->lastErr, bzf->lastErr = 24t; INT32, Info(Loc(6493,7),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): *nbytes_in_lo32, *nbytes_in_lo32 = 0; UINT32, Info(Loc(6501,5),0):
+  Other( NO ): {'v:compressStream:nbytes_in_lo32'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): *nbytes_in_hi32, *nbytes_in_hi32 = 0; UINT32, Info(Loc(6506,5),0):
+  Other( NO ): {'v:compressStream:nbytes_in_hi32'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): *nbytes_out_lo32, *nbytes_out_lo32 = 0; UINT32, Info(Loc(6511,5),0):
+  Other( NO ): {'v:compressStream:nbytes_out_lo32'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): *nbytes_out_hi32, *nbytes_out_hi32 = 0; UINT32, Info(Loc(6516,5),0):
+  Other( NO ): {'v:compressStream:nbytes_out_hi32'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->lastErr, 42t = bzf->lastErr; INT32, Info(Loc(6521,9),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->strm, 44t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6525,9),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): 44t->avail_out, 44t->avail_out = 5000; UINT32, Info(Loc(6525,9),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->strm, 45t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6527,9),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->buf, 46t = bzf->buf; Ptr(INT8, 1), Info(Loc(6527,30),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): 45t->next_out, 45t->next_out = 46t; Ptr(INT8, 1), Info(Loc(6527,9),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->strm, 47t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6529,30),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): *bzerror, *bzerror = ret; INT32, Info(Loc(6537,15),0):
+  Other( NO ): {'v:compressStream:bzerr', 'v:compressStream:bzerr_dummy'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->lastErr, bzf->lastErr = ret; INT32, Info(Loc(6542,15),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->strm, 58t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6549,13),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): 58t->avail_out, 59t = 58t->avail_out; UINT32, Info(Loc(6549,13),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->strm, 61t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6551,32),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): 61t->avail_out, 62t = 61t->avail_out; UINT32, Info(Loc(6551,32),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->buf, 64t = bzf->buf; Ptr(INT8, 1), Info(Loc(6553,55),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->handle, 68t = bzf->handle; INT32, Info(Loc(6554,31),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): *bzerror, *bzerror = 74t; INT32, Info(Loc(6566,15),0):
+  Other( NO ): {'v:compressStream:bzerr', 'v:compressStream:bzerr_dummy'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->lastErr, bzf->lastErr = 79t; INT32, Info(Loc(6571,15),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->strm, 86t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6596,23),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): 86t->total_in_lo32, 87t = 86t->total_in_lo32; UINT32, Info(Loc(6596,23),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): *nbytes_in_lo32, *nbytes_in_lo32 = 87t; UINT32, Info(Loc(6596,5),0):
+  Other( NO ): {'v:compressStream:nbytes_in_lo32'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->strm, 92t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6601,23),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): 92t->total_in_hi32, 93t = 92t->total_in_hi32; UINT32, Info(Loc(6601,23),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): *nbytes_in_hi32, *nbytes_in_hi32 = 93t; UINT32, Info(Loc(6601,5),0):
+  Other( NO ): {'v:compressStream:nbytes_in_hi32'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->strm, 98t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6606,24),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): 98t->total_out_lo32, 99t = 98t->total_out_lo32; UINT32, Info(Loc(6606,24),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): *nbytes_out_lo32, *nbytes_out_lo32 = 99t; UINT32, Info(Loc(6606,5),0):
+  Other( NO ): {'v:compressStream:nbytes_out_lo32'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->strm, 104t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6611,24),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): 104t->total_out_hi32, 105t = 104t->total_out_hi32; UINT32, Info(Loc(6611,24),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): *nbytes_out_hi32, *nbytes_out_hi32 = 105t; UINT32, Info(Loc(6611,5),0):
+  Other( NO ): {'v:compressStream:nbytes_out_hi32'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): *bzerror, *bzerror = 0; INT32, Info(Loc(6616,5),0):
+  Other( NO ): {'v:compressStream:bzerr', 'v:compressStream:bzerr_dummy'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6621,5),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (DIFF): bzf->strm, 114t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6624,21),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p', 'g:0Null'},
+  Span( YES ): set()
+FUNC_NAME (ForAvgDerefCompute): f:BZ2_bzWriteOpen
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(6160,5),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): {'v:compressStream:bzerr'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6165,5),0):
+  Other( NO ): {'g:0Null'},
+  Span( YES ): {'g:0Null'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): *bzerror, *bzerror = 23t; INT32, Info(Loc(6203,7),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): {'v:compressStream:bzerr'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->lastErr, bzf->lastErr = 28t; INT32, Info(Loc(6208,7),0):
+  Other( NO ): {'g:0Null'},
+  Span( YES ): {'g:0Null'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): *bzerror, *bzerror = 39t; INT32, Info(Loc(6223,7),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): {'v:compressStream:bzerr'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->lastErr, bzf->lastErr = 44t; INT32, Info(Loc(6228,7),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(6236,5),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): {'v:compressStream:bzerr'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6241,5),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->initialisedOk, bzf->initialisedOk = 54t; UINT8, Info(Loc(6244,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->bufN, bzf->bufN = 0; INT32, Info(Loc(6246,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->handle, bzf->handle = f; INT32, Info(Loc(6248,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->writing, bzf->writing = 55t; UINT8, Info(Loc(6250,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->strm, 57t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6252,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): 57t->bzalloc, 57t->bzalloc = 58t; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(6252,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->strm, 60t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6254,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): 60t->bzfree, 60t->bzfree = 61t; Ptr(types.FuncSig(types.Void, [types.Ptr(types.Void, 1), types.Ptr(types.Void, 1)], False), 1), Info(Loc(6254,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->strm, 62t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6256,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): 62t->opaque, 62t->opaque = 63t; Ptr(VOID, 1), Info(Loc(6256,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->strm, 65t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6263,28),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): *bzerror, *bzerror = ret; INT32, Info(Loc(6269,7),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): {'v:compressStream:bzerr'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->lastErr, bzf->lastErr = ret; INT32, Info(Loc(6274,7),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->strm, 77t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6282,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): 77t->avail_in, 77t->avail_in = 0; UINT32, Info(Loc(6282,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->initialisedOk, bzf->initialisedOk = 78t; UINT8, Info(Loc(6284,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+FUNC_NAME (ForAvgDerefCompute): f:bz_config_ok
+FUNC_NAME (ForAvgDerefCompute): f:cleanUpAndFail
+FUNC_NAME (ForAvgDerefCompute): f:compressStream
+FUNC_NAME (ForAvgDerefCompute): f:configError
+FUNC_NAME (ForAvgDerefCompute): f:debug_time
+FUNC_NAME (ForAvgDerefCompute): f:default_bzalloc
+FUNC_NAME (ForAvgDerefCompute): f:init_RL
+FUNC_NAME (ForAvgDerefCompute): f:main
+DEREF_DIFFERENCE f:main (SAME): 11t->limit, 11t->limit = 12t; INT32, Info(Loc(924,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:main (SAME): 13t->limit, 13t->limit = 14t; INT32, Info(Loc(926,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:main (SAME): 15t->limit, 15t->limit = 16t; INT32, Info(Loc(928,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:main (SAME): 22t->len, 23t = 22t->len; INT32, Info(Loc(943,76),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:main (SAME): 36t->buf, 37t = 36t->buf; Ptr(UINT8, 1), Info(Loc(962,31),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:main (DIFF): *39t, 41t = *39t; UINT8, Info(Loc(962,29),0):
+  Other( NO ): {'g:spec_init:5p', 'g:0Null'},
+  Span( YES ): {'g:spec_init:5p', 'g:0Null'}
+DEREF_DIFFERENCE f:main (SAME): *40t, *40t = 41t; UINT8, Info(Loc(962,5),0):
+  Other( NO ): {'g:main:4p'},
+  Span( YES ): {'g:main:4p'}
+DEREF_DIFFERENCE f:main (SAME): 48t->len, 49t = 48t->len; INT32, Info(Loc(987,14),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:main (SAME): 54t->len, 55t = 54t->len; INT32, Info(Loc(1008,14),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:main (SAME): *59t, 60t = *59t; UINT8, Info(Loc(1015,17),0):
+  Other( NO ): {'g:main:4p'},
+  Span( YES ): {'g:main:4p'}
+DEREF_DIFFERENCE f:main (SAME): 61t->buf, 62t = 61t->buf; Ptr(UINT8, 1), Info(Loc(1015,50),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:main (DIFF): *64t, 65t = *64t; UINT8, Info(Loc(1015,48),0):
+  Other( NO ): {'g:spec_init:5p', 'g:0Null'},
+  Span( YES ): {'g:spec_init:5p', 'g:0Null'}
+FUNC_NAME (ForAvgDerefCompute): f:myfeof
+FUNC_NAME (ForAvgDerefCompute): f:panic
+FUNC_NAME (ForAvgDerefCompute): f:prepare_new_block
+FUNC_NAME (ForAvgDerefCompute): f:setExit
+FUNC_NAME (ForAvgDerefCompute): f:showFileNames
+FUNC_NAME (ForAvgDerefCompute): f:spec_compress
+FUNC_NAME (ForAvgDerefCompute): f:spec_fread
+DEREF_DIFFERENCE f:spec_fread (SAME): 7t->pos, 9t = 7t->pos; INT32, Info(Loc(613,7),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_fread (SAME): 8t->len, 10t = 8t->len; INT32, Info(Loc(613,26),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_fread (SAME): 15t->pos, 16t = 15t->pos; INT32, Info(Loc(623,7),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_fread (SAME): 18t->len, 20t = 18t->len; INT32, Info(Loc(623,39),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_fread (SAME): 22t->len, 24t = 22t->len; INT32, Info(Loc(625,11),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_fread (SAME): 23t->pos, 25t = 23t->pos; INT32, Info(Loc(625,29),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_fread (SAME): 28t->buf, 30t = 28t->buf; Ptr(UINT8, 1), Info(Loc(631,66),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_fread (SAME): 29t->pos, 31t = 29t->pos; INT32, Info(Loc(631,84),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_fread (SAME): 35t->pos, 37t = 35t->pos; INT32, Info(Loc(634,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_fread (SAME): 35t->pos, 35t->pos = 38t; INT32, Info(Loc(634,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+FUNC_NAME (ForAvgDerefCompute): f:spec_fwrite
+DEREF_DIFFERENCE f:spec_fwrite (SAME): 7t->buf, 9t = 7t->buf; Ptr(UINT8, 1), Info(Loc(825,32),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_fwrite (SAME): 8t->pos, 10t = 8t->pos; INT32, Info(Loc(825,50),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_fwrite (SAME): 16t->len, 18t = 16t->len; INT32, Info(Loc(828,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_fwrite (SAME): 16t->len, 16t->len = 19t; INT32, Info(Loc(828,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_fwrite (SAME): 20t->pos, 22t = 20t->pos; INT32, Info(Loc(830,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_fwrite (SAME): 20t->pos, 20t->pos = 23t; INT32, Info(Loc(830,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+FUNC_NAME (ForAvgDerefCompute): f:spec_getc
+DEREF_DIFFERENCE f:spec_getc (SAME): 6t->pos, 8t = 6t->pos; INT32, Info(Loc(667,7),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_getc (SAME): 7t->len, 9t = 7t->len; INT32, Info(Loc(667,26),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_getc (SAME): 14t->pos, tmp = 14t->pos; INT32, Info(Loc(677,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_getc (SAME): 15t->pos, 16t = 15t->pos; INT32, Info(Loc(679,4),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_getc (SAME): 15t->pos, 17t = 15t->pos; INT32, Info(Loc(679,4),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_getc (SAME): 15t->pos, 15t->pos = 18t; INT32, Info(Loc(679,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_getc (SAME): 19t->buf, 20t = 19t->buf; Ptr(UINT8, 1), Info(Loc(681,16),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_getc (DIFF): *21t, 22t = *21t; UINT8, Info(Loc(681,14),0):
+  Other( NO ): {'g:spec_init:5p', 'g:0Null'},
+  Span( YES ): {'g:spec_init:5p', 'g:0Null'}
+FUNC_NAME (ForAvgDerefCompute): f:spec_init
+DEREF_DIFFERENCE f:spec_init (SAME): 4t->limit, limit = 4t->limit; INT32, Info(Loc(351,5),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_init (SAME): 7t->limit, 7t->limit = limit; INT32, Info(Loc(355,5),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_init (SAME): 9t->buf, 9t->buf = 10t; Ptr(UINT8, 1), Info(Loc(357,5),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_init (SAME): 11t->buf, 12t = 11t->buf; Ptr(UINT8, 1), Info(Loc(362,25),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_init (SAME): 19t->buf, 20t = 19t->buf; Ptr(UINT8, 1), Info(Loc(373,9),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_init (DIFF): *21t, *21t = 22t; UINT8, Info(Loc(373,7),0):
+  Other( NO ): {'g:spec_init:5p', 'g:0Null'},
+  Span( YES ): {'g:spec_init:5p', 'g:0Null'}
+FUNC_NAME (ForAvgDerefCompute): f:spec_initbufs
+FUNC_NAME (ForAvgDerefCompute): f:spec_load
+DEREF_DIFFERENCE f:spec_load (SAME): 6t->len, 6t->len = tmp___1; INT32, Info(Loc(477,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_load (SAME): 7t->pos, 7t->pos = tmp___1; INT32, Info(Loc(479,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_load (SAME): 9t->buf, 10t = 9t->buf; Ptr(UINT8, 1), Info(Loc(485,33),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_load (SAME): 19t->len, 20t = 19t->len; INT32, Info(Loc(506,5),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_load (SAME): 19t->len, 19t->len = 21t; INT32, Info(Loc(506,5),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_load (SAME): 22t->len, 23t = 22t->len; INT32, Info(Loc(513,10),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_load (SAME): 25t->len, 26t = 25t->len; INT32, Info(Loc(515,22),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_load (SAME): 27t->len, 28t = 27t->len; INT32, Info(Loc(517,19),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_load (SAME): 30t->len, tmp___5 = 30t->len; INT32, Info(Loc(519,7),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_load (SAME): 33t->buf, 35t = 33t->buf; Ptr(UINT8, 1), Info(Loc(527,34),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_load (SAME): 34t->len, 36t = 34t->len; INT32, Info(Loc(527,53),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_load (SAME): 39t->buf, 40t = 39t->buf; Ptr(UINT8, 1), Info(Loc(527,101),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_load (SAME): 43t->len, 44t = 43t->len; INT32, Info(Loc(530,5),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_load (SAME): 43t->len, 43t->len = 45t; INT32, Info(Loc(530,5),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+FUNC_NAME (ForAvgDerefCompute): f:spec_reset
+DEREF_DIFFERENCE f:spec_reset (SAME): 1t->buf, 2t = 1t->buf; Ptr(UINT8, 1), Info(Loc(757,18),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_reset (SAME): 4t->len, 5t = 4t->len; INT32, Info(Loc(757,47),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_reset (SAME): 7t->len, 7t->len = tmp; INT32, Info(Loc(761,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_reset (SAME): 8t->pos, 8t->pos = tmp; INT32, Info(Loc(763,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+FUNC_NAME (ForAvgDerefCompute): f:spec_rewind
+DEREF_DIFFERENCE f:spec_rewind (SAME): 1t->pos, 1t->pos = 0; INT32, Info(Loc(745,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+FUNC_NAME (ForAvgDerefCompute): f:spec_uncompress
+FUNC_NAME (ForAvgDerefCompute): f:spec_ungetc
+DEREF_DIFFERENCE f:spec_ungetc (SAME): 6t->pos, 7t = 6t->pos; INT32, Info(Loc(713,7),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_ungetc (SAME): 11t->pos, 12t = 11t->pos; INT32, Info(Loc(716,13),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_ungetc (SAME): 13t->pos, 14t = 13t->pos; INT32, Info(Loc(721,4),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_ungetc (SAME): 13t->pos, 15t = 13t->pos; INT32, Info(Loc(721,4),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_ungetc (SAME): 13t->pos, 13t->pos = 16t; INT32, Info(Loc(721,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_ungetc (SAME): 17t->buf, 19t = 17t->buf; Ptr(UINT8, 1), Info(Loc(723,15),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_ungetc (SAME): 18t->pos, 20t = 18t->pos; INT32, Info(Loc(723,33),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_ungetc (DIFF): *21t, 22t = *21t; UINT8, Info(Loc(723,13),0):
+  Other( NO ): {'g:spec_init:5p', 'g:0Null'},
+  Span( YES ): {'g:spec_init:5p', 'g:0Null'}
+FUNC_NAME (ForAvgDerefCompute): f:uncompressStream
+
+
+RESULTS: When excluding Multiple-pointers only.
+==================================================================
+
+AverageDeref(Span) (Total): 1.165289256198347
+AverageDeref(Other)(Total): 17.300275482093664
+
+AverageDeref(Span)   (LHS): 0.5932203389830508
+AverageDeref(Other)  (LHS): 19.8135593220339
+
+AverageDeref(Span)   (RHS): 1.7096774193548387
+AverageDeref(Other)  (RHS): 14.908602150537634
+TimeElapsed(TotalTimeTaken): 18949.230432510376 ms (Starts: 1, Stops: 1)
+
+
+RESULTS: PointsToA+IntervalA SPAN vs LERNER (Abs. Location and Multi-Pointees)
+==================================================================
+
+FUNC_NAME (ForAvgDerefCompute): f:BZ2_bzCompressInit
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (SAME): strm->bzalloc, 17t = strm->bzalloc; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(4229,23),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (SAME): strm->bzalloc, strm->bzalloc = 22t; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(4231,5),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (SAME): strm->bzfree, 23t = strm->bzfree; Ptr(types.FuncSig(types.Void, [types.Ptr(types.Void, 1), types.Ptr(types.Void, 1)], False), 1), Info(Loc(4234,23),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (SAME): strm->bzfree, strm->bzfree = 28t; Ptr(types.FuncSig(types.Void, [types.Ptr(types.Void, 1), types.Ptr(types.Void, 1)], False), 1), Info(Loc(4236,5),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (SAME): strm->bzalloc, 29t = strm->bzalloc; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(4239,16),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (SAME): *29t, 30t = *29t; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(4239,14),0):
+  Other( NO ): {'f:default_bzalloc'},
+  Span( YES ): {'f:default_bzalloc'}
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (SAME): strm->opaque, 31t = strm->opaque; Ptr(VOID, 1), Info(Loc(4239,32),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (SAME): 30t(31t,32t,1), tmp___0 = 30t(31t,32t,1); Ptr(VOID, 1), Info(Loc(4239,3),0):
+  Other( NO ): {'f:default_bzalloc'},
+  Span( YES ): {'f:default_bzalloc'}
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (SAME): s->strm, s->strm = strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(4248,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (SAME): s->arr1, s->arr1 = 39t; Ptr(UINT32, 1), Info(Loc(4250,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (SAME): s->arr2, s->arr2 = 41t; Ptr(UINT32, 1), Info(Loc(4252,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (SAME): s->ftab, s->ftab = 43t; Ptr(UINT32, 1), Info(Loc(4254,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (SAME): strm->bzalloc, 44t = strm->bzalloc; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(4258,16),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzCompressInit (SAME): strm->opaque, 46t = strm->opaque; Ptr(VOID, 1), Info(Loc(4258,32),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+FUNC_NAME (ForAvgDerefCompute): f:BZ2_bzDecompressInit
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): strm->bzalloc, 15t = strm->bzalloc; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(5000,23),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): strm->bzalloc, strm->bzalloc = 20t; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(5002,5),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): strm->bzfree, 21t = strm->bzfree; Ptr(types.FuncSig(types.Void, [types.Ptr(types.Void, 1), types.Ptr(types.Void, 1)], False), 1), Info(Loc(5005,23),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): strm->bzfree, strm->bzfree = 26t; Ptr(types.FuncSig(types.Void, [types.Ptr(types.Void, 1), types.Ptr(types.Void, 1)], False), 1), Info(Loc(5007,5),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): strm->bzalloc, 27t = strm->bzalloc; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(5010,16),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): *27t, 28t = *27t; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(5010,14),0):
+  Other( NO ): {'f:default_bzalloc'},
+  Span( YES ): {'f:default_bzalloc'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): strm->opaque, 29t = strm->opaque; Ptr(VOID, 1), Info(Loc(5010,32),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): 28t(29t,30t,1), tmp___0 = 28t(29t,30t,1); Ptr(VOID, 1), Info(Loc(5010,3),0):
+  Other( NO ): {'f:default_bzalloc'},
+  Span( YES ): {'f:default_bzalloc'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): s->strm, s->strm = strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(5019,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): strm->state, strm->state = 36t; Ptr(VOID, 1), Info(Loc(5021,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): s->state, s->state = 10; INT32, Info(Loc(5023,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): s->bsLive, s->bsLive = 0; INT32, Info(Loc(5025,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): s->bsBuff, s->bsBuff = 37t; UINT32, Info(Loc(5027,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): s->calculatedCombinedCRC, s->calculatedCombinedCRC = 38t; UINT32, Info(Loc(5029,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): strm->total_in_lo32, strm->total_in_lo32 = 0; UINT32, Info(Loc(5031,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): strm->total_in_hi32, strm->total_in_hi32 = 0; UINT32, Info(Loc(5033,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): strm->total_out_lo32, strm->total_out_lo32 = 0; UINT32, Info(Loc(5035,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): strm->total_out_hi32, strm->total_out_hi32 = 0; UINT32, Info(Loc(5037,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): s->smallDecompress, s->smallDecompress = 39t; UINT8, Info(Loc(5039,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): s->ll4, s->ll4 = 41t; Ptr(UINT8, 1), Info(Loc(5041,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): s->ll16, s->ll16 = 43t; Ptr(UINT16, 1), Info(Loc(5043,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): s->tt, s->tt = 45t; Ptr(UINT32, 1), Info(Loc(5045,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): s->currBlockNo, s->currBlockNo = 0; INT32, Info(Loc(5047,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+DEREF_DIFFERENCE f:BZ2_bzDecompressInit (SAME): s->verbosity, s->verbosity = verbosity___0; INT32, Info(Loc(5049,3),0):
+  Other( NO ): {'g:default_bzalloc:3p'},
+  Span( YES ): {'g:default_bzalloc:3p'}
+FUNC_NAME (ForAvgDerefCompute): f:BZ2_bzRead
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(6873,5),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): {'v:uncompressStream:bzerr'}
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6878,5),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'}
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): *bzerror, *bzerror = 22t; INT32, Info(Loc(6896,7),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): {'v:uncompressStream:bzerr'}
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): bzf->lastErr, bzf->lastErr = 27t; INT32, Info(Loc(6901,7),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'}
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): bzf->writing, 28if = bzf->writing; UINT8, Info(Loc(6907,7),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'}
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): *bzerror, *bzerror = 33t; INT32, Info(Loc(6911,7),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): bzf->lastErr, bzf->lastErr = 38t; INT32, Info(Loc(6916,7),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): bzf->strm, 48t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6937,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): 48t->avail_out, 48t->avail_out = 49t; UINT32, Info(Loc(6937,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): bzf->strm, 50t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6939,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): 50t->next_out, 50t->next_out = 51t; Ptr(INT8, 1), Info(Loc(6939,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): bzf->strm, 52t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6943,9),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): 52t->avail_in, 53t = 52t->avail_in; UINT32, Info(Loc(6943,9),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): bzf->handle, 55t = bzf->handle; INT32, Info(Loc(6945,24),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): bzf->buf, 57t = bzf->buf; Ptr(INT8, 1), Info(Loc(6949,42),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): bzf->handle, 60t = bzf->handle; INT32, Info(Loc(6949,81),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): bzf->bufN, bzf->bufN = n; INT32, Info(Loc(6951,9),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): bzf->bufN, 61t = bzf->bufN; INT32, Info(Loc(6953,45),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): bzf->strm, 62t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6953,9),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): 62t->avail_in, 62t->avail_in = 63t; UINT32, Info(Loc(6953,9),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): bzf->strm, 64t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6955,9),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): bzf->buf, 65t = bzf->buf; Ptr(INT8, 1), Info(Loc(6955,29),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): 64t->next_in, 64t->next_in = 65t; Ptr(INT8, 1), Info(Loc(6955,9),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): bzf->strm, 66t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6959,28),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): *bzerror, *bzerror = ret; INT32, Info(Loc(6967,11),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): bzf->lastErr, bzf->lastErr = ret; INT32, Info(Loc(6972,11),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): bzf->handle, 78t = bzf->handle; INT32, Info(Loc(6981,28),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): bzf->strm, 79t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6985,13),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): 79t->avail_in, 80t = 79t->avail_in; UINT32, Info(Loc(6985,13),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): bzf->strm, 82t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6987,15),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): 82t->avail_out, 83t = 82t->avail_out; UINT32, Info(Loc(6987,15),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): *bzerror, *bzerror = 89t; INT32, Info(Loc(6991,15),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): bzf->lastErr, bzf->lastErr = 94t; INT32, Info(Loc(6996,15),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): bzf->strm, 109t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(7020,9),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): 109t->avail_out, 110t = 109t->avail_out; UINT32, Info(Loc(7020,9),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(7024,9),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzRead (SAME): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(7029,9),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+FUNC_NAME (ForAvgDerefCompute): f:BZ2_bzReadClose
+DEREF_DIFFERENCE f:BZ2_bzReadClose (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(6810,5),0):
+  Other( NO ): {'v:uncompressStream:bzerr_dummy'},
+  Span( YES ): {'v:uncompressStream:bzerr_dummy'}
+DEREF_DIFFERENCE f:BZ2_bzReadClose (SAME): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6815,5),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'}
+DEREF_DIFFERENCE f:BZ2_bzReadClose (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(6822,7),0):
+  Other( NO ): {'v:uncompressStream:bzerr_dummy'},
+  Span( YES ): {'v:uncompressStream:bzerr_dummy'}
+DEREF_DIFFERENCE f:BZ2_bzReadClose (SAME): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6827,7),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'}
+DEREF_DIFFERENCE f:BZ2_bzReadClose (SAME): bzf->writing, 21if = bzf->writing; UINT8, Info(Loc(6833,7),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'}
+DEREF_DIFFERENCE f:BZ2_bzReadClose (SAME): *bzerror, *bzerror = 26t; INT32, Info(Loc(6837,7),0):
+  Other( NO ): {'v:uncompressStream:bzerr_dummy'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzReadClose (SAME): bzf->lastErr, bzf->lastErr = 31t; INT32, Info(Loc(6842,7),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzReadClose (SAME): bzf->initialisedOk, 32if = bzf->initialisedOk; UINT8, Info(Loc(6848,7),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzReadClose (SAME): bzf->strm, 33t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6850,25),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p', 'g:0Null'},
+  Span( YES ): set()
+FUNC_NAME (ForAvgDerefCompute): f:BZ2_bzReadOpen
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(6645,5),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): {'v:uncompressStream:bzerr'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6650,5),0):
+  Other( NO ): {'g:0Null'},
+  Span( YES ): {'g:0Null'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): *bzerror, *bzerror = 32t; INT32, Info(Loc(6704,9),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): {'v:uncompressStream:bzerr'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->lastErr, bzf->lastErr = 37t; INT32, Info(Loc(6709,9),0):
+  Other( NO ): {'g:0Null'},
+  Span( YES ): {'g:0Null'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): *bzerror, *bzerror = 48t; INT32, Info(Loc(6725,7),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): {'v:uncompressStream:bzerr'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->lastErr, bzf->lastErr = 53t; INT32, Info(Loc(6730,7),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(6738,5),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): {'v:uncompressStream:bzerr'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6743,5),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->initialisedOk, bzf->initialisedOk = 63t; UINT8, Info(Loc(6746,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->handle, bzf->handle = f; INT32, Info(Loc(6748,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->bufN, bzf->bufN = 0; INT32, Info(Loc(6750,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->writing, bzf->writing = 64t; UINT8, Info(Loc(6752,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->strm, 66t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6754,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): 66t->bzalloc, 66t->bzalloc = 67t; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(6754,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->strm, 69t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6756,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): 69t->bzfree, 69t->bzfree = 70t; Ptr(types.FuncSig(types.Void, [types.Ptr(types.Void, 1), types.Ptr(types.Void, 1)], False), 1), Info(Loc(6756,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->strm, 71t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6758,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): 71t->opaque, 71t->opaque = 72t; Ptr(VOID, 1), Info(Loc(6758,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->strm, 85t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6771,30),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): *bzerror, *bzerror = ret; INT32, Info(Loc(6777,7),0):
+  Other( NO ): {'v:uncompressStream:bzerr'},
+  Span( YES ): {'v:uncompressStream:bzerr'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->lastErr, bzf->lastErr = ret; INT32, Info(Loc(6782,7),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->bufN, 97t = bzf->bufN; INT32, Info(Loc(6790,39),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->strm, 98t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6790,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): 98t->avail_in, 98t->avail_in = 99t; UINT32, Info(Loc(6790,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->strm, 100t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6792,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->buf, 101t = bzf->buf; Ptr(INT8, 1), Info(Loc(6792,23),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): 100t->next_in, 100t->next_in = 101t; Ptr(INT8, 1), Info(Loc(6792,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p.strm'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzReadOpen (SAME): bzf->initialisedOk, bzf->initialisedOk = 102t; UINT8, Info(Loc(6794,3),0):
+  Other( NO ): {'g:BZ2_bzReadOpen:1p'},
+  Span( YES ): {'g:BZ2_bzReadOpen:1p'}
+FUNC_NAME (ForAvgDerefCompute): f:BZ2_bzWrite
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(6303,5),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): {'v:compressStream:bzerr'}
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6308,5),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'}
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): *bzerror, *bzerror = 22t; INT32, Info(Loc(6326,7),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): {'v:compressStream:bzerr'}
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): bzf->lastErr, bzf->lastErr = 27t; INT32, Info(Loc(6331,7),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'}
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): bzf->writing, 28t = bzf->writing; UINT8, Info(Loc(6337,9),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'}
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): *bzerror, *bzerror = 34t; INT32, Info(Loc(6341,7),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): bzf->lastErr, bzf->lastErr = 39t; INT32, Info(Loc(6346,7),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): bzf->strm, 49t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6367,3),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): 49t->avail_in, 49t->avail_in = 50t; UINT32, Info(Loc(6367,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): bzf->strm, 51t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6369,3),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): 51t->next_in, 51t->next_in = 52t; Ptr(INT8, 1), Info(Loc(6369,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): bzf->strm, 53t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6373,5),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): 53t->avail_out, 53t->avail_out = 5000; UINT32, Info(Loc(6373,5),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): bzf->strm, 54t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6375,5),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): bzf->buf, 55t = bzf->buf; Ptr(INT8, 1), Info(Loc(6375,26),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): 54t->next_out, 54t->next_out = 55t; Ptr(INT8, 1), Info(Loc(6375,5),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): bzf->strm, 56t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6377,26),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): *bzerror, *bzerror = ret; INT32, Info(Loc(6383,9),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): bzf->lastErr, bzf->lastErr = ret; INT32, Info(Loc(6388,9),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): bzf->strm, 66t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6394,9),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): 66t->avail_out, 67t = 66t->avail_out; UINT32, Info(Loc(6394,9),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): bzf->strm, 69t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6396,28),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): 69t->avail_out, 70t = 69t->avail_out; UINT32, Info(Loc(6396,28),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): bzf->buf, 72t = bzf->buf; Ptr(INT8, 1), Info(Loc(6398,51),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): bzf->handle, 76t = bzf->handle; INT32, Info(Loc(6399,27),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): *bzerror, *bzerror = 82t; INT32, Info(Loc(6411,11),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): bzf->lastErr, bzf->lastErr = 87t; INT32, Info(Loc(6416,11),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): bzf->strm, 88t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6423,9),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): 88t->avail_in, 89t = 88t->avail_in; UINT32, Info(Loc(6423,9),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(6427,9),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWrite (SAME): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6432,9),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+FUNC_NAME (ForAvgDerefCompute): f:BZ2_bzWriteClose64
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(6473,7),0):
+  Other( NO ): {'v:compressStream:bzerr_dummy', 'v:compressStream:bzerr'},
+  Span( YES ): {'v:compressStream:bzerr_dummy', 'v:compressStream:bzerr'}
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6478,7),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'}
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): bzf->writing, 13t = bzf->writing; UINT8, Info(Loc(6484,9),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'}
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): *bzerror, *bzerror = 19t; INT32, Info(Loc(6488,7),0):
+  Other( NO ): {'v:compressStream:bzerr_dummy', 'v:compressStream:bzerr'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): bzf->lastErr, bzf->lastErr = 24t; INT32, Info(Loc(6493,7),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): *nbytes_in_lo32, *nbytes_in_lo32 = 0; UINT32, Info(Loc(6501,5),0):
+  Other( NO ): {'v:compressStream:nbytes_in_lo32'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): *nbytes_in_hi32, *nbytes_in_hi32 = 0; UINT32, Info(Loc(6506,5),0):
+  Other( NO ): {'v:compressStream:nbytes_in_hi32'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): *nbytes_out_lo32, *nbytes_out_lo32 = 0; UINT32, Info(Loc(6511,5),0):
+  Other( NO ): {'v:compressStream:nbytes_out_lo32'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): *nbytes_out_hi32, *nbytes_out_hi32 = 0; UINT32, Info(Loc(6516,5),0):
+  Other( NO ): {'v:compressStream:nbytes_out_hi32'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): bzf->lastErr, 42t = bzf->lastErr; INT32, Info(Loc(6521,9),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): bzf->strm, 44t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6525,9),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): 44t->avail_out, 44t->avail_out = 5000; UINT32, Info(Loc(6525,9),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): bzf->strm, 45t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6527,9),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): bzf->buf, 46t = bzf->buf; Ptr(INT8, 1), Info(Loc(6527,30),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): 45t->next_out, 45t->next_out = 46t; Ptr(INT8, 1), Info(Loc(6527,9),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): bzf->strm, 47t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6529,30),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): *bzerror, *bzerror = ret; INT32, Info(Loc(6537,15),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): bzf->lastErr, bzf->lastErr = ret; INT32, Info(Loc(6542,15),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): bzf->strm, 58t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6549,13),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): 58t->avail_out, 59t = 58t->avail_out; UINT32, Info(Loc(6549,13),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): bzf->strm, 61t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6551,32),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): 61t->avail_out, 62t = 61t->avail_out; UINT32, Info(Loc(6551,32),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): bzf->buf, 64t = bzf->buf; Ptr(INT8, 1), Info(Loc(6553,55),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): bzf->handle, 68t = bzf->handle; INT32, Info(Loc(6554,31),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): *bzerror, *bzerror = 74t; INT32, Info(Loc(6566,15),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): bzf->lastErr, bzf->lastErr = 79t; INT32, Info(Loc(6571,15),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): bzf->strm, 86t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6596,23),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): 86t->total_in_lo32, 87t = 86t->total_in_lo32; UINT32, Info(Loc(6596,23),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): *nbytes_in_lo32, *nbytes_in_lo32 = 87t; UINT32, Info(Loc(6596,5),0):
+  Other( NO ): {'v:compressStream:nbytes_in_lo32'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): bzf->strm, 92t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6601,23),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): 92t->total_in_hi32, 93t = 92t->total_in_hi32; UINT32, Info(Loc(6601,23),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): *nbytes_in_hi32, *nbytes_in_hi32 = 93t; UINT32, Info(Loc(6601,5),0):
+  Other( NO ): {'v:compressStream:nbytes_in_hi32'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): bzf->strm, 98t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6606,24),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): 98t->total_out_lo32, 99t = 98t->total_out_lo32; UINT32, Info(Loc(6606,24),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): *nbytes_out_lo32, *nbytes_out_lo32 = 99t; UINT32, Info(Loc(6606,5),0):
+  Other( NO ): {'v:compressStream:nbytes_out_lo32'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): bzf->strm, 104t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6611,24),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): 104t->total_out_hi32, 105t = 104t->total_out_hi32; UINT32, Info(Loc(6611,24),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): *nbytes_out_hi32, *nbytes_out_hi32 = 105t; UINT32, Info(Loc(6611,5),0):
+  Other( NO ): {'v:compressStream:nbytes_out_hi32'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(6616,5),0):
+  Other( NO ): {'v:compressStream:bzerr_dummy', 'v:compressStream:bzerr'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6621,5),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+DEREF_DIFFERENCE f:BZ2_bzWriteClose64 (SAME): bzf->strm, 114t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6624,21),0):
+  Other( NO ): {'g:0Null', 'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): set()
+FUNC_NAME (ForAvgDerefCompute): f:BZ2_bzWriteOpen
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(6160,5),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): {'v:compressStream:bzerr'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6165,5),0):
+  Other( NO ): {'g:0Null'},
+  Span( YES ): {'g:0Null'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): *bzerror, *bzerror = 23t; INT32, Info(Loc(6203,7),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): {'v:compressStream:bzerr'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->lastErr, bzf->lastErr = 28t; INT32, Info(Loc(6208,7),0):
+  Other( NO ): {'g:0Null'},
+  Span( YES ): {'g:0Null'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): *bzerror, *bzerror = 39t; INT32, Info(Loc(6223,7),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): {'v:compressStream:bzerr'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->lastErr, bzf->lastErr = 44t; INT32, Info(Loc(6228,7),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): *bzerror, *bzerror = 0; INT32, Info(Loc(6236,5),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): {'v:compressStream:bzerr'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->lastErr, bzf->lastErr = 0; INT32, Info(Loc(6241,5),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->initialisedOk, bzf->initialisedOk = 54t; UINT8, Info(Loc(6244,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->bufN, bzf->bufN = 0; INT32, Info(Loc(6246,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->handle, bzf->handle = f; INT32, Info(Loc(6248,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->writing, bzf->writing = 55t; UINT8, Info(Loc(6250,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->strm, 57t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6252,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): 57t->bzalloc, 57t->bzalloc = 58t; Ptr(types.FuncSig(types.Ptr(types.Void, 1), [types.Ptr(types.Void, 1), types.Int32, types.Int32], False), 1), Info(Loc(6252,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->strm, 60t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6254,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): 60t->bzfree, 60t->bzfree = 61t; Ptr(types.FuncSig(types.Void, [types.Ptr(types.Void, 1), types.Ptr(types.Void, 1)], False), 1), Info(Loc(6254,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->strm, 62t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6256,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): 62t->opaque, 62t->opaque = 63t; Ptr(VOID, 1), Info(Loc(6256,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->strm, 65t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6263,28),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): *bzerror, *bzerror = ret; INT32, Info(Loc(6269,7),0):
+  Other( NO ): {'v:compressStream:bzerr'},
+  Span( YES ): {'v:compressStream:bzerr'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->lastErr, bzf->lastErr = ret; INT32, Info(Loc(6274,7),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->strm, 77t = &bzf->strm; Ptr(Struct('s:__anonstruct_bz_stream_25'), 1), Info(Loc(6282,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): 77t->avail_in, 77t->avail_in = 0; UINT32, Info(Loc(6282,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p.strm'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p.strm'}
+DEREF_DIFFERENCE f:BZ2_bzWriteOpen (SAME): bzf->initialisedOk, bzf->initialisedOk = 78t; UINT8, Info(Loc(6284,3),0):
+  Other( NO ): {'g:BZ2_bzWriteOpen:2p'},
+  Span( YES ): {'g:BZ2_bzWriteOpen:2p'}
+FUNC_NAME (ForAvgDerefCompute): f:bz_config_ok
+FUNC_NAME (ForAvgDerefCompute): f:cleanUpAndFail
+FUNC_NAME (ForAvgDerefCompute): f:compressStream
+FUNC_NAME (ForAvgDerefCompute): f:configError
+FUNC_NAME (ForAvgDerefCompute): f:debug_time
+FUNC_NAME (ForAvgDerefCompute): f:default_bzalloc
+FUNC_NAME (ForAvgDerefCompute): f:init_RL
+FUNC_NAME (ForAvgDerefCompute): f:main
+DEREF_DIFFERENCE f:main (SAME): 11t->limit, 11t->limit = 12t; INT32, Info(Loc(924,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:main (SAME): 13t->limit, 13t->limit = 14t; INT32, Info(Loc(926,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:main (SAME): 15t->limit, 15t->limit = 16t; INT32, Info(Loc(928,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:main (SAME): 22t->len, 23t = 22t->len; INT32, Info(Loc(943,76),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:main (SAME): 36t->buf, 37t = 36t->buf; Ptr(UINT8, 1), Info(Loc(962,31),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:main (SAME): *39t, 41t = *39t; UINT8, Info(Loc(962,29),0):
+  Other( NO ): {'g:0Null', 'g:spec_init:5p'},
+  Span( YES ): {'g:0Null', 'g:spec_init:5p'}
+DEREF_DIFFERENCE f:main (SAME): *40t, *40t = 41t; UINT8, Info(Loc(962,5),0):
+  Other( NO ): {'g:main:4p'},
+  Span( YES ): {'g:main:4p'}
+DEREF_DIFFERENCE f:main (SAME): 48t->len, 49t = 48t->len; INT32, Info(Loc(987,14),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:main (SAME): 54t->len, 55t = 54t->len; INT32, Info(Loc(1008,14),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:main (SAME): *59t, 60t = *59t; UINT8, Info(Loc(1015,17),0):
+  Other( NO ): {'g:main:4p'},
+  Span( YES ): {'g:main:4p'}
+DEREF_DIFFERENCE f:main (SAME): 61t->buf, 62t = 61t->buf; Ptr(UINT8, 1), Info(Loc(1015,50),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:main (SAME): *64t, 65t = *64t; UINT8, Info(Loc(1015,48),0):
+  Other( NO ): {'g:0Null', 'g:spec_init:5p'},
+  Span( YES ): {'g:0Null', 'g:spec_init:5p'}
+FUNC_NAME (ForAvgDerefCompute): f:myfeof
+FUNC_NAME (ForAvgDerefCompute): f:panic
+FUNC_NAME (ForAvgDerefCompute): f:prepare_new_block
+FUNC_NAME (ForAvgDerefCompute): f:setExit
+FUNC_NAME (ForAvgDerefCompute): f:showFileNames
+FUNC_NAME (ForAvgDerefCompute): f:spec_compress
+FUNC_NAME (ForAvgDerefCompute): f:spec_fread
+DEREF_DIFFERENCE f:spec_fread (SAME): 7t->pos, 9t = 7t->pos; INT32, Info(Loc(613,7),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_fread (SAME): 8t->len, 10t = 8t->len; INT32, Info(Loc(613,26),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_fread (SAME): 15t->pos, 16t = 15t->pos; INT32, Info(Loc(623,7),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_fread (SAME): 18t->len, 20t = 18t->len; INT32, Info(Loc(623,39),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_fread (SAME): 22t->len, 24t = 22t->len; INT32, Info(Loc(625,11),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_fread (SAME): 23t->pos, 25t = 23t->pos; INT32, Info(Loc(625,29),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_fread (SAME): 28t->buf, 30t = 28t->buf; Ptr(UINT8, 1), Info(Loc(631,66),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_fread (SAME): 29t->pos, 31t = 29t->pos; INT32, Info(Loc(631,84),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_fread (SAME): 35t->pos, 37t = 35t->pos; INT32, Info(Loc(634,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_fread (SAME): 35t->pos, 35t->pos = 38t; INT32, Info(Loc(634,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+FUNC_NAME (ForAvgDerefCompute): f:spec_fwrite
+DEREF_DIFFERENCE f:spec_fwrite (SAME): 7t->buf, 9t = 7t->buf; Ptr(UINT8, 1), Info(Loc(825,32),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_fwrite (SAME): 8t->pos, 10t = 8t->pos; INT32, Info(Loc(825,50),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_fwrite (SAME): 16t->len, 18t = 16t->len; INT32, Info(Loc(828,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_fwrite (SAME): 16t->len, 16t->len = 19t; INT32, Info(Loc(828,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_fwrite (SAME): 20t->pos, 22t = 20t->pos; INT32, Info(Loc(830,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_fwrite (SAME): 20t->pos, 20t->pos = 23t; INT32, Info(Loc(830,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+FUNC_NAME (ForAvgDerefCompute): f:spec_getc
+DEREF_DIFFERENCE f:spec_getc (SAME): 6t->pos, 8t = 6t->pos; INT32, Info(Loc(667,7),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_getc (SAME): 7t->len, 9t = 7t->len; INT32, Info(Loc(667,26),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_getc (SAME): 14t->pos, tmp = 14t->pos; INT32, Info(Loc(677,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_getc (SAME): 15t->pos, 16t = 15t->pos; INT32, Info(Loc(679,4),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_getc (SAME): 15t->pos, 17t = 15t->pos; INT32, Info(Loc(679,4),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_getc (SAME): 15t->pos, 15t->pos = 18t; INT32, Info(Loc(679,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_getc (SAME): 19t->buf, 20t = 19t->buf; Ptr(UINT8, 1), Info(Loc(681,16),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_getc (SAME): *21t, 22t = *21t; UINT8, Info(Loc(681,14),0):
+  Other( NO ): {'g:0Null', 'g:spec_init:5p'},
+  Span( YES ): {'g:0Null', 'g:spec_init:5p'}
+FUNC_NAME (ForAvgDerefCompute): f:spec_init
+DEREF_DIFFERENCE f:spec_init (SAME): 4t->limit, limit = 4t->limit; INT32, Info(Loc(351,5),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_init (SAME): 7t->limit, 7t->limit = limit; INT32, Info(Loc(355,5),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_init (SAME): 9t->buf, 9t->buf = 10t; Ptr(UINT8, 1), Info(Loc(357,5),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_init (SAME): 11t->buf, 12t = 11t->buf; Ptr(UINT8, 1), Info(Loc(362,25),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_init (SAME): 19t->buf, 20t = 19t->buf; Ptr(UINT8, 1), Info(Loc(373,9),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_init (SAME): *21t, *21t = 22t; UINT8, Info(Loc(373,7),0):
+  Other( NO ): {'g:0Null', 'g:spec_init:5p'},
+  Span( YES ): {'g:0Null', 'g:spec_init:5p'}
+FUNC_NAME (ForAvgDerefCompute): f:spec_initbufs
+FUNC_NAME (ForAvgDerefCompute): f:spec_load
+DEREF_DIFFERENCE f:spec_load (SAME): 6t->len, 6t->len = tmp___1; INT32, Info(Loc(477,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_load (SAME): 7t->pos, 7t->pos = tmp___1; INT32, Info(Loc(479,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_load (SAME): 9t->buf, 10t = 9t->buf; Ptr(UINT8, 1), Info(Loc(485,33),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_load (SAME): 19t->len, 20t = 19t->len; INT32, Info(Loc(506,5),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_load (SAME): 19t->len, 19t->len = 21t; INT32, Info(Loc(506,5),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_load (SAME): 22t->len, 23t = 22t->len; INT32, Info(Loc(513,10),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_load (SAME): 25t->len, 26t = 25t->len; INT32, Info(Loc(515,22),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_load (SAME): 27t->len, 28t = 27t->len; INT32, Info(Loc(517,19),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_load (SAME): 30t->len, tmp___5 = 30t->len; INT32, Info(Loc(519,7),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_load (SAME): 33t->buf, 35t = 33t->buf; Ptr(UINT8, 1), Info(Loc(527,34),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_load (SAME): 34t->len, 36t = 34t->len; INT32, Info(Loc(527,53),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_load (SAME): 39t->buf, 40t = 39t->buf; Ptr(UINT8, 1), Info(Loc(527,101),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_load (SAME): 43t->len, 44t = 43t->len; INT32, Info(Loc(530,5),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_load (SAME): 43t->len, 43t->len = 45t; INT32, Info(Loc(530,5),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+FUNC_NAME (ForAvgDerefCompute): f:spec_reset
+DEREF_DIFFERENCE f:spec_reset (SAME): 1t->buf, 2t = 1t->buf; Ptr(UINT8, 1), Info(Loc(757,18),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_reset (SAME): 4t->len, 5t = 4t->len; INT32, Info(Loc(757,47),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_reset (SAME): 7t->len, 7t->len = tmp; INT32, Info(Loc(761,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_reset (SAME): 8t->pos, 8t->pos = tmp; INT32, Info(Loc(763,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+FUNC_NAME (ForAvgDerefCompute): f:spec_rewind
+DEREF_DIFFERENCE f:spec_rewind (SAME): 1t->pos, 1t->pos = 0; INT32, Info(Loc(745,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+FUNC_NAME (ForAvgDerefCompute): f:spec_uncompress
+FUNC_NAME (ForAvgDerefCompute): f:spec_ungetc
+DEREF_DIFFERENCE f:spec_ungetc (SAME): 6t->pos, 7t = 6t->pos; INT32, Info(Loc(713,7),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_ungetc (SAME): 11t->pos, 12t = 11t->pos; INT32, Info(Loc(716,13),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_ungetc (SAME): 13t->pos, 14t = 13t->pos; INT32, Info(Loc(721,4),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_ungetc (SAME): 13t->pos, 15t = 13t->pos; INT32, Info(Loc(721,4),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_ungetc (SAME): 13t->pos, 13t->pos = 16t; INT32, Info(Loc(721,3),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_ungetc (SAME): 17t->buf, 19t = 17t->buf; Ptr(UINT8, 1), Info(Loc(723,15),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_ungetc (SAME): 18t->pos, 20t = 18t->pos; INT32, Info(Loc(723,33),0):
+  Other( NO ): {'g:spec_fd'},
+  Span( YES ): {'g:spec_fd'}
+DEREF_DIFFERENCE f:spec_ungetc (SAME): *21t, 22t = *21t; UINT8, Info(Loc(723,13),0):
+  Other( NO ): {'g:0Null', 'g:spec_init:5p'},
+  Span( YES ): {'g:0Null', 'g:spec_init:5p'}
+FUNC_NAME (ForAvgDerefCompute): f:uncompressStream
+
+RESULTS: PointsToA+IntervalA SPAN vs LERNER (Abs. Locations and Multi-Pointees)
+==================================================================
+
+AverageDeref(Span) (Total): 1.165289256198347 
+AverageDeref(Other)(Total): 1.600550964187328
+
+AverageDeref(Span)   (LHS): 0.5932203389830508
+AverageDeref(Other)  (LHS): 0.9378531073446328
+
+AverageDeref(Span)   (RHS): 1.7096774193548387
+AverageDeref(Other)  (RHS): 2.2311827956989245
+TimeElapsed(TotalTimeTaken): 22929.118394851685 ms (Starts: 1, Stops: 1)
+
+RESULTS: PointsToA+IntervalA SPAN vs LERNER (IntervalA Precision) (Abs+Multi)
+==================================================================
+
+FUNC_NAME (ForIntervalPrecision): f:BZ2_bzCompressInit
+FUNC_NAME (ForIntervalPrecision): f:BZ2_bzDecompressInit
+FUNC_NAME (ForIntervalPrecision): f:BZ2_bzRead
+MORE_PRECISE: (f:BZ2_bzRead): 32if = 30t != 31t; INT32, Var: v:BZ2_bzRead:31t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzRead): 32if = 30t != 31t; INT32, Var: v:BZ2_bzRead:30t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzRead): *bzerror = 33t; INT32, Var: v:BZ2_bzRead:33t
+ SPAN : Top,
+ OTHER: -1
+MORE_PRECISE: (f:BZ2_bzRead): 37if = 35t != 36t; INT32, Var: v:BZ2_bzRead:36t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzRead): 37if = 35t != 36t; INT32, Var: v:BZ2_bzRead:35t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzRead): bzf->lastErr = 38t; INT32, Var: v:BZ2_bzRead:38t
+ SPAN : Top,
+ OTHER: -1
+MORE_PRECISE: (f:BZ2_bzRead): 39if = len == 0; INT32, Var: v:BZ2_bzRead:len
+ SPAN : Top,
+ OTHER: 5000
+MORE_PRECISE: (f:BZ2_bzRead): 48t->avail_out = 49t; UINT32, Var: v:BZ2_bzRead:49t
+ SPAN : Top,
+ OTHER: 5000
+MORE_PRECISE: (f:BZ2_bzRead): 54if = 53t == 0; INT32, Var: v:BZ2_bzRead:53t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzRead): 56if = !tmp; INT32, Var: v:BZ2_bzRead:tmp
+ SPAN : Top,
+ OTHER: (0, 1)
+MORE_PRECISE: (f:BZ2_bzRead): bzf->bufN = n; INT32, Var: v:BZ2_bzRead:n
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzRead): 62t->avail_in = 63t; UINT32, Var: v:BZ2_bzRead:63t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzRead): 67if = ret != 0; INT32, Var: v:BZ2_bzRead:ret
+ SPAN : Top,
+ OTHER: (-2, 0)
+MORE_PRECISE: (f:BZ2_bzRead): 68if = ret != 4; INT32, Var: v:BZ2_bzRead:ret
+ SPAN : Top,
+ OTHER: (-2, 0)
+MORE_PRECISE: (f:BZ2_bzRead): 72if = 70t != 71t; INT32, Var: v:BZ2_bzRead:70t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzRead): 72if = 70t != 71t; INT32, Var: v:BZ2_bzRead:71t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzRead): *bzerror = ret; INT32, Var: v:BZ2_bzRead:ret
+ SPAN : Top,
+ OTHER: (-2, 0)
+MORE_PRECISE: (f:BZ2_bzRead): 76if = 74t != 75t; INT32, Var: v:BZ2_bzRead:74t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzRead): 76if = 74t != 75t; INT32, Var: v:BZ2_bzRead:75t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzRead): bzf->lastErr = ret; INT32, Var: v:BZ2_bzRead:ret
+ SPAN : Top,
+ OTHER: (-2, 0)
+MORE_PRECISE: (f:BZ2_bzRead): 77if = ret == 0; INT32, Var: v:BZ2_bzRead:ret
+ SPAN : Top,
+ OTHER: (-2, 0)
+MORE_PRECISE: (f:BZ2_bzRead): 81if = 80t == 0; INT32, Var: v:BZ2_bzRead:80t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzRead): 84if = 83t > 0; INT32, Var: v:BZ2_bzRead:83t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzRead): 88if = 86t != 87t; INT32, Var: v:BZ2_bzRead:86t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzRead): 88if = 86t != 87t; INT32, Var: v:BZ2_bzRead:87t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzRead): *bzerror = 89t; INT32, Var: v:BZ2_bzRead:89t
+ SPAN : Top,
+ OTHER: -7
+MORE_PRECISE: (f:BZ2_bzRead): 93if = 91t != 92t; INT32, Var: v:BZ2_bzRead:91t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzRead): 93if = 91t != 92t; INT32, Var: v:BZ2_bzRead:92t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzRead): bzf->lastErr = 94t; INT32, Var: v:BZ2_bzRead:94t
+ SPAN : Top,
+ OTHER: -7
+MORE_PRECISE: (f:BZ2_bzRead): 95if = ret == 4; INT32, Var: v:BZ2_bzRead:ret
+ SPAN : Top,
+ OTHER: (-2, 0)
+MORE_PRECISE: (f:BZ2_bzRead): 111if = 110t == 0; INT32, Var: v:BZ2_bzRead:110t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzRead): 115if = 113t != 114t; INT32, Var: v:BZ2_bzRead:113t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzRead): 115if = 113t != 114t; INT32, Var: v:BZ2_bzRead:114t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzRead): 119if = 117t != 118t; INT32, Var: v:BZ2_bzRead:118t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzRead): 119if = 117t != 118t; INT32, Var: v:BZ2_bzRead:117t
+ SPAN : Top,
+ OTHER: Bot
+FUNC_NAME (ForIntervalPrecision): f:BZ2_bzReadClose
+MORE_PRECISE: (f:BZ2_bzReadClose): 25if = 23t != 24t; INT32, Var: v:BZ2_bzReadClose:24t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzReadClose): 25if = 23t != 24t; INT32, Var: v:BZ2_bzReadClose:23t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzReadClose): *bzerror = 26t; INT32, Var: v:BZ2_bzReadClose:26t
+ SPAN : Top,
+ OTHER: -1
+MORE_PRECISE: (f:BZ2_bzReadClose): 30if = 28t != 29t; INT32, Var: v:BZ2_bzReadClose:28t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzReadClose): 30if = 28t != 29t; INT32, Var: v:BZ2_bzReadClose:29t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzReadClose): bzf->lastErr = 31t; INT32, Var: v:BZ2_bzReadClose:31t
+ SPAN : Top,
+ OTHER: -1
+FUNC_NAME (ForIntervalPrecision): f:BZ2_bzReadOpen
+MORE_PRECISE: (f:BZ2_bzReadOpen): 98t->avail_in = 99t; UINT32, Var: v:BZ2_bzReadOpen:99t
+ SPAN : Top,
+ OTHER: Bot
+FUNC_NAME (ForIntervalPrecision): f:BZ2_bzWrite
+MORE_PRECISE: (f:BZ2_bzWrite): 29if = !28t; INT32, Var: v:BZ2_bzWrite:28t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWrite): 33if = 31t != 32t; INT32, Var: v:BZ2_bzWrite:32t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWrite): 33if = 31t != 32t; INT32, Var: v:BZ2_bzWrite:31t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWrite): *bzerror = 34t; INT32, Var: v:BZ2_bzWrite:34t
+ SPAN : Top,
+ OTHER: -1
+MORE_PRECISE: (f:BZ2_bzWrite): 38if = 36t != 37t; INT32, Var: v:BZ2_bzWrite:36t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWrite): 38if = 36t != 37t; INT32, Var: v:BZ2_bzWrite:37t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWrite): bzf->lastErr = 39t; INT32, Var: v:BZ2_bzWrite:39t
+ SPAN : Top,
+ OTHER: -1
+MORE_PRECISE: (f:BZ2_bzWrite): 40if = len == 0; INT32, Var: v:BZ2_bzWrite:len
+ SPAN : Top,
+ OTHER: (1, inf)
+MORE_PRECISE: (f:BZ2_bzWrite): 49t->avail_in = 50t; UINT32, Var: v:BZ2_bzWrite:50t
+ SPAN : Top,
+ OTHER: (1, 0)
+MORE_PRECISE: (f:BZ2_bzWrite): 57if = ret != 1; INT32, Var: v:BZ2_bzWrite:ret
+ SPAN : Top,
+ OTHER: (-2, 4)
+MORE_PRECISE: (f:BZ2_bzWrite): 61if = 59t != 60t; INT32, Var: v:BZ2_bzWrite:59t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWrite): 61if = 59t != 60t; INT32, Var: v:BZ2_bzWrite:60t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWrite): *bzerror = ret; INT32, Var: v:BZ2_bzWrite:ret
+ SPAN : Top,
+ OTHER: (-2, 4)
+MORE_PRECISE: (f:BZ2_bzWrite): 65if = 63t != 64t; INT32, Var: v:BZ2_bzWrite:64t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWrite): 65if = 63t != 64t; INT32, Var: v:BZ2_bzWrite:63t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWrite): bzf->lastErr = ret; INT32, Var: v:BZ2_bzWrite:ret
+ SPAN : Top,
+ OTHER: (-2, 4)
+MORE_PRECISE: (f:BZ2_bzWrite): 68if = 67t < 5000; INT32, Var: v:BZ2_bzWrite:67t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWrite): 71t = 5000 - 70t; UINT32, Var: v:BZ2_bzWrite:70t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWrite): 77if = n != n2; INT32, Var: v:BZ2_bzWrite:n2
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWrite): 77if = n != n2; INT32, Var: v:BZ2_bzWrite:n
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWrite): 81if = 79t != 80t; INT32, Var: v:BZ2_bzWrite:80t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWrite): 81if = 79t != 80t; INT32, Var: v:BZ2_bzWrite:79t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWrite): *bzerror = 82t; INT32, Var: v:BZ2_bzWrite:82t
+ SPAN : Top,
+ OTHER: -6
+MORE_PRECISE: (f:BZ2_bzWrite): 86if = 84t != 85t; INT32, Var: v:BZ2_bzWrite:85t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWrite): 86if = 84t != 85t; INT32, Var: v:BZ2_bzWrite:84t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWrite): bzf->lastErr = 87t; INT32, Var: v:BZ2_bzWrite:87t
+ SPAN : Top,
+ OTHER: -6
+MORE_PRECISE: (f:BZ2_bzWrite): 90if = 89t == 0; INT32, Var: v:BZ2_bzWrite:89t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWrite): 94if = 92t != 93t; INT32, Var: v:BZ2_bzWrite:93t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWrite): 94if = 92t != 93t; INT32, Var: v:BZ2_bzWrite:92t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWrite): 98if = 96t != 97t; INT32, Var: v:BZ2_bzWrite:96t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWrite): 98if = 96t != 97t; INT32, Var: v:BZ2_bzWrite:97t
+ SPAN : Top,
+ OTHER: Bot
+FUNC_NAME (ForIntervalPrecision): f:BZ2_bzWriteClose64
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 14if = !13t; INT32, Var: v:BZ2_bzWriteClose64:13t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 18if = 16t != 17t; INT32, Var: v:BZ2_bzWriteClose64:16t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 18if = 16t != 17t; INT32, Var: v:BZ2_bzWriteClose64:17t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): *bzerror = 19t; INT32, Var: v:BZ2_bzWriteClose64:19t
+ SPAN : Top,
+ OTHER: -1
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 23if = 21t != 22t; INT32, Var: v:BZ2_bzWriteClose64:21t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 23if = 21t != 22t; INT32, Var: v:BZ2_bzWriteClose64:22t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): bzf->lastErr = 24t; INT32, Var: v:BZ2_bzWriteClose64:24t
+ SPAN : Top,
+ OTHER: -1
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 28if = 26t != 27t; INT32, Var: v:BZ2_bzWriteClose64:26t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 28if = 26t != 27t; INT32, Var: v:BZ2_bzWriteClose64:27t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 32if = 30t != 31t; INT32, Var: v:BZ2_bzWriteClose64:30t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 32if = 30t != 31t; INT32, Var: v:BZ2_bzWriteClose64:31t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 36if = 34t != 35t; INT32, Var: v:BZ2_bzWriteClose64:34t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 36if = 34t != 35t; INT32, Var: v:BZ2_bzWriteClose64:35t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 40if = 38t != 39t; INT32, Var: v:BZ2_bzWriteClose64:38t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 40if = 38t != 39t; INT32, Var: v:BZ2_bzWriteClose64:39t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 41if = !abandon; INT32, Var: v:BZ2_bzWriteClose64:abandon
+ SPAN : Top,
+ OTHER: (0, 1)
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 43if = 42t == 0; INT32, Var: v:BZ2_bzWriteClose64:42t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 48if = ret != 3; INT32, Var: v:BZ2_bzWriteClose64:ret
+ SPAN : Top,
+ OTHER: (-2, 4)
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 49if = ret != 4; INT32, Var: v:BZ2_bzWriteClose64:ret
+ SPAN : Top,
+ OTHER: (-2, 4)
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 53if = 51t != 52t; INT32, Var: v:BZ2_bzWriteClose64:52t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 53if = 51t != 52t; INT32, Var: v:BZ2_bzWriteClose64:51t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): *bzerror = ret; INT32, Var: v:BZ2_bzWriteClose64:ret
+ SPAN : Top,
+ OTHER: (-2, 4)
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 57if = 55t != 56t; INT32, Var: v:BZ2_bzWriteClose64:56t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 57if = 55t != 56t; INT32, Var: v:BZ2_bzWriteClose64:55t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): bzf->lastErr = ret; INT32, Var: v:BZ2_bzWriteClose64:ret
+ SPAN : Top,
+ OTHER: (-2, 4)
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 60if = 59t < 5000; INT32, Var: v:BZ2_bzWriteClose64:59t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 63t = 5000 - 62t; UINT32, Var: v:BZ2_bzWriteClose64:62t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 69if = n != n2; INT32, Var: v:BZ2_bzWriteClose64:n
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 69if = n != n2; INT32, Var: v:BZ2_bzWriteClose64:n2
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 73if = 71t != 72t; INT32, Var: v:BZ2_bzWriteClose64:71t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 73if = 71t != 72t; INT32, Var: v:BZ2_bzWriteClose64:72t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): *bzerror = 74t; INT32, Var: v:BZ2_bzWriteClose64:74t
+ SPAN : Top,
+ OTHER: -6
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 78if = 76t != 77t; INT32, Var: v:BZ2_bzWriteClose64:76t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 78if = 76t != 77t; INT32, Var: v:BZ2_bzWriteClose64:77t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): bzf->lastErr = 79t; INT32, Var: v:BZ2_bzWriteClose64:79t
+ SPAN : Top,
+ OTHER: -6
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 80if = ret == 4; INT32, Var: v:BZ2_bzWriteClose64:ret
+ SPAN : Top,
+ OTHER: (-2, 4)
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 81if = !abandon; INT32, Var: v:BZ2_bzWriteClose64:abandon
+ SPAN : Top,
+ OTHER: (0, 1)
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 85if = 83t != 84t; INT32, Var: v:BZ2_bzWriteClose64:83t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 85if = 83t != 84t; INT32, Var: v:BZ2_bzWriteClose64:84t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): *nbytes_in_lo32 = 87t; UINT32, Var: v:BZ2_bzWriteClose64:87t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 91if = 89t != 90t; INT32, Var: v:BZ2_bzWriteClose64:89t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 91if = 89t != 90t; INT32, Var: v:BZ2_bzWriteClose64:90t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): *nbytes_in_hi32 = 93t; UINT32, Var: v:BZ2_bzWriteClose64:93t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 97if = 95t != 96t; INT32, Var: v:BZ2_bzWriteClose64:96t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 97if = 95t != 96t; INT32, Var: v:BZ2_bzWriteClose64:95t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): *nbytes_out_lo32 = 99t; UINT32, Var: v:BZ2_bzWriteClose64:99t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 103if = 101t != 102t; INT32, Var: v:BZ2_bzWriteClose64:101t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 103if = 101t != 102t; INT32, Var: v:BZ2_bzWriteClose64:102t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): *nbytes_out_hi32 = 105t; UINT32, Var: v:BZ2_bzWriteClose64:105t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 109if = 107t != 108t; INT32, Var: v:BZ2_bzWriteClose64:107t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 109if = 107t != 108t; INT32, Var: v:BZ2_bzWriteClose64:108t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 113if = 111t != 112t; INT32, Var: v:BZ2_bzWriteClose64:112t
+ SPAN : Top,
+ OTHER: Bot
+MORE_PRECISE: (f:BZ2_bzWriteClose64): 113if = 111t != 112t; INT32, Var: v:BZ2_bzWriteClose64:111t
+ SPAN : Top,
+ OTHER: Bot
+FUNC_NAME (ForIntervalPrecision): f:BZ2_bzWriteOpen
+FUNC_NAME (ForIntervalPrecision): f:bz_config_ok
+FUNC_NAME (ForIntervalPrecision): f:cleanUpAndFail
+FUNC_NAME (ForIntervalPrecision): f:compressStream
+MORE_PRECISE: (f:compressStream): 10if = bzerr != 0; INT32, Var: v:compressStream:bzerr
+ SPAN : (-9, 0),
+ OTHER: (-9, 4)
+MORE_PRECISE: (f:compressStream): 16if = bzerr != 0; INT32, Var: v:compressStream:bzerr
+ SPAN : (-9, 0),
+ OTHER: (-9, 4)
+MORE_PRECISE: (f:compressStream): 51if = 50t == bzerr; UINT32, Var: v:compressStream:bzerr
+ SPAN : (-9, 0),
+ OTHER: (-9, 4)
+MORE_PRECISE: (f:compressStream): 53if = 52t == bzerr; UINT32, Var: v:compressStream:bzerr
+ SPAN : (-9, 0),
+ OTHER: (-9, 4)
+FUNC_NAME (ForIntervalPrecision): f:configError
+FUNC_NAME (ForIntervalPrecision): f:debug_time
+FUNC_NAME (ForIntervalPrecision): f:default_bzalloc
+FUNC_NAME (ForIntervalPrecision): f:init_RL
+FUNC_NAME (ForIntervalPrecision): f:main
+MORE_PRECISE: (f:main): *40t = 41t; UINT8, Var: v:main:41t
+ SPAN : 0,
+ OTHER: Bot
+MORE_PRECISE: (f:main): 68if = 66t != 67t; INT32, Var: v:main:66t
+ SPAN : 0,
+ OTHER: Bot
+MORE_PRECISE: (f:main): 68if = 66t != 67t; INT32, Var: v:main:67t
+ SPAN : 0,
+ OTHER: Bot
+FUNC_NAME (ForIntervalPrecision): f:myfeof
+MORE_PRECISE: (f:myfeof): c = tmp; INT32, Var: v:myfeof:tmp
+ SPAN : (-1, 0),
+ OTHER: Bot
+MORE_PRECISE: (f:myfeof): 2if = 1t == c; INT32, Var: v:myfeof:c
+ SPAN : (-1, 0),
+ OTHER: Bot
+FUNC_NAME (ForIntervalPrecision): f:panic
+FUNC_NAME (ForIntervalPrecision): f:prepare_new_block
+FUNC_NAME (ForIntervalPrecision): f:setExit
+FUNC_NAME (ForIntervalPrecision): f:showFileNames
+FUNC_NAME (ForIntervalPrecision): f:spec_compress
+FUNC_NAME (ForIntervalPrecision): f:spec_fread
+MORE_PRECISE: (f:spec_fread): 4if = fd > 3; INT32, Var: v:spec_fread:fd
+ SPAN : 0,
+ OTHER: Bot
+FUNC_NAME (ForIntervalPrecision): f:spec_fwrite
+MORE_PRECISE: (f:spec_fwrite): 4if = fd > 3; INT32, Var: v:spec_fwrite:fd
+ SPAN : 0,
+ OTHER: Bot
+MORE_PRECISE: (f:spec_fwrite): 14t = num * size; INT32, Var: v:spec_fwrite:num
+ SPAN : (1, 5000),
+ OTHER: Bot
+MORE_PRECISE: (f:spec_fwrite): 17t = num * size; INT32, Var: v:spec_fwrite:num
+ SPAN : (1, 5000),
+ OTHER: Bot
+MORE_PRECISE: (f:spec_fwrite): 19t = 17t + 18t; INT32, Var: v:spec_fwrite:17t
+ SPAN : (1, 5000),
+ OTHER: Bot
+MORE_PRECISE: (f:spec_fwrite): 21t = num * size; INT32, Var: v:spec_fwrite:num
+ SPAN : (1, 5000),
+ OTHER: Bot
+MORE_PRECISE: (f:spec_fwrite): 23t = 21t + 22t; INT32, Var: v:spec_fwrite:21t
+ SPAN : (1, 5000),
+ OTHER: Bot
+FUNC_NAME (ForIntervalPrecision): f:spec_getc
+MORE_PRECISE: (f:spec_getc): 3if = fd > 3; INT32, Var: v:spec_getc:fd
+ SPAN : 0,
+ OTHER: Bot
+FUNC_NAME (ForIntervalPrecision): f:spec_init
+FUNC_NAME (ForIntervalPrecision): f:spec_initbufs
+FUNC_NAME (ForIntervalPrecision): f:spec_load
+FUNC_NAME (ForIntervalPrecision): f:spec_reset
+FUNC_NAME (ForIntervalPrecision): f:spec_rewind
+FUNC_NAME (ForIntervalPrecision): f:spec_uncompress
+FUNC_NAME (ForIntervalPrecision): f:spec_ungetc
+MORE_PRECISE: (f:spec_ungetc): 3if = fd > 3; INT32, Var: v:spec_ungetc:fd
+ SPAN : 0,
+ OTHER: Bot
+MORE_PRECISE: (f:spec_ungetc): 25if = 23t != 24t; INT32, Var: v:spec_ungetc:24t
+ SPAN : (0, 255),
+ OTHER: Bot
+MORE_PRECISE: (f:spec_ungetc): 25if = 23t != 24t; INT32, Var: v:spec_ungetc:23t
+ SPAN : 0,
+ OTHER: Bot
+FUNC_NAME (ForIntervalPrecision): f:uncompressStream
+
+RESULTS: PointsToA+IntervalA SPAN vs LERNER (IntervalA Precision) (Abs+Multi)
+==================================================================
+p[i] = ... --> arr[i] = ...  X  --> p[i] = ...
+p[i] = ... --> arr[?] = ...
+p -> arr;
+arr is an array of Int --> arr as Int -- always may update it
+
+TOTAL_PRECISION (IntervalA): 146/615
+
+TimeElapsed(TotalTimeTaken): 24460.08014678955 ms (Starts: 1, Stops: 1)
+
+
+RESULTS: PointsToA+IntervalA SPAN vs LERNER (IntervalA Precision) Only Multi-Pointees
+==================================================================
+
+AverageDeref(Span) (Total): 1.165289256198347
+AverageDeref(Other)(Total): 1.418732782369146
+
+AverageDeref(Span)   (LHS): 0.5932203389830508
+AverageDeref(Other)  (LHS): 0.8135593220338984
+
+AverageDeref(Span)   (RHS): 1.7096774193548387
+AverageDeref(Other)  (RHS): 1.9946236559139785
+
+TOTAL_PRECISION (IntervalA): 79/615
+
+

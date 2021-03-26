@@ -6,18 +6,13 @@
 """Simplification related utilities..."""
 
 import logging
-LOG = logging.getLogger("span")
+_LOG = logging.getLogger("span")
 
-from typing import Dict, Tuple, Set, List, Callable
+from typing import List
 from typing import Optional as Opt
-from collections import deque
-import time
-import io
 
-import span.ir.types as types
-import span.ir.expr as expr
 from span.api.analysis import SimPending, SimFailed, SimNameT
-from span.api.analysis import AnalysisNameT, AnalysisAT, simNames
+
 
 class SimRecord:
 

@@ -509,46 +509,26 @@ class PointsToA(analysis.ValueAnalysisAT):
       return self.componentBot
 
     arg1, arg2 = binExpr.arg1, binExpr.arg2
-    ptrVarName: Opt[str] = None
-    isArray = False
+    arg1Type, arg2Type = arg1.type, arg2.type
+    arg1IsArr, arg2IsArr = arg1Type.isArray(), arg2Type.isArray()
+    arg1IsPtr, arg2IsPtr = arg1Type.isPointer(), arg2Type.isPointer()
 
     # Assuming only one of the args is a pointer/array variable
     # Note: binary subtraction between two pointers results in an integer
-    if isinstance(arg1, expr.VarE):
-      ptrVarName = arg1.name
-      if isinstance(arg1.type, types.ArrayT):
-        isArray = True
-    elif isinstance(arg2, expr.VarE):
-      ptrVarName = arg2.name
-      if isinstance(arg2.type, types.ArrayT):
-        isArray = True
+    if arg1IsArr or arg1IsPtr:
+      ptrVarName = arg1.name # must be a VarE arg
+    else:
+      ptrVarName = arg2.name # must be a VarE arg of Ptr or Arr type
 
     assert ptrVarName is not None
 
-    if isArray:  # arr + 1 etc. results in ptr to an element of arr
+    if ":ftab" in ptrVarName: #delit
+      print(f"PTR_RHS_DFV: ({self.func.name}): {binExpr}, {binExpr.info},"
+            f" {ptrVarName}, {arg1IsArr}, {arg2IsArr}") #delit
+    if arg1IsArr or arg2IsArr:  # arr + 1 etc. results in ptr to an element of arr
       return ComponentL(self.func, val={ptrVarName})
-
-    # if here: no array is used in the expression
-    newVal: dfv.ComponentL = self.componentTop
-
-    pointees = dfvIn.getVal(ptrVarName)
-    if pointees.top:
-      newVal = self.componentTop
-    elif pointees.bot:
-      newVal = self.componentBot
-    else:
-      # Check if all the pointees are arrays or PPMS Vars.
-      assert pointees.val
-      for pointee in pointees.val:
-        if not ir.inferTypeOfVal(self.func, pointee).isArrayOrVoid():
-          # return bot if any one pointee is not an array or PPMS
-          newVal = self.componentBot
-          break
-      else:
-        # if here: all pointees are arrays
-        newVal = pointees
-
-    return newVal
+    else: # must be a Ptr
+      return dfvIn.getVal(ptrVarName)
 
 
   def namesPossiblyModifiedInCallE(self,

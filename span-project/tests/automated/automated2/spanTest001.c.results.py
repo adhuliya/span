@@ -57,7 +57,7 @@ TestActionAndResult(
     "analysis.results": {
       "IntervalA": {
         "f:main": { # data flow value at given node numbers
-          2 : ("is: bot", "has: {'v:main:x': (20,20)}"), # IN/OUT/False/True values
+          2 : ("any", "has: {'v:main:x': (20,20)}"), # IN/OUT/False/True values
         }
       }, # end analysis LiveVarsA
     }, # end analysis.results

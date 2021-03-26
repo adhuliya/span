@@ -9,10 +9,11 @@ All possible expressions used in an instruction.
 
 import logging
 LOG = logging.getLogger("span")
+LER = LOG.error
 
 from typing import List, Set, Any, Optional as Opt
 
-from span.util.util import LS
+import span.util.util as util
 import span.util.consts as consts
 import span.ir.types as types
 import span.ir.conv as irConv
@@ -66,6 +67,9 @@ class ExprET:
     self.type: types.Type = types.Void
 
 
+  def getRValueNames(self) -> Set[types.VarNameT]: return set()
+
+
   def getDereferencedVarE(self) -> Opt['VarE']:
     return None
 
@@ -78,12 +82,9 @@ class ExprET:
     raise NotImplementedError()
 
 
-  def checkInvariants(self, level: int = 0):
-    """Runs some invariant checks on self.
-    Args:
-      level: An argument to help invoke specific checks in future.
-    """
-    if level >= 0:
+  def checkInvariants(self):
+    """Runs some invariant checks on self. """
+    if util.CC1:
       assert self.exprCode is not None
       assert self.type is not None
 
@@ -115,10 +116,10 @@ class ExprET:
     """Used in place of __eq__, for testing purposes."""
     equal = True
     if not isinstance(other, self.__class__):
-      if LS: LOG.error("ObjectsIncomparable: %s, %s", self, other)
+      if util.LL1: LER("ObjectsIncomparable: %s, %s", self, other)
       return False
     if not self.exprCode == other.exprCode:
-      if LS: LOG.error("ExprCodesDiffer: %s, %s",
+      if util.LL1: LER("ExprCodesDiffer: %s, %s",
                        self.exprCode, other.exprCode)
       equal = False
     if not self.type.isEqual(other.type):
@@ -126,8 +127,8 @@ class ExprET:
     if self.info and not self.info.isEqual(other.info):
       equal = False
 
-    if not equal and LS:
-      LOG.error("ObjectsDiffer: %s, %s", self, other)
+    if not equal and util.LL1:
+      LER("ObjectsDiffer: %s, %s", self, other)
 
     return equal
 
@@ -187,11 +188,12 @@ class LitE(SimpleET):
     return consts.LIT_E_STR
 
 
-  def checkInvariants(self, level: int = 0):
-    super().checkInvariants(level)
-    assert isinstance(self.val, (int, float, str)), f"{self}"
-    if self.name:
-      assert isinstance(self.val, str), f"{self}"
+  def checkInvariants(self):
+    super().checkInvariants()
+    if util.CC1:
+      assert isinstance(self.val, (int, float, str)), f"{self}"
+      if self.name:
+        assert isinstance(self.val, str), f"{self}"
 
 
   def isNumeric(self) -> bool:
@@ -206,7 +208,7 @@ class LitE(SimpleET):
 
   def isString(self) -> bool:
     if isinstance(self.val, str):
-      assert self.name, f"{self}, {self.name}"
+      assert self.name, f"{self}, {self.name}, {self.info}"
       return True
     else:
       assert not self.name, f"{self}, {self.name}"
@@ -233,21 +235,21 @@ class LitE(SimpleET):
   ) -> bool:
     equal = True
     if not isinstance(other, LitE):
-      if LS: LOG.error("ObjectsIncomparable: %s, %s", self, other)
+      if util.LL1: LER("ObjectsIncomparable: %s, %s", self, other)
       return False
     if not self.val == other.val:
-      if LS: LOG.error("ValuesDiffer: %s, %s", self.val, other.val)
+      if util.LL1: LER("ValuesDiffer: %s, %s", self.val, other.val)
       equal = False
     if not self.name == other.name:
-      if LS: LOG.error("NamesDiffer: %s, %s", self.name, other.name)
+      if util.LL1: LER("NamesDiffer: %s, %s", self.name, other.name)
       equal = False
     if not self.type.isEqual(other.type):
       equal = False
     if self.info and not self.info.isEqual(other.info):
       equal = False
 
-    if not equal and LS:
-      LOG.error("ObjectsDiffer: %s, %s", self, other)
+    if not equal and util.LL1:
+      LER("ObjectsDiffer: %s, %s", self, other)
 
     return equal
 
@@ -295,6 +297,10 @@ class VarE(SimpleET, LocationET):
       self.exprCode = FUNC_EXPR_EC
 
 
+  def getRValueNames(self) -> Set[types.VarNameT]:
+    return {self.name}
+
+
   def getFullName(self) -> types.VarNameT:
     return self.name
 
@@ -303,11 +309,12 @@ class VarE(SimpleET, LocationET):
     return consts.VAR_E_STR
 
 
-  def checkInvariants(self, level: int = 0):
-    super().checkInvariants(level)
-    assert self.name, f"{self}"
-    if self.hasFunctionName():
-      assert self.exprCode == FUNC_EXPR_EC, f"{self}"
+  def checkInvariants(self):
+    super().checkInvariants()
+    if util.CC1:
+      assert self.name, f"{self}"
+      if self.hasFunctionName():
+        assert self.exprCode == FUNC_EXPR_EC, f"{self}"
 
 
 
@@ -345,18 +352,18 @@ class VarE(SimpleET, LocationET):
   ) -> bool:
     equal = True
     if not isinstance(other, VarE):
-      if LS: LOG.error("ObjectsIncomparable: %s, %s", self, other)
+      if util.LL1: LER("ObjectsIncomparable: %s, %s", self, other)
       return False
     if not self.name == other.name:
-      if LS: LOG.error("NamesDiffer: %s, %s", self.name, other.name)
+      if util.LL1: LER("NamesDiffer: %s, %s", self.name, other.name)
       equal = False
     if not self.type.isEqual(other.type):
       equal = False
     if self.info and not self.info.isEqual(other.info):
       equal = False
 
-    if not equal and LS:
-      LOG.error("ObjectsDiffer: %s, %s", self, other)
+    if not equal and util.LL1:
+      LER("ObjectsDiffer: %s, %s", self, other)
 
     return equal
 
@@ -419,18 +426,18 @@ class PpmsVarE(VarE):
   ) -> bool:
     equal = True
     if not isinstance(other, PpmsVarE):
-      if LS: LOG.error("ObjectsIncomparable: %s, %s", self, other)
+      if util.LL1: LER("ObjectsIncomparable: %s, %s", self, other)
       return False
     if not self.name == other.name:
-      if LS: LOG.error("NamesDiffer: %s, %s", self.name, other.name)
+      if util.LL1: LER("NamesDiffer: %s, %s", self.name, other.name)
       equal = False
     if not self.type.isEqual(other.type):
       equal = False
     if self.info and not self.info.isEqual(other.info):
       equal = False
 
-    if not equal and LS:
-      LOG.error("ObjectsDiffer: %s, %s", self, other)
+    if not equal and util.LL1:
+      LER("ObjectsDiffer: %s, %s", self, other)
 
     return equal
 
@@ -445,7 +452,7 @@ class PpmsVarE(VarE):
 
 
   def __repr__(self):
-    return f"expr.PseudoVarE({repr(self.name)}, {repr(self.info)}," \
+    return f"expr.PpmsVarE({repr(self.name)}, {repr(self.info)}," \
            f"  insns= {repr(self.insns)},\n" \
            f"  sizeExpr= {repr(self.sizeExpr)})"
 
@@ -513,7 +520,7 @@ class DerefE(UnaryET, DerefET):
   ) -> bool:
     equal = True
     if not isinstance(other, DerefE):
-      if LS: LOG.error("ObjectsIncomparable: %s, %s", self, other)
+      if util.LL1: LER("ObjectsIncomparable: %s, %s", self, other)
       return False
     if not self.arg.isEqual(other.arg):
       equal = False
@@ -522,8 +529,8 @@ class DerefE(UnaryET, DerefET):
     if self.info and not self.info.isEqual(other.info):
       equal = False
 
-    if not equal and LS:
-      LOG.error("ObjectsDiffer: %s, %s", self, other)
+    if not equal and util.LL1:
+      LER("ObjectsDiffer: %s, %s", self, other)
 
     return equal
 
@@ -605,6 +612,11 @@ class ArrayE(DerefET):
     return None
 
 
+  def checkInvariants(self):
+    if util.CC1:
+      assert self.isCanonical(), f"{self}, {self.info}"
+
+
   def isCanonical(self) -> bool:
     """a[], ptr[] are canonical forms.
     a[][], a.y[] are non canonical forms.
@@ -636,21 +648,21 @@ class ArrayE(DerefET):
   ) -> bool:
     equal = True
     if not isinstance(other, ArrayE):
-      if LS: LOG.error("ObjectsIncomparable: %s, %s", self, other)
+      if util.LL1: LER("ObjectsIncomparable: %s, %s", self, other)
       return False
     if not self.index == other.index:
-      if LS: LOG.error("IndicesDiffer: %s, %s", self.index, other.index)
+      if util.LL1: LER("IndicesDiffer: %s, %s", self.index, other.index)
       equal = False
     if not self.of.isEqual(other.of):
-      if LS: LOG.error("OfsDiffer: %s, %s", self.of, other.of)
+      if util.LL1: LER("OfsDiffer: %s, %s", self.of, other.of)
       equal = False
     if not self.type.isEqual(other.type):
       equal = False
     if self.info and not self.info.isEqual(other.info):
       equal = False
 
-    if not equal and LS:
-      LOG.error("ObjectsDiffer: %s, %s", self, other)
+    if not equal and util.LL1:
+      LER("ObjectsDiffer: %s, %s", self, other)
 
     return equal
 
@@ -696,13 +708,14 @@ class MemberE(DerefET):
     return True
 
 
-  def checkInvariants(self, level: int = 0):
-    super().checkInvariants(level)
-    assert self.hasDereference(), f"{self}"
-    assert isinstance(self.of, VarE), f"{self}"
-    assert self.of and self.name, f"{self}"
-    assert not irConv.isMemberName(self.name), f"{self}"
-    assert not irConv.isMemberName(self.of.name), f"{self}"
+  def checkInvariants(self):
+    super().checkInvariants()
+    if util.CC1:
+      assert self.hasDereference(), f"{self}"
+      assert isinstance(self.of, VarE), f"{self}"
+      assert self.of and self.name, f"{self}"
+      assert not irConv.isMemberName(self.name), f"{self}"
+      assert not irConv.isMemberName(self.of.name), f"{self}"
 
 
   def getFullName(self) -> types.VarNameT:
@@ -745,21 +758,21 @@ class MemberE(DerefET):
   ) -> bool:
     equal = True
     if not isinstance(other, MemberE):
-      if LS: LOG.error("ObjectsIncomparable: %s, %s", self, other)
+      if util.LL1: LER("ObjectsIncomparable: %s, %s", self, other)
       return False
     if not self.name == other.name:
-      if LS: LOG.error("NamesDiffer: %s, %s", self.name, other.name)
+      if util.LL1: LER("NamesDiffer: %s, %s", self.name, other.name)
       equal = False
     if not self.of.isEqual(other.of):
-      if LS: LOG.error("OfsDiffer: %s, %s", self.of, other.of)
+      if util.LL1: LER("OfsDiffer: %s, %s", self.of, other.of)
       equal = False
     if not self.type.isEqual(other.type):
       equal = False
     if self.info and not self.info.isEqual(other.info):
       equal = False
 
-    if not equal and LS:
-      LOG.error("ObjectsDiffer: %s, %s", self, other)
+    if not equal and util.LL1:
+      LER("ObjectsDiffer: %s, %s", self, other)
 
     return equal
 
@@ -795,6 +808,10 @@ class BinaryE(ExprET):
     self.arg2 = arg2
 
 
+  def getRValueNames(self) -> Set[types.VarNameT]:
+    return self.arg1.getRValueNames() | self.arg2.getRValueNames()
+
+
   def getFormalStr(self) -> types.FormalStrT:
     return consts.BINARYARITH_E_STR
 
@@ -827,7 +844,7 @@ class BinaryE(ExprET):
   ) -> bool:
     equal = True
     if not isinstance(other, BinaryE):
-      if LS: LOG.error("ObjectsIncomparable: %s, %s", self, other)
+      if util.LL1: LER("ObjectsIncomparable: %s, %s", self, other)
       return False
     if not self.arg1.isEqual(other.arg1):
       equal = False
@@ -840,8 +857,8 @@ class BinaryE(ExprET):
     if self.info and not self.info.isEqual(other.info):
       equal = False
 
-    if not equal and LS:
-      LOG.error("ObjectsDiffer: %s, %s", self, other)
+    if not equal and util.LL1:
+      LER("ObjectsDiffer: %s, %s", self, other)
 
     return equal
 
@@ -879,6 +896,10 @@ class UnaryE(UnaryET):
     self.arg = arg
 
 
+  def getRValueNames(self) -> Set[types.VarNameT]:
+    return self.arg.getRValueNames()
+
+
   def getFormalStr(self) -> types.FormalStrT:
     return consts.UNARYARITH_E_STR
 
@@ -887,9 +908,10 @@ class UnaryE(UnaryET):
     return self.type.isNumeric()
 
 
-  def checkInvariants(self, level: int = 0):
-    super().checkInvariants(level)
-    assert not isinstance(self.arg, LitE), f"{self}"
+  def checkInvariants(self):
+    super().checkInvariants()
+    if util.CC1:
+      assert not isinstance(self.arg, LitE), f"{self}"
 
 
   def computeExpr(self) -> LitE:
@@ -932,7 +954,7 @@ class UnaryE(UnaryET):
   ) -> bool:
     equal = True
     if not isinstance(other, UnaryE):
-      if LS: LOG.error("ObjectsIncomparable: %s, %s", self, other)
+      if util.LL1: LER("ObjectsIncomparable: %s, %s", self, other)
       return False
     if not self.opr.isEqual(other.opr):
       equal = False
@@ -943,8 +965,8 @@ class UnaryE(UnaryET):
     if self.info and not self.info.isEqual(other.info):
       equal = False
 
-    if not equal and LS:
-      LOG.error("ObjectsDiffer: %s, %s", self, other)
+    if not equal and util.LL1:
+      LER("ObjectsDiffer: %s, %s", self, other)
 
     return equal
 
@@ -1010,7 +1032,7 @@ class AddrOfE(UnaryET):
   ) -> bool:
     equal = True
     if not isinstance(other, AddrOfE):
-      if LS: LOG.error("ObjectsIncomparable: %s, %s", self, other)
+      if util.LL1: LER("ObjectsIncomparable: %s, %s", self, other)
       return False
     if not self.arg.isEqual(other.arg):
       equal = False
@@ -1019,8 +1041,8 @@ class AddrOfE(UnaryET):
     if self.info and not self.info.isEqual(other.info):
       equal = False
 
-    if not equal and LS:
-      LOG.error("ObjectsDiffer: %s, %s", self, other)
+    if not equal and util.LL1:
+      LER("ObjectsDiffer: %s, %s", self, other)
 
     return equal
 
@@ -1058,7 +1080,7 @@ class CastE(UnaryET):
   ) -> None:
     super().__init__(CAST_EXPR_EC, info)
     self.arg = arg
-    self.to = self.type = to  # it is same as self.type
+    self.to = to  # it is same as self.type (don't set it here)
 
 
   def getFormalStr(self) -> types.FormalStrT:
@@ -1071,9 +1093,9 @@ class CastE(UnaryET):
     return fstr
 
 
-  def checkInvariants(self, level: int = 0):
+  def checkInvariants(self):
     super().checkInvariants()
-    if level >= 0:
+    if util.CC1:
       assert isinstance(self.arg, LocationET), f"{self}"
 
 
@@ -1097,7 +1119,7 @@ class CastE(UnaryET):
   ) -> bool:
     equal = True
     if not isinstance(other, CastE):
-      if LS: LOG.error("ObjectsIncomparable: %s, %s", self, other)
+      if util.LL1: LER("ObjectsIncomparable: %s, %s", self, other)
       return False
     if not self.arg.isEqual(other.arg):
       equal = False
@@ -1106,8 +1128,8 @@ class CastE(UnaryET):
     if self.info and not self.info.isEqual(other.info):
       equal = False
 
-    if not equal and LS:
-      LOG.error("ObjectsDiffer: %s, %s", self, other)
+    if not equal and util.LL1:
+      LER("ObjectsDiffer: %s, %s", self, other)
 
     return equal
 
@@ -1164,7 +1186,7 @@ class AllocE(UnaryET):
   ) -> bool:
     equal = True
     if not isinstance(other, AllocE):
-      if LS: LOG.error("ObjectsIncomparable: %s, %s", self, other)
+      if util.LL1: LER("ObjectsIncomparable: %s, %s", self, other)
       return False
     if not self.arg.isEqual(other.arg):
       equal = False
@@ -1173,8 +1195,8 @@ class AllocE(UnaryET):
     if self.info and not self.info.isEqual(other.info):
       equal = False
 
-    if not equal and LS:
-      LOG.error("ObjectsDiffer: %s, %s", self, other)
+    if not equal and util.LL1:
+      LER("ObjectsDiffer: %s, %s", self, other)
 
     return equal
 
@@ -1227,7 +1249,7 @@ class SizeOfE(UnaryET):
   ) -> bool:
     equal = True
     if not isinstance(other, SizeOfE):
-      if LS: LOG.error("ObjectsIncomparable: %s, %s", self, other)
+      if util.LL1: LER("ObjectsIncomparable: %s, %s", self, other)
       return False
     if not self.arg.isEqual(other.arg):
       equal = False
@@ -1236,8 +1258,8 @@ class SizeOfE(UnaryET):
     if self.info and not self.info.isEqual(other.info):
       equal = False
 
-    if not equal and LS:
-      LOG.error("ObjectsDiffer: %s, %s", self, other)
+    if not equal and util.LL1:
+      LER("ObjectsDiffer: %s, %s", self, other)
 
     return equal
 
@@ -1286,15 +1308,15 @@ class CallE(ExprET):
     return None
 
 
-  def checkInvariants(self, level: int = 0):
-    super().checkInvariants(level)
-    if level >= 0:
+  def checkInvariants(self):
+    super().checkInvariants()
+    if util.CC1:
       assert isinstance(self.callee, VarE), f"{self}"
-      self.callee.checkInvariants(level)
+      self.callee.checkInvariants()
       if self.args:
         for arg in self.args:
           assert isinstance(arg, (VarE, LitE)), f"{self}: {arg}"
-          arg.checkInvariants(level)
+          arg.checkInvariants()
 
 
   def isPointerCall(self) -> bool:
@@ -1350,20 +1372,20 @@ class CallE(ExprET):
   ) -> bool:
     equal = True
     if not isinstance(other, CallE):
-      if LS: LOG.error("ObjectsIncomparable: %s, %s", self, other)
+      if util.LL1: LER("ObjectsIncomparable: %s, %s", self, other)
       return False
     if not self.callee.isEqual(other.callee):
       equal = False
     if not self.args == other.args:
-      if LS: LOG.error("ArgumentsDiffer: %s, %s", self.args, other.args)
+      if util.LL1: LER("ArgumentsDiffer: %s, %s", self.args, other.args)
       equal = False
     if not self.type.isEqual(other.type):
       equal = False
     if self.info and not self.info.isEqual(other.info):
       equal = False
 
-    if not equal and LS:
-      LOG.error("ObjectsDiffer: %s, %s", self, other)
+    if not equal and util.LL1:
+      LER("ObjectsDiffer: %s, %s", self, other)
 
     return equal
 
@@ -1436,7 +1458,7 @@ class SelectE(ExprET):
   ) -> bool:
     equal = True
     if not isinstance(other, SelectE):
-      if LS: LOG.error("ObjectsIncomparable: %s, %s", self, other)
+      if util.LL1: LER("ObjectsIncomparable: %s, %s", self, other)
       return False
     if not self.cond.isEqual(other.cond):
       equal = False
@@ -1449,8 +1471,8 @@ class SelectE(ExprET):
     if self.info and not self.info.isEqual(other.info):
       equal = False
 
-    if not equal and LS:
-      LOG.error("ObjectsDiffer: %s, %s", self, other)
+    if not equal and util.LL1:
+      LER("ObjectsDiffer: %s, %s", self, other)
 
     return equal
 
@@ -1504,18 +1526,18 @@ class PhiE(ExprET):
   ) -> bool:
     equal = True
     if not isinstance(other, PhiE):
-      if LS: LOG.error("ObjectsIncomparable: %s, %s", self, other)
+      if util.LL1: LER("ObjectsIncomparable: %s, %s", self, other)
       return False
     if not self.args == other.args:
-      if LS: LOG.error("ArgumentsDiffer: %s, %s", self.args, other.args)
+      if util.LL1: LER("ArgumentsDiffer: %s, %s", self.args, other.args)
       equal = False
     if not self.type.isEqual(other.type):
       equal = False
     if self.info and not self.info.isEqual(other.info):
       equal = False
 
-    if not equal and LS:
-      LOG.error("ObjectsDiffer: %s, %s", self, other)
+    if not equal and util.LL1:
+      LER("ObjectsDiffer: %s, %s", self, other)
 
     return equal
 

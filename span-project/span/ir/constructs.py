@@ -6,12 +6,13 @@
 """Function and data structures for C function"""
 
 import logging
-
 LOG = logging.getLogger("span")
+LER = LOG.error
+
 from typing import List, Dict, Tuple, Optional as Opt, Set
 import io
 
-from span.util.util import LS
+import span.util.util as util
 from span.ir.types import (StructNameT, UnionNameT, MemberNameT, FuncNameT, VarNameT,
                            EdgeLabelT, BasicBlockIdT, Void, ConstructT,
                            Type, FuncSig, Info, Loc, LabelNameT, FuncIdT, )
@@ -72,18 +73,15 @@ class Func(ConstructT):
     return bool(self.basicBlocks) or bool(self.instrSeq)
 
 
-  def checkInvariants(self, level: int = 0):  # -> 'ExprET':
-    """Runs some invariant checks on self.
-    Args:
-      level: An argument to help invoke specific checks in future.
-    """
-    if self.hasBody():
-      assert self.cfg and \
-             self.cfg.start is not None and \
-             self.cfg.end is not None, f"{self}"
-    # Assertion check on self.tUnit cannot be done here.
-    # Hence, do it in span.ir.tunit module.
-    return self
+  def checkInvariants(self) -> None:
+    """Runs some invariant checks on self. """
+    if util.CC1:
+      if self.hasBody():
+        assert self.cfg and \
+               self.cfg.start is not None and \
+               self.cfg.end is not None, f"{self}"
+      # Assertion check on self.tUnit cannot be done here.
+      # Hence, do it in span.ir.tunit module.
 
 
   def canBeAnalyzed(self) -> bool:
@@ -320,31 +318,31 @@ class Func(ConstructT):
   ) -> bool:
     equal = True
     if not isinstance(other, Func):
-      if LS: LOG.error("ObjectsIncomparable: %s, %s", self, other)
+      if util.LL1: LER("ObjectsIncomparable: %s, %s", self, other)
       return False
     if not self.name == other.name:
-      if LS: LOG.error("FuncNamesDiffer: %s, %s", self.name, other.name)
+      if util.LL1: LER("FuncNamesDiffer: %s, %s", self.name, other.name)
       equal = False
     if not self.paramNames == other.paramNames:
-      if LS: LOG.error("ParamNamesDiffer: (Func: '%s') %s, %s",
+      if util.LL1: LER("ParamNamesDiffer: (Func: '%s') %s, %s",
                        self.name, self.paramNames, other.paramNames)
       equal = False
     if not self.sig == other.sig:
-      if LS: LOG.error("FuncSigsDiffer: (Func: '%s')", self.name)
+      if util.LL1: LER("FuncSigsDiffer: (Func: '%s')", self.name)
       equal = False
 
     if not self.bbEdges == other.bbEdges:
-      if LS: LOG.error("CfgStructuresDiffer: (func: '%s'):\n\n%s,\n\n,%s",
+      if util.LL1: LER("CfgStructuresDiffer: (func: '%s'):\n\n%s,\n\n,%s",
                        self.name, self.bbEdges, other.bbEdges)
       equal = False
     selfBbIds = self.basicBlocks.keys()
     otherBbIds = other.basicBlocks.keys()
     if not len(selfBbIds) == len(otherBbIds):
-      if LS: LOG.error("NumOfBBsDiffer: (Func: '%s') %s, %s",
+      if util.LL1: LER("NumOfBBsDiffer: (Func: '%s') %s, %s",
                        self.name, selfBbIds, otherBbIds)
       equal = False
     if not selfBbIds == otherBbIds:
-      if LS: LOG.error("BbNumberingsDiffer: (Func: '%s') %s, %s",
+      if util.LL1: LER("BbNumberingsDiffer: (Func: '%s') %s, %s",
                        self.name, self, other)
       equal = False
 
@@ -353,7 +351,7 @@ class Func(ConstructT):
       otherBb = other.basicBlocks[bbId]
       if selfBb and otherBb:
         if not len(selfBb) == len(otherBb):
-          if LS: LOG.error("BbInsnCountsDiffer: %s, %s",
+          if util.LL1: LER("BbInsnCountsDiffer: %s, %s",
                            len(selfBb), len(otherBb))
           equal = False
         else:
@@ -361,12 +359,12 @@ class Func(ConstructT):
             if not selfBb[i].isEqual(otherBb[i]):
               equal = False
       elif not selfBb == otherBb:
-        if LS: LOG.error("BbsDiffer: %s, %s", selfBb, otherBb)
+        if util.LL1: LER("BbsDiffer: %s, %s", selfBb, otherBb)
         equal = False
 
     if self.instrSeq and other.instrSeq:
       if not len(self.instrSeq) == len(other.instrSeq):
-        if LS: LOG.error("IntrSeqCountsDiffer: %s, %s",
+        if util.LL1: LER("IntrSeqCountsDiffer: %s, %s",
                          len(self.instrSeq), len(other.instrSeq))
         equal = False
       else:
@@ -377,8 +375,8 @@ class Func(ConstructT):
     if self.info and not self.info.isEqual(other.info):
       equal = False
 
-    if not equal and LS:
-      LOG.error("ObjectsDiffer: %s, %s", self, other)
+    if not equal and util.LL1:
+      LER("ObjectsDiffer: %s, %s", self, other)
 
     return equal
 

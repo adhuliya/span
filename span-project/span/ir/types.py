@@ -465,7 +465,10 @@ class Type:
 
   def castValue(self, value: NumericT) -> NumericT:
     # FIXME: make it more precise
-    assert self.isNumeric()
+    if isinstance(self, Ptr):
+      return value
+
+    assert self.isNumeric(), f"{self}"
     assert isinstance(value, (int, float))
 
     selfIsInteger = self.isInteger()
@@ -649,7 +652,7 @@ class Type:
       return True
     if not isinstance(other, Type):
       return NotImplemented
-    if self.typeCode == VOID_TC: #special case
+    if VOID_TC in (self.typeCode, other.typeCode): #special case
       return True # Void matches all types
     return self.typeCode == other.typeCode
 
@@ -945,6 +948,19 @@ class Ptr(Type):
       self.to = self.to.to
 
 
+  def isEqualOrVoid(self, other: 'Type') -> bool:
+    if self is other: return True
+    if not isinstance(other, Type):
+      raise NotImplementedError()
+    if VOID_TC in (self.typeCode, other.typeCode):
+      return True # the void equal case
+    if not isinstance(other, Ptr):
+      return False
+    if not self.indlev == other.indlev:
+      return False
+    return self.to.isEqualOrVoid(other.to)
+
+
   def getPointeeType(self) -> Type:
     if self.indlev > 1:
       return Ptr(self.to, self.indlev - 1)
@@ -1041,6 +1057,17 @@ class ArrayT(Type):
   ) -> None:
     super().__init__(typeCode)
     self.of = of
+
+
+  def isEqualOrVoid(self, other: 'Type') -> bool:
+    if self is other: return True
+    if not isinstance(other, Type):
+      raise NotImplementedError()
+    if VOID_TC in (self.typeCode, other.typeCode):
+      return True # the void equal case
+    if not isinstance(other, ArrayT):
+      return False
+    return self.of.isEqualOrVoid(other.of)
 
 
   #@functools.lru_cache(256)
@@ -1231,6 +1258,19 @@ class ConstSizeArray(ArrayT):
     size = self.of.sizeInBits()
     size = self.size * size
     return size
+
+
+  def isEqualOrVoid(self, other: 'Type') -> bool:
+    if self is other: return True
+    if not isinstance(other, Type):
+      raise NotImplementedError()
+    if VOID_TC in (self.typeCode, other.typeCode):
+      return True # the void equal case
+    if not isinstance(other, ConstSizeArray):
+      return False
+    if not self.size == other.size:
+      return False
+    return self.of.isEqualOrVoid(other.of)
 
 
   def __eq__(self, other) -> bool:
@@ -1538,6 +1578,28 @@ class Struct(RecordT):
     return size
 
 
+  def isEqualOrVoid(self, other: 'Type') -> bool:
+    if self is other: return True
+    if not isinstance(other, Type):
+      raise NotImplementedError()
+    if VOID_TC in (self.typeCode, other.typeCode):
+      return True # the void equal case
+    if not isinstance(other, Struct):
+      return False
+    if not self.typeCode == other.typeCode:
+      return False
+    if not self.name == other.name:
+      return False
+    if not len(self.members) == len(other.members):
+      return False
+    for selfMem, otherMem in zip(self.members, other.members):
+      if not selfMem[0] == otherMem[0] or\
+          not selfMem[1].isEqualOrVoid(otherMem[1]): # same name and type
+        return False
+    else:
+      return True
+
+
   def __eq__(self, other) -> bool:
     if self is other:
       return True
@@ -1629,6 +1691,28 @@ class Union(RecordT):
     return size
 
 
+  def isEqualOrVoid(self, other: 'Type') -> bool:
+    if self is other: return True
+    if not isinstance(other, Type):
+      raise NotImplementedError()
+    if VOID_TC in (self.typeCode, other.typeCode):
+      return True # the void equal case
+    if not isinstance(other, Union):
+      return False
+    if not self.typeCode == other.typeCode:
+      return False
+    if not self.name == other.name:
+      return False
+    if not len(self.members) == len(other.members):
+      return False
+    for selfMem, otherMem in zip(self.members, other.members):
+      if not selfMem[0] == otherMem[0] or \
+          not selfMem[1].isEqualOrVoid(otherMem[1]): # same name and type
+        return False
+    else:
+      return True
+
+
   def __eq__(self, other) -> bool:
     if self is other:
       return True
@@ -1718,6 +1802,30 @@ class FuncSig(Type):
 
   def sizeInBits(self) -> int:
     raise NotImplementedError()  # no size of a FuncSig !!
+
+
+  def isEqualOrVoid(self, other: 'Type') -> bool:
+    if self is other: return True
+    if not isinstance(other, Type):
+      raise NotImplementedError()
+    if VOID_TC in (self.typeCode, other.typeCode):
+      return True # the void equal case
+    if not isinstance(other, FuncSig):
+      return False
+    if not self.typeCode == other.typeCode:
+      return False
+    if isinstance(self.returnType, Ptr) and isinstance(other.returnType, Ptr):
+      if not self.returnType.isEqualOrVoid(other.returnType):
+        return False
+    if not self.returnType == other.returnType: # void case not applicable here
+      return False
+    if not len(self.paramTypes) == len(other.paramTypes):
+      return False
+    for selfPType, otherPType in zip(self.paramTypes, other.paramTypes):
+      if not selfPType.isEqualOrVoid(otherPType):
+        return False
+    else:
+      return True
 
 
   def __eq__(self, other) -> bool:

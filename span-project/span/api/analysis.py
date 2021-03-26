@@ -1861,10 +1861,14 @@ class ValueAnalysisAT(AnalysisAT):
       tUnit: TranslationUnit = func.tUnit
       inBiSetVal, tUnitGetNameInfo = inBi.setVal, tUnit.getNameInfo
 
-      if ff.SET_LOCAL_ARRAYS_TO_TOP: # set arrays to a top initial value
+      # set arrays/locals to a top initial value
+      if ff.SET_LOCAL_ARRAYS_TO_TOP or ff.SET_LOCAL_VARS_TO_TOP:
         localNames = tUnit.getNamesLocal(func)
-        for vName in localNames - set(func.paramNames):
-          if tUnitGetNameInfo(vName).hasArray:
+        allVars = self.L.getAllVars(func)
+        varNames = (localNames - set(func.paramNames)) & allVars
+        for vName in varNames:
+          if ff.SET_LOCAL_VARS_TO_TOP or\
+              (ff.SET_LOCAL_ARRAYS_TO_TOP and tUnitGetNameInfo(vName).hasArray):
             inBiSetVal(vName, self.componentTop) #Mutates inBi
 
       if entryFunc: # then set its parameters to Bot (main() function)
@@ -2011,6 +2015,10 @@ class ValueAnalysisAT(AnalysisAT):
       mustUpdate = len(lhsVarNames) == 1
 
       rhsDfv = self.getExprDfv(rhs, dfvIn, calleeBi)
+
+      if rhsDfv.bot and util.VV2 and type(self).__name__ == "PointsToA":
+        print(f"BOT_RHS_PTR (PointsToA): ({self.func.name}) {lhs} = {rhs} ({lhs.info})")
+
       if util.LL5: LDB("Analysis %s: RhsDfvOfExpr: '%s' (type: %s) is %s,"
                        " lhsVarNames are %s",
                        self.overallTop.name, rhs, rhs.type, rhsDfv, lhsVarNames)
@@ -2327,12 +2335,14 @@ class ValueAnalysisAT(AnalysisAT):
 
     outCalleeBi = calleeBi.dfvOut
     calleeFuncObj = tUnit.getFuncObj(calleeName)
-    returnExprList = calleeFuncObj.getReturnExprList()
-    print(f"ReturnExprList: {calleeFuncObj.name}, {returnExprList}, {e.info}") #delit
+    returnExprList: Opt[List[expr.SimpleET]] = \
+      calleeFuncObj.getReturnExprList()
 
     if not returnExprList: return self.componentBot
+
     val, selfGetExprDfv = self.componentTop, self.getExprDfv
-    mVal = mergeAll(selfGetExprDfv(e, outCalleeBi) for e in returnExprList)
+    valIter = [selfGetExprDfv(e, outCalleeBi) for e in returnExprList]
+    mVal = mergeAll(valIter)
     return mVal
 
 

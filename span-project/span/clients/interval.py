@@ -571,6 +571,9 @@ class IntervalA(analysis.ValueAnalysisAT):
 
     # STEP 4: If here, eval the expression
     exprVal = cast(ComponentL, self.getExprDfvBinaryE(e, dfvIn))
+    if util.LL5: LOG.debug(f"EXPR_VAL: {e} ({e.info}): {exprVal},"
+                           f"arg1: {self.getExprDfv(e.arg1, dfvIn)}, "
+                           f"arg2: {self.getExprDfv(e.arg2, dfvIn)}")
     if exprVal.top: return SimPending  # can be evaluated, needs more info
     if exprVal.bot: return SimFailed  # cannot be evaluated
     simVals = exprVal.getValuesSet(e.type.isInteger()) # type: ignore

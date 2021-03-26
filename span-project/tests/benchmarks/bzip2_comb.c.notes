@@ -1,0 +1,47 @@
+Functions not visited and hence the chain that is uncalled:
+
+BZ2_bzclose                 hence   BZ2_bzWriteClose              (OK)
+BZ2_bzWriteClose                                                  (OK)
+BZ2_bzBuffToBuffCompress                                          (OK)
+BZ2_bzBuffToBuffDecompress                                        (OK)
+BZ2_bzReadGetUnused
+BZ2_bzdopen
+BZ2_bzerror
+BZ2_bzflush
+BZ2_bzopen
+BZ2_bzread
+BZ2_bzwrite
+BZ2_hbAssignCodes
+BZ2_hbCreateDecodeTables
+BZ2_indexIntoF
+bzopen_or_bzdopen
+cadvise
+compressedStreamEOF
+crcError
+fallbackQSort3
+fallbackSimpleSort
+ioError
+mainGtU
+mainQSort3
+mainSimpleSort
+makeMaps_d
+mmed3
+outOfMemory
+ran
+spec_putc
+spec_random_load
+spec_read
+spec_write
+uInt64_from_UInt32s
+uInt64_isZero
+uInt64_qrm10
+uInt64_toAscii
+uInt64_to_double
+unRLE_obuf_to_output_FAST
+unRLE_obuf_to_output_SMALL
+
+
+what is bzerr set to (-9, 0) after this: (check)
+L3624      nread = BZ2_bzRead(& bzerr, bzf, (void *)(obuf), 5000);
+should be (-9, 4) due to L6994 ?
+

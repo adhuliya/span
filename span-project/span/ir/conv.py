@@ -104,6 +104,8 @@ PPMS_VAR_REGEX = re.compile(r"^(.*:|)\d+p$")
 """Regex to detect pseudo variable name."""
 PPMS_VAR_REGEX2 = re.compile(r"(:|^)\d+p(\.|$)")
 """Regex to detect pseudo variable name."""
+PPMS_VAR_REGEX3 = re.compile(r".*?(:|^)\d+p(\..*?|$)")
+"""Regex to detect pseudo variable name."""
 PPMS_VAR_TYPE = types.Void
 """Default pseudo variable type."""
 
@@ -179,7 +181,7 @@ def isLogicalTmpVar(vName: types.VarNameT) -> bool:
 
 def isPpmsVar(vName: types.VarNameT) -> bool:
   """Is it a pseudo var? (used to hide malloc/calloc)"""
-  if PPMS_VAR_REGEX.fullmatch(vName):
+  if PPMS_VAR_REGEX3.fullmatch(vName):
     return True
   return False
 
@@ -233,11 +235,17 @@ def isRecordName(recordName: types.RecordNameT) -> bool:
   return bool(RECORD_NAME_REGEX.fullmatch(recordName))
 
 
-def isLocalVarName(varName: types.VarNameT) -> bool:
+def isLocalVarName(
+    varName: types.VarNameT,
+    funcName: Opt[types.FuncNameT] = None,
+) -> bool:
   """Returns true if varName's format is valid for a local var."""
   colonCount = varName.count(NAME_SEP)
   if varName.startswith("v:"):
-    return colonCount == 2
+    if funcName:
+      return colonCount == 2 and extractFuncName(varName) in funcName
+    else:
+      return colonCount == 2
   return False
 
 
@@ -269,6 +277,11 @@ def isFuncName(varName: types.VarNameT) -> bool:
 def nameHasPpmsVar(varName: types.VarNameT) -> bool:
   """Does the name like x.y.z contain a psudo variable?"""
   return bool(PPMS_VAR_REGEX2.search(varName))
+
+
+def nameHasNullVar(varName: types.VarNameT) -> bool:
+  """Does the name like x.y contain a Null variable?"""
+  return NULL_OBJ_NAME in varName
 
 
 def getPrefixes(varName: types.VarNameT) -> Set[types.VarNameT]:

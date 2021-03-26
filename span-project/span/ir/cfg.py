@@ -881,16 +881,16 @@ class CallGraphNode:
     return hash(self.funcName)
 
 
-class CallGraph:
-  """Call graph of the given translation unit.
-  This can work for inter-procedural level also.
-  """
-
-
-  def __init__(self):
-    self.callGraph: Dict[FuncNameT, List[CalleeInfo]] = {}
-    # entryFunctions is calculated from the callgraph dictionary
-    self.entryFunctions: Opt[List[FuncNameT]] = None
+# class CallGraph:
+#   """Call graph of the given translation unit.
+#   This can work for inter-procedural level also.
+#   """
+#
+#
+#   def __init__(self):
+#     self.callGraph: Dict[FuncNameT, List[CalleeInfo]] = {}
+#     # entryFunctions is calculated from the callgraph dictionary
+#     self.entryFunctions: Opt[List[FuncNameT]] = None
 
 
 ################################################################################

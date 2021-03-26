@@ -70,7 +70,7 @@ from enum import Enum
 
 from logging.handlers import RotatingFileHandler
 
-LOG: Optional[logging.Logger] = None
+_LOG: Optional[logging.Logger] = None
 
 _ROOT_LOGGER: Optional[logging.Logger] = None
 _INITIALIZED: bool = False
@@ -122,7 +122,8 @@ def createDir(dirPath: str) -> Optional[str]:
   return absPath
 
 
-def initLogger(fileName: str = None,
+def initLogger(
+    fileName: str = None,
     appName: str = DEFAULT_APP_NAME,
     logLevel: LogLevels = LogLevels.INFO,  # default logging level
     logFormat: str = LOG_FORMAT_3,
@@ -142,7 +143,7 @@ def initLogger(fileName: str = None,
   Returns:
     bool: True if logging setup correctly.
   """
-  global _INITIALIZED, _ROOT_LOGGER, LOG, ABS_LOG_FILE_NAME
+  global _INITIALIZED, _ROOT_LOGGER, _LOG, ABS_LOG_FILE_NAME
   if _INITIALIZED: return True
 
   # create log file dir
@@ -194,7 +195,7 @@ def disable():
   global _INITIALIZED, _ROOT_LOGGER
   if _INITIALIZED:
     _ROOT_LOGGER.setLevel(LogLevels.CRITICAL)
-    LOG.info("logging level changed to %s", LogLevels.CRITICAL)
+    _LOG.info("logging level changed to %s", LogLevels.CRITICAL)
     return True
   return False
 
@@ -208,7 +209,7 @@ def enable(logLevel=LogLevels.INFO):
   global _INITIALIZED, _ROOT_LOGGER
   if _INITIALIZED:
     _ROOT_LOGGER.setLevel(logLevel)
-    LOG.info("logging level changed to %s", logLevel)
+    _LOG.info("logging level changed to %s", logLevel)
     return True
   return False
 
@@ -222,7 +223,7 @@ def setLevel(log_level=LogLevels.INFO):
   global _ROOT_LOGGER
   if _ROOT_LOGGER:
     _ROOT_LOGGER.setLevel(log_level)
-    LOG.info("logging level changed to %s", log_level)
+    _LOG.info("logging level changed to %s", log_level)
     return True  # changed log level
   return False  # not set
 

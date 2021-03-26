@@ -6,7 +6,7 @@
 """Project wide utility functions."""
 
 import logging
-LOG = logging.getLogger("span")
+_LOG = logging.getLogger("span")
 
 import sys
 
@@ -67,15 +67,17 @@ def setupDD(count):
   DD5 = DD >= 5 # prints id() of dfv objects too
 
 CC:int = 0  # Constraint Checks. One of 0,1,2,3 (set via command line)
-CC0 = CC1 = CC2 = CC3 = False
+CC0 = CC1 = CC2 = CC3 = CC4 = CC5 = False
 def setupCC(count):
   """Call this function after setting CC value."""
-  global CC, CC0, CC1, CC2, CC3
+  global CC, CC0, CC1, CC2, CC3, CC4, CC5
   CC = count
   CC0 = CC >= 0
   CC1 = CC >= 1
   CC2 = CC >= 2
   CC3 = CC >= 3
+  CC4 = CC >= 4
+  CC5 = CC >= 5
 
 # A system wide feature switches
 # The switches are used to dynamically enable or disable specific features.

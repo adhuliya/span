@@ -27,7 +27,7 @@ import span.util.util as util
 class CallSitePair:
   """Pair of call site and function name.
   Useful in recording function name with callsite
-  when its function pointer based calls.
+  specially when its a function pointer based call.
   """
 
   __slots__ = ["callSite", "funcName"]
@@ -147,7 +147,7 @@ class DfvDict:
       equal = False
     else:
       for anName, nDfvSelf in self.dfvs.items():
-        direction = clients.getAnDirection(anName)
+        direction = clients.getAnDirn(anName)
         nDfvOther = other[anName]
         if nDfvOther is None:
           equal = False
@@ -168,7 +168,7 @@ class DfvDict:
     theHash = hash(self.depth)
 
     for anName, nDfv in self.dfvs.items():
-      direction = clients.getAnDirection(anName)
+      direction = clients.getAnDirn(anName)
       if direction == Forward:
         theHash = hash((theHash, nDfv.dfvIn))
       elif direction == Backward:

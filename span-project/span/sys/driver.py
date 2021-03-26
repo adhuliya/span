@@ -654,7 +654,7 @@ def dumpSpanSettings(args: argparse.Namespace):
 
   import span.util.ff as ff
 
-  print(ff.printModuleAttributes())
+  print(ff.getModuleAttributesString())
 
 
 def extractCFileName(fileName) -> Opt[str]:

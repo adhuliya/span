@@ -260,6 +260,7 @@ def mergeAll(values: Iterable[BoundLatticeLT]) -> BoundLatticeLT:
     else:
       result = val
     if result.bot: break  # an optimization
+  assert result is not None, f"{result}, {values}"
   return result  # type: ignore
 
 

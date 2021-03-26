@@ -111,6 +111,17 @@ class CallGraph:
     self.sccList: Opt[List[Set[CallGraphNode]]] = None
 
 
+  def getCountEdges(self) -> int:
+    count = 0
+    for node in self.callGraph.values():
+      count += len(list(node.yieldCalleeFuncNames()))
+    return count
+
+
+  def getCountNodes(self) -> int:
+    return len(self.callGraph)
+
+
   def genAndPrintSCCs(self):
     # STEP 1: Discover SCCs
     self.findSCCs() # sets self.sccList

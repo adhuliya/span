@@ -8,6 +8,7 @@
 import logging
 
 from span.ir.tunit import TranslationUnit
+from span.util import ff
 
 LOG = logging.getLogger("span")
 LDB = LOG.debug
@@ -17,7 +18,7 @@ from typing import Tuple, Optional as Opt, Dict, Any, Set,\
 import io
 
 from span.ir import tunit, conv
-from span.ir.conv import isStringLitName, nameHasPpmsVar
+from span.ir.conv import isStringLitName, nameHasPpmsVar, isLocalVarName
 
 from span.util.util import LS
 import span.util.util as util
@@ -504,14 +505,17 @@ class OverallL(DataLT):
     """Default value when a variable is not present in the map.
     Override this function if the default implementation is not suitable.
     """
+    topBot = False # i.e. Bot
+    tUnit: TranslationUnit = self.func.tUnit
     if varName:
       if nameHasPpmsVar(varName):
         topBot = True # i.e. Top
-      else:
-        tUnit: TranslationUnit = self.func.tUnit
+      elif ff.SET_LOCAL_VARS_TO_TOP and not nameHasPpmsVar(varName) and\
+          varName not in tUnit.getNamesGlobal():
+        topBot = True # i.e. Top
+      elif ff.SET_LOCAL_ARRAYS_TO_TOP:
         topBot = tUnit.inferTypeOfVal(varName).isArray() # Top if its an Array
-    else:
-      topBot = False # i.e. Bot
+
     return getTopBotComp(self.func, self.name, topBot)
 
 
@@ -644,6 +648,7 @@ class OverallL(DataLT):
       keep = tUnit.getNamesGlobal() | (set(forFunc.paramNames) if keepParams else set())
       dropNames = varNames - keep
       for vName in dropNames:
+        if nameHasPpmsVar(vName): continue #don't drop
         defaultVal = self.getDefaultVal(vName)
         localizedDfvSetVal(vName, defaultVal) # essentially removing the values
 
@@ -769,7 +774,9 @@ def Filter_Vars(
     varNames: Set[VarNameT],
     nodeDfv: NodeDfvL  # must contain an OverallL
 ) -> NodeDfvL:
-  """A default implementation for value analyses."""
+  """A default implementation for value analyses.
+  Sets the given set of variables to top in the lattice.
+  """
   dfvIn = cast(OverallL, nodeDfv.dfvIn)
 
   if not varNames or dfvIn.top:  # i.e. nothing to filter or no DFV to filter == Nop

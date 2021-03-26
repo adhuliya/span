@@ -52,7 +52,7 @@ from span.api.analysis import (AnalysisAT, AnalysisNameT as AnNameT,\
   )
 import span.sys.clients as clients
 import span.sys.ddm as ddm
-from span.sys.stats import HostStat, GST, GlobalStats
+from span.sys.stats import HostStats, GST, GlobalStats
 from span.sys.sim import SimRecord
 from span.sys.common import CallSitePair, DfvDict
 import span.ir.cfg as cfg
@@ -463,7 +463,7 @@ class Host:
       Dict[Tuple[NodeIdT, SimNameT],
            Dict[Tuple[InstrIT, Opt[ExprET]], InstrIT]] = dict()
 
-    self.stats: HostStat = HostStat(self, len(self.funcCfg.nodeMap))
+    self.stats: HostStats = HostStats(self, len(self.funcCfg.nodeMap))
 
     # sim sources: sim to simplifying analyses map
     self.simSrcs: Dict[SimNameT, Set[AnNameT]] = dict()
@@ -744,7 +744,7 @@ class Host:
     self.stats.anSwitchTimer.start()
     self.anRunSequence.append(anName)
     self.activeAnName = anName
-    self.activeAnDirn = clients.getAnDirection(anName)
+    self.activeAnDirn = clients.getAnDirn(anName)
     self.activeAnObj = self.anParticipating[anName]
     self.activeAnTop = self.activeAnObj.overallTop
     self.activeAnSimNeeds = clients.simNeedMap[anName]
@@ -2126,7 +2126,7 @@ class Host:
     if res is SimFailed:
       return SimFailed  # i.e. process_the_original_insn
 
-    if self.useTransformation and len(res) > 1:  #TRANSFORM
+    if self.useTransformation and (len(res) > 1 or self.tUnit.hasAbstractVars(res)):  #TRANSFORM
       if LS: print(f"SimFailed(TransformDeref): ({node.id}): {e}, {e.info}")
       res = SimFailed
     elif len(res) > 1 and NULL_OBJ_NAME in res:
@@ -2183,7 +2183,7 @@ class Host:
     restart = False
 
     for anName, nDfv in boundaryInfo:
-      anDirn = clients.getAnDirection(anName)
+      anDirn = clients.getAnDirn(anName)
       dirnObj = self.anWorkDict[anName]
 
       nodeId = 1 if anDirn == Forward else len(self.funcCfg.nodeMap)
@@ -2451,7 +2451,7 @@ class Host:
   def willChangeAffectSimDep(self, inOutChange: NewOldL) -> bool:
     """Returns True if the direction of change matters for sim dependence."""
     assert self.activeAnObj
-    dirnStr = clients.getAnDirection(self.activeAnName)
+    dirnStr = clients.getAnDirn(self.activeAnName)
     iChanged = inOutChange.isNewIn
     oChanged = inOutChange.isNewOut
 

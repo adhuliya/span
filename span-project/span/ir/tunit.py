@@ -52,7 +52,7 @@ from span.ir.conv import (
   GLOBAL_INITS_FUNC_NAME, GLOBAL_INITS_FUNC_ID,
   PPMS_VAR_TYPE,
   memAllocFunctions,
-  FULL_PPMS_VAR_NAME, nameHasPpmsVar, )
+  FULL_PPMS_VAR_NAME, nameHasPpmsVar, nameHasNullVar, isPpmsVar, )
 
 from span.ir.instr import (
   InstrIT, III, ExReadI, AssignI, CallI, CondI,
@@ -216,7 +216,7 @@ class TranslationUnit:
 
     self.assignFunctionIds()
 
-    self.checkInvariants(util.CC)  # IMPORTANT: checks the IR for basic correctness
+    self.checkInvariants()  # IMPORTANT: checks the IR for basic correctness
 
     self.logStats() # must be the last call (OPTIONAL)
 
@@ -224,12 +224,12 @@ class TranslationUnit:
     if LS: LOG.info(f"PreProcessing_TUnit({self.name}): END/DONE.")
 
 
-  def checkInvariants(self, level: int = 0):
+  def checkInvariants(self):
     """Checks the IR for basic correctness"""
     for func in self.yieldFunctionsWithBody():
-      func.checkInvariants(level)
+      func.checkInvariants()
       for insn in func.yieldInstrSeq():
-        insn.checkInvariants(level)
+        insn.checkInvariants()
 
 
   def assignFunctionIds(self):
@@ -689,7 +689,7 @@ class TranslationUnit:
       if val in self._nameInfoMap:  # IMPORTANT (most likely case)
         return self._nameInfoMap[val].type
 
-      if nameHasPpmsVar(val):
+      if nameHasPpmsVar(val) or nameHasNullVar(val):
         return Void
 
       if val in self.allFunctions:
@@ -917,7 +917,7 @@ class TranslationUnit:
         iType = self.inferTypeOfInstr(ins)
 
     else:
-      if LS: LOG.error("Unknown_Instr_For_TypeInference: %s.", insn)
+      if util.LL1: LOG.error("Unknown_Instr_For_TypeInference: %s.", insn)
 
     insn.type = iType
     return iType
@@ -1767,7 +1767,7 @@ class TranslationUnit:
 
     funcList: List[constructs.Func] = []
     for func in self.yieldFunctions():
-      if func.sig == givenSignature:
+      if givenSignature.isEqualOrVoid(func.sig):
         funcList.append(func)
 
     self._funcSigToFuncObjMap[givenSignature] = funcList
@@ -2256,5 +2256,20 @@ class TranslationUnit:
             break
 
     return tailFunc
+
+
+  def hasAbstractVars(self,
+      varNameSet: Opt[Set[VarNameT]],
+  ) -> bool:
+    """Returns True if at least one abstract variable exists in the given set."""
+    if not varNameSet:
+      return False
+
+    for vName in varNameSet:
+      vType = self.inferTypeOfVal(vName)
+      if vType.isArray() or isPpmsVar(vName):
+        return True
+
+    return False
 
 

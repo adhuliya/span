@@ -11,12 +11,13 @@ for use in the rest of the system.
 
 import logging
 LOG = logging.getLogger("span")
+LDB = LOG.debug
 
 from typing import Dict, Set, Optional as Opt, cast, Type, TypeVar
 import io
 import functools
 
-from span.util.util import LS
+import span.util.util as util
 import span.clients.register as register
 
 import span.ir.conv as irConv
@@ -65,7 +66,7 @@ class Clients:
     return self.__str__()
 
 
-# see its use.
+# see its use -- not used anymore
 names: Clients = Clients()
 
 
@@ -181,7 +182,7 @@ def getAnClass(anName: analysis.AnalysisNameT
 
 
 @functools.lru_cache(32)
-def getAnDirection(anName: analysis.AnalysisNameT
+def getAnDirn(anName: analysis.AnalysisNameT
 ) -> Opt[types.DirectionT]:
   if anName in analyses:
     anClass = cast(Type[analysis.AnalysisAT], analyses[anName])
@@ -192,7 +193,7 @@ def getAnDirection(anName: analysis.AnalysisNameT
 @functools.lru_cache(32)
 def getAnDirnClass(anName: analysis.AnalysisNameT
 ) -> Type[analysis.DirectionDT]:
-  dirn = getAnDirection(anName)
+  dirn = getAnDirn(anName)
   if dirn == irConv.Forward:
     return analysis.ForwardD
   elif dirn == irConv.Backward:
@@ -203,7 +204,7 @@ def getAnDirnClass(anName: analysis.AnalysisNameT
   raise ValueError(f"UnknownDirection: {anName}, {dirn}")
 
 
-def isAnalysisPresent(anName: analysis.AnalysisNameT) -> bool:
+def isAnPresent(anName: analysis.AnalysisNameT) -> bool:
   """Is the given analysis name present in the system?"""
   return anName in analyses
 
@@ -223,13 +224,18 @@ def init():
         recordTFunctions(anName, anClass)
         recordLivenessInfoOfAn(anName, anClass)
         setattr(names, anName, anName)
-        if LS: LOG.debug("AddedAnalysis: %s", anName)
+        if util.LL1: LDB("AddedAnalysis: %s", anName)
 
 
-init()
+################################################################################
+init() ## INITIALIZE TO USE THE CLIENTS ########################################
+################################################################################
 
-if LS: LOG.debug("Analyses: %s", analyses)
-if LS: LOG.debug("SimSources: %s", simSrcMap)
-if LS: LOG.debug("SimNeeds: %s", simNeedMap)
-if LS: LOG.debug("SimAnalyses: %s", simAnalyses)
-if LS: LOG.debug("LivenessAwareAn: %s", anReadyForLivenessSim)
+
+if util.LL1: LDB("Analyses: %s", analyses)
+if util.LL1: LDB("SimSources: %s", simSrcMap)
+if util.LL1: LDB("SimNeeds: %s", simNeedMap)
+if util.LL1: LDB("SimAnalyses: %s", simAnalyses)
+if util.LL1: LDB("LivenessAwareAn: %s", anReadyForLivenessSim)
+
+
