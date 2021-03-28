@@ -43,8 +43,7 @@ from span.ir.ir import \
    isDummyGlobalFunc)
 
 from span.api.dfv import (
-  OLD_INOUT, NEW_IN, NodeDfvL, NewOldL,
-  Filter_Vars
+  OLD_IN_OUT, NEW_IN_ONLY, NodeDfvL, NewOldL,
 )
 import span.api.dfv as dfv
 from span.api.lattice import ChangedT, Changed, DataLT, mergeAll
@@ -576,7 +575,7 @@ class ForwardDT(DirectionDT):
     ndfv = self.nidNdfvMap.get(nid, self.topNdfv)
     predEdges = node.predEdges
     # for start node, nothing changes
-    if not predEdges: return ndfv, OLD_INOUT
+    if not predEdges: return ndfv, OLD_IN_OUT
 
     oldIn = ndfv.dfvIn
 
@@ -604,13 +603,13 @@ class ForwardDT(DirectionDT):
         else:
           newIn, _ = newIn.meet(predOut)
 
-    if newIn == ndfv.dfvIn: return ndfv, OLD_INOUT
+    if newIn == ndfv.dfvIn: return ndfv, OLD_IN_OUT
 
     # Update in map for use in evaluation functions.
     assert newIn is not None
     newNodeDfv = NodeDfvL(newIn, ndfv.dfvOut)
     self.nidNdfvMap[nid] = newNodeDfv  # updates the node dfv map
-    return newNodeDfv, NEW_IN
+    return newNodeDfv, NEW_IN_ONLY
 
 
 class ForwardD(ForwardDT):
@@ -684,7 +683,7 @@ class BackwardDT(DirectionDT):
     ndfv = self.nidNdfvMap.get(nid, self.topNdfv)
     succEdges = node.succEdges
     # for start node, nothing changes
-    if not succEdges: return ndfv, OLD_INOUT
+    if not succEdges: return ndfv, OLD_IN_OUT
 
     oldOut = ndfv.dfvOut
 
@@ -699,7 +698,7 @@ class BackwardDT(DirectionDT):
           newOut, ch = newOut.meet(succIn)  # enforce_monotonicity
           changed = changed or ch
 
-    if not changed: return ndfv, OLD_INOUT
+    if not changed: return ndfv, OLD_IN_OUT
 
     # Update in map for use in evaluation functions.
     newNodeDfv = NodeDfvL(ndfv.dfvIn, newOut)
@@ -1913,7 +1912,15 @@ class ValueAnalysisAT(AnalysisAT):
       insn: instr.FilterI,
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
-    return Filter_Vars(insn.varNames, nodeDfv)
+    dfvIn = cast(dfv.OverallL, nodeDfv.dfvIn)
+    varNames = insn.varNames
+
+    if not varNames or dfvIn.top:  # i.e. nothing to filter or no DFV to filter == Nop
+      return NodeDfvL(dfvIn, dfvIn)  # = NopI
+
+    newDfvOut = dfvIn.getCopy()
+    newDfvOut.filterVals(varNames)
+    return NodeDfvL(dfvIn, newDfvOut)
 
 
   def UnDefVal_Instr(self,

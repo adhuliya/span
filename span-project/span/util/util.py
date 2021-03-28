@@ -69,7 +69,7 @@ def setupDD(count):
 CC:int = 0  # Constraint Checks. One of 0,1,2,3 (set via command line)
 CC0 = CC1 = CC2 = CC3 = CC4 = CC5 = False
 def setupCC(count):
-  """Call this function after setting CC value."""
+  """Call this function to enact global CC settings."""
   global CC, CC0, CC1, CC2, CC3, CC4, CC5
   CC = count
   CC0 = CC >= 0

@@ -38,7 +38,7 @@ from span.ir.expr import (
   evalExpr,
 )
 
-from span.api.dfv import NodeDfvL, NewOldL, OLD_INOUT
+from span.api.dfv import NodeDfvL, NewOldL, OLD_IN_OUT
 from span.api.analysis import SimNameT, simDirnMap, SimFailed, SimPending
 from span.api.lattice import mergeAll, DataLT
 from span.api.analysis import (AnalysisAT, AnalysisNameT as AnNameT,\
@@ -734,7 +734,7 @@ class Host:
       if util.LL4: LDB("After  InOutMerge (Node_%s): Change: %s, NodeDfv: %s.",
                        nid, inout, ndfv)
       return ndfv, inout, Reachable
-    return dirn.topNdfv, OLD_INOUT, NotReachable
+    return dirn.topNdfv, OLD_IN_OUT, NotReachable
 
 
   def setupActiveAnalysis(self,

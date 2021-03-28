@@ -6,16 +6,15 @@
 """The analysis' common data flow value declarations."""
 
 import logging
-
-from span.ir.tunit import TranslationUnit
-from span.util import ff
-
 LOG = logging.getLogger("span")
 LDB = LOG.debug
 
 from typing import Tuple, Optional as Opt, Dict, Any, Set,\
                    Type, TypeVar, List, cast, Callable
 import io
+
+from span.ir.tunit import TranslationUnit
+from span.util import ff
 
 from span.ir import tunit, conv
 from span.ir.conv import isStringLitName, nameHasPpmsVar, isLocalVarName
@@ -63,21 +62,16 @@ class NewOldL(LatticeLT):
 
   def meet(self, other) -> Tuple['NewOldL', ChangedT]:
     assert isinstance(other, NewOldL), f"{other}"
-    if self.bot: return self, not Changed
-    if other.bot: return other, Changed
-    if other.top: return self, not Changed
-    if self.top: return other, Changed
-    if self == other: return self, not Changed
+    tup = basicMeetOp(self, other)
+    if tup: return tup
 
     return self.getNewInOut(), Changed
 
 
   def __lt__(self, other) -> bool:
     assert isinstance(other, NewOldL), f"{other}"
-    if self.bot:  return True
-    if other.bot: return False
-    if other.top: return True
-    if self.top:  return False
+    lt = basicLessThanTest(self, other)
+    if lt is not None: return lt
     return self == other
 
 
@@ -96,7 +90,10 @@ class NewOldL(LatticeLT):
 
 
   def __str__(self):
-    return f"(IN={self._newIn}, OUT={self._newOut})"
+    inChange = outChange = "NoChange"
+    inChange = "Changed" if self._newIn else inChange
+    outChange = "Changed" if self._newOut else outChange
+    return f"(IN:{inChange}, OUT:{outChange})"
 
 
   def __repr__(self):
@@ -108,9 +105,9 @@ class NewOldL(LatticeLT):
     if not isNewIn and not isNewOut:
       return cls.getOldInOut()
     elif not isNewIn and isNewOut:
-      return cls.getNewOut()
+      return cls.getNewOutOnly()
     elif isNewIn and not isNewOut:
-      return cls.getNewIn()
+      return cls.getNewInOnly()
     elif isNewIn and isNewOut:
       return cls.getNewInOut()
     raise ValueError()
@@ -141,14 +138,14 @@ class NewOldL(LatticeLT):
 
 
   @classmethod
-  def getNewIn(cls) -> 'NewOldL':
+  def getNewInOnly(cls) -> 'NewOldL':
     if not cls._new_in_obj:
       cls._new_in_obj = NewOldL(Changed, not Changed)
     return cls._new_in_obj
 
 
   @classmethod
-  def getNewOut(cls) -> 'NewOldL':
+  def getNewOutOnly(cls) -> 'NewOldL':
     if not cls._new_out_obj:
       cls._new_out_obj = NewOldL(not Changed, Changed)
     return cls._new_out_obj
@@ -179,17 +176,17 @@ class NewOldL(LatticeLT):
     if new_in:
       if new_out:
         return cls.getNewInOut()
-      return cls.getNewIn()
+      return cls.getNewInOnly()
     else:
       if new_out:
-        return cls.getNewOut()
+        return cls.getNewOutOnly()
       return cls.getOldInOut()
 
 
-OLD_INOUT = NewOldL.getOldInOut()
-NEW_IN = NewOldL.getNewIn()
-NEW_OUT = NewOldL.getNewOut()
-NEW_INOUT = NewOldL.getNewInOut()
+OLD_IN_OUT = NewOldL.getOldInOut()
+NEW_IN_ONLY = NewOldL.getNewInOnly()
+NEW_OUT_ONLY = NewOldL.getNewOutOnly()
+NEW_IN_OUT = NewOldL.getNewInOut()
 
 
 class NodeDfvL(LatticeLT):
@@ -308,9 +305,9 @@ class NodeDfvL(LatticeLT):
     return NodeDfvL(dfvIn, dfvOut, dfvOutTrue, dfvOutFalse), chIn or chOut
 
 
-  def checkInvariants(self, level: int = 0):
-    self.dfvIn.checkInvariants(level)
-    self.dfvOut.checkInvariants(level)
+  def checkInvariants(self):
+    self.dfvIn.checkInvariants()
+    self.dfvOut.checkInvariants()
 
 
   def getCopy(self):
@@ -491,8 +488,8 @@ class OverallL(DataLT):
     return hash((hashThisVal, self.top)) # , self.bot))
 
 
-  def checkInvariants(self, level: int = 0):
-    if level >= 1:
+  def checkInvariants(self):
+    if util.CC1:
       if self.val:
         for k, v in self.val.items():
           assert v is not None, f"{self.func.name}: {k}, {v}"
@@ -725,79 +722,79 @@ class OverallL(DataLT):
 # BOUND START: Convenience_Functions
 ################################################
 
-def updateFuncObjInDfvs(
-    func: constructs.Func,
-    nodeDfv: NodeDfvL,
-) -> NodeDfvL:
-  """It updates function in the values."""
-  dfvIn = cast(OverallL, nodeDfv.dfvIn.getCopy())
-  dfvOut = cast(OverallL, nodeDfv.dfvOut.getCopy())
-  dfvIn.func = dfvOut.func = func
+# def updateFuncObjInDfvs(
+#     func: constructs.Func,
+#     nodeDfv: NodeDfvL,
+# ) -> NodeDfvL:
+#   """It updates function in the values."""
+#   dfvIn = cast(OverallL, nodeDfv.dfvIn.getCopy())
+#   dfvOut = cast(OverallL, nodeDfv.dfvOut.getCopy())
+#   dfvIn.func = dfvOut.func = func
+#
+#   if dfvIn.val:
+#     for value in dfvIn.val.values():
+#       value.func = func
+#   if dfvOut.val:
+#     for value in dfvOut.val.values():
+#       value.func = func
+#
+#   return NodeDfvL(dfvIn, dfvOut)
+#
+#
+# def removeNonEnvVars(
+#     nodeDfv: NodeDfvL,
+#     getDefaultVal: Callable[[str], ComponentL],
+#     getAllVars: Callable[[], Set[VarNameT]],
+#     direction: types.DirectionT = conv.Forward,
+# ) -> NodeDfvL:
+#   """It removes the variables that are not in the env of func."""
+#   dfvIn = cast(OverallL, nodeDfv.dfvIn.getCopy())
+#   dfvOut = cast(OverallL, nodeDfv.dfvOut.getCopy())
+#
+#   vNames: Set[VarNameT] = getAllVars()
+#
+#   assert direction != conv.ForwBack
+#
+#   if dfvIn.val and direction == conv.Backward:
+#     for key in list(dfvIn.val.keys()):
+#       if key not in vNames:
+#         dfvIn.setVal(key, getDefaultVal(key)) # remove key
+#   if dfvOut.val and direction == conv.Forward:
+#     for key in list(dfvOut.val.keys()):
+#       if key not in vNames:
+#         dfvOut.setVal(key, getDefaultVal(key)) # remove key
+#
+#   return NodeDfvL(dfvIn, dfvOut)
 
-  if dfvIn.val:
-    for value in dfvIn.val.values():
-      value.func = func
-  if dfvOut.val:
-    for value in dfvOut.val.values():
-      value.func = func
 
-  return NodeDfvL(dfvIn, dfvOut)
-
-
-def removeNonEnvVars(
-    nodeDfv: NodeDfvL,
-    getDefaultVal: Callable[[str], ComponentL],
-    getAllVars: Callable[[], Set[VarNameT]],
-    direction: types.DirectionT = conv.Forward,
-) -> NodeDfvL:
-  """It removes the variables that are not in the env of func."""
-  dfvIn = cast(OverallL, nodeDfv.dfvIn.getCopy())
-  dfvOut = cast(OverallL, nodeDfv.dfvOut.getCopy())
-
-  vNames: Set[VarNameT] = getAllVars()
-
-  assert direction != conv.ForwBack
-
-  if dfvIn.val and direction == conv.Backward:
-    for key in list(dfvIn.val.keys()):
-      if key not in vNames:
-        dfvIn.setVal(key, getDefaultVal(key)) # remove key
-  if dfvOut.val and direction == conv.Forward:
-    for key in list(dfvOut.val.keys()):
-      if key not in vNames:
-        dfvOut.setVal(key, getDefaultVal(key)) # remove key
-
-  return NodeDfvL(dfvIn, dfvOut)
-
-
-def Filter_Vars(
-    varNames: Set[VarNameT],
-    nodeDfv: NodeDfvL  # must contain an OverallL
-) -> NodeDfvL:
-  """A default implementation for value analyses.
-  Sets the given set of variables to top in the lattice.
-  """
-  dfvIn = cast(OverallL, nodeDfv.dfvIn)
-
-  if not varNames or dfvIn.top:  # i.e. nothing to filter or no DFV to filter == Nop
-    return NodeDfvL(dfvIn, dfvIn)  # = NopI
-
-  newDfvOut = dfvIn.getCopy()
-  newDfvOut.filterVals(varNames)
-  return NodeDfvL(dfvIn, newDfvOut)
+# def Filter_Vars(
+#     varNames: Set[VarNameT],
+#     nodeDfv: NodeDfvL  # must contain an OverallL
+# ) -> NodeDfvL:
+#   """A default implementation for value analyses.
+#   Sets the given set of variables to top in the lattice.
+#   """
+#   dfvIn = cast(OverallL, nodeDfv.dfvIn)
+#
+#   if not varNames or dfvIn.top:  # i.e. nothing to filter or no DFV to filter == Nop
+#     return NodeDfvL(dfvIn, dfvIn)  # = NopI
+#
+#   newDfvOut = dfvIn.getCopy()
+#   newDfvOut.filterVals(varNames)
+#   return NodeDfvL(dfvIn, newDfvOut)
 
 
 def updateDfv(
     dfvDict: Dict[VarNameT, ComponentL],
-    dfvIn: OverallL,
+    overallDfv: OverallL,
 ) -> OverallL:
-  """Creates a new dfv from `dfvIn` using `dfvDict` if needed."""
-  newDfv = dfvIn
+  """Creates a new dfv from `overallDfv` using `dfvDict` if needed."""
+  newDfv = overallDfv
   newDfvGetVal = newDfv.getVal
   for name, val in dfvDict.items():
     if val != newDfvGetVal(name):
-      if newDfv is dfvIn:
-        newDfv = dfvIn.getCopy()  # creating a copy only when necessary
+      if newDfv is overallDfv:
+        newDfv = overallDfv.getCopy()  # creating a copy only when necessary
         newDfvGetVal = newDfv.getVal  # important (since object changed)
       newDfv.setVal(name, val)
   return newDfv

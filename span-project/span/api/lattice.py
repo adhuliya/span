@@ -6,10 +6,10 @@
 """Defines the base lattice class."""
 
 import logging
+LOG = logging.getLogger("span")
 
 from span.ir import constructs
 
-LOG = logging.getLogger("span")
 
 from typing import Tuple, Any, List, TypeVar, Optional as Opt, Sequence as Seq, Iterable
 
@@ -30,8 +30,8 @@ class LatticeLT:
 
 
   def __init__(self,
-      top: bool = False,
-      bot: bool = False
+      top: bool = False,  # the most unsound value
+      bot: bool = False   # the most sound value (max over-approximation)
   ) -> None:
     if bot and top:
       raise ValueError(f"{top}, {bot}")
@@ -65,10 +65,14 @@ class LatticeLT:
 
   def getCopy(self) -> 'LatticeLT':
     """Return a copy of this lattice element.
-    In the least, it should be a deep copy of mutable elements,
-    and a shallow copy of the immutable elements.
+    Just a deep copy of mutable elements mostly suffices.
     """
     raise NotImplementedError()
+
+
+  def checkInvariants(self):
+    """Checks necessary invariants."""
+    pass
 
 
   def __lt__(self, other) -> bool:
@@ -155,12 +159,12 @@ class DataLT(LatticeLT):
     MUST override this function if widening is needed.
     """
     if self != other:
-      return other, Changed
+      return other, Changed  # UNSOUND, but terminating.
     else:
       return self, not Changed
 
 
-  def checkInvariants(self, level: int = 0):
+  def checkInvariants(self):
     """Checks necessary invariants."""
     pass
 
@@ -199,7 +203,7 @@ class DataLT(LatticeLT):
 
 
   def basicLessThanTest(self, other: 'DataLT') -> Opt[bool]:
-    """A basic less than test common to all lattices.
+    """A basic less than test common to all data lattices.
     If this fails the lattices can do more complicated tests.
     This function does some common assertion tests to ensure correctness.
     """
@@ -252,15 +256,18 @@ class DataLT(LatticeLT):
 def mergeAll(values: Iterable[BoundLatticeLT]) -> BoundLatticeLT:
   """Takes meet of all the values of LatticeLT type.
   All values must be the same type."""
-  assert values, f"{values}"
   result = None
+
   for val in values:
-    if result is not None:
-      result, _ = result.meet(val)
-    else:
+    if result is None:
       result = val
+    else:
+      result, _ = result.meet(val)
     if result.bot: break  # an optimization
-  assert result is not None, f"{result}, {values}"
+
+  if result is None:
+    raise ValueError(f"Result={result}, Values={values}")
+
   return result  # type: ignore
 
 
