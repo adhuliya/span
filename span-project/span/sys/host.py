@@ -38,7 +38,7 @@ from span.ir.expr import (
   evalExpr,
 )
 
-from span.api.dfv import NodeDfvL, NewOldL, OLD_IN_OUT
+from span.api.dfv import NodeDfvL, ChangePairL, OLD_IN_OUT
 from span.api.analysis import SimNameT, simDirnMap, SimFailed, SimPending
 from span.api.lattice import mergeAll, DataLT
 from span.api.analysis import (AnalysisAT, AnalysisNameT as AnNameT,\
@@ -535,7 +535,7 @@ class Host:
       self.addAnToWorklist(anName)
 
 
-  def addDepAnToWorklist(self, node: cfg.CfgNode, inOutChange: NewOldL) -> None:
+  def addDepAnToWorklist(self, node: cfg.CfgNode, inOutChange: ChangePairL) -> None:
     """Add analyses dependent on active analysis (wrt given node) to worklist."""
     if not self.activeAnIsSimAn: return
     if not self.willChangeAffectSimDep(inOutChange): return
@@ -724,7 +724,7 @@ class Host:
   def calcInOut(self,
       node: cfg.CfgNode,
       dirn: DirectionDT
-  ) -> Tuple[NodeDfvL, NewOldL, Reachability]:
+  ) -> Tuple[NodeDfvL, ChangePairL, Reachability]:
     """Merge info at IN and OUT of a node."""
     nid = node.id
     if self.ef.isFeasibleNode(node):
@@ -2448,12 +2448,12 @@ class Host:
           del self.instrSimCache[tup1][tup2]
 
 
-  def willChangeAffectSimDep(self, inOutChange: NewOldL) -> bool:
+  def willChangeAffectSimDep(self, inOutChange: ChangePairL) -> bool:
     """Returns True if the direction of change matters for sim dependence."""
     assert self.activeAnObj
     dirnStr = clients.getAnDirn(self.activeAnName)
-    iChanged = inOutChange.isNewIn
-    oChanged = inOutChange.isNewOut
+    iChanged = inOutChange.newIn
+    oChanged = inOutChange.newOut
 
     if dirnStr == Forward and iChanged:
       return True # for forward analyses change at IN can change sim

@@ -32,7 +32,7 @@ from span.ir.expr import (VAR_EXPR_EC, LIT_EXPR_EC, UNARY_EXPR_EC,
                           SIZEOF_EXPR_EC, FUNC_EXPR_EC, CALL_EXPR_EC, SELECT_EXPR_EC,
                           CAST_EXPR_EC, DEREF_EXPR_EC, )
 
-from span.api.dfv import NodeDfvL, NewOldL, OLD_IN_OUT
+from span.api.dfv import NodeDfvL, ChangePairL, OLD_IN_OUT
 import span.api.lattice as lattice
 from span.api.lattice import LatticeLT, DataLT
 import span.ir.cfg as cfg

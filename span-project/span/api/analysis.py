@@ -43,7 +43,7 @@ from span.ir.ir import \
    isDummyGlobalFunc)
 
 from span.api.dfv import (
-  OLD_IN_OUT, NEW_IN_ONLY, NodeDfvL, NewOldL,
+  OLD_IN_OUT, NEW_IN_ONLY, NodeDfvL, ChangePairL,
 )
 import span.api.dfv as dfv
 from span.api.lattice import ChangedT, Changed, DataLT, mergeAll
@@ -212,191 +212,191 @@ class FastNodeWorkList:
     return self.__str__()
 
 
-class NodeWorkList(object):
-  """Cfg node worklist.
-
-  It remembers the initial order in which node ids are given,
-  and maintains the same order when selective nodes are added later.
-  """
-
-
-  def __init__(self,
-      nodes: Opt[List[cfg.CfgNode]] = None,
-      frozen: bool = False,  # True restricts addition of new nodes
-  ) -> None:
-    # list to remember the order of each node initially given for the first time
-    self.sequence: List[cfg.CfgNode] = []
-    self.workque: List[bool] = []
-    self.treatAsNop: List[bool] = []  # DDM used by demand driven technique
-    # remembers the nodes already given
-    self.nodeMem: Set[cfg.CfgNodeId] = set()
-    _ = [self.add(node, force=True) for node in nodes] if nodes else None
-    # seq of nodes visited from start to end of the analysis
-    self.fullSequence: List[cfg.CfgNode] = []
-    # seq of nodes visited till the analysis reaches intermediate FP
-    # after each intermediate FP this is supposed to be cleared explicitly
-    self.tmpSequence: List[cfg.CfgNode] = []
-    self.frozen = frozen
-
-
-  def __contains__(self, node: cfg.CfgNode):
-    nid = node.id
-    for index, n in enumerate(self.sequence):
-      if nid == n.id: return self.workque[index]
-    return False
-
-
-  def clear(self):
-    """Clear the worklist."""
-    for index in range(len(self.workque)):
-      self.workque[index] = False
-
-
-  def isNodePresent(self, nid: cfg.CfgNodeId):
-    return nid in self.nodeMem
-
-
-  def add(self,
-      node: cfg.CfgNode,
-      treatAsNop: bool = False,
-      force: bool = False,  # overrides the frozen property
-  ) -> bool:
-    """Add a node to the queue."""
-    assert len(self.nodeMem) == len(self.sequence) or self.frozen
-    assert len(self.sequence) == len(self.workque)
-    nid = node.id
-    if nid not in self.nodeMem:  # a new node -- add it
-      if force or not self.frozen:  # checks if WL is frozen?
-        self.nodeMem.add(nid)
-        self.sequence.append(node)
-        self.workque.append(True)
-        self.treatAsNop.append(treatAsNop)
-        return True
-      else:
-        return False  # not added since work list is frozen
-
-    # an old node -- re-add it
-    index, added = 0, False
-    for index, node in enumerate(self.sequence):
-      if node.id == nid: break
-    if not self.workque[index]:
-      self.workque[index] = True
-      added = True
-
-    return added  # possibly added
-
-
-  def pop(self) -> Tuple[Opt[cfg.CfgNode], Opt[bool]]:
-    """Pops and returns next node id on top of queue, None otherwise."""
-    for index, active in enumerate(self.workque):
-      if active: break
-    else:
-      return None, None
-
-    self.workque[index] = False
-    node = self.sequence[index]
-    self.fullSequence.append(node)
-    self.tmpSequence.append(node)
-    return node, self.treatAsNop[index]
-
-
-  def peek(self) -> Opt[cfg.CfgNode]:
-    """Returns next node id on top of queue, None otherwise."""
-    for index, active in enumerate(self.workque):
-      if active:
-        return self.sequence[index]
-    return None
-
-
-  def initForDdm(self):
-    """Used by #DDM"""
-    self.frozen = True
-    self.clear()
-    self.nodeMem.clear()
-    for i in range(1, len(self.treatAsNop)):
-      self.treatAsNop[i] = True
-
-
-  def updateNodeMap(self, nodeMap: Opt[Dict[cfg.CfgNode, bool]]) -> bool:
-    """Used by #DDM"""
-    if not nodeMap: return False  # i.e. no change
-
-    if util.LL5: LDB("UpdatedNodeMap(AddingMap): %s", nodeMap)
-
-    changed = False
-    for node, treatAsNop in nodeMap.items():
-      nid = node.id
-      if nid not in self.nodeMem:  # a fresh node
-        self.nodeMem.add(nid)
-        for index, node in enumerate(self.sequence):
-          if node.id == nid: break
-        if not self.workque[index]:  # 'index' use is okay
-          self.workque[index], self.treatAsNop[index] = True, treatAsNop
-          changed = True
-      else:  # a known node
-        for index, node in enumerate(self.sequence):
-          if node.id == nid: break
-        treatedAsNop = self.treatAsNop[index]
-        if not treatAsNop and treatedAsNop:
-          self.workque[index], self.treatAsNop[index] = True, False
-          changed = True
-
-    return changed
-
-
-  def shouldTreatAsNop(self, node: cfg.CfgNode):
-    """Should the current node be treated as containing NopI()? Used by #DDM"""
-    nid = node.id
-    for index, n in enumerate(self.sequence):
-      if nid == n.id: return self.treatAsNop[index]
-    return False
-
-
-  def clearTmpSequence(self):
-    self.tmpSequence.clear()
-
-
-  def tmpSequenceStr(self):
-    prefix = ""
-    with io.StringIO() as sio:
-      for node in self.tmpSequence:
-        sio.write(f"{prefix}{node.id}")
-        if not prefix: prefix = ","
-      return sio.getvalue()
-
-
-  def getAllNodesStr(self):
-    prefix = ""
-    with io.StringIO() as sio:
-      sio.write("#DDM " if self.frozen else "")
-      sio.write("NodeWorkList[")
-      for index, node in enumerate(self.sequence):
-        if node.id in self.nodeMem:
-          sio.write(f"{prefix}{node.id}")
-          sio.write("." if self.treatAsNop[index] else "")
-          if not prefix: prefix = ", "
-      sio.write("]")
-      prefix = sio.getvalue()  # reusing prefix
-    return prefix
-
-
-  def __str__(self):
-    prefix = ""
-    with io.StringIO() as sio:
-      sio.write("#DDM " if self.frozen else "")
-      sio.write("NodeWorkList[")
-      for index, active in enumerate(self.workque):
-        if active:
-          sio.write(f"{prefix}{self.sequence[index].id}")
-          sio.write("." if self.treatAsNop[index] else "")
-          if not prefix: prefix = ", "
-      sio.write("]")
-      prefix = sio.getvalue()  # reusing prefix
-    return prefix
-
-
-  def __repr__(self):
-    return self.__str__()
+# class NodeWorkList(object):
+#   """Cfg node worklist.
+#
+#   It remembers the initial order in which node ids are given,
+#   and maintains the same order when selective nodes are added later.
+#   """
+#
+#
+#   def __init__(self,
+#       nodes: Opt[List[cfg.CfgNode]] = None,
+#       frozen: bool = False,  # True restricts addition of new nodes
+#   ) -> None:
+#     # list to remember the order of each node initially given for the first time
+#     self.sequence: List[cfg.CfgNode] = []
+#     self.workque: List[bool] = []
+#     self.treatAsNop: List[bool] = []  # DDM used by demand driven technique
+#     # remembers the nodes already given
+#     self.nodeMem: Set[cfg.CfgNodeId] = set()
+#     _ = [self.add(node, force=True) for node in nodes] if nodes else None
+#     # seq of nodes visited from start to end of the analysis
+#     self.fullSequence: List[cfg.CfgNode] = []
+#     # seq of nodes visited till the analysis reaches intermediate FP
+#     # after each intermediate FP this is supposed to be cleared explicitly
+#     self.tmpSequence: List[cfg.CfgNode] = []
+#     self.frozen = frozen
+#
+#
+#   def __contains__(self, node: cfg.CfgNode):
+#     nid = node.id
+#     for index, n in enumerate(self.sequence):
+#       if nid == n.id: return self.workque[index]
+#     return False
+#
+#
+#   def clear(self):
+#     """Clear the worklist."""
+#     for index in range(len(self.workque)):
+#       self.workque[index] = False
+#
+#
+#   def isNodePresent(self, nid: cfg.CfgNodeId):
+#     return nid in self.nodeMem
+#
+#
+#   def add(self,
+#       node: cfg.CfgNode,
+#       treatAsNop: bool = False,
+#       force: bool = False,  # overrides the frozen property
+#   ) -> bool:
+#     """Add a node to the queue."""
+#     assert len(self.nodeMem) == len(self.sequence) or self.frozen
+#     assert len(self.sequence) == len(self.workque)
+#     nid = node.id
+#     if nid not in self.nodeMem:  # a new node -- add it
+#       if force or not self.frozen:  # checks if WL is frozen?
+#         self.nodeMem.add(nid)
+#         self.sequence.append(node)
+#         self.workque.append(True)
+#         self.treatAsNop.append(treatAsNop)
+#         return True
+#       else:
+#         return False  # not added since work list is frozen
+#
+#     # an old node -- re-add it
+#     index, added = 0, False
+#     for index, node in enumerate(self.sequence):
+#       if node.id == nid: break
+#     if not self.workque[index]:
+#       self.workque[index] = True
+#       added = True
+#
+#     return added  # possibly added
+#
+#
+#   def pop(self) -> Tuple[Opt[cfg.CfgNode], Opt[bool]]:
+#     """Pops and returns next node id on top of queue, None otherwise."""
+#     for index, active in enumerate(self.workque):
+#       if active: break
+#     else:
+#       return None, None
+#
+#     self.workque[index] = False
+#     node = self.sequence[index]
+#     self.fullSequence.append(node)
+#     self.tmpSequence.append(node)
+#     return node, self.treatAsNop[index]
+#
+#
+#   def peek(self) -> Opt[cfg.CfgNode]:
+#     """Returns next node id on top of queue, None otherwise."""
+#     for index, active in enumerate(self.workque):
+#       if active:
+#         return self.sequence[index]
+#     return None
+#
+#
+#   def initForDdm(self):
+#     """Used by #DDM"""
+#     self.frozen = True
+#     self.clear()
+#     self.nodeMem.clear()
+#     for i in range(1, len(self.treatAsNop)):
+#       self.treatAsNop[i] = True
+#
+#
+#   def updateNodeMap(self, nodeMap: Opt[Dict[cfg.CfgNode, bool]]) -> bool:
+#     """Used by #DDM"""
+#     if not nodeMap: return False  # i.e. no change
+#
+#     if util.LL5: LDB("UpdatedNodeMap(AddingMap): %s", nodeMap)
+#
+#     changed = False
+#     for node, treatAsNop in nodeMap.items():
+#       nid = node.id
+#       if nid not in self.nodeMem:  # a fresh node
+#         self.nodeMem.add(nid)
+#         for index, node in enumerate(self.sequence):
+#           if node.id == nid: break
+#         if not self.workque[index]:  # 'index' use is okay
+#           self.workque[index], self.treatAsNop[index] = True, treatAsNop
+#           changed = True
+#       else:  # a known node
+#         for index, node in enumerate(self.sequence):
+#           if node.id == nid: break
+#         treatedAsNop = self.treatAsNop[index]
+#         if not treatAsNop and treatedAsNop:
+#           self.workque[index], self.treatAsNop[index] = True, False
+#           changed = True
+#
+#     return changed
+#
+#
+#   def shouldTreatAsNop(self, node: cfg.CfgNode):
+#     """Should the current node be treated as containing NopI()? Used by #DDM"""
+#     nid = node.id
+#     for index, n in enumerate(self.sequence):
+#       if nid == n.id: return self.treatAsNop[index]
+#     return False
+#
+#
+#   def clearTmpSequence(self):
+#     self.tmpSequence.clear()
+#
+#
+#   def tmpSequenceStr(self):
+#     prefix = ""
+#     with io.StringIO() as sio:
+#       for node in self.tmpSequence:
+#         sio.write(f"{prefix}{node.id}")
+#         if not prefix: prefix = ","
+#       return sio.getvalue()
+#
+#
+#   def getAllNodesStr(self):
+#     prefix = ""
+#     with io.StringIO() as sio:
+#       sio.write("#DDM " if self.frozen else "")
+#       sio.write("NodeWorkList[")
+#       for index, node in enumerate(self.sequence):
+#         if node.id in self.nodeMem:
+#           sio.write(f"{prefix}{node.id}")
+#           sio.write("." if self.treatAsNop[index] else "")
+#           if not prefix: prefix = ", "
+#       sio.write("]")
+#       prefix = sio.getvalue()  # reusing prefix
+#     return prefix
+#
+#
+#   def __str__(self):
+#     prefix = ""
+#     with io.StringIO() as sio:
+#       sio.write("#DDM " if self.frozen else "")
+#       sio.write("NodeWorkList[")
+#       for index, active in enumerate(self.workque):
+#         if active:
+#           sio.write(f"{prefix}{self.sequence[index].id}")
+#           sio.write("." if self.treatAsNop[index] else "")
+#           if not prefix: prefix = ", "
+#       sio.write("]")
+#       prefix = sio.getvalue()  # reusing prefix
+#     return prefix
+#
+#
+#   def __repr__(self):
+#     return self.__str__()
 
 
 ################################################
@@ -445,7 +445,7 @@ class DirectionDT:
       node: cfg.CfgNode,
       nodeDfv: NodeDfvL,
       widen: bool = False, # apply widening
-  ) -> NewOldL:
+  ) -> ChangePairL:
     """Update, the node dfv in wl if changed.
 
     Subclasses should add pred/succ to the worklist,
@@ -485,7 +485,7 @@ class DirectionDT:
                or newOutFalse != oldOutFalse \
                or newOutTrue != oldOutTrue
     self.nidNdfvMap[nid] = nodeDfv
-    return NewOldL.getNewOldObj(isNewIn, isNewOut)
+    return dfv.getNewOldObj(isNewIn, isNewOut)
 
 
   def add(self, node: cfg.CfgNode) -> bool:
@@ -499,7 +499,7 @@ class DirectionDT:
   def calcInOut(self,
       node: cfg.CfgNode,
       fcfg: cfg.FeasibleEdges
-  ) -> Tuple[NodeDfvL, NewOldL]:
+  ) -> Tuple[NodeDfvL, ChangePairL]:
     """Merges dfv from feasible edges."""
     raise NotImplementedError()
 
@@ -543,7 +543,7 @@ class ForwardDT(DirectionDT):
       node: cfg.CfgNode,
       nodeDfv: NodeDfvL,
       widen: bool = False, # apply widening
-  ) -> NewOldL:
+  ) -> ChangePairL:
     """Update, for forward direction.
 
     If OUT is changed add the pred/succ to the worklist.
@@ -552,7 +552,7 @@ class ForwardDT(DirectionDT):
 
     #assert not inOutChange.isNewIn, msg.INVARIANT_VIOLATED  #FIXME: why did i put this assertion?
 
-    if inOutChange.isNewOut:
+    if inOutChange.newOut:
       """Add the successors only."""
       for succEdge in node.succEdges:
         dest = succEdge.dest
@@ -566,7 +566,7 @@ class ForwardDT(DirectionDT):
   def calcInOut(self,
       node: cfg.CfgNode,
       fcfg: cfg.FeasibleEdges
-  ) -> Tuple[NodeDfvL, NewOldL]:
+  ) -> Tuple[NodeDfvL, ChangePairL]:
     """Forward: Merges OUT of feasible predecessors.
 
     It also updates the self.nidNdfvMap to make the change visible (if any).
@@ -648,7 +648,7 @@ class BackwardDT(DirectionDT):
       node: cfg.CfgNode,
       nodeDfv: NodeDfvL,
       widen: bool = False, # apply widening
-  ) -> NewOldL:
+  ) -> ChangePairL:
     """Update, for backward direction.
 
     If IN is changed add the pred/succ to the worklist.
@@ -660,7 +660,7 @@ class BackwardDT(DirectionDT):
     #   print("NewOut:", self.nidNdfvMap[node.id].dfvOut)
     # assert not inOutChange.isNewOut, msg.INVARIANT_IS_VIOLATED
 
-    if inOutChange.isNewIn:
+    if inOutChange.newIn:
       """Add the predecessors."""
       for predEdge in node.predEdges:
         pred = predEdge.src
@@ -674,7 +674,7 @@ class BackwardDT(DirectionDT):
   def calcInOut(self,
       node: cfg.CfgNode,
       fcfg: cfg.FeasibleEdges
-  ) -> Tuple[NodeDfvL, NewOldL]:
+  ) -> Tuple[NodeDfvL, ChangePairL]:
     """Backward: Merges IN of feasible successors.
 
     It also updates the self.nidNdfvMap to make the change visible (if any).
@@ -759,7 +759,7 @@ class AnalysisAT:
   def __init__(self,
       func: constructs.Func  # function being analyzed
   ) -> None:
-    if type(self).__name__ == "AnalysisT":
+    if type(self).__name__ == "AnalysisAT":
       super().__init__()  # no instance of this class
     assert self.L is not None and self.D is not None
     self.func = func
@@ -1718,15 +1718,6 @@ class AnalysisAT:
     raise NotImplementedError()
 
 
-  def Num_Bin__to__Num_Lit(self,
-      e: expr.BinaryE,
-      nodeDfv: Opt[NodeDfvL] = None,
-      values: Opt[List[NumericT]] = None,
-  ) -> Opt[Set[NumericT]]:
-    """Simplify to a single literal if the expr can take that value."""
-    raise NotImplementedError()
-
-
   def Num_Var__to__Num_Lit(self,
       e: expr.VarE,
       nodeDfv: Opt[NodeDfvL] = None,
@@ -1736,12 +1727,12 @@ class AnalysisAT:
     raise NotImplementedError()
 
 
-  def Cond__to__UnCond(self,
-      e: expr.VarE,
+  def Num_Bin__to__Num_Lit(self,
+      e: expr.BinaryE,
       nodeDfv: Opt[NodeDfvL] = None,
-      values: Opt[bool] = None,
-  ) -> Opt[Set[bool]]:
-    """Simplify conditional jump to unconditional jump."""
+      values: Opt[List[NumericT]] = None,
+  ) -> Opt[Set[NumericT]]:
+    """Simplify to a single literal if the expr can take that value."""
     raise NotImplementedError()
 
 
@@ -1753,6 +1744,16 @@ class AnalysisAT:
     """Simplify a deref expr de-referencing varName
     to a set of var pointees."""
     raise NotImplementedError()
+
+
+  def Cond__to__UnCond(self,
+      e: expr.VarE,
+      nodeDfv: Opt[NodeDfvL] = None,
+      values: Opt[bool] = None,
+  ) -> Opt[Set[bool]]:
+    """Simplify conditional jump to unconditional jump."""
+    raise NotImplementedError()
+
 
   ################################################
   # BOUND END  : sim_related 2/3
@@ -1781,9 +1782,9 @@ simNames: Set[str] = extractSimNames()
 Node__to__Nil__Name: str = AnalysisAT.Node__to__Nil.__name__
 LhsVar__to__Nil__Name: str = AnalysisAT.LhsVar__to__Nil.__name__
 Num_Var__to__Num_Lit__Name: str = AnalysisAT.Num_Var__to__Num_Lit.__name__
-Cond__to__UnCond__Name: str = AnalysisAT.Cond__to__UnCond.__name__
 Num_Bin__to__Num_Lit__Name: str = AnalysisAT.Num_Bin__to__Num_Lit.__name__
 Deref__to__Vars__Name: str = AnalysisAT.Deref__to__Vars.__name__
+Cond__to__UnCond__Name: str = AnalysisAT.Cond__to__UnCond.__name__
 
 simDirnMap = {  # the IN/OUT information needed for the sim
   Node__to__Nil__Name:        Forward,  # means dfv at IN is needed
@@ -2028,7 +2029,7 @@ class ValueAnalysisAT(AnalysisAT):
 
       if util.LL5: LDB("Analysis %s: RhsDfvOfExpr: '%s' (type: %s) is %s,"
                        " lhsVarNames are %s",
-                       self.overallTop.name, rhs, rhs.type, rhsDfv, lhsVarNames)
+                       self.overallTop.anName, rhs, rhs.type, rhsDfv, lhsVarNames)
       if not len(lhsVarNames):
         if util.VV1: print(f"NO_LVALUE_NAMES: {self.__class__.__name__},"
                            f" {func.name}, {lhs} = {rhs}, {lhs.info}")

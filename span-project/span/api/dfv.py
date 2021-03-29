@@ -34,19 +34,16 @@ from span.ir.types import (
 import span.ir.ir as ir
 from span.ir.ir import filterNamesNumeric
 
+OLD_VAL: ChangedT = False
+NEW_VAL: ChangedT = True
 
 ################################################
 # BOUND START: Node dfv related lattice
 ################################################
 
-class NewOldL(LatticeLT):
+class ChangePairL(LatticeLT):
   """Flags a change in data flow values."""
-  _new_in_obj: Opt['NewOldL'] = None
-  _new_out_obj: Opt['NewOldL'] = None
-  _new_inout_obj: Opt['NewOldL'] = None
-  _old_inout_obj: Opt['NewOldL'] = None
-
-  __slots__ : List[str] = ["_newIn", "_newOut"]
+  __slots__ : List[str] = ["newIn", "newOut"]
 
   def __init__(self,
       newIn: ChangedT,
@@ -56,20 +53,19 @@ class NewOldL(LatticeLT):
     bot = newIn and newOut
     super().__init__(top=top, bot=bot)
 
-    self._newIn = newIn
-    self._newOut = newOut
+    self.newIn = newIn
+    self.newOut = newOut
 
 
-  def meet(self, other) -> Tuple['NewOldL', ChangedT]:
-    assert isinstance(other, NewOldL), f"{other}"
+  def meet(self, other) -> Tuple['ChangePairL', ChangedT]:
+    assert isinstance(other, ChangePairL), f"{other}"
     tup = basicMeetOp(self, other)
     if tup: return tup
-
-    return self.getNewInOut(), Changed
+    return NEW_IN_OUT, Changed
 
 
   def __lt__(self, other) -> bool:
-    assert isinstance(other, NewOldL), f"{other}"
+    assert isinstance(other, ChangePairL), f"{other}"
     lt = basicLessThanTest(self, other)
     if lt is not None: return lt
     return self == other
@@ -78,21 +74,21 @@ class NewOldL(LatticeLT):
   def __eq__(self, other) -> bool:
     if self is other:
       return True
-    if not isinstance(other, NewOldL):
+    if not isinstance(other, ChangePairL):
       return NotImplemented
-    return self._newIn == other._newIn and self._newOut == other._newOut
+    return self.newIn == other.newIn and self.newOut == other.newOut
 
 
-  def orWith(self, other: 'NewOldL'):
-    isNewIn = self.isNewIn or other.isNewIn
-    isNewOut = self.isNewOut or other.isNewOut
-    return self.getNewOldObj(isNewIn, isNewOut)
+  def orWith(self, other: 'ChangePairL'):
+    newIn = self.newIn or other.newIn
+    newOut = self.newOut or other.newOut
+    return getNewOldObj(newIn, newOut)
 
 
   def __str__(self):
     inChange = outChange = "NoChange"
-    inChange = "Changed" if self._newIn else inChange
-    outChange = "Changed" if self._newOut else outChange
+    inChange = "Changed" if self.newIn else inChange
+    outChange = "Changed" if self.newOut else outChange
     return f"(IN:{inChange}, OUT:{outChange})"
 
 
@@ -100,93 +96,27 @@ class NewOldL(LatticeLT):
     return self.__str__()
 
 
-  @classmethod
-  def getNewOldObj(cls, isNewIn=False, isNewOut=False) -> 'NewOldL':
-    if not isNewIn and not isNewOut:
-      return cls.getOldInOut()
-    elif not isNewIn and isNewOut:
-      return cls.getNewOutOnly()
-    elif isNewIn and not isNewOut:
-      return cls.getNewInOnly()
-    elif isNewIn and isNewOut:
-      return cls.getNewInOut()
-    raise ValueError()
-
-
-  @property
-  def isNewIn(self) -> bool:
-    return self._newIn
-
-
-  @property
-  def isNewOut(self) -> bool:
-    return self._newOut
-
-
-  @property
-  def isNewInOut(self) -> bool:
-    return self._newIn and self._newOut
-
-
-  @property
-  def isOldInOut(self) -> bool:
-    return not (self._newIn or self._newOut)
-
-
   def __bool__(self) -> bool:
-    return self._newIn or self._newOut
+    """Returns True if any of the value is a True (NEW_VAL)"""
+    return self.newIn or self.newOut
 
 
-  @classmethod
-  def getNewInOnly(cls) -> 'NewOldL':
-    if not cls._new_in_obj:
-      cls._new_in_obj = NewOldL(Changed, not Changed)
-    return cls._new_in_obj
+OLD_IN_OUT = ChangePairL(OLD_VAL, OLD_VAL)
+NEW_IN_ONLY = ChangePairL(NEW_VAL, OLD_VAL)
+NEW_OUT_ONLY = ChangePairL(OLD_VAL, NEW_VAL)
+NEW_IN_OUT = ChangePairL(NEW_VAL, NEW_VAL)
 
 
-  @classmethod
-  def getNewOutOnly(cls) -> 'NewOldL':
-    if not cls._new_out_obj:
-      cls._new_out_obj = NewOldL(not Changed, Changed)
-    return cls._new_out_obj
-
-
-  @classmethod
-  def getNewInOut(cls) -> 'NewOldL':
-    new_inout_obj = cls._new_inout_obj
-    if new_inout_obj is not None:
-      return new_inout_obj
-    new_inout_obj = NewOldL(Changed, Changed)
-    cls._new_inout_obj = new_inout_obj
-    return new_inout_obj
-
-
-  @classmethod
-  def getOldInOut(cls) -> 'NewOldL':
-    if not cls._old_inout_obj:
-      cls._old_inout_obj = NewOldL(not Changed, not Changed)
-    return cls._old_inout_obj
-
-
-  @classmethod
-  def make(cls,
-      new_in: ChangedT,
-      new_out: ChangedT
-  ) -> 'NewOldL':
-    if new_in:
-      if new_out:
-        return cls.getNewInOut()
-      return cls.getNewInOnly()
-    else:
-      if new_out:
-        return cls.getNewOutOnly()
-      return cls.getOldInOut()
-
-
-OLD_IN_OUT = NewOldL.getOldInOut()
-NEW_IN_ONLY = NewOldL.getNewInOnly()
-NEW_OUT_ONLY = NewOldL.getNewOutOnly()
-NEW_IN_OUT = NewOldL.getNewInOut()
+def getNewOldObj(newIn: ChangedT, newOut: ChangedT) -> ChangePairL:
+  if not newIn and not newOut:
+    return OLD_IN_OUT
+  elif not newIn and newOut:
+    return NEW_OUT_ONLY
+  elif newIn and not newOut:
+    return NEW_IN_ONLY
+  elif newIn and newOut:
+    return NEW_IN_OUT
+  raise ValueError()
 
 
 class NodeDfvL(LatticeLT):
@@ -251,19 +181,20 @@ class NodeDfvL(LatticeLT):
       dfvOut, chOutTmp = self.dfvOut.meet(other.dfvOut)
       chOut = chOut or chOutTmp
 
-    if other.dfvOut is other.dfvOutTrue:
-      dfvOutTrue = dfvOut
-    else:
-      dfvOutTrue, chOutTmp = self.dfvOutTrue.meet(other.dfvOutTrue)
-      chOut = chOut or chOutTmp
-
-    if other.dfvOut is other.dfvOutFalse:
+    if other.dfvOut is other.dfvOutFalse: # true for all non-conditional nodes
       dfvOutFalse = dfvOut
     else:
       dfvOutFalse, chOutTmp = self.dfvOutFalse.meet(other.dfvOutFalse)
       chOut = chOut or chOutTmp
 
-    if util.LL4: LDB("NodeDfv (meet with prev nodeDfv): In: %s, Out: %s.", chIn, chOut)
+    if other.dfvOut is other.dfvOutTrue: # true for all non-conditional nodes
+      dfvOutTrue = dfvOut
+    else:
+      dfvOutTrue, chOutTmp = self.dfvOutTrue.meet(other.dfvOutTrue)
+      chOut = chOut or chOutTmp
+
+    if util.LL4: LDB(f"NodeDfv (MeetWithPrevNodeDfv):"
+                     f" {getNewOldObj(chIn, chOut)}")
     return NodeDfvL(dfvIn, dfvOut, dfvOutTrue, dfvOutFalse), chIn or chOut
 
 
@@ -289,19 +220,20 @@ class NodeDfvL(LatticeLT):
       dfvOut, chOutTmp = self.dfvOut.widen(other.dfvOut)
       chOut = chOut or chOutTmp
 
-    if other.dfvOut is other.dfvOutTrue:
-      dfvOutTrue = dfvOut
-    else:
-      dfvOutTrue, chOutTmp = self.dfvOutTrue.widen(other.dfvOutTrue)
-      chOut = chOut or chOutTmp
-
     if other.dfvOut is other.dfvOutFalse:
       dfvOutFalse = dfvOut
     else:
       dfvOutFalse, chOutTmp = self.dfvOutFalse.widen(other.dfvOutFalse)
       chOut = chOut or chOutTmp
 
-    if util.LL4: LDB("NodeDfv (widened with prev nodeDfv): In: %s, Out: %s.", chIn, chOut)
+    if other.dfvOut is other.dfvOutTrue:
+      dfvOutTrue = dfvOut
+    else:
+      dfvOutTrue, chOutTmp = self.dfvOutTrue.widen(other.dfvOutTrue)
+      chOut = chOut or chOutTmp
+
+    if util.LL4: LDB(f"NodeDfv (WidenedWithPrevNodeDfv):"
+                     f" {getNewOldObj(chIn, chOut)}")
     return NodeDfvL(dfvIn, dfvOut, dfvOutTrue, dfvOutFalse), chIn or chOut
 
 
@@ -338,20 +270,21 @@ class NodeDfvL(LatticeLT):
 
 
   def __hash__(self):
-    return hash(self.dfvIn) ^ hash(self.dfvOut)
+    return hash((self.dfvIn, self.dfvOut))
 
 
   def __str__(self):
-    idStr = f"(id:{id(self)})" if util.VV5 else ""
-    sep = " ***** "
-    if self.dfvOutTrue is self.dfvOutFalse and self.dfvOut is self.dfvOutTrue:
+    idStr = f"(id:{id(self)})" if util.DD5 else ""
+    SEP = " ##### "
+    if self.dfvOut is self.dfvOutFalse:
+      assert self.dfvOutFalse is self.dfvOutTrue, f"{self}"
       if self.dfvIn is self.dfvOut:
         return f"{idStr} IN == OUT: {self.dfvIn}"
       else:
-        return f"{idStr} IN: {self.dfvIn}, {sep} OUT: {self.dfvOut}"
+        return f"{idStr} IN: {self.dfvIn}, {SEP} OUT: {self.dfvOut}"
     else:
-      return f"{idStr} IN: {self.dfvIn}, {sep} OUT: {self.dfvOut}," \
-             f" {sep} TRUE: {self.dfvOutTrue}, {sep} FALSE: {self.dfvOutFalse}"
+      return f"{idStr} IN: {self.dfvIn}, {SEP} OUT: {self.dfvOut}," \
+             f" {SEP} TRUE: {self.dfvOutTrue}, {SEP} FALSE: {self.dfvOutFalse}"
 
 
   def __repr__(self):
@@ -384,7 +317,7 @@ class ComponentL(DataLT):
 
 class OverallL(DataLT):
   """Common OverallL for numeric/value analyses."""
-  __slots__ : List[str] = ["name"]
+  __slots__ : List[str] = ["anName"]
 
   def __init__(self,
       func: constructs.Func,
@@ -392,19 +325,17 @@ class OverallL(DataLT):
       top: bool = False,
       bot: bool = False,
       componentL: Type[ComponentL] = ComponentL,
-      name: str = "", # unique analysis name
+      anName: str = "", # unique analysis name
   ) -> None:
     super().__init__(func, val, top, bot)
-    initTopBotComp(func, name, componentL)
+    initTopBotComp(func, anName, componentL)
     self.val: Opt[Dict[VarNameT, ComponentL]] = val
     assert componentL is not ComponentL,\
-      f"Analysis should subclass dfv.ComponentL. Details: {func} {name}"
-    self.name = name
+      f"Analysis should subclass dfv.ComponentL. Details: {func} {anName}"
+    self.anName = anName
 
 
   def meet(self, other) -> Tuple['OverallL', ChangedT]:
-    assert isinstance(other, OverallL), f"{other}"
-
     tup = self.basicMeetOp(other)
     if tup: return tup
 
@@ -412,9 +343,10 @@ class OverallL(DataLT):
     meetVal: Dict[VarNameT, ComponentL] = {}
     vNames = set(self.val.keys()) | set(other.val.keys())
     selfValGet, otherValGet = self.val.get, other.val.get
+    selfGetDefaultVal = self.getDefaultVal
 
     for vName in vNames:
-      defaultVal = self.getDefaultVal(vName)
+      defaultVal = selfGetDefaultVal(vName)
       dfv1: ComponentL = selfValGet(vName, defaultVal)
       dfv2: ComponentL = otherValGet(vName, defaultVal)
       dfv3, _ = dfv1.meet(dfv2)
@@ -433,9 +365,11 @@ class OverallL(DataLT):
 
     vNames = set(self.val.keys()) | set(other.val.keys())
     selfValGet, otherValGet = self.val.get, other.val.get
+    selfGetDefaultVal = self.getDefaultVal
     for vName in vNames:
-      defaultVal = self.getDefaultVal(vName)
-      dfv1, dfv2 = selfValGet(vName, defaultVal), otherValGet(vName, defaultVal)
+      defaultVal = selfGetDefaultVal(vName)
+      dfv1: ComponentL = selfValGet(vName, defaultVal)
+      dfv2: ComponentL = otherValGet(vName, defaultVal)
       if not (dfv1 < dfv2): return False
     return True
 
@@ -445,7 +379,7 @@ class OverallL(DataLT):
       t: types.Type,
       name: Opt[VarNameT] = None,
   ) -> bool:
-    """Returns True if the type of the instruction/variable is
+    """Returns True if the type t (of an instr/expr) is
     of interest to the analysis.
     By default it selects only Numeric types.
     """
@@ -475,10 +409,11 @@ class OverallL(DataLT):
     if equal is not None: return equal
 
     vNames = set(self.val.keys()) | set(other.val.keys())
-    selfGetVal, otherGetVal = self.val.get, other.val.get
+    selfValGet, otherValGet = self.val.get, other.val.get
     for vName in vNames:
       defaultVal = self.getDefaultVal(vName)
-      dfv1, dfv2 = selfGetVal(vName, defaultVal), otherGetVal(vName, defaultVal)
+      dfv1: ComponentL = selfValGet(vName, defaultVal)
+      dfv2: ComponentL = otherValGet(vName, defaultVal)
       if not dfv1 == dfv2: return False
     return True
 
@@ -502,18 +437,19 @@ class OverallL(DataLT):
     """Default value when a variable is not present in the map.
     Override this function if the default implementation is not suitable.
     """
+    func, anName = self.func, self.anName
+    tUnit: TranslationUnit = func.tUnit
     topBot = False # i.e. Bot
-    tUnit: TranslationUnit = self.func.tUnit
     if varName:
-      if nameHasPpmsVar(varName):
+      if nameHasPpmsVar(varName): # TODO: handle bot state
         topBot = True # i.e. Top
-      elif ff.SET_LOCAL_VARS_TO_TOP and not nameHasPpmsVar(varName) and\
-          varName not in tUnit.getNamesGlobal():
-        topBot = True # i.e. Top
+      elif ff.SET_LOCAL_VARS_TO_TOP and not nameHasPpmsVar(varName):
+        if varName not in tUnit.getNamesGlobal(): # avoid local looking names that are global
+          topBot = True # i.e. Top
       elif ff.SET_LOCAL_ARRAYS_TO_TOP:
         topBot = tUnit.inferTypeOfVal(varName).isArray() # Top if its an Array
 
-    return getTopBotComp(self.func, self.name, topBot)
+    return getTopBotComp(func, anName, topBot)
 
 
   def isDefaultVal(self,
@@ -527,8 +463,9 @@ class OverallL(DataLT):
       varName: VarNameT
   ) -> ComponentL:
     """returns entity lattice value."""
-    if self.top: return getTopBotComp(self.func, self.name, True)
-    if self.bot: return getTopBotComp(self.func, self.name, False)
+    if self.top: return getTopBotComp(self.func, self.anName, True)
+    if self.bot: return getTopBotComp(self.func, self.anName, False)
+
     selfVal = self.val
     if selfVal and varName in selfVal:
       return selfVal[varName]
@@ -548,19 +485,19 @@ class OverallL(DataLT):
     if self.top and val.top: return
     if self.bot and val.bot and self.getDefaultVal(varName).bot:
       # as PPMS Vars default is Top, the bot state needs modification
-      # since getAllVars() never returns all the PPMS vars.
+      # since getAllVars() never returns all the PPMS vars. # TODO: fix this properly
       return
 
     # STEP 2: if here, update of self.val is inevitable
     self.val = {} if self.val is None else self.val
 
     if self.top: # and not defaultVal.top:
-      top = getTopBotComp(self.func, self.name, True)
+      top = getTopBotComp(self.func, self.anName, True)
       selfGetDefaultVal = self.getDefaultVal
       self.val = {vName: top for vName in self.getAllVars(self.func)
                   if not selfGetDefaultVal(vName).top}
     if self.bot: # and not defaultVal.bot:
-      bot = getTopBotComp(self.func, self.name, False)
+      bot = getTopBotComp(self.func, self.anName, False)
       selfGetDefaultVal = self.getDefaultVal
       self.val = {vName: bot for vName in self.getAllVars(self.func)
                   if not selfGetDefaultVal(vName).bot}
@@ -572,35 +509,6 @@ class OverallL(DataLT):
         del self.val[varName]  # since default value
     else:
       self.val[varName] = val
-
-    # don't explicate now, let self.val remain empty if it is so.
-    # self.explicateTopBot() # not needed since default val is var specific now
-
-
-  def explicateTopBot(self):
-    """Checks if all values are Top or Bot.
-    Useful in cases where default value is not Top or Bot.
-
-    Note: This function is now redundant as default value is
-    now specific to variables.
-     e.g. PPMS vars are Top and non-PPMS vars are Bot by default.
-    """
-    selfVal = self.val
-    if not selfVal: return  # nothing to do
-
-    allVars = self.getAllVars(self.func)
-    if len(selfVal) != len(allVars): return # nothing to do
-
-    top = bot = True
-    selfGetVal = self.getVal
-    for vName in allVars:
-      vVal = selfGetVal(vName)
-      top = top and vVal.top
-      bot = bot and vVal.bot
-      if not (top or bot): return # nothing to do
-
-    assert top != bot, f"{top}, {bot}, {selfVal}"
-    self.top, self.bot, self.val = top, bot, None
 
 
   def getCopy(self) -> 'OverallL':
@@ -625,9 +533,9 @@ class OverallL(DataLT):
 
     self.val = self.val if self.val else {}
     self.bot = False
-    selfSetVal, cTop = self.setVal, getTopBotComp(self.func, self.name, True)
+    selfSetVal, compTop = self.setVal, getTopBotComp(self.func, self.anName, True)
     for vName in varNames:
-      selfSetVal(vName, cTop)
+      selfSetVal(vName, compTop)
     return None
 
 
@@ -644,10 +552,10 @@ class OverallL(DataLT):
       varNames = set(localizedDfvVal.keys())
       keep = tUnit.getNamesGlobal() | (set(forFunc.paramNames) if keepParams else set())
       dropNames = varNames - keep
+      selfGetDefaultVal = self.getDefaultVal
       for vName in dropNames:
         if nameHasPpmsVar(vName): continue #don't drop
-        defaultVal = self.getDefaultVal(vName)
-        localizedDfvSetVal(vName, defaultVal) # essentially removing the values
+        localizedDfvSetVal(vName, selfGetDefaultVal(vName)) # essentially removing the values
 
     localizedDfv.updateFuncObj(forFunc)
     return localizedDfv
@@ -667,7 +575,7 @@ class OverallL(DataLT):
       fromDfv: 'OverallL',
   ) -> None:
     tUnit: tunit.TranslationUnit = self.func.tUnit
-    localVars = tUnit.getNamesEnv(self.func) - tUnit.getNamesGlobal()
+    localVars = tUnit.getNamesLocal(self.func)
     selfSetVal, fromDfvGetVal = self.setVal, fromDfv.getVal
     for vName in localVars:
       selfSetVal(vName, fromDfvGetVal(vName))
@@ -700,8 +608,8 @@ class OverallL(DataLT):
 
 
   def __repr__(self):
-    if self.top: return f"{self.name}.OverallL({self.func}, top=True)"
-    if self.bot: return f"{self.name}.OverallL({self.func}, bot=True)"
+    if self.top: return f"{self.anName}.OverallL({self.func}, top=True)"
+    if self.bot: return f"{self.anName}.OverallL({self.func}, bot=True)"
 
     string = io.StringIO()
     string.write("{self.name}.OverallL({")
