@@ -17,7 +17,7 @@ from span.ir.tunit import TranslationUnit
 from span.util import ff
 
 from span.ir import tunit, conv
-from span.ir.conv import isStringLitName, nameHasPpmsVar, isLocalVarName
+from span.ir.conv import isStringLitName, nameHasPpmsVar, isLocalVarName, NULL_OBJ_NAME
 
 from span.util.util import LS
 import span.util.util as util
@@ -317,7 +317,7 @@ class ComponentL(DataLT):
 
 class OverallL(DataLT):
   """Common OverallL for numeric/value analyses."""
-  __slots__ : List[str] = ["anName"]
+  __slots__ : List[str] = ["anName", "compL"]
 
   def __init__(self,
       func: constructs.Func,
@@ -332,6 +332,7 @@ class OverallL(DataLT):
     self.val: Opt[Dict[VarNameT, ComponentL]] = val
     assert componentL is not ComponentL,\
       f"Analysis should subclass dfv.ComponentL. Details: {func} {anName}"
+    self.compL = componentL
     self.anName = anName
 
 
@@ -385,7 +386,8 @@ class OverallL(DataLT):
     """
     check1 = t.isNumericOrVoid()
     check2 = not isStringLitName(name) if name else True
-    return check1 and check2
+    check3 = name != NULL_OBJ_NAME
+    return check1 and check2 and check3
 
 
   @classmethod
@@ -443,13 +445,14 @@ class OverallL(DataLT):
     if varName:
       if nameHasPpmsVar(varName): # TODO: handle bot state
         topBot = True # i.e. Top
-      elif ff.SET_LOCAL_VARS_TO_TOP and not nameHasPpmsVar(varName):
+      elif ff.SET_LOCAL_VARS_TO_TOP:
         if varName not in tUnit.getNamesGlobal(): # avoid local looking names that are global
           topBot = True # i.e. Top
       elif ff.SET_LOCAL_ARRAYS_TO_TOP:
         topBot = tUnit.inferTypeOfVal(varName).isArray() # Top if its an Array
 
-    return getTopBotComp(func, anName, topBot)
+    defVal = getTopBotComp(func, anName, topBot, self.compL)
+    return defVal
 
 
   def isDefaultVal(self,
@@ -463,8 +466,8 @@ class OverallL(DataLT):
       varName: VarNameT
   ) -> ComponentL:
     """returns entity lattice value."""
-    if self.top: return getTopBotComp(self.func, self.anName, True)
-    if self.bot: return getTopBotComp(self.func, self.anName, False)
+    if self.top: return getTopBotComp(self.func, self.anName, True, self.compL)
+    if self.bot: return getTopBotComp(self.func, self.anName, False, self.compL)
 
     selfVal = self.val
     if selfVal and varName in selfVal:
@@ -492,12 +495,12 @@ class OverallL(DataLT):
     self.val = {} if self.val is None else self.val
 
     if self.top: # and not defaultVal.top:
-      top = getTopBotComp(self.func, self.anName, True)
+      top = getTopBotComp(self.func, self.anName, True, self.compL)
       selfGetDefaultVal = self.getDefaultVal
       self.val = {vName: top for vName in self.getAllVars(self.func)
                   if not selfGetDefaultVal(vName).top}
     if self.bot: # and not defaultVal.bot:
-      bot = getTopBotComp(self.func, self.anName, False)
+      bot = getTopBotComp(self.func, self.anName, False, self.compL)
       selfGetDefaultVal = self.getDefaultVal
       self.val = {vName: bot for vName in self.getAllVars(self.func)
                   if not selfGetDefaultVal(vName).bot}
@@ -533,7 +536,8 @@ class OverallL(DataLT):
 
     self.val = self.val if self.val else {}
     self.bot = False
-    selfSetVal, compTop = self.setVal, getTopBotComp(self.func, self.anName, True)
+    selfSetVal, = self.setVal
+    compTop = getTopBotComp(self.func, self.anName, True, self.compL)
     for vName in varNames:
       selfSetVal(vName, compTop)
     return None
@@ -575,7 +579,7 @@ class OverallL(DataLT):
       fromDfv: 'OverallL',
   ) -> None:
     tUnit: tunit.TranslationUnit = self.func.tUnit
-    localVars = tUnit.getNamesLocal(self.func)
+    localVars = tUnit.getNamesLocalStrict(self.func)
     selfSetVal, fromDfvGetVal = self.setVal, fromDfv.getVal
     for vName in localVars:
       selfSetVal(vName, fromDfvGetVal(vName))
@@ -591,7 +595,7 @@ class OverallL(DataLT):
     string = io.StringIO()
     if self.val:
       selfVal = self.val
-      string.write("{")
+      string.write(f"(Len:{len(self.val)}) {{")
       prefix = ""
       for key in sorted(selfVal.keys()):
         if not DD3 and key == conv.NULL_OBJ_NAME: continue
@@ -724,10 +728,13 @@ _overallTopBot: \
 def getTopBotComp(
     func: constructs.Func,
     anName: str,
-    topBot: bool = False, # False == Bot, True == Top
+    topBot: bool, # False == Bot, True == Top
+    compL: Type[ComponentL] = None, # any comp object will do
 ) -> Opt[ComponentL]:
   tup, compDict = (func.name, anName, topBot), _componentTopBot
-  return compDict[tup] if tup in compDict else None
+  if tup not in compDict: # then add the top bot
+    initTopBotComp(func, anName, compL)
+  return compDict[tup]
 
 
 def initTopBotComp(

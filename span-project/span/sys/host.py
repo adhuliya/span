@@ -1104,7 +1104,9 @@ class Host:
     else:
       raise ValueError(f"{self.activeAnDirn}")
 
-    if util.LL4: LDB("CalleeCallSiteDfv(AfterParams): %s", nextNodeDfv)
+    if util.LL4:
+      callSitePair = CallSitePair(funcName, genFuncNodeId(self.func.id, node.id))
+      LDB("CalleeCallSiteDfv(AfterParams): (%s): %s", callSitePair, nextNodeDfv)
 
     return nextNodeDfv
 

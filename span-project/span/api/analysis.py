@@ -116,8 +116,9 @@ class FastNodeWorkList:
     nid = self.wl.pop()
     self.wlNodeSet.remove(nid)
 
-    self.fullSequence.append(nid * -1 if self.isNop[nid-1] else nid)
-    return self.nodes[nid], self.isNop[nid-1], self.valueFilter[nid-1]
+    nodeIsNop = self.isNop[nid-1]
+    self.fullSequence.append(nid * -1 if nodeIsNop else nid)
+    return self.nodes[nid], nodeIsNop, self.valueFilter[nid-1]
 
 
   def add(self,
@@ -138,14 +139,13 @@ class FastNodeWorkList:
 
   def initForDdm(self):
     """Used by #DDM"""
-    """Used by #DDM"""
     self.frozen = True
     self.clear()
     for i in range(1, len(self.isNop)):
       self.isNop[i] = True
 
 
-  def updateNodeMap(self,
+  def updateNodeMap(self,  #DDM
       nodeMap: Opt[Dict[cfg.CfgNode, Any]]  # node -> span.sys.ddm.NodeInfo
   ) -> bool:
     """Used by #DDM"""
@@ -413,7 +413,7 @@ class DirectionDT:
 
   def __init__(self,
       cfg: cfg.Cfg,
-      top: DataLT
+      top: DataLT,
   ) -> None:
     if type(self).__name__ == "DirectionT":
       super().__init__()
@@ -467,7 +467,7 @@ class DirectionDT:
       nodeDfv = NodeDfvL(newIn, newOut)  # nodeDfv OVER-WRITTEN
       newOutFalse = newOutTrue = newOut
 
-    if AS:
+    if util.CC3:
       if nodeDfv < oldNdfv:
         pass  # i.e. its okay
       else:
@@ -571,37 +571,29 @@ class ForwardDT(DirectionDT):
 
     It also updates the self.nidNdfvMap to make the change visible (if any).
     """
-    nid = node.id
-    ndfv = self.nidNdfvMap.get(nid, self.topNdfv)
+    nid, selfNidNdfvMapGet, topNdfv = node.id, self.nidNdfvMap.get, self.topNdfv
+    ndfv = selfNidNdfvMapGet(nid, topNdfv)
     predEdges = node.predEdges
     # for start node, nothing changes
     if not predEdges: return ndfv, OLD_IN_OUT
 
-    oldIn = ndfv.dfvIn
-
-    # newIn = oldIn  # enforce_monotonicity
-    newIn = None  # don't enforce_monotonicity
+    newIn = topNdfv.dfvIn  # don't enforce_monotonicity
     for predEdge in predEdges:
       f = fcfg.isFeasibleEdge(predEdge)
       if util.LL4: LDB(" Edge(%s): %s",
                        "Feasible" if f else "Infeasible", predEdge)
       if f:
-        predNodeDfv = self.nidNdfvMap.get(predEdge.src.id, self.topNdfv)
-        if predEdge.label == TrueEdge and predNodeDfv.dfvOutTrue is not None:
+        predNodeDfv = selfNidNdfvMapGet(predEdge.src.id, topNdfv)
+        if predEdge.label == TrueEdge:
           predOut = predNodeDfv.dfvOutTrue
-        elif predEdge.label == FalseEdge and predNodeDfv.dfvOutFalse is not None:
+        elif predEdge.label == FalseEdge:
           predOut = predNodeDfv.dfvOutFalse
         else:
-          if predNodeDfv.dfvOut is None:
-            if util.LL1: LER("dfvOut is None: %s", predNodeDfv)
           predOut = predNodeDfv.dfvOut  # must not be None, if here
+
         if util.LL4: LDB(" PredDfvOut: %s", predOut)
 
-
-        if newIn is None:
-          newIn = predOut
-        else:
-          newIn, _ = newIn.meet(predOut)
+        newIn, _ = newIn.meet(predOut)
 
     if newIn == ndfv.dfvIn: return ndfv, OLD_IN_OUT
 
@@ -679,32 +671,32 @@ class BackwardDT(DirectionDT):
 
     It also updates the self.nidNdfvMap to make the change visible (if any).
     """
-    nid = node.id
-    ndfv = self.nidNdfvMap.get(nid, self.topNdfv)
+    nid, selfNidNdfvMapGet, topNdfv = node.id, self.nidNdfvMap.get, self.topNdfv
+    ndfv = selfNidNdfvMapGet(nid, topNdfv)
     succEdges = node.succEdges
-    # for start node, nothing changes
+    # for end node, nothing changes
     if not succEdges: return ndfv, OLD_IN_OUT
 
-    oldOut = ndfv.dfvOut
-
-    newOut = oldOut  # enforce_monotonicity
-    changed: ChangedT = not Changed
+    newOut = topNdfv.dfvOut  # don't enforce_monotonicity
     for succEdge in succEdges:
-      f = fcfg.isFeasibleEdge(succEdge)  # TODO: succEdge in fcfg.fEdges (for speed)
-      if LS: LDB(" Edge(Feasible %s): %s", f, succEdge)
+      f = fcfg.isFeasibleEdge(succEdge)
+      if util.LL4: LDB(" Edge(%s): %s",
+                       "Feasible" if f else "Infeasible", succEdge)
       if f:
-        succIn = self.nidNdfvMap.get(succEdge.dest.id, self.topNdfv).dfvIn
-        if not succIn.top:
-          newOut, ch = newOut.meet(succIn)  # enforce_monotonicity
-          changed = changed or ch
+        succNodeDfv = selfNidNdfvMapGet(succEdge.dest.id, topNdfv)
+        succIn = succNodeDfv.dfvIn  # must not be None, if here
 
-    if not changed: return ndfv, OLD_IN_OUT
+        if util.LL4: LDB(" SuccDfvIn: %s", succIn)
+
+        newOut, _ = newOut.meet(succIn)
+
+    if newOut == ndfv.dfvOut: return ndfv, OLD_IN_OUT
 
     # Update in map for use in evaluation functions.
+    assert newOut is not None
     newNodeDfv = NodeDfvL(ndfv.dfvIn, newOut)
-    inOutChange = self.update(node, newNodeDfv)
-    # self.nidNdfvMap[nid] = newNodeDfv  # updates the node dfv map
-    return newNodeDfv, inOutChange
+    self.nidNdfvMap[nid] = newNodeDfv  # updates the node dfv map
+    return newNodeDfv, NEW_IN_ONLY
 
 
 class BackwardD(BackwardDT):
@@ -1807,7 +1799,7 @@ simDirnMap = {  # the IN/OUT information needed for the sim
 class ValueAnalysisAT(AnalysisAT):
   """A specialized (value) analysis implementation.
   Common functionality to most value analyses and other similar ones."""
-  __slots__ : List[str] = ["componentTop", "componentBot"]
+  __slots__ : List[str] = ["anName", "componentTop", "componentBot"]
   # redefine these variables as needed (see ConstA, IntervalA for examples)
   L: Type[dfv.OverallL] = dfv.OverallL  # the OverallL lattice used
   D: DirectionT = Forward  # its a forward flow analysis
@@ -1833,13 +1825,14 @@ class ValueAnalysisAT(AnalysisAT):
     self.componentBot: dfv.ComponentL = componentL(self.func, bot=True)
     self.overallTop: dfv.OverallL = overallL(self.func, top=True)
     self.overallBot: dfv.OverallL = overallL(self.func, bot=True)
+    self.anName = self.__class__.__name__
 
 
   def getBoundaryInfo(self,
       nodeDfv: Opt[NodeDfvL] = None, # needs to be localized to the target func
       ipa: bool = False,  #IPA
       entryFunc: bool = False,
-      func: Opt[constructs.Func] = None,
+      forFunc: Opt[constructs.Func] = None,
   ) -> NodeDfvL:
     """
       * IPA/Intra: initialize all local (non-parameter) vars to Top.
@@ -1849,17 +1842,24 @@ class ValueAnalysisAT(AnalysisAT):
     """
     if ipa and not nodeDfv: raise ValueError(f"{ipa}, {nodeDfv}")
 
-    func = func if func else self.func
+    func = forFunc if forFunc else self.func
+
+    overTop, overBot = self.overallTop.getCopy(), self.overallBot.getCopy()
+    overTop.func = overBot.func = func #IMPORTANT
+
     if isDummyGlobalFunc(func):  # initialize all to Top
-      inBi, outBi = self.overallTop, self.overallTop
+      inBi, outBi = overTop, overTop
     else:
       if nodeDfv: #IPA or #INTRA
         inBi, outBi = nodeDfv.dfvIn, nodeDfv.dfvOut
       else: #INTRA
-        inBi, outBi = self.overallBot, self.overallBot
+        inBi, outBi = overBot, overBot
 
       tUnit: TranslationUnit = func.tUnit
       inBiSetVal, tUnitGetNameInfo = inBi.setVal, tUnit.getNameInfo
+
+      compTop, compBot = self.componentTop.getCopy(), self.componentBot.getCopy()
+      compTop.func = compBot.func = func #IMPORTANT
 
       # set arrays/locals to a top initial value
       if ff.SET_LOCAL_ARRAYS_TO_TOP or ff.SET_LOCAL_VARS_TO_TOP:
@@ -1869,12 +1869,12 @@ class ValueAnalysisAT(AnalysisAT):
         for vName in varNames:
           if ff.SET_LOCAL_VARS_TO_TOP or\
               (ff.SET_LOCAL_ARRAYS_TO_TOP and tUnitGetNameInfo(vName).hasArray):
-            inBiSetVal(vName, self.componentTop) #Mutates inBi
+            inBiSetVal(vName, compTop) #Mutates inBi
 
       if entryFunc: # then set its parameters to Bot (main() function)
         for vName in func.paramNames:
           if self.L.isAcceptedType(tUnitGetNameInfo(vName).type):
-            inBiSetVal(vName, self.componentBot)
+            inBiSetVal(vName, compBot)
 
     nDfv1 = NodeDfvL(inBi, outBi)
     return nDfv1
@@ -1895,11 +1895,16 @@ class ValueAnalysisAT(AnalysisAT):
     calleeFuncObj = tUnit.getFuncObj(calleeName)
 
     # Out is unchanged in Forward analyses
-    outDfv = calleeBi.dfvOut if calleeBi else self.overallTop # unchanged Out
+    if calleeBi:
+      outDfv = calleeBi.dfvOut # unchanged Out
+    else:
+      outDfv = self.overallTop.getCopy()
+      outDfv.func = calleeFuncObj
+
     newDfvIn = nodeDfv.dfvIn.localize(calleeFuncObj, keepParams=True)
 
     localized = NodeDfvL(newDfvIn, outDfv)
-    localized = self.getBoundaryInfo(localized, ipa=True, func=calleeFuncObj)
+    localized = self.getBoundaryInfo(localized, ipa=True, forFunc=calleeFuncObj)
     if LS: LDB("CalleeCallSiteDfv(Localized): %s", localized)
     return localized
 

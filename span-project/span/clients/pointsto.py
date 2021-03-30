@@ -200,16 +200,17 @@ class OverallL(dfv.OverallL):
     of interest to the analysis, i.e. a pointer type.
     """
     check1 = t.isPointerOrVoid()
-    return check1
+    check2 = name != NULL_OBJ_NAME
+    return check1 and check2
 
 
-  @classmethod
-  def getAllVars(cls, func: constructs.Func) -> Set[types.VarNameT]:
-    """Returns all names which the points-to analysis is interested in.
-    All array names and function names are technically pointers,
-    but they are avoided as the associated info is trivial.
-    """
-    return ir.getNamesEnv(func, pointer=True)
+#   @classmethod
+#   def getAllVars(cls, func: constructs.Func) -> Set[types.VarNameT]:
+#     """Returns all names which the points-to analysis is interested in.
+#     All array names and function names are technically pointers,
+#     but they are avoided as the associated info is trivial.
+#     """
+#     return ir.getNamesEnv(func, pointer=True)
 
 
 ################################################

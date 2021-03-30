@@ -1551,6 +1551,24 @@ class TranslationUnit:
     return names
 
 
+  def getNamesLocalStrict(self,
+      func: constructs.Func,
+      givenType: Type = None,
+      cacheResult: bool = True,  # set to False in a very special case
+      numeric: bool = False,
+      integer: bool = False,
+      pointer: bool = False,
+  ) -> Set[VarNameT]:
+    """Returns names which are strictly local.
+    Since some local names are global (addr taken), so they are removed.
+    """
+    names = self.getNamesLocal(func, givenType, cacheResult,
+                               numeric, integer, pointer)
+    names -= self.getNamesGlobal(givenType, cacheResult,
+                                 numeric, integer, pointer)
+    return names
+
+
   def getNamesLocal(self,
       func: constructs.Func,
       givenType: Type = None,
@@ -1560,7 +1578,9 @@ class TranslationUnit:
       pointer: bool = False,
   ) -> Set[VarNameT]:
     """Returns set of variable names local to a function.
-    Without givenType it returns all the variables accessible."""
+    Without givenType it returns all the variables accessible.
+    Since some local names are global (addr taken), they are included too.
+    """
     self.stats.getNamesTimer.start()
     if isinstance(givenType, FuncSig):
       self.stats.getNamesTimer.stop()
