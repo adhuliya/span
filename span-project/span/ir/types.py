@@ -457,7 +457,7 @@ class Type:
     if the givenType is None or matches this type or else
     an empty set.
     """
-    if givenType is None or self == givenType:
+    if givenType is None or self.isEqualOrVoid(givenType):
       return {VarNameInfo(prefix, self, False, bySpan)}
     else:
       return set()

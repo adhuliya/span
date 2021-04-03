@@ -308,8 +308,8 @@ def getPrefixShortest(varName: types.VarNameT) -> types.VarNameT:
   E.g: If input is 'x.y.z', it returns 'x'.
   See also: getSuffixes()
   """
-  split = varName.split(".")
-  return split[0]  # its a normal name
+  splited = varName.split(".")
+  return splited[0]  # its a normal name
 
 
 def getSuffixes(

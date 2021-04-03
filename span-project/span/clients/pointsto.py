@@ -481,7 +481,10 @@ class PointsToA(analysis.ValueAnalysisAT):
       return self.componentBot
 
     elif isinstance(rhs, expr.BinaryE):
-      return self.getExprDfvBinArith(rhs, dfvIn)
+      val = self.getExprDfvBinArith(rhs, dfvIn)
+      if "ftab" in rhs.arg1.name and rhs.opr == op.BO_ADD:
+        print(f"BINARY_OP_PTR: ({self.func.name}): {rhs}: VAL: {val}") #delit
+      return val
 
     elif isinstance(rhs, expr.SelectE):
       val1 = self.getExprDfv(rhs.arg1, dfvIn)
@@ -529,6 +532,8 @@ class PointsToA(analysis.ValueAnalysisAT):
     if arg1IsArr or arg2IsArr:  # arr + 1 etc. results in ptr to an element of arr
       return ComponentL(self.func, val={ptrVarName})
     else: # must be a Ptr
+      if ":ftab" in ptrVarName: #delit
+        print(f"HERE!")
       return dfvIn.getVal(ptrVarName)
 
 

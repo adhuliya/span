@@ -277,7 +277,9 @@ class NodeDfvL(LatticeLT):
     idStr = f"(id:{id(self)})" if util.DD5 else ""
     SEP = " ##### "
     if self.dfvOut is self.dfvOutFalse:
-      assert self.dfvOutFalse is self.dfvOutTrue, f"{self}"
+      # assert self.dfvOutFalse is self.dfvOutTrue,\
+      #   f"\n DFV_OUT: {self.dfvOut},\n DFV_FALSE: {self.dfvOutFalse}," \
+      #   f"\n DFV_TRUE: {self.dfvOutTrue}"
       if self.dfvIn is self.dfvOut:
         return f"{idStr} IN == OUT: {self.dfvIn}"
       else:
@@ -470,6 +472,8 @@ class OverallL(DataLT):
     if self.bot: return getTopBotComp(self.func, self.anName, False, self.compL)
 
     selfVal = self.val
+    if ":ftab" in varName: #delit
+      print(f"VAL: {self}")
     if selfVal and varName in selfVal:
       return selfVal[varName]
     else:
@@ -599,12 +603,9 @@ class OverallL(DataLT):
       prefix = ""
       for key in sorted(selfVal.keys()):
         if not DD3 and key == conv.NULL_OBJ_NAME: continue
-        val = selfVal[key]
-        if val.top and not DD1: continue  # don't write Top values
         string.write(prefix)
-        prefix = ", "
-        #string.write(f"{simplifyName(key)}: {self.val[key]}")
-        string.write(f"{key}: {selfVal[key]}")
+        val, prefix = selfVal[key], ", "
+        string.write(f"{key}: {val}") # f"{simplifyName(key)}: {val}"
       string.write(f"}}{idStr}" if DD5 else "}")
     else:
       string.write("Default")

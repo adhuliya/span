@@ -168,7 +168,7 @@ class TranslationUnit:
     # named locations whose address is taken
     self._addrTakenSet: Set[VarNameT] = set()
 
-    # effective globals (actual globals + addr taken set)
+    # effective globals (actual globals + addr-taken set)
     self._globalsPpmsAndAddrTakenSet: Set[VarNameT] = set()
 
     # type based globals and address taken set categorization
@@ -1230,7 +1230,7 @@ class TranslationUnit:
 
 
   def replaceMemAllocations(self) -> None:
-    """Replace calloc(), malloc() with addr taken of Ppms variables.
+    """Replace calloc(), malloc() with addr-taken of Ppms variables.
     """
     for func in self.yieldFunctionsWithBody():
       for bb in func.basicBlocks.values():
@@ -1451,16 +1451,17 @@ class TranslationUnit:
   def nameHasArray(self,
       name: VarNameT
   ) -> Opt[bool]:
-    """Returns true if the name contains array access"""
-    if name in self._nameInfoMap:
-      return self._nameInfoMap[name].hasArray
+    """Returns true if the name contains array access."""
+    nim = self._nameInfoMap
+    if name in nim:
+      return nim[name].hasArray
     # return Void  #default #FIXME
 
     varType, shortestPrefix = None, getPrefixShortest(name)
-    if shortestPrefix in self._nameInfoMap:
-      varType = self._nameInfoMap[shortestPrefix]
+    if shortestPrefix in nim:
+      varType = nim[shortestPrefix]
       return varType.hasArray
-    raise ValueError(f"{name}, {shortestPrefix}, {varType}, {self._nameInfoMap}")
+    raise ValueError(f"{name}, {shortestPrefix}, {varType}, {nim}")
 
 
   def createAndAddLocalDummyVar(self,
@@ -1501,6 +1502,9 @@ class TranslationUnit:
 
 
   def _getNamesGlobal(self) -> Set[VarNameT]:
+    """Returns names whose naming format suggests a global scope.
+    It doesn't return addr-taken variables which have local naming formats.
+    """
     names = set()
     for name, info in self._nameInfoMap.items():
       if isGlobalName(name):
@@ -1560,7 +1564,7 @@ class TranslationUnit:
       pointer: bool = False,
   ) -> Set[VarNameT]:
     """Returns names which are strictly local.
-    Since some local names are global (addr taken), so they are removed.
+    Since some local names are global (addr-taken), so they are removed.
     """
     names = self.getNamesLocal(func, givenType, cacheResult,
                                numeric, integer, pointer)
@@ -1579,7 +1583,7 @@ class TranslationUnit:
   ) -> Set[VarNameT]:
     """Returns set of variable names local to a function.
     Without givenType it returns all the variables accessible.
-    Since some local names are global (addr taken), they are included too.
+    Since some local names are global (addr-taken), they are included too.
     """
     self.stats.getNamesTimer.start()
     if isinstance(givenType, FuncSig):

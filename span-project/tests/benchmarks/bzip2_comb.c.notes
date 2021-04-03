@@ -1,47 +1,36 @@
 Functions not visited and hence the chain that is uncalled:
 
-BZ2_bzclose                 hence   BZ2_bzWriteClose              (OK)
-BZ2_bzWriteClose                                                  (OK)
-BZ2_bzBuffToBuffCompress                                          (OK)
-BZ2_bzBuffToBuffDecompress                                        (OK)
-BZ2_bzReadGetUnused
-BZ2_bzdopen
-BZ2_bzerror
-BZ2_bzflush
-BZ2_bzopen
-BZ2_bzread
-BZ2_bzwrite
-BZ2_hbAssignCodes
-BZ2_hbCreateDecodeTables
-BZ2_indexIntoF
-bzopen_or_bzdopen
-cadvise
-compressedStreamEOF
-crcError
-fallbackQSort3
-fallbackSimpleSort
-ioError
-mainGtU
-mainQSort3
-mainSimpleSort
-makeMaps_d
-mmed3
-outOfMemory
-ran
-spec_putc
-spec_random_load
-spec_read
-spec_write
-uInt64_from_UInt32s
-uInt64_isZero
-uInt64_qrm10
-uInt64_toAscii
-uInt64_to_double
-unRLE_obuf_to_output_FAST
-unRLE_obuf_to_output_SMALL
-
+Functions not called from anywhere in bzip2_comb.c:
+  BZ2_bzclose                 hence   BZ2_bzWriteClose
+  BZ2_bzWriteClose
+  BZ2_bzBuffToBuffCompress
+  BZ2_bzBuffToBuffDecompress
+  BZ2_bzdopen
+  BZ2_bzopen
+  BZ2_bzread
+  BZ2_bzwrite
+  BZ2_bzflush
+  BZ2_bzerror
+  bzopen_or_bzdopen
+  ran
+  spec_putc
+  spec_random_load
+  spec_read
+  spec_write
+Total: 16.
 
 what is bzerr set to (-9, 0) after this: (check)
 L3624      nread = BZ2_bzRead(& bzerr, bzf, (void *)(obuf), 5000);
 should be (-9, 4) due to L6994 ?
+
+Total 16 functions not visited when just PointsToA is executed alone:
+  MergingResultsOfFunctions: Total 84    NotVisited(17): ['f:1_global_inits', 'f:BZ2_bzBuffToBuffCompress', 'f:BZ2_bzBuffToBuffDecompress', 'f:BZ2_bzWriteClose', 'f:BZ2_bzclose', 'f:BZ2_bzdopen', 'f:BZ2_bzerror', 'f:BZ2_bzflush', 'f:BZ2_bzopen', 'f:BZ2_bzread', 'f:BZ2_bzwrite', 'f:bzopen_or_bzdopen', 'f:ran', 'f:spec_putc', 'f:spec_random_load', 'f:spec_read', 'f:spec_write']
+
+Total 23 functions not visited when just IntervalA is executed alone:
+  MergingResultsOfFunctions: Total 77    NotVisited(24): ['f:1_global_inits', 'f:BZ2_bzBuffToBuffCompress', 'f:BZ2_bzBuffToBuffDecompress', 'f:BZ2_bzWriteClose', 'f:BZ2_bzclose', 'f:BZ2_bzdopen', 'f:BZ2_bzerror', 'f:BZ2_bzflush', 'f:BZ2_bzopen', 'f:BZ2_bzread', 'f:BZ2_bzwrite', 'f:bzopen_or_bzdopen', 'f:cadvise', 'f:compressedStreamEOF', 'f:crcError', 'f:default_bzalloc', 'f:default_bzfree', 'f:ioError', 'f:outOfMemory', 'f:ran', 'f:spec_putc', 'f:spec_random_load', 'f:spec_read', 'f:spec_write']
+
+
+Total 40 functions not visited when PointsToA+IntervalA are executed together:
+  MergingResultsOfFunctions: Total 61    NotVisited(40): ['f:1_global_inits', 'f:BZ2_bzBuffToBuffCompress', 'f:BZ2_bzBuffToBuffDecompress', 'f:BZ2_bzReadGetUnused', 'f:BZ2_bzWriteClose', 'f:BZ2_bzclose', 'f:BZ2_bzdopen', 'f:BZ2_bzerror', 'f:BZ2_bzflush', 'f:BZ2_bzopen', 'f:BZ2_bzread', 'f:BZ2_bzwrite', 'f:BZ2_hbAssignCodes', 'f:BZ2_hbCreateDecodeTables', 'f:BZ2_indexIntoF', 'f:bzopen_or_bzdopen', 'f:cadvise', 'f:compressedStreamEOF', 'f:crcError', 'f:fallbackQSort3', 'f:fallbackSimpleSort', 'f:ioError', 'f:mainGtU', 'f:mainQSort3', 'f:mainSimpleSort', 'f:makeMaps_d', 'f:mmed3', 'f:outOfMemory', 'f:ran', 'f:spec_putc', 'f:spec_random_load', 'f:spec_read', 'f:spec_write', 'f:uInt64_from_UInt32s', 'f:uInt64_isZero', 'f:uInt64_qrm10', 'f:uInt64_toAscii', 'f:uInt64_to_double', 'f:unRLE_obuf_to_output_FAST', 'f:unRLE_obuf_to_output_SMALL']
+
 

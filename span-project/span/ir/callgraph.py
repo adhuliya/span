@@ -21,7 +21,7 @@ import io
 
 from span.util.util import LS
 from span.ir.types import EdgeLabelT, BasicBlockIdT, FuncNameT
-from span.ir.conv import FalseEdge, TrueEdge, UnCondEdge
+from span.ir.conv import FalseEdge, TrueEdge, UnCondEdge, simplifyName
 import span.ir.types as types
 import span.util.consts as consts
 from span.ir.constructs import Func
@@ -109,6 +109,13 @@ class CallGraph:
     self.entryFunctions: Opt[Set[FuncNameT]] = None
     self.index = 0 # for Tarjan's algo
     self.sccList: Opt[List[Set[CallGraphNode]]] = None
+
+
+  def preProcess(self):
+    """Do some preprocessing calculations."""
+    assert self.callGraph, f"CALL_GRAPH: Uninitialized/Unpopulated"
+    self.findSCCs()
+    self.findPossibleEntryFunctions()
 
 
   def getCountEdges(self) -> int:
@@ -222,23 +229,28 @@ class CallGraph:
         suffix = ""
         if not len(node.calleeInfos):
           suffix = ", color=blue, penwidth=4"
-        content = f"""  "{funcName}" [label=\"{funcName}\"{suffix}];\n"""
+        elif funcName in self.entryFunctions:
+          suffix = ", color=green, penwidth=4"
+
+        fName = simplifyName(funcName)
+        content = f"""  "{fName}" [label=\"{fName}\"{suffix}];\n"""
         sio.write(content)
       sio.write("\n")
 
       # STEP 2/2: Connect the nodes.
       for funcName, node in self.callGraph.items():
+        fName = simplifyName(funcName)
         for calleeInfo in node.calleeInfos:
           suffix = ""
           if calleeInfo.callExpr.isPointerCall():
             suffix = "[color=red, penwidth=2]"  # style of the call arrow
 
           if not len(calleeInfo.calleeNames):
-            content = f"""  "{funcName}" -> "None" [style=dotted, color=red];\n"""
+            content = f"""  "{fName}" -> "None" [style=dotted, color=red];\n"""
             sio.write(content)
           else:
             for calleeName in calleeInfo.calleeNames:
-              content = f"""  "{funcName}" -> "{calleeName}" {suffix};\n"""
+              content = f"""  "{fName}" -> "{simplifyName(calleeName)}" {suffix};\n"""
               sio.write(content)
 
       sio.write("}\n")
@@ -258,6 +270,7 @@ def generateCallGraph(tUnit: tunit.TranslationUnit) -> CallGraph:
     node = CallGraphNode(func, calleeInfos)
     cg.callGraph[func.name] = node
 
+  cg.preProcess()
   return cg
 
 
