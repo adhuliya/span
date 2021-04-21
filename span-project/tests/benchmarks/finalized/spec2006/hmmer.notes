@@ -1,0 +1,46 @@
+Query Results on translation unit 'hmmer_comb.c'
+Records: 41
+
+Functions: 601
+Functions(WithDef): 539
+Functions(WithoutDef): 62
+Functions(Variadic): 2
+Functions(PtrReturnType): 87
+Functions(RecordReturnType): 0
+Functions(VoidReturnType): 230
+Functions(VoidPtrReturnType): 2
+
+FuncCalls(All): 4100
+FuncCalls(Non-Ptr): 4091
+FuncCalls(Ptr): 9
+
+Nodes(total): 54506
+Nodes(maxInAFunc): 1296
+
+DerefsUsed(all): 13324
+DerefsUsed(Lhs): 2910
+DerefsUsed(Rhs): 10414
+DerefsUsed(Num:Lhs): 1608
+DerefsUsed(Num:Rhs): 2470
+DerefsUsed(Num:RhsNonChar): 1561
+DerefsUsed(Num:All): 4078
+DerefsUsed(all): 13324
+
+DivisionOps: 219
+ArrayExpr: 944
+
+TotalModOperations: 30
+TotalModByTwoOperations: 10
+TotalFuncWithModByTwoOperations: 4
+
+TotalMemAllocations: 37
+TotalMemAllocationsPseudoVar: 37
+TotalMemAllocationsWithoutPseudoVar: 0
+TotalFuncWithMemAllocations: ['f:AllocPhylo', 'f:DisplayPlan7PostAlign', 'f:InitIntStack', 'f:ParsePAMFile', 'f:PushIntStack', 'f:ReadSeq', 'f:SSICreateIndex', 'f:SSIGetOffsetByName', 'f:SSIGetOffsetByNumber', 'f:SSIOpen', 'f:SSIWriteIndex', 'f:Strdup', 'f:Translate', 'f:actually_write_selex', 'f:binary_search', 'f:load_indexfile', 'f:simple_diffmx', 'f:sqd_regcomp', 'f:sre_malloc']
+
+TotalIfCondWithConstComparison: 1716
+TotalIfCondWithComparison: 3750
+TotalIfCond: 4733
+
+TotalRelationalExprs: 4011
+Struct('s:hmmfile_s'), Struct('s:hmmfile_s')

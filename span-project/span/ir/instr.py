@@ -443,6 +443,10 @@ class CondI(InstrIT):
     self.falseLabel = falseLabel
 
 
+  def getRValueNames(self) -> Opt[Set[types.VarNameT]]:
+    return self.arg.getRValueNames()
+
+
   def getFormalStr(self) -> types.FormalStrT:
     return consts.COND_I_STR
 
@@ -521,6 +525,13 @@ class ReturnI(InstrIT):
       raise ValueError(f"{arg}")
     super().__init__(RETURN_INSTR_IC, info)
     self.arg = arg
+
+
+  def getRValueNames(self) -> Opt[Set[types.VarNameT]]:
+    if self.arg:
+      return self.arg.getRValueNames()
+    else:
+      return set()
 
 
   def getFormalStr(self) -> types.FormalStrT:
@@ -607,6 +618,10 @@ class CallI(InstrIT):
     self.arg = arg
 
 
+  def getRValueNames(self) -> Opt[Set[types.VarNameT]]:
+    return self.arg.getRValueNames()
+
+
   def getFormalStr(self) -> types.FormalStrT:
     return consts.CALL_I_STR
 
@@ -688,6 +703,13 @@ class III(InstrIT):
     # invariant check
     super().__init__(III_INSTR_IC, info)
     self.insns = insns
+
+
+  def getRValueNames(self) -> Opt[Set[types.VarNameT]]:
+    names = set()
+    for insn in self.insns:
+      names |= insn.getRValueNames()
+    return names
 
 
   def getFormalStr(self) -> types.FormalStrT:
@@ -790,6 +812,10 @@ class UseI(InstrIT):
   ) -> None:
     super().__init__(USE_INSTR_IC, info)
     self.vars: Set[types.VarNameT] = vars
+
+
+  def getRValueNames(self) -> Opt[Set[types.VarNameT]]:
+    return self.vars
 
 
   def getFormalStr(self) -> types.FormalStrT:

@@ -7,7 +7,7 @@
 
 START_BB_ID_NOT_MINUS_ONE = (
   "Start BB id is not -1 in the given input"
-  "Dict[BasicBlockId, BB]."
+  " Dict[BasicBlockId, BB]."
 )
 
 END_BB_ID_NOT_ZERO = (

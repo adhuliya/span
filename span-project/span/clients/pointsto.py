@@ -482,8 +482,6 @@ class PointsToA(analysis.ValueAnalysisAT):
 
     elif isinstance(rhs, expr.BinaryE):
       val = self.getExprDfvBinArith(rhs, dfvIn)
-      if "ftab" in rhs.arg1.name and rhs.opr == op.BO_ADD:
-        print(f"BINARY_OP_PTR: ({self.func.name}): {rhs}: VAL: {val}") #delit
       return val
 
     elif isinstance(rhs, expr.SelectE):
@@ -494,8 +492,12 @@ class PointsToA(analysis.ValueAnalysisAT):
 
     elif isinstance(rhs, (expr.ArrayE, expr.MemberE)):
       names = PointsToA.getNamesLValuesOfExpr(self.func, rhs, dfvIn)
-      for name in names:
-        value, _ = value.meet(dfvInGetVal(name))
+      if rhsType.isArray(): # e.g. 3t=s->inUse; where s->inUse is an array.
+        if names: # else value stays Top
+          value = ComponentL(self.func, val=names)
+      else:
+        for name in names:
+          value, _ = value.meet(dfvInGetVal(name))
       return value
 
     elif isinstance(rhs, expr.CallE):

@@ -29,7 +29,7 @@ if TRACE_MALLOC:
 
 from span.sys.stats import GlobalStats
 import span.sys.clients as clients
-from span.ir import cfg, expr, types
+from span.ir import cfg, expr, types, op
 import span.ir.conv as conv
 from span.ir.conv import (GLOBAL_INITS_FUNC_NAME,
                           Forward, Backward, GLOBAL_INITS_FUNC_ID,
@@ -37,7 +37,7 @@ from span.ir.conv import (GLOBAL_INITS_FUNC_NAME,
 from span.ir.types import FuncNameT, FuncNodeIdT, NodeIdT
 from span.ir.tunit import TranslationUnit
 from span.api.analysis import AnalysisNameT as AnNameT, DirectionDT, AnalysisAT, SimFailed
-from span.api.dfv import NodeDfvL
+from span.api.dfv import NodeDfvL, OverallL
 
 from span.sys.host import Host
 from span.sys.common import CallSitePair, DfvDict
@@ -204,7 +204,8 @@ class ValueContextInfo:
     """Get old value context information."""
     if vContext in self.valueContextMap:
       return self.valueContextMap[vContext]
-    raise ValueError(f"{vContext}")
+    raise ValueError(f"ValueContext Missing"
+                     f" (Total: {len(self.valueContextMap)}): {vContext}")
 
 
   def isContextPresent(self,
@@ -555,10 +556,13 @@ class IpaHost:
 
     if util.LL2: LDB(f"PrevValueContext(Checking):"
                      f" Id:{id(prevValueContext)}, {prevValueContext}")
-    hostSitesPair = vci.getHostSitesPair(prevValueContext)
-    if not hostSitesPair.hasSingleSite():
-      # since more than one callSite may need the vContext, hence cannot modify
-      return None
+    try:
+      hostSitesPair = vci.getHostSitesPair(prevValueContext)
+      if not hostSitesPair.hasSingleSite():
+        # since more than one callSite may need the vContext, hence cannot modify
+        return None
+    except Exception as e:
+      return None # TODO: fix this error.
 
     if util.LL2: LDB(f"PrevValueContext(ReUsing):"
                      f" Id:{id(prevValueContext)}, {prevValueContext}")
@@ -844,6 +848,7 @@ def diagnoseInterval(tUnit: TranslationUnit):
   # computeStats01("PointsToA", ipaHostSpan, ipaHostLern, tUnit)
   computeStatsAverageDeref("PointsToA", ipaHostSpan, ipaHostLern, tUnit)
   computeStatsIntervalPrecision("IntervalA", ipaHostSpan, ipaHostLern, tUnit)
+  computeStatsDivByZeroPrecision("IntervalA", ipaHostSpan, ipaHostLern, tUnit)
 
   takeTracemallocSnapshot()
 
@@ -925,9 +930,9 @@ def computeStatsAverageDeref(
     tUnit: TranslationUnit,
 ):
   """Compute "Average Deref" Metric."""
-  rhsDerefPointCount = 0
+  rhsDerefPointCount = 1
   rhsDerefPointeesCount = [0, 0] # [0] Span, [1] Other
-  lhsDerefPointCount = 0
+  lhsDerefPointCount = 1
   lhsDerefPointeesCount = [0, 0] # [0] Span, [1] Other
 
   AnClass = clients.analyses[mainAnName]
@@ -1002,7 +1007,9 @@ def computeStatsIntervalPrecision(
     tUnit: TranslationUnit,
 ):
   """Compute Interval Precision Comparison"""
-  rValuePointsPrecise = 0
+  rValueEqual = 0 # equal by both the approaches
+  rValueWorse = 0 # worse than the other approach
+  rValuePointsPrecise = 0 # better than the other approach
   rValuePointsTotal = 0
 
   AnClass = clients.analyses[mainAnName]
@@ -1023,6 +1030,8 @@ def computeStatsIntervalPrecision(
     for nid in sorted(interSpan.keys()):
       insn = nodeMap[nid].insn
       rValueVars = insn.getRValueNames()
+      if rValueVars and util.VV2:
+        print(f"COMPARING_FOR_INSN: {funcName}: (NodId:{nid}): {insn}, {insn.info}")
 
       nDfvInSpan = interSpan[nid].dfvIn
       nDfvInOther = interOther[nid].dfvIn
@@ -1031,12 +1040,68 @@ def computeStatsIntervalPrecision(
         rValuePointsTotal += 1
         valSpan = nDfvInSpan.getVal(vName)
         valOther = nDfvInOther.getVal(vName)
+        if valOther == valSpan:
+          rValueEqual += 1
+        elif valSpan < valOther and valOther != valSpan:
+          rValueWorse += 1
+          if util.VV1:
+            print(f"MORE_WORSE: ({funcName}): {insn}, Var: {vName}"
+                  f"\n SPAN : {valSpan},\n OTHER: {valOther}")
         if valOther < valSpan and valOther != valSpan:
           rValuePointsPrecise += 1
           if util.VV1:
             print(f"MORE_PRECISE: ({funcName}): {insn}, Var: {vName}"
                   f"\n SPAN : {valSpan},\n OTHER: {valOther}")
 
-  print(f"TOTAL_PRECISION (IntervalA): {rValuePointsPrecise}/{rValuePointsTotal}")
+  print(f"TOTAL_PRECISION (IntervalA)(Better): {rValuePointsPrecise}/{rValuePointsTotal}")
+  print(f"TOTAL_PRECISION (IntervalA) (Worse): {rValueWorse}/{rValuePointsTotal}")
+  print(f"TOTAL_PRECISION (IntervalA) (Equal): {rValueEqual}/{rValuePointsTotal}")
+
+
+def computeStatsDivByZeroPrecision(
+    mainAnName: AnNameT, # always Interval Analysis
+    ipaHostSpan: IpaHost,
+    ipaHostOther: IpaHost,
+    tUnit: TranslationUnit,
+):
+  """Compute Interval Precision Comparison"""
+  totalDivCount = 0
+  nonZeroDivSpan = 0
+  nonZeroDivOther = 0
+
+  AnClass = clients.analyses[mainAnName]
+
+  for funcName in sorted(ipaHostSpan.vci.finalResult.keys()):
+    #FIXME: skipping some functions here
+    if util.VV1: print(f"FUNC_NAME (ForIntervalPrecision): {funcName}")
+    if not (funcName in ipaHostSpan.vci.finalResult and
+            funcName in ipaHostOther.vci.finalResult):
+      if util.VV1: print(f"  SKIPPING_FUNC (ForIntervalPrecision): {funcName}")
+      continue
+
+    interSpan = ipaHostSpan.vci.finalResult[funcName][mainAnName]
+    interOther = ipaHostOther.vci.finalResult[funcName][mainAnName]
+    fObj = tUnit.getFuncObj(funcName)
+    nodeMap = fObj.cfg.nodeMap
+
+    for nid in sorted(interSpan.keys()):
+      insn = nodeMap[nid].insn
+      if isinstance(insn, AssignI):
+        rhs = insn.rhs
+        if isinstance(rhs, expr.BinaryE) and \
+            rhs.opr == op.BO_DIV and isinstance(rhs.arg2, expr.VarE):
+          totalDivCount += 1
+
+          nDfvInSpan: OverallL = interSpan[nid].dfvIn
+          nDfvInOther: OverallL = interOther[nid].dfvIn
+
+          if not nDfvInSpan.getVal(rhs.arg2.name).inRange(0):
+            nonZeroDivSpan += 1
+          if not nDfvInOther.getVal(rhs.arg2.name).inRange(0):
+            nonZeroDivOther += 1
+
+  print(f"MORE_PRECISE: Total: {totalDivCount},\n SPAN: {nonZeroDivSpan}"
+    f"\n OTHER: {nonZeroDivOther}")
+
 
 

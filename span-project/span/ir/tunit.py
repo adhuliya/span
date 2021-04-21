@@ -190,7 +190,7 @@ class TranslationUnit:
     self.initialized = False
 
     self.logUsefulInfo()
-    if LS: LOG.info(f"PreProcessing_TUnit({self.name}): START.")
+    if util.LL1: LOG.info(f"PreProcessing_TUnit({self.name}): START.")
 
     # STEP 1: Fill the gaps in the SPAN IR
     self.fillTheRecordTypes()  # IMPORTANT (MUST)
@@ -221,7 +221,7 @@ class TranslationUnit:
     self.logStats() # must be the last call (OPTIONAL)
 
     self.initialized = True
-    if LS: LOG.info(f"PreProcessing_TUnit({self.name}): END/DONE.")
+    if util.LL1: LOG.info(f"PreProcessing_TUnit({self.name}): END/DONE.")
 
 
   def checkInvariants(self):
@@ -991,6 +991,13 @@ class TranslationUnit:
         return VarArray(of=arrayOf)
       elif isinstance(varType, IncompleteArray):
         return IncompleteArray(of=arrayOf)
+
+    elif isinstance(varType, FuncSig):
+      retType = self.findAndFillRecordType(varType.returnType)
+      paramTypes = []
+      for paramType in varType.paramTypes:
+        paramTypes.append(self.findAndFillRecordType(paramType))
+      return FuncSig(retType, paramTypes, varType.variadic)
 
     return varType  # by default return the same type
 

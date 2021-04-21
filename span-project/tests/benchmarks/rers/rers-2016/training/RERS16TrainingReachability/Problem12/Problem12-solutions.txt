@@ -1,0 +1,67 @@
+Reachability problems:
+===============================
+error_0 reachable via input sequence
+[A, C, A, A, A, D, A, A, A, D, A, A, B]
+---------------
+
+error_21 reachable via input sequence
+[C, D, C, A, D, C, A, D, C, A, D, C, A, D, D, E]
+---------------
+
+error_24 reachable via input sequence
+[A, D, D, C, D, D, C, C, A, C, E]
+---------------
+
+error_30 reachable via input sequence
+[A, C, A, D, C, D, C]
+---------------
+
+error_41 reachable via input sequence
+[A, D, D, C, C, A, B]
+---------------
+
+error_58 reachable via input sequence
+[A, D, D, C, D, D, C, D, D, C, C, C, B]
+---------------
+
+error_67 reachable via input sequence
+[A, C, A, A, A, D, A, A, A, D, A, A, A, D, A, A, A, D, A, C, D, E]
+---------------
+
+error_69 reachable via input sequence
+[A, D, D, C, D, D, C, D, D, C, C, B]
+---------------
+
+error_70 reachable via input sequence
+[C, D, B]
+---------------
+
+error_71 reachable via input sequence
+[C, D, A, D, D, A, D, D, A, D, D, A, D, D, A, D, D, A, D, D, A, A, C, B]
+---------------
+
+error_72 reachable via input sequence
+[C, D, C, A, D, C, A, D, C, C, D, B]
+---------------
+
+error_82 reachable via input sequence
+[C, D, A, B]
+---------------
+
+error_87 reachable via input sequence
+[C, D, C, A, D, C, A, D, C, A, D, C, A, D, C, A, D, C, A, D, C, A, D, C, E]
+---------------
+
+error_88 reachable via input sequence
+[C, D, C, A, D, C, A, D, A, E]
+---------------
+
+error_96 reachable via input sequence
+[A, C, A, A, C, D, A, C]
+---------------
+
+error_97 reachable via input sequence
+[A, D, D, C, D, D, C, D, D, C, D, D, C, D, D, C, D, D, C, D, D, C, D, D, C, D, D, C, C, A, D, B]
+---------------
+
+All other errors unreachable

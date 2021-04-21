@@ -8,6 +8,9 @@ Common utility functions module which can be used in any project.
 Note(AD): This file is hard-linked to the `snippets` repo that
 contains various common utility modules.
 """
+import logging
+_LOG = logging.getLogger("span")
+
 
 import os
 import os.path as osp
@@ -16,10 +19,6 @@ import subprocess as subp
 import shutil
 from typing import Optional as Opt, Set, Generator, List, Callable
 import time
-
-import logging
-
-LOG = logging.getLogger("span")
 
 LS = True  # never comment this line
 """Logging Switch: to disable set it to false."""
@@ -43,12 +42,12 @@ def createDir(dirPath, existOk=True):
     str: absolute path of the directory or None.
   """
   absPath = getAbolutePath(dirPath)
-  if LS: LOG.debug("Creating directory %s", absPath)
+  if LS: _LOG.debug("Creating directory %s", absPath)
 
   try:
     os.makedirs(absPath, exist_ok=existOk)
   except Exception as e:
-    if LS: LOG.error("Error creating directory {},\n{}".format(absPath, e))
+    if LS: _LOG.error("Error creating directory {},\n{}".format(absPath, e))
     return None
 
   return absPath
@@ -60,7 +59,7 @@ def removeFileIfExists(filePath: str) -> None:
     if not osp.isdir(filePath):
       os.remove(filePath)
     else:
-      if LS: LOG.error(f"The given file is a directory.: {filePath}")
+      if LS: _LOG.error(f"The given file is a directory.: {filePath}")
 
 
 def getAbolutePath(filePath: str):
@@ -242,7 +241,8 @@ def hexToDouble(hexVal) -> float:
   raise ValueError(f"{type(hexVal)}")
 
 
-def randomString(length: int = 10,
+def randomString(
+    length: int = 10,
     digits: bool = True,
     caps: bool = False,
     small: bool = True,
@@ -286,7 +286,7 @@ def getLineNumFunc() -> Callable[[str, int], int]:
       lastPos = 0
       lastLineCount = 1
     for i in range(lastPos, pos):
-      if s[i] == os.linesep:
+      if s[i] == os.linesep: # okay for single character linesep.
         lastLineCount += 1
     return lastLineCount
 
@@ -362,9 +362,12 @@ class Timer:
   timer.start(); timer.start();  # the second start is like a NOP
   timer.stop();  timer.stop();   # the first stop is like a NOP
   stop() calls should balance start() calls.
+
+  This implementation can be used in a recursive function call as well.
   """
   __slots__: List[str] = ["name", "_start", "cumulativeTime", "startCounts",
                           "stopCounts", "counter"]
+
 
   def __init__(self, name=None, start=True):
     self.name = name if name else f"Timer{getUniqueId()}"
@@ -376,11 +379,13 @@ class Timer:
     if start:
       self.start()
 
+
   def start(self):
     if self.counter == 0:
       self._start = time.time()
     self.counter += 1
     self.startCounts += 1
+
 
   def stop(self) -> 'Timer':
     if self.counter == 0:  # already 0
@@ -392,17 +397,21 @@ class Timer:
       self.stopCounts += 1
     return self
 
+
   def stopAndLog(self, printAlso=False, log=True) -> None:
-    if log: LOG.debug(self.stop())
+    if log: _LOG.debug(self.stop())
     if printAlso: print(self.stop())
+
 
   def getDurationInMillisec(self) -> float:
     return self.cumulativeTime * 1000
+
 
   def __str__(self):
     return f"TimeElapsed({self.name}):" \
            f" {self.getDurationInMillisec()} ms" \
            f" (Starts: {self.startCounts}, Stops: {self.stopCounts})"
+
 
   def __repr__(self):
     return str(self)
@@ -415,22 +424,28 @@ class CacheHits:
 
   __slots__: List[str] = ["name", "hits", "misses"]
 
+
   def __init__(self, name=""):
     self.name = name if name else f"Cache{getUniqueId()}"
     self.hits, self.misses = 0, 0
 
+
   def hit(self):
     self.hits += 1
 
+
   def miss(self):
     self.misses += 1
+
 
   def hitRatio(self) -> int:
     total = self.hits + self.misses
     return int((100 * self.hits / total) if total != 0 else 0)
 
+
   def __str__(self):
     return f"HitRatio({self.name}): {self.hitRatio()} % (hits={self.hits}, misses={self.misses})"
+
 
   def __repr__(self):
     return str(self)

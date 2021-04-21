@@ -290,6 +290,36 @@ def countNumericDerefsRhsNonChar(func: constructs.Func) -> int:
           count += 1
   return count
 
+
+def countDivideOps(func: constructs.Func) -> int:
+  """Counts the number of divide ops."""
+  count = 0
+  if func.hasBody():
+    assert func.cfg is not None, f"{func}"
+    for insn in func.yieldInstrSeq():
+      if isinstance(insn, instr.AssignI):
+        if isinstance(insn.rhs, expr.BinaryE) \
+            and insn.rhs.opr == op.BO_DIV:
+          count += 1
+  return count
+
+
+def countArrayExpr(func: constructs.Func) -> int:
+  """Counts the number array subscript ops."""
+  count = 0
+  if func.hasBody():
+    assert func.cfg is not None, f"{func}"
+    for insn in func.yieldInstrSeq():
+      if isinstance(insn, instr.AssignI):
+        if isinstance(insn.lhs, expr.ArrayE):
+          count += 1
+        if isinstance(insn.rhs, expr.ArrayE):
+          count += 1
+        if isinstance(insn.rhs, expr.AddrOfE) and \
+          isinstance(insn.rhs.arg, expr.ArrayE):
+          count += 1
+  return count
+
 ################################################
 # BLOCK END  : counting_queries
 ################################################
@@ -417,6 +447,9 @@ def executeAllQueries(tUnit: TranslationUnit):
   p("DerefsUsed(Num:RhsNonChar):", countOnFunctions(tUnit, countNumericDerefsRhsNonChar, FUNC_WITH_BODY))
   p("DerefsUsed(Num:All):", countOnFunctions(tUnit, countNumericDerefs, FUNC_WITH_BODY))
   p("DerefsUsed(all):", countOnFunctions(tUnit, countDerefsUsed, FUNC_WITH_BODY))
+  p()
+  p("DivisionOps:", countOnFunctions(tUnit, countDivideOps, FUNC_WITH_BODY))
+  p("ArrayExpr:", countOnFunctions(tUnit, countArrayExpr, FUNC_WITH_BODY))
   p()
   p("TotalModOperations:", countOnFunctions(tUnit, countModOperators, FUNC_WITH_BODY))
   p("TotalModByTwoOperations:", countOnFunctions(tUnit, countModByTwoOperators, FUNC_WITH_BODY))

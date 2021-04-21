@@ -1,0 +1,129 @@
+Reachability problems:
+===============================
+error_0 reachable via input sequence
+[A, C, C, C, A, C, A, C, C, A, C, A, C, C, A, C, A, C, C, A, C, A, C, B]
+---------------
+
+error_4 reachable via input sequence
+[A, C, C, C, A, B]
+---------------
+
+error_5 reachable via input sequence
+[D, D, A, A, C, E]
+---------------
+
+error_6 reachable via input sequence
+[D, D, A, A, E, E, C]
+---------------
+
+error_7 reachable via input sequence
+[A, C, E]
+---------------
+
+error_11 reachable via input sequence
+[D, D, A, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, A, E, D]
+---------------
+
+error_13 reachable via input sequence
+[D, D, A, D]
+---------------
+
+error_14 reachable via input sequence
+[D, D, A, E, C, C, C]
+---------------
+
+error_18 reachable via input sequence
+[A, C, C, A, E, A, A, D]
+---------------
+
+error_31 reachable via input sequence
+[A, C, C, C, B]
+---------------
+
+error_35 reachable via input sequence
+[A, C, C, A, E, C]
+---------------
+
+error_36 reachable via input sequence
+[D, D, A, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, E, C, E]
+---------------
+
+error_40 reachable via input sequence
+[D, D, A, A, E, E, A, C]
+---------------
+
+error_41 reachable via input sequence
+[D, D, A, E, B]
+---------------
+
+error_42 reachable via input sequence
+[D, D, A, A, C, C, A]
+---------------
+
+error_46 reachable via input sequence
+[A, C, C, A, E, A, C]
+---------------
+
+error_52 reachable via input sequence
+[A, C, C, E]
+---------------
+
+error_54 reachable via input sequence
+[A, C, C, C, A, C, A, C, C, A, C, A, C, C, A, C, A, C, C, A, C, A, C, C, A, C, A, C, C, A, C, A, C, C, A, C, A, C, C, A, C, A, C, C, A, C, A, C, C, A, C, A, C, C, A, C, A, C, C, C]
+---------------
+
+error_61 reachable via input sequence
+[D, D, A, A, D]
+---------------
+
+error_62 reachable via input sequence
+[A, C, C, A, C]
+---------------
+
+error_66 reachable via input sequence
+[D, D, A, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, E, C, C, E, C, A, B]
+---------------
+
+error_68 reachable via input sequence
+[D, D, A, A, C, A, C]
+---------------
+
+error_69 reachable via input sequence
+[A, C, C, A, E, E, C]
+---------------
+
+error_76 reachable via input sequence
+[D, D, A, A, E, C]
+---------------
+
+error_80 reachable via input sequence
+[D, D, A, E, C, D]
+---------------
+
+error_86 reachable via input sequence
+[A, C, C, C, A, C, D]
+---------------
+
+error_91 reachable via input sequence
+[A, C, C, A, E, A, A, E, A, E, A, E, A, E, A, E, A, E, A, E, A, E, A, E, A, E, A, E, A, E, A, E, A, E, A, E, A, E, A, E, A, E, A, E, A, C, D]
+---------------
+
+error_92 reachable via input sequence
+[D, D, A, E, C, C, E, E, C, C, E, E, C, C, E, E, C, C, E, E, C, C, E, E, C, C, E, E, C, C, E, E, C, C, E, E, C, C, E, E, C, C, E, E, C, C, E, E, C, C, E, E, C, C, E, E, C, C, E, E, C, C, E, E, C, C, E, E, C, A]
+---------------
+
+error_94 reachable via input sequence
+[A, C, C, C, A, C, A, C, C, A, C, A, C, C, A, C, A, C, C, A, C, A, C, C, A, C, A, C, C, A, C, A, C, C, A, C, A, C, C, A, C, A, C, C, A, C, A, C, C, A, C, A, C, C, A, C, A, C, A, A]
+---------------
+
+error_97 reachable via input sequence
+[D, D, E]
+---------------
+
+error_98 reachable via input sequence
+[D, D, A, E, C, C, E, B]
+---------------
+
+All other errors unreachable
+
+

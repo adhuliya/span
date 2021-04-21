@@ -1518,6 +1518,8 @@ class Host:
         var = VarE(f"{vName}.{rhsName}")
         var.type = rhsType # necessary for #PPMS vars
         varList.append(var)
+      if node.id == 10 and ":3t" in lhs.name: #delit
+        print(f"MEM_DEREF_SIM: ({self.activeAnName}): {insn}, rhstype: {rhsType}, {varList}")
       newInsn = III([AssignI(lhs, var) for var in varList])
       newInsn.addInstr(CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs.of)))
 
@@ -1923,9 +1925,6 @@ class Host:
     val = value = simFunction(e if e else nid, nDfv, values)
     if val and self.useTransformation: # and any simName #TRANSFORM
       val = SimFailed if len(val) > 1 else val
-      if not val and util.VV1:
-        print(f"TRANSFORM: SimFailed: ({self.func.name, nid})"
-              f" ({simName}) {e} {e.info} Vals: {value}") #delit
     if util.LL4: LDB("SimOfExpr: '%s' is %s, by %s.", e, val, simAnName)
     return val
 
@@ -2068,7 +2067,8 @@ class Host:
     anNames = self.fetchSimSourcesAndSetup(node, simName, e, demand)
 
     res = self.collectAndMergeSimResults(anNames, simName, node, e)
-    if res is not None and len(res) == 0: assert res is SimPending, f"{res}"
+    if res is not None and len(res) == 0: assert res is SimPending,\
+      f"An:{self.activeAnName}, res:{res}, sim:{simName}"
 
     if util.LL4: LDB("SimOfExpr (merged): '%s' is %s.", e, res)
     self.stats.simTimer.stop()
@@ -2092,25 +2092,34 @@ class Host:
     # Step 1: Find the first useful result
     values: Opt[Set] = SimFailed
     if util.LL4: LDB("SimAnalyses for %s: %s", simName, anNames)
+    simAnName = None
     for anName in anNames:    # loop to select the first working sim
+      simAnName = anName
       simRecord = self.anRevNodeDep[(anName, nid)][tup2]
       if simRecord is not None:
         values = simRecord.getSim()
         if util.LL4: LDB("SelectedSim of %s for refinement: %s",
                          anName, values)
         break  # break at the first useful value
-    if values in (SimPending, SimFailed):
-      return values  # failed/pending values can never be refined
+
+    if e and e.info and e.info.loc.line == 2495: # hmmer_comb.c
+      print(f"HMMER_EXPR: {e}, {values}, {simAnName}") #delit
 
     # Step 2: Refine the simplification
-    assert values not in (SimPending, SimFailed), f"{values}"
-    if util.LL4: LDB("Refining(Start): %s", values)
-    for anName in anNames:
-      values = self.calculateSimValue(anName, simName, node, e, values)
-      assert values != SimFailed, f"{anName}, {simName}, {node}, {e}, {values}"
-      if values == SimPending:
-        break  # no use to continue
-    if util.LL4: LDB("Refining(End): Refined value is %s", values)
+    if values not in (SimPending, SimFailed): # failed/pending values can never be refined
+      if util.LL4: LDB("Refining(Start): %s", values)
+      for anName in anNames:
+        if anName == simAnName: continue # don't refine using the same analysis
+        values = self.calculateSimValue(anName, simName, node, e, values)
+        assert values != SimFailed, f"{anName}, {simName}, {node}, {e}, {values}"
+        if values == SimPending:
+          break  # no use to continue
+      if util.LL4: LDB("Refining(End): Refined value is %s", values)
+
+    # if values is SimFailed and util.VV1:
+    #   method = "TRANSFORM" if self.useTransformation else "SPAN"
+    #   print(f"SimFailed: ({simName}): ({self.func.name, nid}) ({method})"
+    #         f" {e} {e.info} Vals: {values}") #delit
     return values  # a refined result
 
 

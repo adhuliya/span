@@ -1,0 +1,28 @@
+Filename: hmmer_comb.c.spanir hmmer_comb.c.spanir
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 195, in ipaDiagnoseSpanIr
+    currTUnit = parseTUnitObject(spanirFileName, ipa=True)
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 680, in parseTUnitObject
+    currTUnit: tunit.TranslationUnit = ir.readSpanIr(spanIrFileName)
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/ir/ir.py", line 337, in readSpanIr
+    tUnit: TranslationUnit = eval(content)
+  File "<string>", line 122535, in <module>
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 182, in __init__
+    self.preProcess()
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 199, in preProcess
+    self.inferAllInstrTypes()  # IMPORTANT (MUST)
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 676, in inferAllInstrTypes
+    self.inferTypeOfInstr(insn)
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 881, in inferTypeOfInstr
+    t2 = self.inferTypeOfExpr(insn.rhs)
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 792, in inferTypeOfExpr
+    itype2 = self.inferTypeOfExpr(e.arg2)
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 767, in inferTypeOfExpr
+    eType = e.type if e.type != Void else self.inferTypeOfVal(e.name)
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 692, in inferTypeOfVal
+    if nameHasPpmsVar(val) or nameHasNullVar(val):
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/ir/conv.py", line 279, in nameHasPpmsVar
+    return bool(PPMS_VAR_REGEX2.search(varName))
+KeyboardInterrupt

@@ -222,12 +222,20 @@ See the list of checkers available:
 
 
 ## TODOs
-0. Merged C files of all the (useful) benchmarks.
+1. Collect many possible benchmark programs. (done: see `tests/benchmarks/finalized/` folder)
+   * TODO: prepare some programs in the coreutils for analysis.
+2. Merge C files of the collected benchmark programs.
+   * TODO: for coreutils.
+3. Add necessary computation comparisons in SPAN:
+   * Array index check.
+   * Divide by zero check.
+4. Generate results on 5 of the benchmarks.
+5. Remove all unsafe `is` tests (to handle cython's limitations).
+
+
 1. List of (library) functions that don't result in over-approximation.
-2. improve malloc calls type approximation (DONE: needs testing)
 3. Cascading in IPA setting (for comparison).
 4. Transformation improvement.
-5. On-demand analysis invocation.
 
 
 ## Notes
@@ -247,6 +255,8 @@ See the list of checkers available:
 * Query Interface.
 * Test Framework.
 * Forward & Backward Support (TODO: Test BiDirectional)
+
+
 
 <br /> <br /> <br />
 &copy; 2020 Anshuman Dhuliya

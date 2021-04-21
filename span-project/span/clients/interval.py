@@ -563,11 +563,17 @@ class IntervalA(analysis.ValueAnalysisAT):
     if nodeDfv is None:
       return SimPending # tell that sim my be possible if nodeDfv is given
 
+    if e and e.info and e.info.loc.line == 2495: # hmmer_comb.c
+      print(f"HMMER_EXPR(Interval): {e}, {values}, {self.getExprDfv(e, nodeDfv.dfvIn)}"
+            f", {e.arg1}:{self.getExprDfv(e.arg1, nodeDfv.dfvIn)}") #delit
+
     # STEP 3: If here, either eval or filter the values
     dfvIn = cast(OverallL, nodeDfv.dfvIn)
     if values is not None:
       assert len(values), f"{e}, {values}"
-      return self.filterValues(e, values, dfvIn, NumValue) # filter the values
+      filtered = self.filterValues(e, values, dfvIn, NumValue) # filter the values
+      print(f"FILTERED: {values} to {filtered}, expr:{e}, type:{e.type}, loc:{e.info}") #delit
+      return filtered # if filtered else SimPending
 
     # STEP 4: If here, eval the expression
     exprVal = cast(ComponentL, self.getExprDfvBinaryE(e, dfvIn))
@@ -702,7 +708,9 @@ class IntervalA(analysis.ValueAnalysisAT):
     """A default implementation (assuming Constant Propagation)."""
     assert isinstance(e.arg, expr.VarE), f"{e}"
     value = cast(ComponentL, dfvInGetVal(e.arg.name))
-    if value.top or value.bot:
+    if not e.arg.type.isNumericOrVoid():
+      return self.componentBot
+    elif value.top or value.bot:
       return value
     elif value.val is not None:
       rhsOpCode = e.opr.opCode

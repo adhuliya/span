@@ -1,0 +1,301 @@
+#inputs [[A, B, C, D, E]]
+#outputs [[X, Y, Z, U, V, W, S, T]]
+#0: output Y responds to input B after output U
+(false R (! oU | (false R (! iB | (true U oY)))))
+
+#1: output T, output X responds to input A before output S
+(! (true U oS) | ((! iA | (! oS U ((oT & ! oS) & X (! oS U oX)))) U oS))
+
+#2: output V, output U always responds to input E
+(false R (! iE | (true U (oV & X (true U oU)))))
+
+#3: output Y always precedes output V, output U
+(! (true U (oV & X (true U oU))) | (! oV U oY))
+
+#4: input D precedes output V, output U after output Y until input A
+(false R (! oY | ((! ((oV & ! iA) & X (! iA U (oU & ! iA))) U (iA | iD)) | (false R ! (oV & X (true U oU))))))
+
+#5: output Y always precedes output V, output U
+(! (true U (oV & X (true U oU))) | (! oV U oY))
+
+#6: output V, output U always responds to input E
+(false R (! iE | (true U (oV & X (true U oU)))))
+
+#7: output U, output V without output W always responds to input C
+(false R (! iC | (true U ((oU & ! oW) & X (! oW U oV)))))
+
+#8: output W, output V responds to input C after output U
+(false R (! oU | (false R (! iC | (oW & X (true U oV))))))
+
+#9: output Z precedes output Y, output S after output U until input C
+(false R (! oU | ((! ((oY & ! iC) & X (! iC U (oS & ! iC))) U (iC | oZ)) | (false R ! (oY & X (true U oS))))))
+
+#10: input E precedes output X after input D until output Y
+(false R (iD & (! ! oY | (! oX WU (iE | oY)))))
+
+#11: output S, output V responds to input E before output X
+(! (true U oX) | ((! iE | (! oX U ((oS & ! oX) & X (! oX U oV)))) U oX))
+
+#12: output Z precedes output U after input B until input A
+(false R (iB & (! ! iA | (! oU WU (oZ | iA)))))
+
+#13: output Y, output W without output S always responds to input A
+(false R (! iA | (true U ((oY & ! oS) & X (! oS U oW)))))
+
+#14: output U precedes output V after output W
+((false R ! oW) | (true U (oW & (! oV WU oU))))
+
+#15: output Z precedes output T, output V before output S
+(! (true U oS) | (! ((oT & ! oS) & X (! oS U (oV & ! oS))) U (oS | oZ)))
+
+#16: input B precedes output X, output S before output V
+(! (true U oV) | (! ((oX & ! oV) & X (! oV U (oS & ! oV))) U (oV | iB)))
+
+#17: output V, output Y without output Z responds to input E after input B until output S
+(false R (! iB | ((! iE | (! oS U (((oV & ! oS) & ! oZ) & X ((! oS & ! oZ) U oY)))) U (oS | (false R (! iE | ((oV & ! oZ) & X (! oZ U oY))))))))
+
+#18: input D precedes output T between input C and output V
+(false R (! ((iC & ! oV) & (true U oV)) | (! oT U (iD | oV))))
+
+#19: output T responds to input D, input A before input C
+(! (true U iC) | ((iD & (! X (! iC U iA) | X (! iC U (iA & (true U oT))))) U iC))
+
+#20: output X responds to input A after output T until output Y
+(false R (oT & (! ! oY | ((! iA | (! oY U (oX & ! oY))) WU oY))))
+
+#21: output X precedes output Y, output Z between output W and output U
+(false R (! (oW & (true U oU)) | (! ((oY & ! oU) & X (! oU U (oZ & ! oU))) U (oU | oX))))
+
+#22: output V precedes output W after output T until input A
+(false R (oT & (! ! iA | (! oW WU (oV | iA)))))
+
+#23: output V responds to input D, input C before output T
+(! (true U oT) | ((iD & (! X (! oT U iC) | X (! oT U (iC & (true U oV))))) U oT))
+
+#24: output V, output Z responds to input D after output Y
+(false R (! oY | (false R (! iD | (oV & X (true U oZ))))))
+
+#25: output X, output V responds to input B between output Y and output T
+(false R (! (oY & (true U oT)) | ((! iB | (! oT U ((oX & ! oT) & X (! oT U oV)))) U oT)))
+
+#26: input B precedes output Y between output W and output V
+(false R (! ((oW & ! oV) & (true U oV)) | (! oY U (iB | oV))))
+
+#27: output T, output W responds to input D between output S and output X
+(false R (! (oS & (true U oX)) | ((! iD | (! oX U ((oT & ! oX) & X (! oX U oW)))) U oX)))
+
+#28: output V responds to input D, input C before output T
+(! (true U oT) | ((iD & (! X (! oT U iC) | X (! oT U (iC & (true U oV))))) U oT))
+
+#29: output U, output Y responds to input C after output W until input A
+(false R (! oW | ((! iC | (! iA U ((oU & ! iA) & X (! iA U oY)))) U (iA | (false R (! iC | (oU & X (true U oY))))))))
+
+#30: input D precedes output W, output Z before input B
+(! (true U iB) | (! ((oW & ! iB) & X (! iB U (oZ & ! iB))) U (iB | iD)))
+
+#31: output S precedes output X, output Y after input A
+((false R ! iA) | (! iA U (iA & (! (true U (oX & X (true U oY))) | (! oX U oS)))))
+
+#32: output Z, output V always responds to input D
+(false R (! iD | (true U (oZ & X (true U oV)))))
+
+#33: output Y, output T without output S responds to input D after output Z until output W
+(false R (! oZ | ((! iD | (! oW U (((oY & ! oW) & ! oS) & X ((! oW & ! oS) U oT)))) U (oW | (false R (! iD | ((oY & ! oS) & X (! oS U oT))))))))
+
+#34: output S, output T without output X responds to input A after input C until output Y
+(false R (! iC | ((! iA | (! oY U (((oS & ! oY) & ! oX) & X ((! oY & ! oX) U oT)))) U (oY | (false R (! iA | ((oS & ! oX) & X (! oX U oT))))))))
+
+#35: output S precedes output X, output Y after input A
+((false R ! iA) | (! iA U (iA & (! (true U (oX & X (true U oY))) | (! oX U oS)))))
+
+#36: output Z responds to input B, input D before output T
+(! (true U oT) | ((iB & (! X (! oT U iD) | X (! oT U (iD & (true U oZ))))) U oT))
+
+#37: output W precedes output X before input C
+(! (true U iC) | (! oX U (oW | iC)))
+
+#38: output W precedes output X before input C
+(! (true U iC) | (! oX U (oW | iC)))
+
+#39: output Y responds to input A, input C between output W and output U
+(false R (! (oW & (true U oU)) | ((iA & (! X (! oU U iC) | X (! oU U (iC & (true U oY))))) U oU)))
+
+#40: output T responds to input D after input A until output W
+(false R (iA & (! ! oW | ((! iD | (! oW U (oT & ! oW))) WU oW))))
+
+#41: output S always responds to input C
+(false R (! iC | (true U oS)))
+
+#42: output X responds to input A between input B and input D
+(false R (! ((iB & ! iD) & (true U iD)) | ((! iA | (! iD U (oX & ! iD))) U iD)))
+
+#43: input D precedes output W, output Z before input B
+(! (true U iB) | (! ((oW & ! iB) & X (! iB U (oZ & ! iB))) U (iB | iD)))
+
+#44: output W always responds to input B
+(false R (! iB | (true U oW)))
+
+#45: output U precedes output W between input D and output Z
+(false R (! ((iD & ! oZ) & (true U oZ)) | (! oW U (oU | oZ))))
+
+#46: output W responds to input C, input D after input E until input A
+(false R (! iE | ((iC & (! X (! iA U iD) | X (! iA U (iD & (true U oW))))) U (iA | (false R (iC & (! X (! iA U iD) | X (! iA U (iD & (true U oW))))))))))
+
+#47: input D precedes output T between input C and output V
+(false R (! ((iC & ! oV) & (true U oV)) | (! oT U (iD | oV))))
+
+#48: input E precedes output U between input A and input D
+(false R (! ((iA & ! iD) & (true U iD)) | (! oU U (iE | iD))))
+
+#49: output X precedes output U before input C
+(! (true U iC) | (! oU U (oX | iC)))
+
+#50: input B precedes output X, output S before output V
+(! (true U oV) | (! ((oX & ! oV) & X (! oV U (oS & ! oV))) U (oV | iB)))
+
+#51: output T responds to input C before output Y
+(! (true U oY) | ((! iC | (! oY U (oT & ! oY))) U oY))
+
+#52: output T, output X responds to input E after input B
+(false R (! iB | (false R (! iE | (oT & X (true U oX))))))
+
+#53: input B precedes output Y between output W and output V
+(false R (! ((oW & ! oV) & (true U oV)) | (! oY U (iB | oV))))
+
+#54: input E precedes output W, output Y after output S
+((false R ! oS) | (! oS U (oS & (! (true U (oW & X (true U oY))) | (! oW U iE)))))
+
+#55: output X, output S without output W responds to input D before output V
+(! (true U oV) | ((! iD | (! oV U (((oX & ! oV) & ! oW) & X ((! oV & ! oW) U oS)))) U oV))
+
+#56: input B always precedes output V
+(! oV WU iB)
+
+#57: output Y responds to input A between input B and output Z
+(false R (! ((iB & ! oZ) & (true U oZ)) | ((! iA | (! oZ U (oY & ! oZ))) U oZ)))
+
+#58: output S, output V responds to input E before output X
+(! (true U oX) | ((! iE | (! oX U ((oS & ! oX) & X (! oX U oV)))) U oX))
+
+#59: output Y responds to input D, input B after input E
+(false R (! iE | (false R (iD & (! X (true U iB) | X (! iB U (iB & (true U oY))))))))
+
+#60: output S, output T responds to input C after input E until output X
+(false R (! iE | ((! iC | (! oX U ((oS & ! oX) & X (! oX U oT)))) U (oX | (false R (! iC | (oS & X (true U oT))))))))
+
+#61: output V always responds to input C
+(false R (! iC | (true U oV)))
+
+#62: output Z precedes output T, output V before output S
+(! (true U oS) | (! ((oT & ! oS) & X (! oS U (oV & ! oS))) U (oS | oZ)))
+
+#63: output X responds to input A, input D before input B
+(! (true U iB) | ((iA & (! X (! iB U iD) | X (! iB U (iD & (true U oX))))) U iB))
+
+#64: output W precedes output Z between input A and output Y
+(false R (! ((iA & ! oY) & (true U oY)) | (! oZ U (oW | oY))))
+
+#65: output Z responds to input B, input D before input E
+(! (true U iE) | ((iB & (! X (! iE U iD) | X (! iE U (iD & (true U oZ))))) U iE))
+
+#66: output Y responds to input A after input B
+(false R (! iB | (false R (! iA | (true U oY)))))
+
+#67: output W responds to input D, input C before output Z
+(! (true U oZ) | ((iD & (! X (! oZ U iC) | X (! oZ U (iC & (true U oW))))) U oZ))
+
+#68: output X responds to input A between input B and output T
+(false R (! ((iB & ! oT) & (true U oT)) | ((! iA | (! oT U (oX & ! oT))) U oT)))
+
+#69: input B always precedes output V
+(! oV WU iB)
+
+#70: output X, output V responds to input B between output Y and output T
+(false R (! (oY & (true U oT)) | ((! iB | (! oT U ((oX & ! oT) & X (! oT U oV)))) U oT)))
+
+#71: output W responds to input C, input D after input E until input A
+(false R (! iE | ((iC & (! X (! iA U iD) | X (! iA U (iD & (true U oW))))) U (iA | (false R (iC & (! X (! iA U iD) | X (! iA U (iD & (true U oW))))))))))
+
+#72: output V, output U always responds to input C
+(false R (! iC | (true U (oV & X (true U oU)))))
+
+#73: output X, output S without output W responds to input D before output V
+(! (true U oV) | ((! iD | (! oV U (((oX & ! oV) & ! oW) & X ((! oV & ! oW) U oS)))) U oV))
+
+#74: output S responds to input D before output Z
+(! (true U oZ) | ((! iD | (! oZ U (oS & ! oZ))) U oZ))
+
+#75: output U precedes output V after output W
+((false R ! oW) | (true U (oW & (! oV WU oU))))
+
+#76: output U responds to input E before output S
+(! (true U oS) | ((! iE | (! oS U (oU & ! oS))) U oS))
+
+#77: output Z responds to input B, input D before input E
+(! (true U iE) | ((iB & (! X (! iE U iD) | X (! iE U (iD & (true U oZ))))) U iE))
+
+#78: output X responds to input A between input B and output T
+(false R (! ((iB & ! oT) & (true U oT)) | ((! iA | (! oT U (oX & ! oT))) U oT)))
+
+#79: output Y responds to input D, input B after input E
+(false R (! iE | (false R (iD & (! X (true U iB) | X (! iB U (iB & (true U oY))))))))
+
+#80: output Z responds to input B, input D before output T
+(! (true U oT) | ((iB & (! X (! oT U iD) | X (! oT U (iD & (true U oZ))))) U oT))
+
+#81: output T responds to input C, input B after input D until output Y
+(false R (! iD | ((iC & (! X (! oY U iB) | X (! oY U (iB & (true U oT))))) U (oY | (false R (iC & (! X (! oY U iB) | X (! oY U (iB & (true U oT))))))))))
+
+#82: output X responds to input B after input E
+(false R (! iE | (false R (! iB | (true U oX)))))
+
+#83: output X precedes output U before input C
+(! (true U iC) | (! oU U (oX | iC)))
+
+#84: output S responds to input D before output Z
+(! (true U oZ) | ((! iD | (! oZ U (oS & ! oZ))) U oZ))
+
+#85: output V, output Y without output Z responds to input E after input B until output S
+(false R (! iB | ((! iE | (! oS U (((oV & ! oS) & ! oZ) & X ((! oS & ! oZ) U oY)))) U (oS | (false R (! iE | ((oV & ! oZ) & X (! oZ U oY))))))))
+
+#86: output W responds to input B between input D and input C
+(false R (! ((iD & ! iC) & (true U iC)) | ((! iB | (! iC U (oW & ! iC))) U iC)))
+
+#87: output V responds to input A after input E until output Y
+(false R (iE & (! ! oY | ((! iA | (! oY U (oV & ! oY))) WU oY))))
+
+#88: output X responds to input B after input E
+(false R (! iE | (false R (! iB | (true U oX)))))
+
+#89: output X precedes output Z before output V
+(! (true U oV) | (! oZ U (oX | oV)))
+
+#90: input C precedes output V after output S
+((false R ! oS) | (true U (oS & (! oV WU iC))))
+
+#91: input D precedes output V, output U after output Y until input A
+(false R (! oY | ((! ((oV & ! iA) & X (! iA U (oU & ! iA))) U (iA | iD)) | (false R ! (oV & X (true U oU))))))
+
+#92: input C precedes output V after output S
+((false R ! oS) | (true U (oS & (! oV WU iC))))
+
+#93: output S always responds to input A
+(false R (! iA | (true U oS)))
+
+#94: output U, output X always responds to input B
+(false R (! iB | (true U (oU & X (true U oX)))))
+
+#95: output T, output X responds to input E after input B
+(false R (! iB | (false R (! iE | (oT & X (true U oX))))))
+
+#96: output X, output Z responds to input D after input C
+(false R (! iC | (false R (! iD | (oX & X (true U oZ))))))
+
+#97: output X precedes output Z before output V
+(! (true U oV) | (! oZ U (oX | oV)))
+
+#98: input E precedes output S before output W
+(! (true U oW) | (! oS U (iE | oW)))
+
+#99: output T, output W responds to input D between output S and output X
+(false R (! (oS & (true U oX)) | ((! iD | (! oX U ((oT & ! oX) & X (! oX U oW)))) U oX)))

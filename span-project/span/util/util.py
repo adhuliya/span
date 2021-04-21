@@ -3,7 +3,11 @@
 # MIT License
 # Copyright (c) 2020 Anshuman Dhuliya
 
-"""Project wide utility functions."""
+"""Project wide utility functions.
+
+This module imports the names from common_util that
+are needed by this project.
+"""
 
 import logging
 _LOG = logging.getLogger("span")
@@ -33,12 +37,13 @@ LL = LL0 = LL1 = LL2 = LL3 = LL4 = LL5 = False
 def setupLL(count):
   """Call this function to enact global LL settings."""
   global LL, LL0, LL1, LL2, LL3, LL4, LL5
-  LL0 = count >= 0
-  LL1 = count >= 1
-  LL2 = count >= 2
-  LL3 = count >= 3
-  LL4 = count >= 4 # shows logs in the Host
-  LL5 = count >= 5 # shows logs in the Analyses spec too
+  LL  = count
+  LL0 = LL >= 0
+  LL1 = LL >= 1
+  LL2 = LL >= 2
+  LL3 = LL >= 3
+  LL4 = LL >= 4 # shows logs in the Host
+  LL5 = LL >= 5 # shows logs in the Analyses spec too
 
 VV:int = 0  # Verbosity. One of 0,1,2,3 (set via command line)
 VV0 = VV1 = VV2 = VV3 = VV4 = VV5 = False
@@ -112,3 +117,5 @@ LS = US = AS = GD = False  # IMPORTANT
 def setupEnv():
   """Setup some necessary things for the project globally."""
   sys.setrecursionlimit(ff.RECURSION_LIMIT)
+
+

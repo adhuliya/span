@@ -1,0 +1,183 @@
+Reachability problems:
+===============================
+error_1 reachable via input sequence
+[D, B, A, E]
+---------------
+
+error_2 reachable via input sequence
+[B, E, D, B, E, D, D]
+---------------
+
+error_4 reachable via input sequence
+[B, D, A, D]
+---------------
+
+error_7 reachable via input sequence
+[B, E, D, B, E, D, B, B]
+---------------
+
+error_8 reachable via input sequence
+[B, E, D, B, E, D, B, C]
+---------------
+
+error_9 reachable via input sequence
+[B, E, D, B, E, A]
+---------------
+
+error_17 reachable via input sequence
+[B, B, D, C]
+---------------
+
+error_19 reachable via input sequence
+[D, B, A, A]
+---------------
+
+error_20 reachable via input sequence
+[D, B, A, C]
+---------------
+
+error_21 reachable via input sequence
+[B, B, A]
+---------------
+
+error_25 reachable via input sequence
+[B, B, E]
+---------------
+
+error_26 reachable via input sequence
+[B, D, B, A]
+---------------
+
+error_27 reachable via input sequence
+[B, E, D, A]
+---------------
+
+error_28 reachable via input sequence
+[B, D, E]
+---------------
+
+error_29 reachable via input sequence
+[B, E, D, B, E, D, E, B]
+---------------
+
+error_30 reachable via input sequence
+[B, E, D, D]
+---------------
+
+error_32 reachable via input sequence
+[B, E, D, B, C]
+---------------
+
+error_35 reachable via input sequence
+[B, D, A, A]
+---------------
+
+error_41 reachable via input sequence
+[B, E, D, B, E, D, C]
+---------------
+
+error_42 reachable via input sequence
+[B, E, D, B, E, D, E, C]
+---------------
+
+error_43 reachable via input sequence
+[B, E, D, B, D]
+---------------
+
+error_45 reachable via input sequence
+[B, E, A]
+---------------
+
+error_46 reachable via input sequence
+[D, B, A, D]
+---------------
+
+error_47 reachable via input sequence
+[B, E, D, B, A]
+---------------
+
+error_48 reachable via input sequence
+[B, D, A, E]
+---------------
+
+error_49 reachable via input sequence
+[B, E, D, B, E, D, A]
+---------------
+
+error_54 reachable via input sequence
+[D, B, E]
+---------------
+
+error_55 reachable via input sequence
+[B, B, B]
+---------------
+
+error_59 reachable via input sequence
+[B, D, A, C]
+---------------
+
+error_62 reachable via input sequence
+[B, E, D, E]
+---------------
+
+error_65 reachable via input sequence
+[B, E, D, B, E, C]
+---------------
+
+error_67 reachable via input sequence
+[B, B, C]
+---------------
+
+error_69 reachable via input sequence
+[B, E, D, C]
+---------------
+
+error_70 reachable via input sequence
+[B, B, D, A]
+---------------
+
+error_71 reachable via input sequence
+[B, D, B, B]
+---------------
+
+error_72 reachable via input sequence
+[B, E, D, B, E, E]
+---------------
+
+error_75 reachable via input sequence
+[D, B, C]
+---------------
+
+error_76 reachable via input sequence
+[B, E, D, B, E, B]
+---------------
+
+error_78 reachable via input sequence
+[B, B, D, E]
+---------------
+
+error_79 reachable via input sequence
+[B, D, C]
+---------------
+
+error_80 reachable via input sequence
+[B, D, B, C]
+---------------
+
+error_81 reachable via input sequence
+[B, D, B, E]
+---------------
+
+error_82 reachable via input sequence
+[D, B, D]
+---------------
+
+error_93 reachable via input sequence
+[D, B, B]
+---------------
+
+error_94 reachable via input sequence
+[B, D, D]
+---------------
+
+All other errors unreachable

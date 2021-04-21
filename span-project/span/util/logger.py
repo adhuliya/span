@@ -5,6 +5,8 @@
 
 """Adds logging to the project.
 
+REF: https://docs.python.org/3/howto/logging.html
+
 How to use?
   STEP 1: Only during application initialization,
     |  import span.util.logger as logger # this module

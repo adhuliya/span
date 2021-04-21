@@ -1,0 +1,55 @@
+Reachability problems:
+===============================
+error_4 reachable via input sequence
+[A, D, D, A, D, D, A, D, D, A, D, B, D]
+---------------
+
+error_10 reachable via input sequence
+[A, D, D, A, D, D, A, D, B, E]
+---------------
+
+error_18 reachable via input sequence
+[A, D, D, A, D, D, A, D, D, A, D, D, A, D, D, A, A, C]
+---------------
+
+error_24 reachable via input sequence
+[A, D, C, E]
+---------------
+
+error_26 reachable via input sequence
+[B, A, D]
+---------------
+
+error_40 reachable via input sequence
+[A, D, D, A, D, D, A, A, B, E]
+---------------
+
+error_48 reachable via input sequence
+[A, D, D, A, D, D, A, D, D, A, D, D, A, A, B, D]
+---------------
+
+error_51 reachable via input sequence
+[B, D, B]
+---------------
+
+error_61 reachable via input sequence
+[A, A, D, D, D, D, D, D, D, D, D, D, B, B]
+---------------
+
+error_76 reachable via input sequence
+[B, B, E]
+---------------
+
+error_78 reachable via input sequence
+[A, D, D, A, D, D, A, D, D, A, D, D, A, D, D, A, D, D, A, D, D, A, A, E]
+---------------
+
+error_81 reachable via input sequence
+[A, A, A]
+---------------
+
+error_94 reachable via input sequence
+[A, D, D, E]
+---------------
+
+All other errors unreachable

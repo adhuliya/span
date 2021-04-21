@@ -7,6 +7,7 @@
 and values for various system wide features.
 
 This module imports no other modules in Span.
+Note: Keep all the flags in the global scope of this module.
 """
 
 import logging
@@ -48,27 +49,30 @@ IPA_VC_MAX_WIDENING_DEPTH: int = 1
 ## BLOCK END  : GLOBAL_FEATURE_FLAGS_AND_VALUES
 ################################################################################
 
-_filterNames = {
+_filterFlagNames = {
   "io", "_LOG", "logging",
   "filterNames", "_filterAwayTheName",
   "printModuleAttributes",
 }
 
-def _filterAwayTheName(name: str) -> bool:
+def _canFilterAwayFlagName(name: str) -> bool:
+  """Returns true if the name can be filtered away."""
   filterIt = False
-  if name in _filterNames:
+  if name in _filterFlagNames:
     filterIt = True
   elif name.startswith("__"):
     filterIt = True
   return filterIt
 
 
-def getModuleAttributesString() -> str:
-  """Converts the attributes in this module into a readable string."""
+def getModuleFlagsString() -> str:
+  """Converts the attributes in this module into a readable string.
+  This function can be used to print the flags set in the project.
+  """
   sio = io.StringIO()
   sio.write("Global Feature Flag Values (span.util.ff):\n")
-  for key, val in globals().items():
-    if _filterAwayTheName(key): continue
+  for key, val in globals().items(): # assumption: all flags are in global scope
+    if _canFilterAwayFlagName(key): continue # discard irrelevant flag names
     sio.write(f"  {key}: {val}\n")
   return sio.getvalue()
 
