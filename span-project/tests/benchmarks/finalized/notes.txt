@@ -5,8 +5,8 @@ hmmer         944             ????
 lbm           184   
 milc          2830   
 mfc           21
-13-2019       3906            
-12-2019       10
+RERS 13-2019  3906            
+RERS 12-2019  10
 
 Name      #Div      Interval    Span   Lerner
 =================================================
@@ -18,9 +18,24 @@ mfc       10
 13-2019   173         --         36      36
 12-2019   128     
 
-
+Prof. Raghavan:
 * arr[] -- arr is an array and not a pointer. Count. + Peephole.
 Pointer analysis check to track pointer arithmetic.
 formal parameter pointing to an array and other simple cases.
 
 * Program points where Null is a possible pointee. -- use points.
+
+small examples -- add synthetic bugs to it.
+ -- null ptr
+ -- divide by zero
+ -- array overflow
+Couple of patterns -- Yes/No per program.
+one program -- n synthetic bugs -- x detected (x<=n)
+
+null stone benchmark
+dhrystone benchmark
+coremark benchmark
+
+synthetic bugs in the benchmark programs as well.
+
+

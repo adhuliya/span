@@ -6,19 +6,19 @@
 """Defines the base lattice class."""
 
 import logging
-LOG = logging.getLogger("span")
 
-from span.ir import constructs
+from span.util.consts import TOP_STR, BOT_STR
 
+_LOG = logging.getLogger("span")
 
 from typing import Tuple, Any, List, TypeVar, Optional as Opt, Sequence as Seq, Iterable
 
+from span.ir import constructs
 import span.ir.constructs as obj
-
 import span.ir.types as types
 
-ChangedT = bool  # is the value changed?
-Changed: ChangedT = True  # for unchanged use `not Changed`
+ChangedT = bool  # Is the value changed?
+Changed: ChangedT = True  # For unchanged value, use `not Changed`.
 
 BoundLatticeLT = TypeVar('BoundLatticeLT', bound='LatticeLT')
 
@@ -34,7 +34,7 @@ class LatticeLT:
       bot: bool = False   # the most sound value (max over-approximation)
   ) -> None:
     if bot and top:
-      raise ValueError(f"{top}, {bot}")
+      raise ValueError(f"{top}, {bot}: Both can't be True.")
     self.top = top
     self.bot = bot
 
@@ -48,7 +48,7 @@ class LatticeLT:
       other: the data flow value to calculate `meet` with.
 
     Returns:
-      (Lattice, Changed): glb of self and dfv, and True if glb != self
+      (Lattice, Changed): (glb of self and other, glb != self)
     """
     return NotImplemented
 
@@ -65,7 +65,7 @@ class LatticeLT:
 
   def getCopy(self) -> 'LatticeLT':
     """Return a copy of this lattice element.
-    Just a deep copy of mutable elements mostly suffices.
+    Deep copy of mutable elements is necessary.
     """
     raise NotImplementedError()
 
@@ -84,7 +84,7 @@ class LatticeLT:
     if: x <= y and y <= x, then x and y are equal.
     if: not x <= y and not y <= x, then x and y are incomparable.
     for all other cases,
-    not x <= y should-be-equal-to y <= x.
+    not (x <= y) should-be-equal-to (y <= x).
     """
     res = basicLessThanTest(self, other)
     assert res is not None, f"{res}, {self}, {other}"
@@ -92,7 +92,7 @@ class LatticeLT:
 
 
   def __eq__(self, other) -> bool:
-    """returns True if equal, False if not equal or incomparable.
+    """Returns True if equal, False if not equal or incomparable.
 
     Default implementation, assuming only top and bot exist (binary lattice).
     """
@@ -114,7 +114,7 @@ BoundDataLT = TypeVar('BoundDataLT', bound='DataLT')
 class DataLT(LatticeLT):
   """The abstract Lattice type for analyses.
 
-  One should always subclass this to form lattice.
+  One should always subclass this to form lattice for analyses.
   Directly creating objects of this class will lead to a TypeError().
   """
 
@@ -159,7 +159,7 @@ class DataLT(LatticeLT):
     MUST override this function if widening is needed.
     """
     if self != other:
-      return other, Changed  # UNSOUND, but terminating.
+      return other, Changed  # For finite height lattice and monotone analyses.
     else:
       return self, not Changed
 
@@ -244,9 +244,8 @@ class DataLT(LatticeLT):
 
 
   def __str__(self):
-    if self.top: return "Top"
-    if self.bot: return "Bot"
-    return f"DataLT({self.val})"
+    s = getBasicString(self)
+    return s if s else f"DataLT({self.val})"
 
 
   def __repr__(self):
@@ -263,10 +262,11 @@ def mergeAll(values: Iterable[BoundLatticeLT]) -> BoundLatticeLT:
       result = val
     else:
       result, _ = result.meet(val)
-    if result.bot: break  # an optimization
+    if result.bot:
+      break  # an optimization
 
   if result is None:
-    raise ValueError(f"Result={result}, Values={values}")
+    raise ValueError(f"Result={result}, Values={list(values)}")
 
   return result  # type: ignore
 
@@ -312,8 +312,8 @@ def basicEqualsTest(first: LatticeLT, second: LatticeLT) -> Opt[bool]:
 
 def getBasicString(obj: LatticeLT) -> Opt[str]:
   """Utility function to convert Top/Bot lattice values to a readable string."""
-  if obj.bot: return "Bot"
-  if obj.top: return "Top"
+  if obj.bot: return f"'{BOT_STR}'"
+  if obj.top: return f"'{TOP_STR}'"
   return None
 
 

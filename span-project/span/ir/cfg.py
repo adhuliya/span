@@ -130,7 +130,7 @@ class CfgNode(object):
     succIds = []
     for succEdge in self.succEdges:
       succIds.append(succEdge.dest.id)
-    return f"Node {self.id}: ({self.insn}, pred={predIds}, succ={succIds})"
+    return f"Node_{self.id}: ({self.insn}, pred={predIds}, succ={succIds})"
 
 
   def __repr__(self):

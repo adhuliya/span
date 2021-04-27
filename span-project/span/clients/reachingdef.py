@@ -49,7 +49,7 @@ class ComponentL(DataLT):
 
   def __init__(self,
       func: constructs.Func,
-      val: Opt[Set[types.FuncNodeIdT]] = None,
+      val: Opt[Set[types.NodeSiteT]] = None,
       top: bool = False,
       bot: bool = False
   ) -> None:
@@ -89,20 +89,20 @@ class ComponentL(DataLT):
     return len(self.val)
 
 
-  def __contains__(self, fNid: types.FuncNodeIdT):
+  def __contains__(self, fNid: types.NodeSiteT):
     if self.top: return False
     if self.bot: return True
     return fNid in self.val
 
 
-  def addVal(self, fNid: types.FuncNodeIdT) -> None:
+  def addVal(self, fNid: types.NodeSiteT) -> None:
     if self.top:
       self.val = set()
       self.top = False
     self.val.add(fNid)
 
 
-  def delVal(self, fNid: types.FuncNodeIdT) -> None:
+  def delVal(self, fNid: types.NodeSiteT) -> None:
     if self.top:
       return None
 

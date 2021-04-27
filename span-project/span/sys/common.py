@@ -5,18 +5,19 @@
 
 """Common functionality needed by other sys modules.
 """
-
+import io
 import logging
 
-from span.ir.types import FuncNameT, FuncNodeIdT, NodeIdT, FuncIdT
+from span.ir.constructs import Func
 
-LOG = logging.getLogger("span")
-LDB, LIN = LOG.debug, LOG.info
+_LOG = logging.getLogger("span")
+LDB, LIN = _LOG.debug, _LOG.info
 
 from typing import Dict, Tuple, Set, List, cast, Optional as Opt
 
 import span.sys.clients as clients
 from span.ir.conv import Forward, Backward, getFuncNodeIdStr, getNodeId, getFuncId
+from span.ir.types import FuncNameT, NodeSiteT, NodeIdT, FuncIdT
 from span.api.analysis import AnalysisNameT as AnNameT
 from span.api.dfv import NodeDfvL
 
@@ -25,27 +26,36 @@ import span.util.util as util
 
 
 class CallSitePair:
-  """Pair of call site and function name.
-  Useful in recording function name with callsite
-  specially when its a function pointer based call.
+  """A pair of function name (callee) and the call site.
+  Useful in associating function name with call site,
+  especially when its a function pointer based call.
   """
 
   __slots__ = ["callSite", "funcName"]
 
 
   def __init__(self,
-      funcName: FuncNameT,
-      callSite: FuncNodeIdT,
+      funcName: FuncNameT, # callee name called from the call site
+      callSite: NodeSiteT,
   ) -> None:
     self.funcName = funcName
     self.callSite = callSite
+
+
+  def getFuncId(self) -> FuncIdT:
+    return getFuncId(self.callSite)
 
 
   def getNodeId(self) -> NodeIdT:
     return getNodeId(self.callSite)
 
 
+  def tuple(self) -> Tuple[FuncNameT, NodeSiteT]:
+    return self.funcName, self.callSite
+
+
   def __lt__(self, other):
+    """Used for sorting a collection."""
     isLt = False
     if self.funcName < other.funcName:
       isLt = True
@@ -68,7 +78,7 @@ class CallSitePair:
 
 
   def __hash__(self):
-    return hash((self.callSite, self.funcName))
+    return hash((self.funcName, self.callSite))
 
 
   def __str__(self):
@@ -76,14 +86,6 @@ class CallSitePair:
 
 
   def __repr__(self): return self.__str__()
-
-
-  def tuple(self) -> Tuple[FuncNameT, FuncNodeIdT]:
-    return self.funcName, self.callSite
-
-
-  def getFuncId(self) -> FuncIdT:
-    return getFuncId(self.callSite)
 
 
 class DfvDict:
@@ -102,7 +104,14 @@ class DfvDict:
 
 
   def setIncDepth(self, other: 'DfvDict'):
+    """Set depth one more that the other's depth (prev value's depth)."""
     self.depth = other.depth + 1
+
+
+  def decDepth(self) -> int:
+    """Decrement depth by 1."""
+    self.depth -= 1
+    return self.depth
 
 
   def setValue(self,
@@ -147,11 +156,12 @@ class DfvDict:
       equal = False
     else:
       for anName, nDfvSelf in self.dfvs.items():
-        direction = clients.getAnDirn(anName)
-        nDfvOther = other[anName]
-        if nDfvOther is None:
+        if anName not in other:
           equal = False
-        elif direction == Forward:
+          break
+        nDfvOther = other[anName]
+        direction = clients.getAnDirn(anName)
+        if direction == Forward:
           if not nDfvSelf.dfvIn == nDfvOther.dfvIn:
             equal = False
         elif direction == Backward:
@@ -180,12 +190,75 @@ class DfvDict:
 
 
   def __str__(self):
-    idStr = "" if not util.VV5 else f"(id:{id(self)})"
-    return f"DfvDict(Depth:{self.depth}," \
-           f" {sorted(self.dfvs.items(), key=lambda x: x[0])}{idStr}"
+    idStr = "" if not util.DD5 else f"(id:{id(self)})"
+    sio = io.StringIO()
+    sio.write(f"DfvDict(Depth:{self.depth}){idStr}:")
+    for anName in sorted(self.dfvs.keys()):
+      sio.write(f"\n{anName}:\n{self.dfvs[anName]}")
+    return sio.getvalue()
 
 
   def __repr__(self): return self.__str__()
+
+
+class AnResult:
+  """This class stores the result of an analysis corresponding
+  to each node (single instruction) in the CFG."""
+
+
+  def __init__(self,
+      anName: AnNameT,
+      func: Func,
+      result: Opt[Dict[NodeIdT, NodeDfvL]] = None,
+  ):
+    self.anName = anName
+    self.func = func
+    self.result = result if result else dict()
+
+
+  def __len__(self):
+    return len(self.result)
+
+
+  def get(self, nid: NodeIdT, default=None):
+    if nid in self.result:
+      return self.result[nid]
+    return default
+
+
+  def __getitem__(self, nid: NodeIdT):
+    return self.result[nid]
+
+
+  def __setitem__(self, nid: NodeIdT, value: NodeDfvL):
+    self.result[nid] = value
+
+
+  def __contains__(self, nid: NodeIdT):
+    return nid in self.result
+
+
+  def __eq__(self, other):
+    equal = True
+    if not isinstance(other, AnResult):
+      equal = False
+    elif not self.anName == other.anName:
+      equal = False
+    elif not self.func.name == other.func.name:
+      equal = False
+    elif not self.result == other.result:
+      equal = False
+    return equal
+
+
+  def __str__(self):
+    print(f"AnalysisName: {self.anName}")
+    topTop = "IN == OUT: Top (Unreachable/Nop)"
+    for node in self.func.cfg.revPostOrder:
+      nid = node.id
+      nDfv = self.get(nid, topTop)
+      print(f">> {nid}. ({node.insn}): {nDfv}")
+    print() # a blank line
 
 
 

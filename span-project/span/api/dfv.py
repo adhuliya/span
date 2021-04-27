@@ -275,18 +275,17 @@ class NodeDfvL(LatticeLT):
 
   def __str__(self):
     idStr = f"(id:{id(self)})" if util.DD5 else ""
-    SEP = " ##### "
     if self.dfvOut is self.dfvOutFalse:
       # assert self.dfvOutFalse is self.dfvOutTrue,\
       #   f"\n DFV_OUT: {self.dfvOut},\n DFV_FALSE: {self.dfvOutFalse}," \
       #   f"\n DFV_TRUE: {self.dfvOutTrue}"
       if self.dfvIn is self.dfvOut:
-        return f"{idStr} IN == OUT: {self.dfvIn}"
+        return f"NodeDfvL: {idStr}: IN == OUT: {self.dfvIn}"
       else:
-        return f"{idStr} IN: {self.dfvIn}, {SEP} OUT: {self.dfvOut}"
+        return f"NodeDfvL: {idStr}:\n IN : {self.dfvIn} \n OUT: {self.dfvOut}"
     else:
-      return f"{idStr} IN: {self.dfvIn}, {SEP} OUT: {self.dfvOut}," \
-             f" {SEP} TRUE: {self.dfvOutTrue}, {SEP} FALSE: {self.dfvOutFalse}"
+      return f"NodeDfvL: {idStr}:\n IN   : {self.dfvIn}\n OUT  : {self.dfvOut}" \
+             f"\n TRUE : {self.dfvOutTrue}\n FALSE: {self.dfvOutFalse}"
 
 
   def __repr__(self):
@@ -472,8 +471,6 @@ class OverallL(DataLT):
     if self.bot: return getTopBotComp(self.func, self.anName, False, self.compL)
 
     selfVal = self.val
-    if ":ftab" in varName: #delit
-      print(f"VAL: {self}")
     if selfVal and varName in selfVal:
       return selfVal[varName]
     else:
@@ -593,8 +590,8 @@ class OverallL(DataLT):
     DD1, DD3, DD5 = util.DD1, util.DD3, util.DD5
     idStr = f"(id:{id(self)})" if DD5 else ""
 
-    if self.top: return f"Top{idStr}"
-    if self.bot: return f"Bot{idStr}"
+    s = getBasicString(self)
+    if s: return f"{s}{idStr}"
 
     string = io.StringIO()
     if self.val:
@@ -605,7 +602,7 @@ class OverallL(DataLT):
         if not DD3 and key == conv.NULL_OBJ_NAME: continue
         string.write(prefix)
         val, prefix = selfVal[key], ", "
-        string.write(f"{key}: {val}") # f"{simplifyName(key)}: {val}"
+        string.write(f"'{key}': {val}") # f"{simplifyName(key)}: {val}"
       string.write(f"}}{idStr}" if DD5 else "}")
     else:
       string.write("Default")
@@ -629,6 +626,113 @@ class OverallL(DataLT):
 
 ################################################
 # BOUND END  : Common_OverallL
+################################################
+
+################################################
+# BOUND START: AnalysisResult (TODO: make it a lattice)
+################################################
+
+class AnResult:
+  """This class stores the result of an analysis corresponding
+  to each node (single instruction) in the CFG."""
+
+
+  def __init__(self,
+      anName: types.AnNameT,
+      func: constructs.Func,
+      topVal: DataLT,
+      result: Opt[Dict[types.NodeIdT, NodeDfvL]] = None,
+  ):
+    self.anName = anName
+    self.func = func
+    self.topVal = topVal
+    self.result = result if result else dict()
+
+
+  def merge(self, other: 'AnResult') -> 'AnResult':
+    """Takes the meet of the whole result.
+    TODO: make it a proper meet operation."""
+    glb = AnResult(self.anName, self.func, self.topVal, None)
+    cfgNodeIds = set(self.result.keys())
+    cfgNodeIds.update(other.result.keys())
+
+    for nid in cfgNodeIds:
+      if nid in self and nid in other:
+        glb[nid], _ = self[nid].meet(other[nid])
+      elif nid in self:
+        glb[nid] = self[nid]
+      elif nid in other:
+        glb[nid] = other[nid]
+
+    return glb
+
+
+  def getCopy(self) -> 'AnResult':
+    """Returns a shallow copy of this object."""
+    return AnResult(self.anName, self.func, self.topVal, self.result.copy())
+
+
+  def __len__(self):
+    return len(self.result)
+
+
+  def get(self, nid: types.NodeIdT, default=None):
+    return self.result.get(nid, default)
+
+
+  def keys(self):
+    return self.result.keys()
+
+
+  def values(self):
+    return self.result.values()
+
+
+  def items(self):
+    return self.result.items()
+
+
+  def get(self, nid: types.NodeIdT, default=None):
+    return self.result.get(nid, default)
+
+
+  def __getitem__(self, nid: types.NodeIdT):
+    return self.result[nid]
+
+
+  def __setitem__(self, nid: types.NodeIdT, value: NodeDfvL):
+    self.result[nid] = value
+
+
+  def __contains__(self, nid: types.NodeIdT):
+    return nid in self.result
+
+
+  def __eq__(self, other):
+    equal = True
+    if not isinstance(other, AnResult):
+      equal = False
+    elif not self.anName == other.anName:
+      equal = False
+    elif not self.func.name == other.func.name:
+      equal = False
+    elif not self.result == other.result:
+      equal = False
+    return equal
+
+
+  def __str__(self):
+    print(f"AnalysisResult: {self.anName}:, Func: '{self.func.name}'"
+          f"TUnit: {self.func.tUnit.name}")
+    topTop = "IN == OUT: Top (Unreachable/Nop)"
+    for node in self.func.cfg.revPostOrder:
+      nid = node.id
+      nDfv = self.get(nid, topTop)
+      print(f">> {nid}. ({node.insn}): {nDfv}")
+    print() # a blank line
+
+################################################
+# BOUND END  : AnalysisResult
 ################################################
 
 ################################################

@@ -169,10 +169,13 @@ class ComponentL(dfv.ComponentL):
 
   def __str__(self):
     s = getBasicString(self)
-    if s: return s
     simpleNames = sorted(name if util.DD1 else simplifyName(name)
-                         for name in self.val)
-    return f"{simpleNames}"
+                         for name in self.val) if self.val else None
+    if util.DD5:
+      idStr = f"(setId:{id(self.val)})(id:{id(self)})"
+      return f"{s}{idStr}" if s else f"{simpleNames}{idStr}"
+    else:
+      return s if s else f"{simpleNames}"
 
 
   def __repr__(self): return self.__str__()
@@ -528,14 +531,9 @@ class PointsToA(analysis.ValueAnalysisAT):
 
     assert ptrVarName is not None
 
-    if ":ftab" in ptrVarName: #delit
-      print(f"PTR_RHS_DFV: ({self.func.name}): {binExpr}, {binExpr.info},"
-            f" {ptrVarName}, {arg1IsArr}, {arg2IsArr}") #delit
     if arg1IsArr or arg2IsArr:  # arr + 1 etc. results in ptr to an element of arr
       return ComponentL(self.func, val={ptrVarName})
     else: # must be a Ptr
-      if ":ftab" in ptrVarName: #delit
-        print(f"HERE!")
       return dfvIn.getVal(ptrVarName)
 
 

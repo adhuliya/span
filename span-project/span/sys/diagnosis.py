@@ -79,12 +79,12 @@ def runDiagnosis(diName: diagnosis.DiagnosisNameT,
   results: Dict[analysis.AnalysisNameT,
                 Dict[types.NodeIdT, dfv.NodeDfvL]] = {}
 
-  anResults = syn1.getAnalysisResults(anName).nidNdfvMap
+  anResults = syn1.getAnalysisResults(anName).anResult.result
   assert anResults, f"{anName}"
   results[anName] = anResults
   if diObj.OptionalNeeds:
     for an in diObj.OptionalNeeds:
-      anResults = syn1.getAnalysisResults(an.__name__).nidNdfvMap
+      anResults = syn1.getAnalysisResults(an.__name__).anResult.result
       assert anResults, f"{anName}"
       results[an.__name__] = anResults
 

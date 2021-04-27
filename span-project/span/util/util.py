@@ -114,6 +114,23 @@ LS = US = AS = GD = False  # IMPORTANT
 ################################################
 
 
+def dsf(count, char='>') -> str:
+  """
+  Depth String Format.
+  E.g. if count is 8, the return value is, ">>>>> >>>"
+  E.g. if count is 15, the return value is, ">>>>> >>>>> >>>>>"
+  E.g. if count is 16, the return value is, ">>>>> >>>>> >>>>> >"
+  """
+  chunkSize = 5
+  chunkCount = count // chunkSize
+  remainder = count % chunkSize
+  c = char * chunkSize
+  r = char * remainder
+  l = [c for _ in range(chunkCount)]
+  if r: l.append(r)
+  return " ".join(l)
+
+
 def setupEnv():
   """Setup some necessary things for the project globally."""
   sys.setrecursionlimit(ff.RECURSION_LIMIT)

@@ -21,7 +21,7 @@ from span.ir.instr import InstrIT, LabelI, GotoI, CondI, NopI, ReturnI
 from span.ir.conv import \
   (FalseEdge, TrueEdge, UnCondEdge, GLOBAL_INITS_FUNC_NAME,
    START_END_BBIDS, START_BB_ID, END_BB_ID, extractFuncName)
-from span.ir.types import BasicBlockIdT, InstrIndexT, FuncNodeIdT
+from span.ir.types import BasicBlockIdT, InstrIndexT, NodeSiteT
 import span.ir.expr as expr
 import span.ir.cfg as graph
 
@@ -63,7 +63,7 @@ class Func(ConstructT):
     self.info = info
     self.cfg: Opt[graph.Cfg] = None  # initialized in TUnit class
     self.tUnit = None  # initialized to TranslationUnit object in span.ir.tunit
-    self.id: FuncNodeIdT = id # it is assigned a unique id
+    self.id: NodeSiteT = id # it is assigned a unique id
 
     if self.instrSeq:
       self.basicBlocks, self.bbEdges = self.genBasicBlocks(self.instrSeq)

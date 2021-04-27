@@ -56,6 +56,9 @@ CMD_F_SLANG_BUG = ("scan-build -V"
 
 # DISABLE_CHECKER_STRING =
 
+TOP_STR = "Top"
+BOT_STR = "Bot"
+
 NUM_STR = "Num"
 PTR_STR = "Ptr"
 RECORD_STR = "Record"

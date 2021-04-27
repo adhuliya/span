@@ -101,7 +101,7 @@ class SpanAnalysisTests(unittest.TestCase):
     for anName, funcResMap in anRes.items():
       for funcName, correctAnRes in funcResMap.items():
         resHost: host.Host = resultsDict[funcName]
-        computedAnRes = resHost.getAnalysisResults(anName).nidNdfvMap
+        computedAnRes = resHost.getAnalysisResults(anName).anResult.result
         if self.compareAnResults(anName, computedAnRes, correctAnRes, cFileName):
           print(f"    {anName} on {funcName} is correct.")
 
@@ -129,12 +129,22 @@ class SpanAnalysisTests(unittest.TestCase):
     resultsDict: Dict[FuncNameT, Dict[AnNameT, Dict[NodeIdT, dfv.NodeDfvL]]] \
       = ipaHost.vci.finalResult
 
-    anRes = action.results["analysis.results"]
-    for anName, funcResMap in anRes.items():
-      for funcName, correctAnRes in funcResMap.items():
-        computedAnRes = resultsDict[funcName][anName]
-        if self.compareAnResults(anName, computedAnRes, correctAnRes, cFileName):
-          print(f"    {anName} on {funcName} is correct.")
+    propName = "analysis.results"
+    res = action.results.get(propName, None)
+    if res:
+      for anName, funcResMap in res.items():
+        for funcName, correctAnRes in funcResMap.items():
+          computedAnRes = resultsDict[funcName][anName]
+          if self.compareAnResults(anName, computedAnRes, correctAnRes, cFileName):
+            print(f"    {anName} on {funcName} is correct.")
+
+    # Check the maximum size of the ValueContextMap table.
+    propName = "ipa.vc.table.maxsize"
+    res = action.results.get(propName, None)
+    if res:
+      computedRes = ipaHost.vci.maxVcMapSize
+      self.assertEqual(computedRes, res,
+                       f"({cFileName}) Correct: {res}, Computed: {computedRes}")
 
 
   def compareAnResults(self,

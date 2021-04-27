@@ -9,7 +9,7 @@ void f1(int i) {
 
 int main(int argc) {
   int a, b, c;
-  a = argc; // make 'a' bot
+  a = argc; // makes 'a' bot
   p = &a;
   f1(a);
   f1(11);

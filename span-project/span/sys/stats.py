@@ -71,13 +71,13 @@ class GlobalStats:
   def __init__(self):
     # sim name to count map
     self.simCountMap: Dict[str, int] = dict()
-    for simName in analysis.simNames:
+    for simName in analysis.SimNames:
       self.simCountMap[simName] = 0
 
   def print(self):
     print("\nGLOBAL_STATS")
     print("=" * 64)
-    for simName in sorted(analysis.simNames):
+    for simName in sorted(analysis.SimNames):
       print(f"  {simName}: {self.simCountMap[simName]}")
     print()
 

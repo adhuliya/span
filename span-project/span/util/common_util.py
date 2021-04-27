@@ -7,6 +7,12 @@
 Common utility functions module which can be used in any project.
 Note(AD): This file is hard-linked to the `snippets` repo that
 contains various common utility modules.
+
+Ideal way to use is to create a separate `util` module in the project
+and import the functionality that is needed from this module.
+The rest of the project only uses the names imported by the `util` module.
+The idea is that the project local `util` module can import common
+utils and define other project specific utilities as needed.
 """
 import logging
 _LOG = logging.getLogger("span")

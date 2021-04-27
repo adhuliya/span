@@ -10,11 +10,8 @@ Using the Value-Context Method.
 Note: All IR related processing for IPA is done in span.ir.ipa module.
 """
 import logging
-
-from span.ir.instr import getDerefExpr, AssignI
-
-LOG = logging.getLogger("span")
-LDB, LIN = LOG.debug, LOG.info
+_LOG = logging.getLogger("span")
+LDB, LIN = _LOG.debug, _LOG.info
 
 import io
 from typing import Dict, Tuple, Set, List, cast, Optional as Opt
@@ -29,18 +26,19 @@ if TRACE_MALLOC:
 
 from span.sys.stats import GlobalStats
 import span.sys.clients as clients
+from span.ir.instr import getDerefExpr, AssignI
 from span.ir import cfg, expr, types, op
 import span.ir.conv as conv
 from span.ir.conv import (GLOBAL_INITS_FUNC_NAME,
                           Forward, Backward, GLOBAL_INITS_FUNC_ID,
                           genFuncNodeId)
-from span.ir.types import FuncNameT, FuncNodeIdT, NodeIdT
+from span.ir.types import FuncNameT, NodeSiteT, NodeIdT
 from span.ir.tunit import TranslationUnit
 from span.api.analysis import AnalysisNameT as AnNameT, DirectionDT, AnalysisAT, SimFailed
 from span.api.dfv import NodeDfvL, OverallL
 
 from span.sys.host import Host
-from span.sys.common import CallSitePair, DfvDict
+from span.sys.common import CallSitePair, DfvDict, AnResult
 import span.util.ff as ff
 import span.util.util as util
 
@@ -87,19 +85,6 @@ class ValueContext:
       equal = False
     elif not self.dfvDict == other.dfvDict:
       equal = False
-    else:
-      for anName, nDfvSelf in self.dfvDict:
-        direction = clients.getAnDirn(anName)
-        nDfvOther = other.dfvDict[anName]
-        if direction == Forward:
-          if not nDfvSelf.dfvIn == nDfvOther.dfvIn:
-            equal = False
-        elif direction == Backward:
-          if not nDfvSelf.dfvOut == nDfvOther.dfvOut:
-            equal = False
-        else:  # bi-directional
-          if not nDfvSelf == nDfvOther:
-            equal = False
 
     return equal
 
@@ -119,7 +104,7 @@ class ValueContext:
 
 
   def __str__(self):
-    idStr = "" if not util.VV5 else f"(id:{id(self)})"
+    idStr = "" if not util.DD5 else f"(id:{id(self)})"
     return f"ValueContext({self.funcName}, {self.dfvDict}){idStr}"
 
 
@@ -134,10 +119,14 @@ class HostSitesPair:
 
   def __init__(self,
       host: Host,
-      callSites: Opt[Set[FuncNodeIdT]] = None,
+      callSites: Opt[Set[NodeSiteT]] = None,
   ):
     self.host =  host
-    self.callSites: Set[FuncNodeIdT] = callSites if callSites else set()
+    self.callSites: Set[NodeSiteT] = callSites if callSites else set()
+
+
+  def hasCallSites(self) -> bool:
+    return bool(self.callSites)
 
 
   def hasSingleSite(self):
@@ -149,7 +138,6 @@ class HostSitesPair:
 
 
   def removeSite(self, callSite):
-    #FIXME: Not used currently. Use this function for better efficiency.
     self.callSites.remove(callSite)
 
 
@@ -161,8 +149,8 @@ class HostSitesPair:
 
 
 class ValueContextInfo:
-  """The information related to value contexts
-   needed while using the method."""
+  """Value context method stores all its information in
+  an object of ValueContextInfo."""
 
   def __init__(self,
       reUsePrevValueContextHost: bool = ff.IPA_VC_RE_USE_PREV_VALUE_CONTEXT_HOST,
@@ -172,47 +160,80 @@ class ValueContextInfo:
     # This map stores the ValueContexts and the corresponding Host objects
     self.valueContextMap: Dict[ValueContext, HostSitesPair] = {}
 
+    # Record the max size of value context map. (Useful for testing)
+    self.maxVcMapSize: int = 0
+
     # Map to store prev value context at a call site,
     # to help reuse the previous host computation.
     self.callSitePairContextMap: \
-      Dict[CallSitePair, Dict[InvocationIdT, ValueContext]] = {}
+      Dict[Tuple[CallSitePair, InvocationIdT], ValueContext] = {}
 
     # The stack used to store value contexts in a stack of invocations.
     # This is used in termination of value contexts.
+    # Note: The recursive function invocations track the order of CallSitePair.
     self.callSiteContextMapStack: Dict[CallSitePair, DfvDict] = {}
 
-    # stores the final result of the value context run
-    self.finalResult:\
-      Dict[FuncNameT, Dict[AnNameT, Dict[NodeIdT, NodeDfvL]]] = {}
+    self.finalResult: Dict[FuncNameT, Dict[AnNameT, AnResult]] = {}
 
 
-  def addValueContext(self,
-      vContext: ValueContext,
-      hostSitesPair: HostSitesPair,
-  ) -> None:
-    """Add a new value context information."""
-    self.valueContextMap[vContext] = hostSitesPair
-
-
-  def removeValueContext(self, vContext):
-    del self.valueContextMap[vContext]
-
-
-  def getHostSitesPair(self,
-      vContext: ValueContext
-  ) -> HostSitesPair:
-    """Get old value context information."""
+  def __getitem__(self, vContext: ValueContext):
+    """Get the stored value context information."""
     if vContext in self.valueContextMap:
       return self.valueContextMap[vContext]
     raise ValueError(f"ValueContext Missing"
                      f" (Total: {len(self.valueContextMap)}): {vContext}")
 
 
-  def isContextPresent(self,
-      vContext: ValueContext
-  ) -> bool:
+  def __setitem__(self,
+      vContext: ValueContext,
+      hostSitesPair: HostSitesPair,
+  ):
+    """Add a new value context information."""
+    self.valueContextMap[vContext] = hostSitesPair
+    self.maxVcMapSize = max(self.maxVcMapSize, len(self.valueContextMap))
+
+
+  def __delitem__(self, vContext: ValueContext):
+    del self.valueContextMap[vContext]
+
+
+  def __contains__(self, vContext: ValueContext) -> bool:
     """Is the context present?"""
     return vContext in self.valueContextMap
+
+
+  def __len__(self) -> int:
+    return len(self.valueContextMap)
+
+
+  def __iter__(self):
+    return iter(self.valueContextMap)
+
+
+  def keys(self):
+    return self.valueContextMap.keys()
+
+
+  def values(self):
+    return self.valueContextMap.values()
+
+
+  def items(self):
+    return self.valueContextMap.items()
+
+
+  def removeCtxSite(self,
+      vContext: ValueContext,
+      callSite: NodeSiteT,
+  ) -> None:
+    """Removes a call site from the HostSitePair instance
+    for the given context."""
+    hostSitesPair = self.valueContextMap.get(vContext, None)
+    if hostSitesPair:
+      hostSitesPair.removeSite(callSite)
+      if ff.IPA_VC_REMOVE_UNUSED_VC:
+        if not hostSitesPair.hasCallSites():
+          del self[vContext]  # delete when no site needs the value context
 
 
   def getPrevValueContext(self,
@@ -222,13 +243,11 @@ class ValueContextInfo:
     """Get previous value context at the given call site pair.
     This is used to re-use the host object for a new value context.
     """
-    if not self.reUsePrevValueContextHost: return None
-    cspcm = self.callSitePairContextMap
-    if callSitePair in cspcm:
-      idContextDict = cspcm[callSitePair]
-      if parentInvocationId in idContextDict:
-        return idContextDict[parentInvocationId]
-    return None
+    if not self.reUsePrevValueContextHost:
+      return None
+
+    tup = (callSitePair, parentInvocationId)
+    return self.callSitePairContextMap.get(tup, None)
 
 
   def setPrevValueContext(self,
@@ -243,13 +262,8 @@ class ValueContextInfo:
     if not self.reUsePrevValueContextHost:
       return
 
-    cspcm = self.callSitePairContextMap
-    if callSitePair in cspcm:
-      idContextDict = cspcm[callSitePair]
-    else:
-      idContextDict = cspcm[callSitePair] = {}
-
-    idContextDict[parentInvocationId] = vContext
+    tup = (callSitePair, parentInvocationId)
+    self.callSitePairContextMap[tup] = vContext
 
 
   def clear(self, hard=False):
@@ -269,21 +283,19 @@ class ValueContextInfo:
 
   def clearPrevValueContexts(self,
       callSitePairs: Set[CallSitePair],
-      invocationId: int,
+      invocationId: int, # the invocation id used in `self.setPrevValueContext()`
   ) -> None:
     for callSitePair in callSitePairs:
-      if callSitePair in self.callSitePairContextMap:
-        val = self.callSitePairContextMap[callSitePair]
-        if invocationId in val:
-          del val[invocationId]
-
-
-  def vContextSize(self):
-    return len(self.valueContextMap)
+      tup = (callSitePair, invocationId)
+      if tup in self.callSitePairContextMap:
+        del self.callSitePairContextMap[tup]
 
 
   def removeSiteStack(self, callSitePair):
-    del self.callSiteContextMapStack[callSitePair]
+    if callSitePair in self.callSiteContextMapStack:
+      ctx = self.callSiteContextMapStack[callSitePair]
+      if not ctx.decDepth(): # remove when depth == 0.
+        del self.callSiteContextMapStack[callSitePair]
 
 
   def getCallStackCtx(self, callSitePair) -> Opt[DfvDict]:
@@ -310,7 +322,7 @@ class IpaHost:
       disableAllSim: bool = False,
       useTransformation: bool = False,
       useDdm: bool = False,
-      reUsePrevValueContextHost: bool = True,
+      reUsePrevValueContextHost: bool = ff.IPA_VC_RE_USE_PREV_VALUE_CONTEXT_HOST,
       widenValueContext: bool = ff.IPA_VC_WIDEN_VALUE_CONTEXT,
   ) -> None:
     if tUnit is None or not tUnit.getFuncObj(entryFuncName):
@@ -326,12 +338,13 @@ class IpaHost:
     self.disableAllSim = disableAllSim
     self.useTransformation = useTransformation
     self.useDdm = useDdm
+    self.reUsePrevValueContextHost = reUsePrevValueContextHost
     self.widen = widenValueContext
 
+    # invocation id uniquely identifies the invocation instance of analyzeFunc()
     self.invocationId = 0
     self.gst = GlobalStats()
 
-    self.reUsePrevValueContextHost = reUsePrevValueContextHost
     self.vci: ValueContextInfo = ValueContextInfo(reUsePrevValueContextHost)
 
     self.logUsefulInfo()
@@ -358,7 +371,7 @@ class IpaHost:
     callSitePair = CallSitePair(self.entryFuncName,
                                 genFuncNodeId(GLOBAL_INITS_FUNC_ID, 0))
     mainBi = self.prepareEntryFuncBi(self.entryFuncName, globalBi)
-    self.analyzeFunc(callSitePair, mainBi, 0, 0)
+    self.analyzeFunc(callSitePair, mainBi, GLOBAL_INITS_FUNC_NAME)
 
     # STEP 3: finalize IPA results
     self.finalizeIpaResults()
@@ -368,49 +381,52 @@ class IpaHost:
 
 
   def analyzeFunc(self,
-      callSitePair: CallSitePair,
-      ipaFuncBi: DfvDict,
-      recursionDepth: int, # start with 0
-      parentInvocationId: InvocationIdT, # start with 0
+      callSitePair: CallSitePair, # location of the call (has callee name too)
+      ipaFuncBi: DfvDict, # the boundary info (value context)
+      parentName: FuncNameT, # i.e. caller name
+      rDepth: int = 0, # recursion depth, start with 0
+      parentInvocationId: InvocationIdT = 0, # start with 0
   ) -> DfvDict:
     thisInvocationId, vci = self.getNewInvocationId(), self.vci
-    funcName, callSite = callSitePair.tuple()
+    currFuncName, callSite = callSitePair.tuple()
     if util.LL1: LIN("AnalyzingFunction(IpaHost:START):"
-                    " InvocationId:(This:%s, Parent:%s): %s %s",
-                     thisInvocationId, parentInvocationId, funcName, "*" * 16)
-    if util.LL2: LDB(f" {callSitePair}: "
-                     f"ParentInvocationId: {parentInvocationId}, "
-                     f"Depth: {recursionDepth}, "
-                     f"VContextSize: {vci.vContextSize()}")
-    if util.LL2: LDB(f" ValueContext(CurrBi): {ipaFuncBi}")
+                    " %s, Caller: %s, InvocationId:(Parent:%s, This:%s): %s",
+                     callSitePair, parentName, parentInvocationId, thisInvocationId,
+                     "*" * 16)
+    if util.LL2: LDB(f"RecursionDepth: {rDepth}, VContextSize: {len(vci)}")
+    if util.LL2: LDB(f" ValueContext(CurrBi:BeforeWidening({self.widen})):"
+                     f" {ipaFuncBi}")
 
-    if recursionDepth >= ff.IPA_VC_RECURSION_LIMIT:
-      return self.analyzeFuncFinal(callSitePair, ipaFuncBi, recursionDepth)
+    if rDepth >= ff.IPA_VC_RECURSION_LIMIT:
+      return self.analyzeFuncFinal(callSitePair, ipaFuncBi, rDepth)
 
-    if self.widen: ipaFuncBi = self.widenTheValueContext(callSitePair, ipaFuncBi)
+    if self.widen:
+      ipaFuncBi = self.widenTheValueContext(callSitePair, ipaFuncBi)
 
     vContext = ValueContext(callSitePair.funcName, ipaFuncBi.getCopyShallow())
-    if util.LL2: LDB(f" ValueContext: Id:{id(vContext)}, {vContext}")
+    if util.LL2: LDB(f" ValueContext(CurrBi:AfterWidening({self.widen})):"
+                     f" Id:{id(vContext)}, {vContext}")
     host, preComputed = self.getComputedValue(
       callSitePair, parentInvocationId, vContext)
 
     if preComputed:
       if self.widen: vci.removeSiteStack(callSitePair)
-      if util.VV1: print(f"{'>' * recursionDepth}AnalyzingFunction(IpaHost):"
-                         f" {funcName} ({callSitePair}) [HIT]")
+      if util.VV1: print(f"{util.dsf(rDepth)} AnalyzingFunction(IpaHost):"
+                         f" {currFuncName} ({callSitePair}) [HIT]")
       if util.LL1: LIN("AnalyzingFunction(IpaHost:DONE:HIT):"
-                       " InvocationId:(This:%s, Parent:%s): %s %s",
-                       thisInvocationId, parentInvocationId, funcName, "*" * 16)
+                       " %s, Caller: %s, InvocationId:(Parent:%s, This:%s): %s",
+                       callSitePair, parentName, parentInvocationId, thisInvocationId,
+                       "*" * 16)
       return host.getBoundaryResult() # HIT! Use prev result.
 
-    if util.VV1: print(f"{'>' * recursionDepth}AnalyzingFunction(IpaHost):"
-                       f" {funcName} ({callSitePair}) [MISS]")
+    if util.VV1: print(f"{util.dsf(rDepth)} AnalyzingFunction(IpaHost):"
+                       f" {currFuncName} ({callSitePair}) [MISS]")
     ##### Current Callee is now a Caller #######################################
-    allCallSites, callerName, reAnalyze = set(), funcName, True
+    allCallSites, callerName, reAnalyze = set(), currFuncName, True
 
     while reAnalyze:
       reAnalyze = False
-      host.analyze()  # run the real analysis
+      host.analyze()  # RUN THE ANALYSIS.
 
       callSiteDfvs = host.getCallSiteDfvsIpaHost()
       if callSiteDfvs:  # check if call sites present
@@ -420,7 +436,7 @@ class IpaHost:
 
           calleeBi = callSiteDfvs[csPair]
           if util.LL2: LDB(f"CalleeBi ({callerName} --> {calleeName})(Old):\n {calleeBi}")
-          newCalleeBi = self.analyzeFunc(csPair, calleeBi, recursionDepth + 1,
+          newCalleeBi = self.analyzeFunc(csPair, calleeBi, currFuncName, rDepth + 1,
                                          thisInvocationId) #recurse
           if util.LL2: LDB(f"CalleeBi ({callerName} --> {calleeName})(New):\n {newCalleeBi}")
           reAnalyze = host.setCallSiteDfvsIpaHost(csPair, newCalleeBi)
@@ -432,16 +448,18 @@ class IpaHost:
 
       if reAnalyze and util.LL1:
         LDB("AnalyzingFunction(IpaHost:ReStart:Miss):"
-            " InvocationId:(This:%s, Parent:%s): %s %s",
-            thisInvocationId, parentInvocationId, funcName, "*" * 16)
+            " %s, Caller: %s, InvocationId:(Parent:%s, This:%s): %s",
+            callSitePair, parentName, parentInvocationId,
+            thisInvocationId, "*" * 16)
       if util.LL2: LDB(f" ValueContext: Id:{id(vContext)}, {vContext}")
 
     host.printOrLogResult()
     vci.clearPrevValueContexts(allCallSites, thisInvocationId)
     if self.widen: vci.removeSiteStack(callSitePair)
     if util.LL1: LIN("AnalyzingFunction(IpaHost:DONE:Miss):"
-                     " InvocationId:(This:%s, Parent:%s): %s %s",
-                     thisInvocationId, parentInvocationId, funcName, "*" * 16)
+                     " %s, Caller: %s, InvocationId:(Parent:%s, This:%s): %s",
+                     callSitePair, parentName, parentInvocationId,
+                     thisInvocationId, "*" * 16)
     return host.getBoundaryResult()
 
 
@@ -450,12 +468,12 @@ class IpaHost:
       currDfvDict: DfvDict,
   ) -> DfvDict:
     assert self.widen
-    vci = self.vci
-    wideDfvDict, prevStackCtx = None, vci.getCallStackCtx(callSitePair)
+    wideDfvDict, vci = None, self.vci
+    prevStackCtx = vci.getCallStackCtx(callSitePair)
 
     if prevStackCtx:
       if prevStackCtx.depth >= ff.IPA_VC_MAX_WIDENING_DEPTH:
-        if util.LL2: LDB(" Widening with ValueContext(PrevBi): %s", prevStackCtx)
+        if util.LL2: LDB(" Widening w.r.t. ValueContext(PrevBi): %s", prevStackCtx)
         widenedBi = dict()
         for anName, prevNdfv in prevStackCtx.dfvs.items():
           currNdfv = currDfvDict[anName]
@@ -518,9 +536,9 @@ class IpaHost:
     value contexts"""
     vci = self.vci
 
-    if vci.isContextPresent(vContext): # memoized results
-      hostSitePair = vci.getHostSitesPair(vContext)
-      if util.LL2: LDB(f"PrevValueContext: HIT !! :)")
+    if vContext in vci: # memoized results
+      hostSitePair = vci[vContext]
+      if util.LL2: LDB(f"ValueContextCache: HIT !! :)")
       hostSitePair.addSite(callSitePair.callSite)
       return hostSitePair.host, True
 
@@ -530,13 +548,11 @@ class IpaHost:
       if prevHost: return prevHost, False
 
     # vContext not present, hence create one and attach a Host instance
-    if util.LL2: LDB("PrevValueContext(Fresh): id:%s, %s",
-                     id(vContext), vContext)
-    vContextCopy = vContext.getCopy()
+    if util.LL2: LDB("ValueContextCache(New): id:%s, %s", id(vContext), vContext)
+    vContextCopy = vContext.getCopy() # FIXME: can this be removed?
     hostInstance = self.createHostInstance(
       vContext.funcName, biDfv=vContextCopy.dfvDict)
-    vci.addValueContext(vContext, HostSitesPair(
-      hostInstance, {callSitePair.callSite}))
+    vci[vContext] = HostSitesPair(hostInstance, {callSitePair.callSite})
 
     return hostInstance, False
 
@@ -546,31 +562,29 @@ class IpaHost:
       parentInstanceId: int,
       vContext: ValueContext,
   ) -> Opt[Host]:
-    """Returns the host object, and true if its present in the saved
-    value contexts"""
-    if util.LL2: LDB(f"PrevValueContext: MISS !! :(")
+    """Returns the previous host object if present."""
+    if util.LL2: LDB(f"ValueContextCache: MISS !! :(")
     vci = self.vci
     prevValueContext = self.getPrevValueContext(
       callSitePair, parentInstanceId, vContext)
-    if prevValueContext is None: return None
+    if prevValueContext is None:
+      return None
 
-    if util.LL2: LDB(f"PrevValueContext(Checking):"
+    if util.LL2: LDB(f"ValueContextCache(Prev:OlderCtx):"
                      f" Id:{id(prevValueContext)}, {prevValueContext}")
-    try:
-      hostSitesPair = vci.getHostSitesPair(prevValueContext)
-      if not hostSitesPair.hasSingleSite():
-        # since more than one callSite may need the vContext, hence cannot modify
-        return None
-    except Exception as e:
-      return None # TODO: fix this error.
+    hostSitesPair = vci[prevValueContext]
+    if not hostSitesPair.hasSingleSite():
+      # since more than one callSite may need the vContext, hence cannot modify
+      vci.removeCtxSite(prevValueContext, callSitePair.callSite)
+      return None
 
-    if util.LL2: LDB(f"PrevValueContext(ReUsing):"
+    if util.LL2: LDB(f"ValueContextCache(Prev:ReUsing):"
                      f" Id:{id(prevValueContext)}, {prevValueContext}")
-    vci.removeValueContext(prevValueContext)
-    vci.addValueContext(vContext, hostSitesPair)
+    del vci[prevValueContext]
+    vci[vContext] = hostSitesPair
     vci.setPrevValueContext(callSitePair, parentInstanceId, vContext) # replace
     host = hostSitesPair.host
-    host.setBoundaryResult(vContext.getCopy().dfvDict)
+    host.setBoundaryResult(vContext.getCopy().dfvDict) # FIXME: is copy needed?
     return host
 
 
@@ -583,13 +597,13 @@ class IpaHost:
     prevCtx = vci.getPrevValueContext(callSitePair, parentInvocationId)
 
     if prevCtx:
-      if util.LL2: LDB(f"PrevValueContext(fetch) prev context at"
+      if util.LL2: LDB(f"ValueContextCache(Prev:fetch) prev context at"
                        f" Site:{callSitePair}:"
                        f" with ParentInvocationId:{parentInvocationId}"
                        f"\n vContext(prev): id:{id(prevCtx)}, {prevCtx}")
       return prevCtx
     else:
-      if util.LL2: LDB(f"PrevValueContext(saving) context at"
+      if util.LL2: LDB(f"ValueContextCache(Prev:saving) context at"
                        f" Site:{callSitePair},"
                        f" with ParentInvocationId:{parentInvocationId}"
                        f"\n vContext: id:{id(vContext)}, {vContext}")
@@ -653,7 +667,7 @@ class IpaHost:
 
   def finalizeIpaResults(self):
     vci = self.vci
-    if util.VV1: print(f"TotalValueContexts: {vci.vContextSize()}, "
+    if util.VV1: print(f"TotalValueContexts: {len(vci)}, "
                        f"SizeInBytes: {util.getSize2(vci.valueContextMap)},"
                        f"VCI(Total): {util.getSize2(vci)}")
 
@@ -718,15 +732,15 @@ class IpaHost:
       for valContext, hostSitesPair in vci.valueContextMap.items():
         host = hostSitesPair.host
         if valContext.funcName == funcName:
-          assert host.func.name == funcName, f"{funcName}"
+          assert host.func.name == funcName, f"{funcName}, {host.func.name}"
           allAnalysisNames = host.getParticipatingAnalyses()
           for anName in allAnalysisNames:
-            currRes = host.getAnalysisResults(anName).nidNdfvMap
+            currRes = host.getAnalysisResults(anName).anResult
             if anName not in funcResult:
               funcResult[anName] = currRes
             else:
               prevRes = funcResult[anName]
-              newRes  = self.mergeAnalysisResult(prevRes, currRes)
+              newRes  = prevRes.merge(currRes)
               funcResult[anName] = newRes
       vci.finalResult[funcName] = funcResult
 
@@ -769,20 +783,29 @@ class IpaHost:
     sio = io.StringIO()
     sio.write(f"IpaHostConfiguration:\n")
     sio.write(f"  TranslationUnit: {self.tUnit.name}\n")
-    sio.write(f"  DisableAllSim  : {self.disableAllSim}\n")
-    sio.write(f"  UseDDM         : {self.useDdm}\n")
     sio.write(f"  EntryFuncName  : {self.entryFuncName}\n")
-    sio.write(f"  MaxAnalyses    : {self.maxNumOfAnalyses}\n")
     sio.write(f"  MainAnalysis   : {self.mainAnName}\n")
     sio.write(f"  OtherAnalyses  : {self.otherAnalyses}\n")
     sio.write(f"  AvoidAnalyses  : {self.avoidAnalyses}\n")
     sio.write(f"  SupportAnalyses: {self.supportAnalyses}\n")
+    sio.write(f"  MaxAnalyses    : {self.maxNumOfAnalyses}\n")
+    sio.write(f"  DisableAllSim  : {self.disableAllSim}\n")
+    sio.write(f"  UseTransform   : {self.useTransformation}\n")
+    sio.write(f"  UseDDM         : {self.useDdm}\n")
+    sio.write(f"  ReUsePrevValCxt: {self.reUsePrevValueContextHost}\n")
+    sio.write(f"  UseWidening    : {self.widen}\n")
 
     LIN(sio.getvalue())
 
 
   def printFinalResults(self):
     vci = self.vci
+    for funcName, res in sorted(vci.finalResult.items(), key=lambda x: x[0]):
+      print(f"\nFunction: '{funcName}', TUnit: {self.tUnit.name} *****")
+      for anName, anRes in sorted(res.items(), key=lambda x: x[0]):
+        print()
+        print(anRes)
+
     for funcName, res in sorted(vci.finalResult.items(), key=lambda x: x[0]):
       func = self.tUnit.getFuncObj(funcName)
       print(f"\nFunction: '{funcName}', TUnit: {self.tUnit.name} *****")

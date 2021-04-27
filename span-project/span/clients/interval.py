@@ -390,11 +390,11 @@ class ComponentL(dfv.ComponentL):
 
   def __str__(self):
     s = getBasicString(self)
-    if util.VV5:
-      idStr = f"{id(self)}" #delit
-      return f"{s}(id:{idStr})" if s else f"{self.val}(id:{idStr})" #delit
+    if util.DD5:
+      idStr = f"(id:{id(self)})"
+      return f"{s}{idStr}" if s else f"{self.val!r}{idStr}"
     else:
-      valStr = f"{self.val[0]}" if self.isConstant() else f"{self.val}"
+      valStr = f"{self.val[0]}" if self.isConstant() else f"{self.val!r}"
       return s if s else f"{valStr}"
 
 
@@ -563,16 +563,11 @@ class IntervalA(analysis.ValueAnalysisAT):
     if nodeDfv is None:
       return SimPending # tell that sim my be possible if nodeDfv is given
 
-    if e and e.info and e.info.loc.line == 2495: # hmmer_comb.c
-      print(f"HMMER_EXPR(Interval): {e}, {values}, {self.getExprDfv(e, nodeDfv.dfvIn)}"
-            f", {e.arg1}:{self.getExprDfv(e.arg1, nodeDfv.dfvIn)}") #delit
-
     # STEP 3: If here, either eval or filter the values
     dfvIn = cast(OverallL, nodeDfv.dfvIn)
     if values is not None:
       assert len(values), f"{e}, {values}"
       filtered = self.filterValues(e, values, dfvIn, NumValue) # filter the values
-      print(f"FILTERED: {values} to {filtered}, expr:{e}, type:{e.type}, loc:{e.info}") #delit
       return filtered # if filtered else SimPending
 
     # STEP 4: If here, eval the expression
@@ -902,7 +897,6 @@ class IntervalA(analysis.ValueAnalysisAT):
         dfvIn = dfvDict[nid].dfvIn
         vDfv: ComponentL = dfvIn.getVal(vName)
         if vDfv.isConstant():
-          print(f"XZSD: {func.name}, Insn: {insn}, {insn.info}, ArgType: {insn.arg.type}") #delit
           count += 1
 
     return count

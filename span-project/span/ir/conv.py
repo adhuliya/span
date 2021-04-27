@@ -381,22 +381,22 @@ def setNodeSiteBits(totalFuncs: int, maxCfgNodesInAFunction: int):
 def genFuncNodeId(
     funcId: types.FuncIdT,
     nid: types.NodeIdT,
-) -> types.FuncNodeIdT:
+) -> types.NodeSiteT:
   assert funcId.bit_length() <= NodeSiteFuncIdBitLen, f"{nid}, {NodeSiteFuncIdBitLen}"
   assert nid.bit_length() <= NodeSiteNodeIdBitLen, f"{nid}, {NodeSiteNodeIdBitLen}"
   return (funcId << NodeSiteNodeIdBitLen) | nid
 
 
-def getFuncId(funcNodeId: types.FuncNodeIdT):
+def getFuncId(funcNodeId: types.NodeSiteT):
   return funcNodeId >> NodeSiteNodeIdBitLen
 
 
-def getNodeId(funcNodeId: types.FuncNodeIdT):
+def getNodeId(funcNodeId: types.NodeSiteT):
   return funcNodeId & ((1 << NodeSiteNodeIdBitLen) - 1)
 
 
 def getFuncNodeIdStr(
-    fNid: types.FuncNodeIdT,
+    fNid: types.NodeSiteT,
 ) -> str:
   return f"({getFuncId(fNid)}, {getNodeId(fNid)})"
 

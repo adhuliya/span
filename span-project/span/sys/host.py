@@ -39,7 +39,7 @@ from span.ir.expr import (
 )
 
 from span.api.dfv import NodeDfvL, ChangePairL, OLD_IN_OUT
-from span.api.analysis import SimNameT, simDirnMap, SimFailed, SimPending
+from span.api.analysis import SimNameT, SimDirnMap, SimFailed, SimPending
 from span.api.lattice import mergeAll, DataLT
 from span.api.analysis import (AnalysisAT, AnalysisNameT as AnNameT,\
   DirectionDT,
@@ -176,7 +176,7 @@ class PriorityAnWorklist:
     """Add an analysis to worklist.
     neededBy should already be in self.anDepGraph.
     """
-    if util.LL4: LDB("AddedAnalysisToWl(Y/N): %s, (neededBy: %s)", anName, neededBy)
+    if util.LL4: LDB("AddAnalysisToWl(1)(START): %s, (neededBy: %s)", anName, neededBy)
 
     self.addToAnDepGraph(anName, neededBy)
     participant = self.anDepGraph[anName]
@@ -185,9 +185,9 @@ class PriorityAnWorklist:
       self.wl.append(participant)
       self.wlSet.add(participant)
       self.wl.sort()
-      if util.LL4: LDB("AddedAnalysisToWl(YES): %s, (neededBy: %s)", anName, neededBy)
+      if util.LL4: LDB("AddAnalysisToWl(1)(END:YES): %s, (neededBy: %s)", anName, neededBy)
     else:
-      if util.LL4: LDB("AddedAnalysisToWl(NO2): %s, (neededBy: %s), (wlSet: %s)",
+      if util.LL4: LDB("AddAnalysisToWl(1)(END:NO)(AlreadyPresent): %s, (neededBy: %s), (wlSet: %s)",
                        anName, neededBy, self.wlSet)
 
 
@@ -685,7 +685,7 @@ class Host:
       top = analysisObj.overallTop
 
       self.anParticipating[anName] = analysisObj
-      self.anWorkDict[anName] = clients.getAnDirnClass(anName)(self.func.cfg, top)
+      self.anWorkDict[anName] = clients.getAnDirnClass(anName)(anName, self.func, top)
       self.addAnToWorklist(anName, neededBy, force=True, ipa=ipa)
       self.anSimSuccessCount[anName] = 1 if anName in self.mainAnalyses else 0
       added = True
@@ -706,9 +706,10 @@ class Host:
     """Don't add self.activeAnName and analyses
     that failed to provide simplification"""
     if not ipa and anName == self.activeAnName:
-      if util.LL4: LDB("AddedAnalysisToWl(NO): Not adding ActiveAn:"
+      if util.LL4: LDB("AddAnalysisToWl(2)(NO): Not adding ActiveAn:"
                        " %s, (neededBy: %s)", anName, neededBy)
       return  # don't add active analysis again
+
     if anName in self.mainAnalyses:
       self.anWorkList.add(anName, neededBy)
       return
@@ -717,8 +718,10 @@ class Host:
         self.anWorkList.add(anName, neededBy)
         return
 
-    if util.LL4: LDB("AddedAnalysisToWl(NO): An: %s, neededBy: %s, simSuccess: %s, ActiveAn: %s",
-                     anName, neededBy, self.anSimSuccessCount.get(anName, -1), self.activeAnName)
+    if util.LL4: LDB("AddAnalysisToWl(2)(NO): An: %s, neededBy: %s,"
+                     " simSuccess: %s, ActiveAn: %s",
+                     anName, neededBy, self.anSimSuccessCount.get(anName, -1),
+                     self.activeAnName)
 
 
   def calcInOut(self,
@@ -728,10 +731,10 @@ class Host:
     """Merge info at IN and OUT of a node."""
     nid = node.id
     if self.ef.isFeasibleNode(node):
-      if util.LL4: LDB("Before InOutMerge (Node_%s): NodeDfv: %s.",
-                       nid, dirn.nidNdfvMap.get(nid, dirn.topNdfv))
+      if util.LL4: LDB("Before InOutMerge (Node_%s):\n%s",
+                       nid, dirn.anResult.get(nid, dirn.topNdfv))
       ndfv, inout = dirn.calcInOut(node, self.ef)
-      if util.LL4: LDB("After  InOutMerge (Node_%s): Change: %s, NodeDfv: %s.",
+      if util.LL4: LDB("After  InOutMerge (Node_%s): %s:\n%s",
                        nid, inout, ndfv)
       return ndfv, inout, Reachable
     return dirn.topNdfv, OLD_IN_OUT, NotReachable
@@ -774,11 +777,13 @@ class Host:
         nDfv = self.activeAnObj.getBoundaryInfo()
         bi = (nDfv.dfvIn, nDfv.dfvOut)
 
-      dirn.nidNdfvMap[startNodeId] = NodeDfvL(bi[0], top)
-      dirn.nidNdfvMap[endNodeId] = NodeDfvL(top, bi[1])
+      dirn.anResult[startNodeId] = NodeDfvL(bi[0], top)
+      dirn.anResult[endNodeId] = NodeDfvL(top, bi[1])
       dirn.boundaryInfoInitialized = True
-      if util.LL4: LDB("Init_Boundary_Info (StartNode %s' In, EndNode %s' Out): %s.",
-                       startNodeId, endNodeId, bi)
+      if util.LL4: LDB("Init_Boundary_Info(%s, %s):"
+                       "\n BI Node_%s: IN : %s\n BI Node_%s: OUT: %s",
+                       self.func.name, self.activeAnName,
+                       startNodeId, bi[0], endNodeId, bi[1])
 
     self.stats.anSwitchTimer.stop()
     return dirn
@@ -825,22 +830,21 @@ class Host:
         if self.useDdm and self.activeAnName not in self.mainAnalyses:  #DDM
           if not nid == 1:  # skip the first node which is always NopI()
             nodeDfv = ddm.ddmFilterInDfv(nodeDfv, ddmVarSet)
-            dirn.nidNdfvMap[nid] = nodeDfv
+            dirn.anResult[nid] = nodeDfv
 
         if not treatAsNop: self.stats.incrementNodeVisitCount()
         if GD: self.nodeInsnDot[nid] = []
 
         self.addDepAnToWorklist(node, inOutChange1)
 
-        if util.LL4: LDB("Curr_Node_Dfv (Before) (Node_%s): %s.", nid, nodeDfv)
+        if util.LL4: LDB("Curr_Node_Dfv (Before) (Node_%s):\n%s", nid, nodeDfv)
         nodeDfv = self.analyzeInstr(node, node.insn, nodeDfv, treatAsNop)
-        if util.LL4: LDB("Curr_Node_Dfv (AnalysisResult) (Node_%s): %s", nid, nodeDfv)
+        if util.LL4: LDB("Curr_Node_Dfv (AnalysisResult) (Node_%s):\n%s", nid, nodeDfv)
 
-        if not nodeDfv: print(f"NODE: {node}, {node.insn}, {node.insn.info}") #delit
         inOutChange2 = dirn.update(node, nodeDfv)
 
-        if util.LL4: LDB("Curr_Node_Dfv (AfterUpdate) (Node_%s): %s, change: %s.",
-                         nid, nodeDfv, inOutChange2)
+        if util.LL4: LDB("Curr_Node_Dfv (AfterUpdate) (Node_%s): %s:\n%s",
+                         nid, inOutChange2, nodeDfv)
         self.addDepAnToWorklist(node, inOutChange2)
       else:
         if util.LL4: LDB("Infeasible_Node: Func: %s, Node: %s.", self.func.name, node)
@@ -1518,8 +1522,6 @@ class Host:
         var = VarE(f"{vName}.{rhsName}")
         var.type = rhsType # necessary for #PPMS vars
         varList.append(var)
-      if node.id == 10 and ":3t" in lhs.name: #delit
-        print(f"MEM_DEREF_SIM: ({self.activeAnName}): {insn}, rhstype: {rhsType}, {varList}")
       newInsn = III([AssignI(lhs, var) for var in varList])
       newInsn.addInstr(CondReadI(lhs.name, ir.getNamesUsedInExprSyntactically(rhs.of)))
 
@@ -2102,9 +2104,6 @@ class Host:
                          anName, values)
         break  # break at the first useful value
 
-    if e and e.info and e.info.loc.line == 2495: # hmmer_comb.c
-      print(f"HMMER_EXPR: {e}, {values}, {simAnName}") #delit
-
     # Step 2: Refine the simplification
     if values not in (SimPending, SimFailed): # failed/pending values can never be refined
       if util.LL4: LDB("Refining(Start): %s", values)
@@ -2141,7 +2140,7 @@ class Host:
       if LS: print(f"SimFailed(TransformDeref): ({node.id}): {e}, {e.info}")
       res = SimFailed
     elif len(res) > 1 and NULL_OBJ_NAME in res:
-        res.remove(NULL_OBJ_NAME)
+        res = res - NULL_OBJ_SINGLETON_SET
     elif res == NULL_OBJ_SINGLETON_SET:
       if util.LL1: LER("NullDerefEncountered (bad user program)(%s,%s): %s, %s",
                        self.func.name, node.id, e.name, node)
@@ -2176,7 +2175,7 @@ class Host:
       topTop = "IN == OUT: Top (Unreachable/Nop)"
       for node in self.funcCfg.revPostOrder:
         nid = node.id
-        nDfv = res.nidNdfvMap.get(nid, topTop)
+        nDfv = res.anResult.get(nid, topTop)
         print(f">> {nid}. ({node.insn}): {nDfv}")
       #print("Worklist:", self.anWorkDict[anName].wl.getAllNodesStr())
       print("NodesVisitOrder:", self.anWorkDict[anName].wl.fullSequence)
@@ -2226,8 +2225,8 @@ class Host:
     startId = self.funcCfg.start.id
     endId = self.funcCfg.end.id
     for anName, res in self.anWorkDict.items():
-      startIn = res.nidNdfvMap.get(startId).dfvIn  # type: ignore
-      endOut = res.nidNdfvMap.get(endId).dfvOut  # type: ignore
+      startIn = res.anResult.get(startId).dfvIn  # type: ignore
+      endOut = res.anResult.get(endId).dfvOut  # type: ignore
       results[anName] = NodeDfvL(startIn, endOut)
 
     return results

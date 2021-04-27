@@ -19,9 +19,6 @@ import io
 ## BLOCK START: GLOBAL_FEATURE_FLAGS_AND_VALUES
 ################################################################################
 
-# Set recursion limit
-RECURSION_LIMIT = 5000
-
 # Initialize local arrays to a Top value for greater precision.
 SET_LOCAL_ARRAYS_TO_TOP: bool = True
 
@@ -44,6 +41,11 @@ IPA_VC_WIDEN_VALUE_CONTEXT: bool = False
 # depth = the max allowed count of a function in the current call string.
 IPA_VC_MAX_WIDENING_DEPTH: int = 1
 
+# Remove value contexts not needed by any call site.
+IPA_VC_REMOVE_UNUSED_VC = True
+
+# Set recursion limit
+RECURSION_LIMIT = max(IPA_VC_RECURSION_LIMIT, 5000)
 
 ################################################################################
 ## BLOCK END  : GLOBAL_FEATURE_FLAGS_AND_VALUES

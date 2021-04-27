@@ -10,10 +10,13 @@ for use in the rest of the system.
 """
 
 import logging
+
+from span.ir.constructs import Func
+
 LOG = logging.getLogger("span")
 LDB = LOG.debug
 
-from typing import Dict, Set, Optional as Opt, cast, Type, TypeVar
+from typing import Dict, Set, Optional as Opt, cast, Type, TypeVar, Tuple
 import io
 import functools
 
@@ -22,30 +25,37 @@ import span.clients.register as register
 
 import span.ir.conv as irConv
 import span.api.analysis as analysis
+from span.api.analysis import (
+  AnNameT, AnalysisAT, SimNameT, SimNames,
+  DirectionDT, ForwardD, BackwardD,
+)
 import span.ir.types as types
 
-LhsVar__to__Nil__Name = analysis.AnalysisAT.LhsVar__to__Nil.__name__
+LhsVar__to__Nil__Name = AnalysisAT.LhsVar__to__Nil.__name__
 
-AnAT = TypeVar('AnAT', bound=analysis.AnalysisAT)
+AnAT = TypeVar('AnAT', bound=AnalysisAT)
 
 # list of all concrete analysis class given
 # this dictionary is used with in package span.sys only.
-analyses: Dict[analysis.AnalysisNameT, Type[AnAT]] = dict()
+analyses: Dict[AnNameT, Type[AnAT]] = dict()
 # record of analyses names, that implement a particular expr evaluation
 # NOTE: if no analysis simplifies a particular sim func, still
 # add an empty set corresponding to the key.
-simSrcMap: Dict[analysis.SimNameT, Set[analysis.AnalysisNameT]] = dict()
+simSrcMap: Dict[SimNameT, Set[AnNameT]] = dict()
 # record of blocking expressions of an analysis
-simNeedMap: Dict[analysis.AnalysisNameT, Set[analysis.SimNameT]] = dict()
+simNeedMap: Dict[AnNameT, Set[SimNameT]] = dict()
 # record analyses that also work as simplifiers
-simAnalyses: Set[analysis.AnalysisNameT] = set()
+simAnalyses: Set[AnNameT] = set()
 # map analyses to the set of transfer functions it gives
-anTFuncMap: Dict[analysis.AnalysisNameT, Set[str]] = dict()
+anTFuncMap: Dict[AnNameT, Set[str]] = dict()
 # analyses which override FilterI instruction, and needs its simplification
-anReadyForLivenessSim: Set[analysis.AnalysisNameT] = set()
+anReadyForLivenessSim: Set[AnNameT] = set()
 # analyses which override FilterI instruction,
 # and doesn't need its simplification
-anAcceptingLivenessSim: Set[analysis.AnalysisNameT] = set()
+anAcceptingLivenessSim: Set[AnNameT] = set()
+
+# memoized analysis' instance for specific functions
+_anObjMap: Dict[Tuple[AnNameT, types.FuncNameT], AnalysisAT] = dict()
 
 
 class Clients:
@@ -79,7 +89,7 @@ def initGlobals():
 
   # init evals
   simSrcMap = dict()
-  for memberName in analysis.simNames:
+  for memberName in SimNames:
     simSrcMap[memberName] = set()
 
   simNeedMap = dict()
@@ -89,7 +99,7 @@ def initGlobals():
   anReadyForLivenessSim = set()
 
 
-def recordTFunctions(anName: analysis.AnalysisNameT,
+def recordTFunctions(anName: AnNameT,
     anClass: type
 ) -> None:
   """Record the transfer functions provided by an analysis."""
@@ -97,13 +107,13 @@ def recordTFunctions(anName: analysis.AnalysisNameT,
   anTFuncMap[anName] = set()
 
   anClassMembers = anClass.__dict__
-  allTFuncs = analysis.AnalysisAT.__dict__
+  allTFuncs = AnalysisAT.__dict__
   for memberName in anClassMembers:
     if memberName.endswith("_Instr") and memberName in allTFuncs:
       anTFuncMap[anName].add(memberName)
 
 
-def recordSimsProvided(anName: analysis.AnalysisNameT,
+def recordSimsProvided(anName: AnNameT,
     anClass: type
 ) -> None:
   """Record the simplifications provided by an analysis."""
@@ -119,8 +129,8 @@ def recordSimsProvided(anName: analysis.AnalysisNameT,
   if aSimAnalysis: simAnalyses.add(anName)
 
 
-def recordSimsNeeded(anName: analysis.AnalysisNameT,
-    anClass: Type[analysis.AnalysisAT],
+def recordSimsNeeded(anName: AnNameT,
+    anClass: Type[AnalysisAT],
 ) -> None:
   """records the blocking expressions of the given analysis."""
   global simNeedMap
@@ -131,14 +141,14 @@ def recordSimsNeeded(anName: analysis.AnalysisNameT,
   simNeedMap[anName] = tmp
 
 
-def recordLivenessInfoOfAn(anName: analysis.AnalysisNameT,
-    anClass: Type[analysis.AnalysisAT],
+def recordLivenessInfoOfAn(anName: AnNameT,
+    anClass: Type[AnalysisAT],
 ) -> None:
   """Record the if analysis implements Live_Instr method"""
   global anReadyForLivenessSim, anAcceptingLivenessSim
   overridesLiveInstr = False
 
-  liveInstrName = analysis.AnalysisAT.Filter_Instr.__name__
+  liveInstrName = AnalysisAT.Filter_Instr.__name__
   anClassMembers = anClass.__dict__
   if liveInstrName in anClassMembers:
     anAcceptingLivenessSim.add(anName)
@@ -149,7 +159,7 @@ def recordLivenessInfoOfAn(anName: analysis.AnalysisNameT,
       anReadyForLivenessSim.add(anName)
 
 
-def getSimNamesNeeded(anClass: Type[analysis.AnalysisAT]) -> Set[str]:
+def getSimNamesNeeded(anClass: Type[AnalysisAT]) -> Set[str]:
   """Returns the names of sim needed by the analyses."""
   simNames = set()
 
@@ -174,7 +184,7 @@ def getSimNamesNeeded(anClass: Type[analysis.AnalysisAT]) -> Set[str]:
 
 
 @functools.lru_cache(32)
-def getAnClass(anName: analysis.AnalysisNameT
+def getAnClass(anName: AnNameT
 ) -> Opt[Type[AnAT]]:
   if anName in analyses:
     return analyses[anName]
@@ -182,29 +192,45 @@ def getAnClass(anName: analysis.AnalysisNameT
 
 
 @functools.lru_cache(32)
-def getAnDirn(anName: analysis.AnalysisNameT
+def getAnDirn(anName: AnNameT
 ) -> Opt[types.DirectionT]:
   if anName in analyses:
-    anClass = cast(Type[analysis.AnalysisAT], analyses[anName])
+    anClass = cast(Type[AnalysisAT], analyses[anName])
     return anClass.D  # it must be type correct
   raise ValueError(f"UnknownAnalysis: {anName}")
 
 
+def getAnObj(anName: AnNameT, func: Func) -> AnalysisAT:
+  """Returns an basic object of analysis instantiated
+   for the given function, and caches the result.
+   Hence, DON'T modify the objects.
+
+   Use this function only to call the sim functions that
+   can only be called on the analysis objects for now.
+   """
+  tup = (anName, func.name)
+  if tup in _anObjMap:
+    return _anObjMap[tup]
+  else:
+    anObj = _anObjMap[tup] = getAnClass(anName)(func)
+    return anObj
+
+
 @functools.lru_cache(32)
-def getAnDirnClass(anName: analysis.AnalysisNameT
-) -> Type[analysis.DirectionDT]:
+def getAnDirnClass(anName: AnNameT
+) -> Type[DirectionDT]:
   dirn = getAnDirn(anName)
   if dirn == irConv.Forward:
-    return analysis.ForwardD
+    return ForwardD
   elif dirn == irConv.Backward:
-    return analysis.BackwardD
+    return BackwardD
   elif dirn == irConv.ForwBack:
     raise ValueError(f"Handled ForwBack direction yet?")
-    # return analysis.ForwBackDT
+    # return ForwBackDT
   raise ValueError(f"UnknownDirection: {anName}, {dirn}")
 
 
-def isAnPresent(anName: analysis.AnalysisNameT) -> bool:
+def isAnPresent(anName: AnNameT) -> bool:
   """Is the given analysis name present in the system?"""
   return anName in analyses
 
@@ -216,7 +242,7 @@ def init():
   for anName, anClass in register.__dict__.items():
     if type(anClass) == type:
       # so its a class... make sure its an analysis
-      if issubclass(anClass, analysis.AnalysisAT):
+      if issubclass(anClass, AnalysisAT):
         # okay, now do a proper book keeping of the analysis
         analyses[anName] = anClass
         recordSimsProvided(anName, anClass)

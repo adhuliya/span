@@ -48,7 +48,7 @@ from span.api.dfv import (
 import span.api.dfv as dfv
 from span.api.lattice import ChangedT, Changed, DataLT, mergeAll
 
-AnalysisNameT = str
+AnNameT = AnalysisNameT = str
 
 ################################################
 # BOUND START: sim_related 1/3
@@ -133,7 +133,12 @@ class FastNodeWorkList:
       self.wl.append(nid)
       self.wl.sort(key=lambda x: x if self.postOrder else -x)
       self.wlNodeSet.add(nid)
+      if util.LL5: LDB("AddedNodeToWl: Node_%s: Yes. %s", node.id, node.insn)
       return True
+
+    if util.LL5: LDB("AddedNodeToWl: Node_%s: No."
+                     " (Attempted: %s, AlreadyPresent: %s). %s",
+                     node.id, attemptAdd, nid in self.wlNodeSet, node.insn)
     return False
 
 
@@ -412,16 +417,17 @@ class DirectionDT:
 
 
   def __init__(self,
-      cfg: cfg.Cfg,
+      anName: AnNameT,
+      func: constructs.Func,
       top: DataLT,
   ) -> None:
     if type(self).__name__ == "DirectionT":
       super().__init__()
-    self.cfg = cfg
-    self.nidNdfvMap: Dict[NodeIdT, NodeDfvL] = dict()
+    self.cfg = func.cfg
+    self.anResult: dfv.AnResult = dfv.AnResult(anName, func, top)
     self.topNdfv: NodeDfvL = NodeDfvL(top, top)
     for nid in self.cfg.nodeMap.keys():
-      self.nidNdfvMap[nid] = self.topNdfv
+      self.anResult[nid] = self.topNdfv
     # set this to true once boundary values are initialized
     self.boundaryInfoInitialized = False
     self.wl: Opt[FastNodeWorkList] = None # initialize in sub-class
@@ -438,7 +444,7 @@ class DirectionDT:
       nid: Opt[NodeIdT] = None,
   ) -> None:
     if not nid: nid = node.id
-    self.nidNdfvMap[nid] = self.topNdfv
+    self.anResult[nid] = self.topNdfv
 
 
   def update(self,
@@ -452,7 +458,7 @@ class DirectionDT:
     if dfv is changed.
     """
     nid = node.id
-    oldNdfv = self.nidNdfvMap.get(nid, self.topNdfv)
+    oldNdfv = self.anResult.get(nid, self.topNdfv)
     oldIn, oldOut = oldNdfv.dfvIn, oldNdfv.dfvOut
     oldOutTrue, oldOutFalse = oldNdfv.dfvOutTrue, oldNdfv.dfvOutFalse
 
@@ -484,7 +490,7 @@ class DirectionDT:
     isNewOut = newOut != oldOut \
                or newOutFalse != oldOutFalse \
                or newOutTrue != oldOutTrue
-    self.nidNdfvMap[nid] = nodeDfv
+    self.anResult[nid] = nodeDfv
     return dfv.getNewOldObj(isNewIn, isNewOut)
 
 
@@ -492,7 +498,6 @@ class DirectionDT:
     """Add node_id to the worklist."""
     assert self.wl is not None
     added = self.wl.add(node)
-    if util.LL5: LDB("AddedNodeToWl: Node_%s: %s. %s", node.id, added, node.insn)
     return added
 
 
@@ -507,7 +512,7 @@ class DirectionDT:
   def getDfv(self,
       nodeId: cfg.CfgNodeId
   ) -> NodeDfvL:
-    return self.nidNdfvMap.get(nodeId, self.topNdfv)
+    return self.anResult.get(nodeId, self.topNdfv)
 
 
   def __str__(self):
@@ -523,12 +528,13 @@ class ForwardDT(DirectionDT):
 
 
   def __init__(self,
-      cfg: cfg.Cfg,
+      anName: AnNameT,
+      func: constructs.Func,
       top: DataLT,
   ) -> None:
     if type(self).__name__ == "ForwardDT":
       raise NotImplementedError()  # can't create direct object
-    super().__init__(cfg, top)
+    super().__init__(anName, func, top)
     self.wl = self.generateInitialWorklist()  # important
 
 
@@ -569,9 +575,9 @@ class ForwardDT(DirectionDT):
   ) -> Tuple[NodeDfvL, ChangePairL]:
     """Forward: Merges OUT of feasible predecessors.
 
-    It also updates the self.nidNdfvMap to make the change visible (if any).
+    It also updates the self.anResult to make the change visible (if any).
     """
-    nid, selfNidNdfvMapGet, topNdfv = node.id, self.nidNdfvMap.get, self.topNdfv
+    nid, selfNidNdfvMapGet, topNdfv = node.id, self.anResult.get, self.topNdfv
     ndfv = selfNidNdfvMapGet(nid, topNdfv)
     predEdges = node.predEdges
     # for start node, nothing changes
@@ -600,7 +606,7 @@ class ForwardDT(DirectionDT):
     # Update in map for use in evaluation functions.
     assert newIn is not None
     newNodeDfv = NodeDfvL(newIn, ndfv.dfvOut)
-    self.nidNdfvMap[nid] = newNodeDfv  # updates the node dfv map
+    self.anResult[nid] = newNodeDfv  # updates the node dfv map
     return newNodeDfv, NEW_IN_ONLY
 
 
@@ -609,10 +615,11 @@ class ForwardD(ForwardDT):
 
 
   def __init__(self,
-      cfg: cfg.Cfg,
-      top: DataLT
+      anName: AnNameT,
+      func: constructs.Func,
+      top: DataLT,
   ) -> None:
-    super().__init__(cfg, top)
+    super().__init__(anName, func, top)
 
 
 class BackwardDT(DirectionDT):
@@ -620,12 +627,13 @@ class BackwardDT(DirectionDT):
 
 
   def __init__(self,
-      cfg: cfg.Cfg,
-      top: DataLT
+      anName: AnNameT,
+      func: constructs.Func,
+      top: DataLT,
   ) -> None:
     if type(self).__name__ == "BackwardDT":
       raise NotImplementedError()  # can't create direct object
-    super().__init__(cfg, top)
+    super().__init__(anName, func, top)
     self.wl = self.generateInitialWorklist()  # important
 
 
@@ -649,7 +657,7 @@ class BackwardDT(DirectionDT):
     inOutChange = super().update(node, nodeDfv, widen)
 
     # if not inOutChange.isNewOut:
-    #   print("NewOut:", self.nidNdfvMap[node.id].dfvOut)
+    #   print("NewOut:", self.anResult[node.id].dfvOut)
     # assert not inOutChange.isNewOut, msg.INVARIANT_IS_VIOLATED
 
     if inOutChange.newIn:
@@ -669,9 +677,9 @@ class BackwardDT(DirectionDT):
   ) -> Tuple[NodeDfvL, ChangePairL]:
     """Backward: Merges IN of feasible successors.
 
-    It also updates the self.nidNdfvMap to make the change visible (if any).
+    It also updates the self.anResult to make the change visible (if any).
     """
-    nid, selfNidNdfvMapGet, topNdfv = node.id, self.nidNdfvMap.get, self.topNdfv
+    nid, selfNidNdfvMapGet, topNdfv = node.id, self.anResult.get, self.topNdfv
     ndfv = selfNidNdfvMapGet(nid, topNdfv)
     succEdges = node.succEdges
     # for end node, nothing changes
@@ -695,7 +703,7 @@ class BackwardDT(DirectionDT):
     # Update in map for use in evaluation functions.
     assert newOut is not None
     newNodeDfv = NodeDfvL(ndfv.dfvIn, newOut)
-    self.nidNdfvMap[nid] = newNodeDfv  # updates the node dfv map
+    self.anResult[nid] = newNodeDfv  # updates the node dfv map
     return newNodeDfv, NEW_IN_ONLY
 
 
@@ -704,17 +712,22 @@ class BackwardD(BackwardDT):
 
 
   def __init__(self,
-      cfg: cfg.Cfg,
-      top: DataLT
+      anName: AnNameT,
+      func: constructs.Func,
+      top: DataLT,
   ) -> None:
-    super().__init__(cfg, top)
+    super().__init__(anName, func, top)
 
 
 class ForwBackDT(DirectionDT):
   """TODO: For bi-directional problems."""
 
 
-  def __init__(self):
+  def __init__(self,
+      anName: AnNameT,
+      func: constructs.Func,
+      top: DataLT,
+  ):
     pass
 
 
@@ -1769,7 +1782,7 @@ def extractSimNames() -> Set[str]:
   return tmp
 
 
-simNames: Set[str] = extractSimNames()
+SimNames: Set[str] = extractSimNames()
 
 Node__to__Nil__Name: str = AnalysisAT.Node__to__Nil.__name__
 LhsVar__to__Nil__Name: str = AnalysisAT.LhsVar__to__Nil.__name__
@@ -1778,7 +1791,7 @@ Num_Bin__to__Num_Lit__Name: str = AnalysisAT.Num_Bin__to__Num_Lit.__name__
 Deref__to__Vars__Name: str = AnalysisAT.Deref__to__Vars.__name__
 Cond__to__UnCond__Name: str = AnalysisAT.Cond__to__UnCond.__name__
 
-simDirnMap = {  # the IN/OUT information needed for the sim
+SimDirnMap = {  # the IN/OUT information needed for the sim
   Node__to__Nil__Name:        Forward,  # means dfv at IN is needed
   Num_Var__to__Num_Lit__Name: Forward,
   Cond__to__UnCond__Name:     Forward,
