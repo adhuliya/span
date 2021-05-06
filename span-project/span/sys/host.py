@@ -2176,7 +2176,7 @@ class Host:
       for node in self.funcCfg.revPostOrder:
         nid = node.id
         nDfv = res.anResult.get(nid, topTop)
-        print(f">> {nid}. ({node.insn}): {nDfv}")
+        print(f">> {nid}. ({node.insn}):\n{nDfv}")
       #print("Worklist:", self.anWorkDict[anName].wl.getAllNodesStr())
       print("NodesVisitOrder:", self.anWorkDict[anName].wl.fullSequence)
 

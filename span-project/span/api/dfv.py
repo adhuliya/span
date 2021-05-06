@@ -17,7 +17,7 @@ from span.ir.tunit import TranslationUnit
 from span.util import ff
 
 from span.ir import tunit, conv
-from span.ir.conv import isStringLitName, nameHasPpmsVar, isLocalVarName, NULL_OBJ_NAME
+from span.ir.conv import isStringLitName, nameHasPpmsVar, isLocalVarName, NULL_OBJ_NAME, simplifyName
 
 from span.util.util import LS
 import span.util.util as util
@@ -274,18 +274,24 @@ class NodeDfvL(LatticeLT):
 
 
   def __str__(self):
-    idStr = f"(id:{id(self)})" if util.DD5 else ""
+    idStr = f"(id:{id(self)}):" if util.DD5 else ""
     if self.dfvOut is self.dfvOutFalse:
       # assert self.dfvOutFalse is self.dfvOutTrue,\
       #   f"\n DFV_OUT: {self.dfvOut},\n DFV_FALSE: {self.dfvOutFalse}," \
       #   f"\n DFV_TRUE: {self.dfvOutTrue}"
       if self.dfvIn is self.dfvOut:
-        return f"NodeDfvL: {idStr}: IN == OUT: {self.dfvIn}"
+        return f"NodeDfvL: {idStr}\n" \
+               f" IN=OUT: {self.dfvIn}"
       else:
-        return f"NodeDfvL: {idStr}:\n IN : {self.dfvIn} \n OUT: {self.dfvOut}"
+        return f"NodeDfvL: {idStr}\n" \
+               f" IN    : {self.dfvIn}\n" \
+               f" OUT   : {self.dfvOut}"
     else:
-      return f"NodeDfvL: {idStr}:\n IN   : {self.dfvIn}\n OUT  : {self.dfvOut}" \
-             f"\n TRUE : {self.dfvOutTrue}\n FALSE: {self.dfvOutFalse}"
+      return f"NodeDfvL: {idStr}\n" \
+             f" IN    : {self.dfvIn}\n" \
+             f" OUT   : {self.dfvOut}\n" \
+             f" TRUE  : {self.dfvOutTrue}\n" \
+             f" FALSE : {self.dfvOutFalse}"
 
 
   def __repr__(self):
@@ -599,10 +605,12 @@ class OverallL(DataLT):
       string.write(f"(Len:{len(self.val)}) {{")
       prefix = ""
       for key in sorted(selfVal.keys()):
-        if not DD3 and key == conv.NULL_OBJ_NAME: continue
+        if not DD3 and key == conv.NULL_OBJ_NAME:
+          continue
         string.write(prefix)
         val, prefix = selfVal[key], ", "
-        string.write(f"'{key}': {val}") # f"{simplifyName(key)}: {val}"
+        name = key if DD3 else simplifyName(key)
+        string.write(f"'{name}': {val}")
       string.write(f"}}{idStr}" if DD5 else "}")
     else:
       string.write("Default")
@@ -728,7 +736,7 @@ class AnResult:
     for node in self.func.cfg.revPostOrder:
       nid = node.id
       nDfv = self.get(nid, topTop)
-      print(f">> {nid}. ({node.insn}): {nDfv}")
+      print(f">> {nid}. ({node.insn}):\n {nDfv}")
     print() # a blank line
 
 ################################################

@@ -16,7 +16,7 @@ void f() {
 int main(int argc) {
   int x = 10;
   if (argc) {
-    p = &x;
+    p = &x; // since addr taken, x is considered global.
   }
   f();
   f(); // ValueContext MISS! (since x changes value)

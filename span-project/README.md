@@ -234,24 +234,23 @@ See the list of checkers available:
 6. Remove sim of ptr-array-subscript expressions in cascading and lerner's.
 7. Handle initializer expressions a[] = {{1,2},{3,4}};
 8. Add cascading to IPA.
-9. Test cascading in IPA mode -- add test cases.
+9. Test cascading in IPA mode -- +add test cases.
 10. Add test case for the NULL pointee in the pointee set (DONE).
 11. Treat appropriate pointer arithmetic as ptr-array-subscript operations.
 
 
 1. List of (library) functions that don't result in over-approximation.
-3. Cascading in IPA setting (for comparison).
 4. Transformation improvement.
 
 
 ## Notes
 
 ### C99 Incompatibilities
-* Varargs not supported.
-* Aggregate assignment not supported. E.g. arr[] = {1,2,3}.
-* size_t is assumed UINT64.
-* All floats are considered FLOAT64.
-* static initializations in functions? (Supported)
+* Varargs not supported. (okay - tolerable)
+* Aggregate assignment not supported. E.g. arr[] = {1,2,3}. (support it)
+* size_t is assumed UINT64. (okay - tolerable)
+* All floats are considered FLOAT64. (okay - tolerable)
+* static initializations in functions? (Supported) (DONE)
 
 ### SPAN Features
 * Flow Insensitive (Easy to add. Maybe not efficient.)

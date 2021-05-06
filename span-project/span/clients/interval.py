@@ -205,15 +205,28 @@ class ComponentL(dfv.ComponentL):
     return ComponentL(self.func, val=(min(v1,v2), max(v1,v2)))
 
 
-  def modRange(self) -> 'ComponentL':
+  def modRange(self,
+      other: 'ComponentL',
+  ) -> 'ComponentL':
+    """Call this function for an expression: `other % self`.
+    Mod operation in C is only possible between two integers (unlike Python).
+    """
     if self.top: return self
+    if self.bot: return self # over-approx (can add precision w.r.t. other)
+    if other.top: return other
 
-    upper = float("+inf")
-    if not self.bot:
-      assert self.val, f"{self}"
-      upper = self.val[1] if 0 < self.val[1] else upper
+    assert self.val, f"self: {self}, other: {other}"
+    selfUpper = abs(self.val[1])
 
-    return ComponentL(self.func, val=(0, upper))
+    neg = -1 if other.hasNegatives() else 0
+    pos = 1 if other.hasPositives() else 0
+
+    lower, upper = neg * (selfUpper - 1), pos * (selfUpper - 1)
+
+    if other.isConstant():
+      pass # over-approx (can add precision here)
+
+    return ComponentL(self.func, val=(lower, upper))
 
 
   def isBooleanRange(self) -> bool:
@@ -224,11 +237,23 @@ class ComponentL(dfv.ComponentL):
 
 
   def isPositive(self) -> bool:
+    """Returns True if the complete range is on the positive side."""
     return self.val and self.val[0] > 0
 
 
+  def hasPositives(self) -> bool:
+    """Returns True if the range contains positive values (zero is not positive)."""
+    return self.bot or (self.val and self.val[1] > 0)
+
+
   def isNegative(self) -> bool:
+    """Returns True if the complete range is on the negative side."""
     return self.val and self.val[1] < 0
+
+
+  def hasNegatives(self) -> bool:
+    """Returns True if the range contains negative values."""
+    return self.bot or (self.val and self.val[0] < 0)
 
 
   def isPositiveOrZero(self) -> bool:
@@ -293,8 +318,8 @@ class ComponentL(dfv.ComponentL):
     otherLower, otherUpper = other.val
     if self.bot:
       if lessThanOther:
-        upper = otherLower if equalToOther else \
-          (otherLower - 1 if intType else otherLower)
+        upper = otherUpper if equalToOther else \
+          (otherUpper - 1 if intType else otherUpper)
         return newVal((float("-inf"), upper))
       else: # greaterThanOther
         lower = otherLower if equalToOther else \
@@ -311,7 +336,7 @@ class ComponentL(dfv.ComponentL):
         upper = otherLower if equalToOther else \
           (otherLower - 1 if intType else otherLower)
         return newVal((selfLower, upper)) if selfLower <= upper else topVal
-      if selfUpper >= otherUpper: # obviously selfUpper > otherLower
+      if selfUpper >= otherUpper: # certainly selfUpper > otherLower
         upper = otherUpper if equalToOther else \
           (otherUpper - 1 if intType else otherUpper)
         return newVal((selfLower, upper)) if selfLower <= upper else topVal
@@ -389,13 +414,23 @@ class ComponentL(dfv.ComponentL):
 
 
   def __str__(self):
-    s = getBasicString(self)
-    if util.DD5:
-      idStr = f"(id:{id(self)})"
-      return f"{s}{idStr}" if s else f"{self.val!r}{idStr}"
-    else:
-      valStr = f"{self.val[0]}" if self.isConstant() else f"{self.val!r}"
-      return s if s else f"{valStr}"
+    valStr = getBasicString(self)
+    idStr = f"(id:{id(self)})" if util.DD5 else ""
+
+    def getSafeStr(val: types.NumericT):
+      if isinstance(val, float):
+        if val in (float("+inf"), float("-inf")):
+          return f"'{val}'" # put value in quotes
+
+      return f"{val}" # default: return the value as it is.
+
+    if not valStr:
+      if self.isConstant():
+        valStr = getSafeStr(self.val[0])
+      else:
+        valStr = f"({getSafeStr(self.val[0])}, {getSafeStr(self.val[1])})"
+
+    return f"{valStr}{idStr}"
 
 
   def __repr__(self):
@@ -729,12 +764,16 @@ class IntervalA(analysis.ValueAnalysisAT):
     """A default implementation (assuming Constant Propagation)."""
     val1 = cast(ComponentL, self.getExprDfv(e.arg1, dfvIn))
     val2 = cast(ComponentL, self.getExprDfv(e.arg2, dfvIn))
-    opr = e.opr
-    rhsOpCode = opr.opCode
+    opr, rhsOpCode  = e.opr, e.opr.opCode
+
+    if val1.isConstant() and val2.isConstant():
+      newExpr: expr.LitE = expr.evalExpr(
+        expr.BinaryE(expr.LitE(val1.val[0]), opr, expr.LitE(val2.val[0])))
+      return ComponentL(self.func, val=(newExpr.val, newExpr.val))
     if val1.top or val2.top:
       return self.componentTop
     elif rhsOpCode == op.BO_MOD_OC:
-      return val2.modRange()
+      return val2.modRange(val1)
     elif val1.bot or val2.bot:
       return ComponentL(self.func, val=(0,1))\
         if opr.isRelationalOp() else self.componentBot

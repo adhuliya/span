@@ -1637,7 +1637,7 @@ def getNamesUsedInExprSyntactically(
   raise ValueError(f"{e}")
 
 
-def evalExpr(e: ExprET) -> ExprET:
+def evalExpr(e: ExprET) -> LitE:
   """Converts: 5 + 6, 6 > 7, -5, +6, !7, ~9, ... to a single literal."""
   newExpr = e  # default value on return
 
