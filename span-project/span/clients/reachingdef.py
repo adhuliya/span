@@ -30,7 +30,7 @@ from span.api.lattice import (ChangedT, Changed, DataLT,
                               basicLessThanTest, basicEqualsTest)
 import span.api.dfv as dfv
 from span.api.dfv import (
-  NodeDfvL, Filter_Vars, ComponentL
+  NodeDfvL, ComponentL
 )
 import span.api.analysis as analysis
 from span.api.analysis import AnalysisAT, ValueAnalysisAT

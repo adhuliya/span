@@ -5,6 +5,7 @@
 
 """
 This is a new concept under development.
+
 This module defines the Value class and its subclasses.
 """
 
@@ -17,6 +18,7 @@ class Value:
   A Value is an abstract entity, that has various
   abstract mathematical/numerical properties
   (like even/odd, zero, +ve, -ve, range etc.).
+
   These abstract properties are
   collected from various analyses, and put together
   into a single object.

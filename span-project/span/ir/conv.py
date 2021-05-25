@@ -5,6 +5,7 @@
 
 """
 Conventions and related utility functions in SPAN IR.
+
 This module only imports `span.ir.types` module in the `span.ir` package.
 Hence, except `span.ir.types` module all other modules can import this module.
 """

@@ -3,7 +3,7 @@
 # MIT License
 # Copyright (c) 2020 Anshuman Dhuliya
 
-"""Program abstraction as control flow graph, call graph etc."""
+"""Program abstraction: Control Flow Graph."""
 
 import logging
 
@@ -832,67 +832,3 @@ class FeasibleEdges:
     return self.__str__()
 
 
-class CalleeInfo:
-
-  __slots__ : List[str] = ["callExpr", "caller", "calleeNames"]
-
-  def __init__(self,
-      callExpr: expr.CallE,  # the call expr that invokes the call
-      caller: FuncNameT,  # the caller function name
-      calleeNames: List[FuncNameT]  # the callee(s) - if function ptr
-  ):
-    self.callExpr = callExpr
-    self.caller = caller
-    self.calleeNames = calleeNames
-
-
-  def isIndeterministicCall(self):
-    """The call is in-deterministic if its made using a variable name."""
-    return not self.callExpr.callee.hasFunctionName()
-
-
-################################################################################
-# START: call_graph_related ####################################################
-################################################################################
-
-
-class CallGraphNode:
-  """A Node in the call graph representing a function."""
-
-  def __init__(self,
-      funcName: types.FuncNameT,
-      index: int,    # for Tarjan's Algo: https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
-      lowIndex: int, # for Tarjan's Algo
-      onStack: int,  # for Tarjan's Algo
-  ):
-    self.funcName = funcName
-    self.index = index
-    self.lowIndex = lowIndex
-    self.onStack = onStack
-
-
-  def __eq__(self, other):
-    if not isinstance(other, CallGraphNode):
-      return False
-    return self.funcName == other.funcName
-
-
-  def __hash__(self):
-    return hash(self.funcName)
-
-
-# class CallGraph:
-#   """Call graph of the given translation unit.
-#   This can work for inter-procedural level also.
-#   """
-#
-#
-#   def __init__(self):
-#     self.callGraph: Dict[FuncNameT, List[CalleeInfo]] = {}
-#     # entryFunctions is calculated from the callgraph dictionary
-#     self.entryFunctions: Opt[List[FuncNameT]] = None
-
-
-################################################################################
-# END  : call_graph_related ####################################################
-################################################################################

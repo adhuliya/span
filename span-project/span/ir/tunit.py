@@ -5,6 +5,7 @@
 
 """
 Defines a translation unit.
+
 Following important things are available here,
 
   1. Actions to pre-processes IR before analysis can be done on the same,
@@ -14,7 +15,7 @@ Following important things are available here,
 
      b. infers types of expressions and instructions
 
-     c. caches information into data structures for easy access
+     c. caches information into data structures for faster access
 
   2. Provides API to fetch useful information from a translation unit.
 """
@@ -52,7 +53,8 @@ from span.ir.conv import (
   GLOBAL_INITS_FUNC_NAME, GLOBAL_INITS_FUNC_ID,
   PPMS_VAR_TYPE,
   memAllocFunctions,
-  FULL_PPMS_VAR_NAME, nameHasPpmsVar, nameHasNullVar, isPpmsVar, )
+  FULL_PPMS_VAR_NAME, nameHasPpmsVar, nameHasNullVar, isPpmsVar,
+)
 
 from span.ir.instr import (
   InstrIT, III, ExReadI, AssignI, CallI, CondI,
@@ -72,6 +74,7 @@ import span.ir.op as op
 import span.ir.constructs as constructs
 import span.ir.cfg as cfg
 
+
 class Stats:
   def __init__(self, tunit: 'TranslationUnit', totalCfgNodes=0):
     self.tunit = tunit
@@ -85,19 +88,20 @@ class Stats:
 
 class TranslationUnit:
   """A Translation Unit.
-  It holds the complete C file (converted from Clang AST).
+  It holds a complete '*.c' file's content,
+  in its SPAN IR representation (converted from Clang AST).
   SPAN IR may undergo many iteration of changes here
   (see self.preProcess()).
   """
 
 
   def __init__(self,
-      name: TUnitNameT,
-      description: str,
-      allVars: Dict[VarNameT, Type],
-      globalInits: Opt[List[InstrIT]],
-      allRecords: Dict[RecordNameT, RecordT],
-      allFunctions: Dict[VarNameT, constructs.Func],
+      name: TUnitNameT, # a unique name for this translation unit
+      description: str, # human readable description
+      allVars: Dict[VarNameT, Type], # all named variables and their types
+      globalInits: Opt[List[InstrIT]], # list of global initializations
+      allRecords: Dict[RecordNameT, RecordT], # all the structs/unions
+      allFunctions: Dict[VarNameT, constructs.Func], # all the functions (decl & def)
       preProcess: bool = True,  # disables IR pre-processing
   ) -> None:
     # analysis unit name and description
@@ -111,6 +115,7 @@ class TranslationUnit:
     self.allRecords = allRecords
     self.allFunctions: Dict[VarNameT, constructs.Func] = allFunctions
 
+    # all global inits are put into a special function
     self.allFunctions[GLOBAL_INITS_FUNC_NAME] = constructs.Func(
       name=GLOBAL_INITS_FUNC_NAME,
       instrSeq=globalInits if globalInits else [NopI()]
@@ -118,29 +123,22 @@ class TranslationUnit:
 
     self.initialized: bool = False  # is set to True after preProcess()
 
-    # new variables: variables introduces because of preProcess()
-    self._newVarsMap: \
-      Dict[VarNameT, VarNameInfo] = {}
-
     # Name information map (contains all possible named locations)
-    self._nameInfoMap: \
-      Dict[VarNameT, VarNameInfo] = {}
+    self._nameInfoMap: Dict[VarNameT, VarNameInfo] = {}
 
-    # The local pseudo variables in each function
-    self._localPpmsVars: \
-      Dict[FuncNameT, Set[VarNameT]] = {}
+    # new variables: variables introduced because of preProcess()
+    self._newVarsMap: Dict[VarNameT, VarNameInfo] = {}
 
     # Set of all pseudo vars in this translation unit.
-    # Note: pseudo vars hide memory allocation with a variable name.
-    self._ppmsVars: Set[VarNameT] = set()
-
-    # All the pseudo variables in the translation unit
-    self._allPpmsNames: Opt[Set[VarNameT]] = None
+    # Note: pseudo vars represent memory allocation with a variable name.
+    self._allPpmsVars: Set[VarNameT] = set()
 
     # stores the increasing counter for pseudo variables in the function
-    # pseudo variables replace malloc/calloc calls as addressOf(pseudoVar)
-    self._funcPpmsCountMap: Dict[FuncNameT, int] = {}
+    # pseudo variables replace malloc/calloc calls as AddrOf(pseudoVar)
     self.ppmsCount = 0
+
+    # The local pseudo variables in each function (TODO: remove?)
+    self._localPpmsVars: Dict[FuncNameT, Set[VarNameT]] = {}
 
     # map (func, givenType) to vars of givenType accessible in the func (local+global)
     # (func, None) holds all types of vars accessible in the func (local+global)
@@ -148,35 +146,34 @@ class TranslationUnit:
       Dict[Tuple[FuncNameT, Opt[Type]], Set[VarNameT]] = {}
 
     # only local variables
-    self._typeFuncLocalNameMap: \
+    self._typeFuncLocalNamesMap: \
       Dict[Tuple[FuncNameT, Opt[Type]], Set[VarNameT]] = {}
-
-    # function signature (funcsig) to function object mapping
-    self._funcSigToFuncObjMap: \
-      Dict[FuncSig, List[constructs.Func]] = {}
-
-    # maps tmps assigned only once to the assigned expression
-    self._tmpVarExprMap: Dict[VarNameT, ExprET] = {}
-
-    # used to allot unique name to string literals
-    self._stringLitCount: int = 0
-    self._dummyVarCount: int = 0
 
     # Set of all (actual) global vars in this translation unit.
     self._globalVarNames: Set[VarNameT] = set()
 
     # named locations whose address is taken
-    self._addrTakenSet: Set[VarNameT] = set()
+    self._addrTakenVarNames: Set[VarNameT] = set()
 
     # effective globals (actual globals + addr-taken set)
-    self._globalsPpmsAndAddrTakenSet: Set[VarNameT] = set()
+    self._globalsAndAddrTakenVarNames: Set[VarNameT] = set()
 
     # type based globals and address taken set categorization
-    self._globalsPpmsAndAddrTakenSetMap: \
+    self._globalsAndAddrTakenSetMap: \
       Dict[Type, Set[VarNameT]] = dict()
+
+    # function signature (funcsig) to function object list mapping
+    self._funcSigToFuncListMap: \
+      Dict[FuncSig, List[constructs.Func]] = {}
+
+    # maps tmps assigned only once to the assigned expression
+    self._tmpVarExprMap: Dict[VarNameT, ExprET] = {}
 
     # function id list: id is the index in the list
     self._indexedFuncList: List[constructs.Func] = []
+
+    # used to allot unique name to string literals
+    self._stringLitCount: int = 0
 
     if preProcess:
       self.preProcess()
@@ -190,34 +187,34 @@ class TranslationUnit:
     self.initialized = False
 
     self.logUsefulInfo()
-    if util.LL1: LOG.info(f"PreProcessing_TUnit({self.name}): START.")
+    if util.LL1: LIN(f"PreProcessing_TUnit({self.name}): START.")
 
-    # STEP 1: Fill the gaps in the SPAN IR
-    self.fillTheRecordTypes()  # IMPORTANT (MUST)
-    self.fillFuncParamTypes()  # IMPORTANT (MUST)
-    self.addThisTUnitRefToObjs()  # IMPORTANT (MUST)
-    self.inferAllInstrTypes()  # IMPORTANT (MUST)
-    self.convertNonDerefMemberE()  # IMPORTANT
-
-    # STEP 2: Canonicalize the IR
-    self.canonicalize()  # CANONICALIZE SPAN IR (MUST)
-
-    # STEP 3: Extract and cache the information on the IR
-    self.extractTmpVarAssignExprs()  # IMPORTANT
-    self.extractAllVarNames()  # (MUST)
-    if util.VV3: self.printNameInfoMap()  # (OPTIONAL)
-
-    # STEP 4: Misc
+    # STEP 1: Legalize
+    self.fillTheRecordTypes()  # MUST
+    self.fillFuncParamTypes()  # MUST
+    self.addThisTUnitRefToObjs()  # MUST
+    self.inferAllInstrTypes()  # MUST
+    self.convertNonDerefMemberE()  # MUST
     self.fillGlobalInitsFunction()  # MUST
+
+    # STEP 2: Canonicalize
+    self.canonicalize()  # MUST
+
+    # STEP 3: Collect Information
+    self.collectTmpVarAssignExprs()  # OPTIONAL
+    self.collectAllVarNames()  # MUST
+    if util.VV3: self.printNameInfoMap()  # OPTIONAL
     self.collectAddrTakenVars()  # MUST
-    # FIXME: Don't add dummy vars: handle pointers with no possible pointees in the code.
-    # self.addDummyObjects()  # MUST (after extractAllVarNames())
+
+    # STEP 4: Misc ending steps
+    self.collectMiscStats() # MUST
     self.genCfgs()  # MUST
+    self.assignFunctionIds() # MUST
 
-    self.assignFunctionIds()
-
+    # STEP 5: Run Checks
     self.checkInvariants()  # IMPORTANT: checks the IR for basic correctness
 
+    # STEP 6: Log Information
     self.logStats() # must be the last call (OPTIONAL)
 
     self.initialized = True
@@ -226,6 +223,9 @@ class TranslationUnit:
 
   def checkInvariants(self):
     """Checks the IR for basic correctness"""
+    if not util.CC0:
+      return
+
     for func in self.yieldFunctionsWithBody():
       func.checkInvariants()
       for insn in func.yieldInstrSeq():
@@ -234,17 +234,26 @@ class TranslationUnit:
 
   def assignFunctionIds(self):
     """Assigns a unique id to each function."""
-    funcId: FuncIdT = 1 # GLOBAL_INITS_FUNC_NAME has id 0
+    funcList = []
+
+    # Handle global inits func first
+    globalFunc = self.allFunctions[GLOBAL_INITS_FUNC_NAME]
+    globalFunc.id = 0 # GLOBAL_INITS_FUNC_NAME has id 0
+    funcList.append(globalFunc)
+
+    # Initialize IDs for all other functions.
+    funcId: FuncIdT = 1 # since 0 is occupied
     for func in self.yieldFunctions():
-      func.id = funcId
-      self._indexedFuncList.append(func)
-      funcId += 1
-    self.calcNodeSiteBits() # IMPORTANT
+      func.id, funcId = funcId, funcId + 1
+      funcList.append(func)
+
+    self._indexedFuncList = funcList
+    self.calcNodeSiteBits(funcList) # IMPORTANT
 
 
-  def calcNodeSiteBits(self):
-    assert self._indexedFuncList, f"{self._indexedFuncList}"
-    totalFuncs = len(self._indexedFuncList)
+  def calcNodeSiteBits(self, funcList: List[constructs.Func]):
+    assert funcList, f"{funcList}"
+    totalFuncs = len(funcList)
     maxCfgNodes = self.maxCfgNodesInAFunction()
     setNodeSiteBits(totalFuncs, maxCfgNodes)
 
@@ -267,33 +276,29 @@ class TranslationUnit:
           rhs = insn.rhs
           if isinstance(rhs, AddrOfE):
             # for statement: x = &z
+            # Expr &(x->y) must have been preceded by x = &z.
             if isinstance(rhs.arg, VarE): # only addr of a var
               argName, argType = rhs.arg.name, rhs.arg.type
-              self._addrTakenSet.update(getSuffixes(None, argName, argType))
+              self._addrTakenVarNames.update(getSuffixes(None, argName, argType))
           if isinstance(rhs, VarE) and isinstance(rhs.type, ArrayT):
             # x = y, where y is an array is equivalent to x = &y.
             rhsName, rhsType = rhs.name, rhs.type
-            self._addrTakenSet.update(getSuffixes(None, rhsName, rhsType))
+            self._addrTakenVarNames.update(getSuffixes(None, rhsName, rhsType))
 
         callE = getCallExpr(insn)
         if callE:
           for arg in callE.args:
             if isinstance(arg, VarE) and isinstance(arg.type, ArrayT):
               argName, argType = arg.name, arg.type
-              self._addrTakenSet.update(getSuffixes(None, argName, argType))
+              self._addrTakenVarNames.update(getSuffixes(None, argName, argType))
 
-
-          # Expr &(x->y) must have been preceded by x = &z.
-    self._addrTakenSet.add(NULL_OBJ_NAME)
-
-    self._globalsPpmsAndAddrTakenSet |= self._globalVarNames | self._addrTakenSet
+    self._addrTakenVarNames.add(NULL_OBJ_NAME)
 
 
   def convertNonDerefMemberE(self):
     """Converts member expression with non member deref to VarE"""
 
-
-    def convertMemberEToVarE(e: MemberE) -> ExprET:
+    def convertMemberExprToVarExpr(e: MemberE) -> ExprET:
       if e.hasDereference():
         return e
       else:
@@ -305,7 +310,8 @@ class TranslationUnit:
 
     for func in self.yieldFunctionsWithBody():
       for insn in func.yieldInstrSeq():
-        self.findAndConvertExprInInstr(insn, exprPredicate, convertMemberEToVarE)
+        self.findAndConvertExprInInstr(
+          insn, exprPredicate, convertMemberExprToVarExpr)
 
 
   def findAndConvertExprInInstr(self,
@@ -425,15 +431,15 @@ class TranslationUnit:
     ld("NewVariables(total %s):\n%s", len(self._newVarsMap), sio.getvalue())
 
     sio = io.StringIO()
-    for vName in sorted(self._addrTakenSet):
+    for vName in sorted(self._addrTakenVarNames):
       sio.write(f"    {vName!r},\n")
-    ld("AddrTakenVariables(total %s):\n%s", len(self._addrTakenSet), sio.getvalue())
+    ld("AddrTakenVariables(total %s):\n%s", len(self._addrTakenVarNames), sio.getvalue())
 
     sio = io.StringIO()
-    for vName in sorted(self._globalsPpmsAndAddrTakenSet):
+    for vName in sorted(self._globalsAndAddrTakenVarNames):
       sio.write(f"    {vName!r},\n")
     ld("GlobalsAndAddrTakenVariables(total %s):\n%s",
-       len(self._globalsPpmsAndAddrTakenSet), sio.getvalue())
+       len(self._globalsAndAddrTakenVarNames), sio.getvalue())
 
     sio = io.StringIO()
     for rName in sorted(self.allRecords.keys()):
@@ -451,7 +457,7 @@ class TranslationUnit:
   def canBeGloballyAccessed(self, name: str):
     """Returns True (over-approximated) if a name can be
     potentially accessed globally (either directly or by pointer deref)"""
-    return name in self._globalsPpmsAndAddrTakenSet
+    return name in self._globalsAndAddrTakenVarNames
 
 
   def getPossiblePointees(self,
@@ -459,14 +465,14 @@ class TranslationUnit:
       cache: bool = True
   ) -> Set[VarNameT]:
     """Returns the possible pointees a type 't' var may point to."""
-    if t is None: return self._globalsPpmsAndAddrTakenSet
+    if t is None: return self._globalsAndAddrTakenVarNames
 
     pointeeType = t.getPointeeType()
-    if pointeeType in self._globalsPpmsAndAddrTakenSetMap:
-      return self._globalsPpmsAndAddrTakenSetMap[t]
+    if pointeeType in self._globalsAndAddrTakenSetMap:
+      return self._globalsAndAddrTakenSetMap[t]
 
     names = []
-    for varName in self._globalsPpmsAndAddrTakenSet:
+    for varName in self._globalsAndAddrTakenVarNames:
       if isFuncName(varName):
         nameType = self.allFunctions[varName].sig
       else:
@@ -479,44 +485,9 @@ class TranslationUnit:
 
     namesSet = set(names)
     if cache:
-      self._globalsPpmsAndAddrTakenSetMap[pointeeType] = namesSet
+      self._globalsAndAddrTakenSetMap[pointeeType] = namesSet
 
     return namesSet
-
-
-  def addDummyObjects(self):
-    """It adds dummy objects of the pointee type
-    of pointer variables whose pointee type
-    object doesn't exist in the tunit."""
-    for varName, objType in self.allVars.items():
-      tmpType = objType
-      allFuncs = self.allFunctions
-      nameInfoMap = self._nameInfoMap
-      while isinstance(tmpType, Ptr):
-        names = []
-        namesAppend= names.append
-        pointeeType = tmpType.getPointeeType()
-        for vName in self._globalsPpmsAndAddrTakenSet:
-          if isFuncName(vName):
-            nameType = allFuncs[vName].sig
-          else:
-            nameType = nameInfoMap[vName].type
-          if nameType == pointeeType:
-            namesAppend(vName)
-          elif isinstance(nameType, ArrayT) \
-              and nameType.getElementTypeFinal() == pointeeType:
-            namesAppend(vName)
-          if len(names) >= 2:
-            break
-
-        # names = self.getPossiblePointees(tmp Type, cache=False)
-        if len(names) < 2: # at least two names to point to
-          self.createAndAddGlobalDummyVar(tmpType.getPointeeType())
-          if not len(names):
-            self.createAndAddGlobalDummyVar(tmpType.getPointeeType())
-
-        tmpType = tmpType.getPointeeType()
-        # end while
 
 
   def getNode(self,
@@ -544,7 +515,7 @@ class TranslationUnit:
     return func
 
 
-  def extractAllVarNames(self):
+  def collectAllVarNames(self):
     """It extracts all the object names possible in
     a translation unit and caches the result."""
     for varName, objType in self.allVars.items():
@@ -602,18 +573,22 @@ class TranslationUnit:
 
 
   def addThisTUnitRefToObjs(self):  # IMPORTANT (MUST)
-    """sets func.tUnit to this TUnit here,
-    It cannot be done in obj.Func since,
-      1. due to lack of info in the constructs module
-      2. to avoid circular dependency btw constructs and this module"""
+    """Sets func.tUnit to this TUnit here.
+
+    It cannot be done in obj.Func,
+      1. due to lack of info in the `span.ir.constructs` module.
+      2. to avoid circular dependency btw the two modules."""
     for func in self.yieldFunctions():
-      # Point func.tUnit to TUnit object it belongs to i.e. this
+      # Point func.tUnit to this TUnit object
       func.tUnit = self
 
 
   def genCfgs(self) -> None:
-    """Fills constructs.Func's self.cfg field to contain a proper CFG graph.
-    Its done only for functions with body.
+    """Generates CFG for each function with body in the translation unit.
+
+    Fills `span.ir.constructs.Func`'s `span.ir.constructs.Func.cfg` field
+    to contain a proper CFG graph.
+    CFGs are constructed once the IR is in canonical form and optimized enough.
     """
     for func in self.yieldFunctionsWithBody():
       func.cfg = cfg.Cfg(func.name, func.basicBlocks, func.bbEdges)
@@ -623,7 +598,6 @@ class TranslationUnit:
     """Yields all the functions in the TUnit."""
     for func in sorted(self.allFunctions.values(), key=lambda x: x.name):
       yield func
-
 
 
   def yieldFunctionsWithBody(self):
@@ -957,13 +931,20 @@ class TranslationUnit:
     """Completes the record types.
     E.g. if only types.Struct("s:node") is present, it replaces it
     with the reference to the complete definition of the Struct.
+
+    This is an important step. While conversion from the Clang AST,
+    many places simply refer to the structure by its unique name only.
+    This makes conversion easy. Moreover, in structures are self-referencial
+    then this names based self-reference is unavoidable.
+    Once the python object for the record type is made, then these
+    name based references are replaced by the actual record obj reference.
     """
     # STEP 1. Complete/Correct all the record types.
     for record in self.yieldRecords():
       newFields = []
-      for field in record.members:
-        newType = self.findAndFillRecordType(field[1])
-        newFields.append((field[0], newType))
+      for fName, fType in record.members:
+        newType = self.findAndFillRecordType(fType)
+        newFields.append((fName, newType))
       record.members = newFields
 
     # STEP 2. Complete/Correct all the variable types.
@@ -1016,7 +997,6 @@ class TranslationUnit:
       self.removeUnreachableBbs(func)  # (OPTIONAL)
 
     self.canonicalizeExpressions()  # MUST
-    #self.createAndAddGlobalDummyVar(DUMMY_VAR_TYPE)
 
 
   def fillGlobalInitsFunction(self):
@@ -1025,41 +1005,38 @@ class TranslationUnit:
     with initialization to default values of variables
     that are not present in it."""
 
-    func: constructs.Func = self.allFunctions[GLOBAL_INITS_FUNC_NAME]
-    objsInitialized: Set[VarNameT] = self.extractInitializedGlobals()
-    self._globalVarNames = self._getNamesGlobal()
-    globalObjs: Set[VarNameT] = self._globalVarNames
+    globalInitsFunc = self.allFunctions[GLOBAL_INITS_FUNC_NAME]
+    globalVarNamesInitialized = self.collectGlobalVarNamesInitialized()
+    self._globalVarNames = self._getGlobalVarNames()
+    globalVarNames: Set[VarNameT] = self._globalVarNames
 
     newInsns: List[AssignI] = []
 
-    nonInitGlobals = globalObjs - objsInitialized
-    for varName in sorted(nonInitGlobals):
-      if isStringLitName(varName): continue #avoid string literals
+    nonInitializedGlobals = globalVarNames - globalVarNamesInitialized
+    for varName in sorted(nonInitializedGlobals):
+      if isStringLitName(varName):
+        continue #avoid string literals
       objType = self.inferTypeOfVal(varName)
       defaultInitExpr = getDefaultInitExpr(objType)
       if defaultInitExpr is not None:
-        lhsExpr = VarE(name=varName)
-        rhsExpr = defaultInitExpr
-        insn = AssignI(lhsExpr, rhsExpr)
+        insn = AssignI(VarE(name=varName), defaultInitExpr)
         self.inferTypeOfInstr(insn)
         newInsns.append(insn)
 
     allInsns = []
     allInsns.extend(newInsns)
-    allInsns.extend(func.instrSeq)
+    allInsns.extend(globalInitsFunc.instrSeq)
 
-    # replace old function with new that has all global inits
-    newFunc = constructs.Func(
-      name=GLOBAL_INITS_FUNC_NAME,
-      instrSeq=allInsns
-    )
-    newFunc.tUnit = self  # IMPORTANT
-    # newFunc.basicBlocks, newFunc.bbEdges = \
-    #   constructs.Func.genBasicBlocks(newFunc.instrSeq)
-    self.allFunctions[GLOBAL_INITS_FUNC_NAME] = newFunc
+    globalInitsFunc.setNewInstructionSequence(allInsns)
 
 
-  def extractInitializedGlobals(self) -> Set[VarNameT]:
+  def collectMiscStats(self):
+    self._globalsAndAddrTakenVarNames |= self._globalVarNames
+    self._globalsAndAddrTakenVarNames |= self._addrTakenVarNames
+    self._globalsAndAddrTakenVarNames |= self._allPpmsVars
+
+
+  def collectGlobalVarNamesInitialized(self) -> Set[VarNameT]:
     """Extracts names of globals initialized
     in the global inits function."""
     func: constructs.Func = self.allFunctions[GLOBAL_INITS_FUNC_NAME]
@@ -1247,11 +1224,9 @@ class TranslationUnit:
           if isinstance(insn, AssignI) and isinstance(insn.rhs, CallE):
             rhs = insn.rhs
             if self.isMemoryAllocationCall(rhs):
-              pVarE = self.addPpmsVar(func.name, rhs.info, insn)
+              pVarE = self.addNewPpmsVar(func.name, rhs.info, insn)
               # replace rhs: malloc() with `&pVarE`
               insn.rhs = AddrOfE(pVarE, info=rhs.info)
-
-    self._globalsPpmsAndAddrTakenSet |= self._ppmsVars
 
 
 #   def replaceMemAllocations(self) -> None:
@@ -1314,7 +1289,7 @@ class TranslationUnit:
 #     return None
 
 
-  def addPpmsVar(self,
+  def addNewPpmsVar(self,
       funcName: FuncNameT,
       info: Opt[Info],
       insn: AssignI,
@@ -1325,11 +1300,11 @@ class TranslationUnit:
     pureFuncName = simplifyName(funcName)
     pvName = FULL_PPMS_VAR_NAME.format(fName=pureFuncName, name=nakedPvName)
 
-    self._ppmsVars.add(pvName)
+    self._allPpmsVars.add(pvName)
     insns = [insn]
 
     pvType = PPMS_VAR_TYPE
-    if util.LL1: LDB(f"NewPseudoVar(Var): {pvName}, {pvType},"
+    if util.LL1: LDB(f"NewPpmsVar(Var): {pvName}, {pvType},"
                      f" (Insn: {insn})")
     self.addVarNames(pvName, pvType, True)
 
@@ -1430,7 +1405,7 @@ class TranslationUnit:
     return None  # None if tmp var is not tracked
 
 
-  def extractTmpVarAssignExprs(self) -> None:
+  def collectTmpVarAssignExprs(self) -> None:
     """Extract temporary variables and the unique expressions
     they hold the value of.
     It caches the result in a global map."""
@@ -1471,28 +1446,6 @@ class TranslationUnit:
     raise ValueError(f"{name}, {shortestPrefix}, {varType}, {nim}")
 
 
-  def createAndAddLocalDummyVar(self,
-      func: constructs.Func,
-      givenType: Type
-  ) -> VarNameT:
-    funcName = extractOriginalFuncName(func.name)
-    newDummyName = f"v:{funcName}:{self._dummyVarCount}d"
-    self.addVarNames(newDummyName, givenType, True)
-    self._dummyVarCount += 1
-    return newDummyName
-
-
-  def createAndAddGlobalDummyVar(self,
-      givenType: Type
-  ) -> VarNameT:
-    newDummyName = DUMMY_VAR_NAME.format(id=self._dummyVarCount)
-    # self.allVars[newDummyName] = givenType
-    self.addVarNames(newDummyName, givenType, True)
-    self._globalsPpmsAndAddrTakenSet.add(newDummyName)
-    self._dummyVarCount += 1
-    return newDummyName
-
-
   def getNames(self,
       givenType: Type
   ) -> Set[VarNameT]:
@@ -1508,8 +1461,9 @@ class TranslationUnit:
     return names
 
 
-  def _getNamesGlobal(self) -> Set[VarNameT]:
+  def _getGlobalVarNames(self) -> Set[VarNameT]:
     """Returns names whose naming format suggests a global scope.
+
     It doesn't return addr-taken variables which have local naming formats.
     """
     names = set()
@@ -1537,15 +1491,15 @@ class TranslationUnit:
     if integer: key = IntegerAny
     if pointer: key = PointerAny
 
-    if key in self._globalsPpmsAndAddrTakenSetMap:
+    if key in self._globalsAndAddrTakenSetMap:
       self.stats.getNamesTimer.stop()
-      return self._globalsPpmsAndAddrTakenSetMap[key]
+      return self._globalsAndAddrTakenSetMap[key]
 
     names: Set[VarNameT] = set()
     if isinstance(givenType, FuncSig):
       names.update(func.name for func in self.getFunctionsOfGivenSignature(givenType))
     else:
-      for objName in self._globalsPpmsAndAddrTakenSet:
+      for objName in self._globalsAndAddrTakenVarNames:
         objType = self.inferTypeOfVal(objName)
         nameInfos = objType.getNamesOfType(givenType, objName)
         for nameInfo in nameInfos:
@@ -1556,7 +1510,7 @@ class TranslationUnit:
     if pointer: names = self.filterNamesPointer(names)
 
     if cacheResult:
-      self._globalsPpmsAndAddrTakenSetMap[key] = names  # cache the result
+      self._globalsAndAddrTakenSetMap[key] = names  # cache the result
 
     self.stats.getNamesTimer.stop()
     return names
@@ -1604,9 +1558,9 @@ class TranslationUnit:
     if pointer: key = PointerAny
     tup = (funcName, key)
 
-    if tup in self._typeFuncLocalNameMap:
+    if tup in self._typeFuncLocalNamesMap:
       self.stats.getNamesTimer.stop()
-      return self._typeFuncLocalNameMap[tup]
+      return self._typeFuncLocalNamesMap[tup]
 
     names = set()
     nakedFuncName = funcName.split(":")[1]
@@ -1623,7 +1577,7 @@ class TranslationUnit:
     if pointer: names = self.filterNamesPointer(names)
 
     if cacheResult:
-      self._typeFuncLocalNameMap[tup] = names  # cache the result
+      self._typeFuncLocalNamesMap[tup] = names  # cache the result
 
     self.stats.getNamesTimer.stop()
     return names
@@ -1689,16 +1643,16 @@ class TranslationUnit:
   def getNamesPpmsAll(self) -> Set[VarNameT]:
     """Returns set of all PPMS var names in the translation unit."""
     self.stats.getNamesTimer.start()
-    if self._allPpmsNames is not None:
+    if self._allPpmsVars is not None:
       self.stats.getNamesTimer.stop()
-      return self._allPpmsNames
+      return self._allPpmsVars
 
     varNames = set()
     for vName in self._nameInfoMap.keys():
       if PPMS_VAR_REGEX.fullmatch(vName):
         varNames.add(vName)
 
-    self._allPpmsNames = varNames
+    self._allPpmsVars = varNames
     self.stats.getNamesTimer.stop()
     return varNames
 
@@ -1793,15 +1747,15 @@ class TranslationUnit:
       givenSignature: FuncSig
   ) -> List[constructs.Func]:
     """Returns functions with the given signature."""
-    if givenSignature in self._funcSigToFuncObjMap:
-      return self._funcSigToFuncObjMap[givenSignature]
+    if givenSignature in self._funcSigToFuncListMap:
+      return self._funcSigToFuncListMap[givenSignature]
 
     funcList: List[constructs.Func] = []
     for func in self.yieldFunctions():
       if givenSignature.isEqualOrVoid(func.sig):
         funcList.append(func)
 
-    self._funcSigToFuncObjMap[givenSignature] = funcList
+    self._funcSigToFuncListMap[givenSignature] = funcList
     return funcList
 
 

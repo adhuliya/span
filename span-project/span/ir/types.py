@@ -4,6 +4,7 @@
 # Copyright (c) 2020 Anshuman Dhuliya
 
 """All types available in the IR and many other places.
+
 Some types are defined in other modules where they make more sense.
 This module is imported by almost all
 other modules in the source. Hence this
@@ -1477,7 +1478,7 @@ class RecordT(ConstructT):
   ) -> None:
     super().__init__(typeCode)
     self.name = name
-    self.members = members
+    self.members = members if members else []
     self.info = info
 
 

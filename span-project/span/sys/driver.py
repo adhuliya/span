@@ -36,9 +36,7 @@ import span.util.consts as consts
 
 import span.ir.tunit      as tunit
 import span.ir.ir         as ir
-import span.ir.util       as irUtil
 import span.api.analysis  as an
-import span.ir.ipa        as irIpa
 import span.ir.query      as irQuery
 
 import span.util.util     as util

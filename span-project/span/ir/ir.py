@@ -5,7 +5,7 @@
 
 """
 This is a convenience module that brings the scattered API
-of the SPAN IR at one place.
+of the SPAN IR together.
 
 The API here is useful in writing an analysis/diagnosis.
 The idea is that the user should only need to import this

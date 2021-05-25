@@ -4,7 +4,7 @@
 # Copyright (c) 2020 Anshuman Dhuliya
 
 """
-Inter-Procedural Analysis (IPA) IR module.
+(Depricated) Inter-Procedural Analysis (IPA) IR module.
 Prepares the IR for the IPA.
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

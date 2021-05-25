@@ -3,7 +3,7 @@
 # MIT License
 # Copyright (c) 2020 Anshuman Dhuliya
 
-"""Function and data structures for C function"""
+"""Holds the `Func` class."""
 
 import logging
 LOG = logging.getLogger("span")
@@ -23,7 +23,7 @@ from span.ir.conv import \
    START_END_BBIDS, START_BB_ID, END_BB_ID, extractFuncName)
 from span.ir.types import BasicBlockIdT, InstrIndexT, NodeSiteT
 import span.ir.expr as expr
-import span.ir.cfg as graph
+import span.ir.cfg as cfg
 
 
 class Func(ConstructT):
@@ -61,12 +61,23 @@ class Func(ConstructT):
     self.bbEdges = bbEdges if bbEdges else []
     self.instrSeq = instrSeq
     self.info = info
-    self.cfg: Opt[graph.Cfg] = None  # initialized in TUnit class
+    self.cfg: Opt[cfg.Cfg] = None  # initialized in TUnit class
     self.tUnit = None  # initialized to TranslationUnit object in span.ir.tunit
     self.id: NodeSiteT = id # it is assigned a unique id
 
     if self.instrSeq:
       self.basicBlocks, self.bbEdges = self.genBasicBlocks(self.instrSeq)
+
+
+  def setNewInstructionSequence(self, instrSeq: List[InstrIT]):
+    """Sets a new sequence of instruction in the function (purging the old one).
+
+    It does the necessary processing needed to generate basic blocks from
+    the sequence.
+    """
+    self.instrSeq = instrSeq
+    self.basicBlocks, self.bbEdges = self.genBasicBlocks(self.instrSeq)
+    self.cfg = cfg.Cfg(self.name, self.basicBlocks, self.bbEdges)
 
 
   def hasBody(self) -> bool:

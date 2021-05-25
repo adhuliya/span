@@ -42,7 +42,7 @@ FAQs
 
 ### How to run?
 Use the `main.py` script to run the project.
-Run `./main.py help` to see the command line usage.
+Run `./main.py --help` to see the command line usage.
 
 
 ### How to add a new analysis?
@@ -251,13 +251,14 @@ See the list of checkers available:
 * size_t is assumed UINT64. (okay - tolerable)
 * All floats are considered FLOAT64. (okay - tolerable)
 * static initializations in functions? (Supported) (DONE)
+   - They are converted to global initializations
 
 ### SPAN Features
-* Flow Insensitive (Easy to add. Maybe not efficient.)
+* Flow Insensitive (Easy to add. Probably inefficient.)
 * Intra-Procedural (SPAN, Cascade, Lerner's)
 * Inter-Procedural (SPAN, Cascade, Lerner's)
 * Demand Driven Method (#DDM) (Intra) (Akshat)
-* Query Interface.
+* Query Interface. (TODO: look at clang's query interface)
 * Test Framework.
 * Forward & Backward Support (TODO: Test BiDirectional)
 

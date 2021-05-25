@@ -50,11 +50,17 @@ from span.api.lattice import ChangedT, Changed, DataLT, mergeAll
 
 AnNameT = AnalysisNameT = str
 
+SIM_NAME_COMMON_SUBSTR = "__to__"
+"""Common substring in all the simplification function names.
+This string should not be present in any other function name,
+specially in the `AnalysisAT` class and its subclasses.
+"""
+
 ################################################
 # BOUND START: sim_related 1/3
 ################################################
 
-# simplification function names (that contain '__to__' in their name)
+# simplification function names (that contain SIM_NAME_COMMON_SUBSTR in their name)
 SimNameT = str
 SimT = Opt[Set]
 SimFailed: SimT = None  # None represents a simplification failure
@@ -1773,11 +1779,11 @@ class AnalysisAT:
 ################################################
 
 def extractSimNames() -> Set[str]:
-  """returns set of expr simplification func names
-   (these names have `__to__` in them)."""
+  """Returns set of expr simplification func names
+   (these names have `SIM_NAME_COMMON_SUBSTR` in them)."""
   tmp = set()
   for memberName in AnalysisAT.__dict__:
-    if memberName.find("__to__") >= 0:
+    if memberName.find(SIM_NAME_COMMON_SUBSTR) >= 0:
       tmp.add(memberName)
   return tmp
 

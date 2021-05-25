@@ -4,9 +4,10 @@
 # Copyright (c) 2020 Anshuman Dhuliya
 
 """Program abstraction: Call Graph.
+
 This module may import all other modules in `span.ir`,
-except `span.ir.util` and `span.ir.query` module.
-(Thus to avoid cyclic dependence other modules in span.ir
+except `span.ir.query` module.
+(To avoid cyclic dependence other modules in `span.ir`
 should not import this module)
 """
 
