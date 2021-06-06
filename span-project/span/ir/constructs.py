@@ -99,13 +99,40 @@ class Func(ConstructT):
     """Returns True if the function can be analyzed by the system."""
     result = True
     if not self.hasBody():
+      # Functions without body cannot be analyzed.
+      # These functions are appropriately approximated by analyses.
       result = False
     elif self.sig.variadic:
+      # TODO: Add variadic function support.
       result = False
-    # elif self.name != GLOBAL_INITS_FUNC_NAME:
-    #   # normally we don't analyze the artificial global function
-    #   result = False
     return result
+
+
+  def isTailFunction(self) -> bool:
+    """Returns `True` if this function no callee which can be analysed.
+
+    A function that has no `span.ir.expr.CallE` expression
+    or every call is to a function that cannot be analysed
+    (as checked by the `span.ir.constructs.Func.canBeAnalyzed` predicate)
+    then it is considered a tail function.
+    """
+    assert self.tUnit, f"{self.tUnit}"
+
+    tailFunc = True
+
+    for insn in self.yieldInstrSeq():
+      if insn.hasRhsCallExpr():
+        calleeName = instr.getCalleeFuncName(insn)
+        if not calleeName: # function pointer call can be further processed
+          tailFunc = False
+          break
+        else:
+          calleeObj = self.tUnit.getFuncObj(calleeName)
+          if calleeObj.canBeAnalyzed(): # callee can be analyzed hence not tail
+            tailFunc = False
+            break
+
+    return tailFunc
 
 
   def isLocalName(self,

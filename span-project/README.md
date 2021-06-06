@@ -263,6 +263,16 @@ See the list of checkers available:
 * Forward & Backward Support (TODO: Test BiDirectional)
 
 
+## TODO
+* Prepare input benchmark programs -- with correct conversions.
+* Run individual analyses and check basic correctness.
+* Run group of analyses and check correctness.
+* Compare Span vs Lerner vs Single Analysis.
+* Add Cascading and also compare Cascading's result.
+* Add new test cases if bugs are found on benchmark.
+
+* (optional) : Handle aggregate assignment.
+* (optional) : convert `?:` operator to `if-then-else`
 
 <br /> <br /> <br />
 &copy; 2020 Anshuman Dhuliya

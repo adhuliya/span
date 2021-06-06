@@ -349,7 +349,7 @@ def canonicalizeFuncName(funcName: str) -> types.FuncNameT:
     return f"f:{funcName}"  # just prefix "f:" to make it canonical
 
 
-def extractOriginalFuncName(funcName: str) -> types.FuncNameT:
+def extractPureFuncName(funcName: str) -> types.FuncNameT:
   return simplifyName(funcName)
 
 

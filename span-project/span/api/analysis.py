@@ -847,13 +847,24 @@ class AnalysisAT:
       nodeDfv: NodeDfvL
   ) -> NodeDfvL:
     """Instr_Form: void: NopI()."""
-    # Default implementation for forward analyses.
-    assert self.D == Forward, f"{self.D}"
-    dfvIn = nodeDfv.dfvIn
-    if dfvIn is nodeDfv.dfvOut:
-      return nodeDfv
-    else:
-      return NodeDfvL(dfvIn, dfvIn)
+    D = self.D
+
+    if D == Forward:
+      dfvIn = nodeDfv.dfvIn
+      if dfvIn is nodeDfv.dfvOut:
+        return nodeDfv
+      else:
+        return NodeDfvL(dfvIn, dfvIn)
+
+    elif D == Backward:
+      dfvOut = nodeDfv.dfvOut
+      if dfvOut is nodeDfv.dfvIn:
+        return nodeDfv
+      else:
+        return NodeDfvL(dfvOut, dfvOut)
+
+    else: # ForwBack?
+      raise ValueError("ForwBack NOP not defined!")
 
 
   def Barrier_Instr(self,

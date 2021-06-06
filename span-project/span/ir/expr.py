@@ -390,22 +390,18 @@ class PpmsVarE(VarE):
   SPAN IR instructions in this module.
   """
 
-  __slots__: List[str] = ["name", "sizeExpr", "insns"]
+  __slots__: List[str] = ["insn", "sizeExpr"]
 
 
   def __init__(self,
       name: types.VarNameT,
       info: Opt[types.Info] = None,
-      insns: List[Any] = None,  # list of instructions (max size 2)
-      sizeExpr: ExprET = None,  # the "arg" of malloc, or "arg1 * arg2" of calloc
+      insn: Opt[Any] = None, # a single `InstrIT` object (with memory allocation)
   ) -> None:
     super().__init__(name, info)
     # First insn is always the memory alloc instruction
     # The second is optionally a cast assignment.
-    self.insns = insns
-    # sizeExpr is either a UnitET, i.e. malloc's arg
-    #                 or a BinaryE, i.e. arg1 * arg2 (product of calloc's arg)
-    self.sizeExpr = sizeExpr
+    self.insn = insn
 
 
   def __eq__(self, other) -> bool:
@@ -452,9 +448,8 @@ class PpmsVarE(VarE):
 
 
   def __repr__(self):
-    return f"expr.PpmsVarE({repr(self.name)}, {repr(self.info)}," \
-           f"  insns= {repr(self.insns)},\n" \
-           f"  sizeExpr= {repr(self.sizeExpr)})"
+    return (f"expr.PpmsVarE({repr(self.name)}, {repr(self.info)},"
+           f"  insn= {repr(self.insn)})")
 
 
 class UnaryET(ExprET):

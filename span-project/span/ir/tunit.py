@@ -48,13 +48,13 @@ from span.ir.conv import (
   PPMS_VAR_REGEX, DUMMY_VAR_NAME,
   START_END_BBIDS, COND_TMPVAR_GEN_STR,
   getSuffixes, setNodeSiteBits, isFuncName, extractFuncName,
-  getPrefixShortest, extractOriginalFuncName, isStringLitName, isTmpVar,
+  getPrefixShortest, extractPureFuncName, isStringLitName, isTmpVar,
   simplifyName, isNormalTmpVar, isCondTmpVar, isGlobalName,
   GLOBAL_INITS_FUNC_NAME, GLOBAL_INITS_FUNC_ID,
   PPMS_VAR_TYPE,
   memAllocFunctions,
   FULL_PPMS_VAR_NAME, nameHasPpmsVar, nameHasNullVar, isPpmsVar,
-)
+  START_BB_ID, END_BB_ID, )
 
 from span.ir.instr import (
   InstrIT, III, ExReadI, AssignI, CallI, CondI,
@@ -88,10 +88,12 @@ class Stats:
 
 class TranslationUnit:
   """A Translation Unit.
+
   It holds a complete '*.c' file's content,
   in its SPAN IR representation (converted from Clang AST).
+
   SPAN IR may undergo many iteration of changes here
-  (see self.preProcess()).
+  (see `TranslationUnit.preProcess`).
   """
 
 
@@ -102,7 +104,7 @@ class TranslationUnit:
       globalInits: Opt[List[InstrIT]], # list of global initializations
       allRecords: Dict[RecordNameT, RecordT], # all the structs/unions
       allFunctions: Dict[VarNameT, constructs.Func], # all the functions (decl & def)
-      preProcess: bool = True,  # disables IR pre-processing
+      preProcess: bool = True,  # disables IR pre-processing (used in debugging)
   ) -> None:
     # analysis unit name and description
     self.stats = Stats(self)
@@ -195,7 +197,6 @@ class TranslationUnit:
     self.addThisTUnitRefToObjs()  # MUST
     self.inferAllInstrTypes()  # MUST
     self.convertNonDerefMemberE()  # MUST
-    self.fillGlobalInitsFunction()  # MUST
 
     # STEP 2: Canonicalize
     self.canonicalize()  # MUST
@@ -205,8 +206,10 @@ class TranslationUnit:
     self.collectAllVarNames()  # MUST
     if util.VV3: self.printNameInfoMap()  # OPTIONAL
     self.collectAddrTakenVars()  # MUST
+    self.collectGlobalVarNames() # MUST
 
     # STEP 4: Misc ending steps
+    self.fillGlobalInitsFunction() # MUST (HERE)
     self.collectMiscStats() # MUST
     self.genCfgs()  # MUST
     self.assignFunctionIds() # MUST
@@ -219,6 +222,21 @@ class TranslationUnit:
 
     self.initialized = True
     if util.LL1: LOG.info(f"PreProcessing_TUnit({self.name}): END/DONE.")
+
+
+  def collectGlobalVarNames(self):
+    """Collects names whose naming format suggests a global scope.
+
+    It doesn't collect addr-taken variables which have local naming formats.
+    """
+    names = set()
+
+    for name, info in self._nameInfoMap.items():
+      if isGlobalName(name):
+        tmpNameSet = getSuffixes(None, name, info.type)
+        names.update(tmpNameSet)
+
+    self._globalVarNames = names
 
 
   def checkInvariants(self):
@@ -529,8 +547,8 @@ class TranslationUnit:
       objType: Type,
       new: bool = False, # True if variable is added by SPAN
   ) -> None:
-    """Add the varName into self._nameInfoMap along
-    with all its sub-names if its an array or a record."""
+    """Add the varName into `_nameInfoMap` along
+    with all its sub-names if its an array (of records) or a record."""
     nameInfos = objType.getNamesOfType(None, varName)
     for nameInfo in nameInfos:
       self._nameInfoMap[nameInfo.name] = nameInfo   # cache the results
@@ -555,10 +573,9 @@ class TranslationUnit:
 
     for func in self.yieldFunctionsWithBody():
       for bb in func.basicBlocks.values():
-        for i in range(len(bb) - 1):
+        for i in range(len(bb)):
           insn = bb[i]
-          if isinstance(insn, AssignI) and \
-              insn.type.typeCode == PTR_TC:
+          if isinstance(insn, AssignI) and insn.type.isPointer():
             rhs = insn.rhs
             if isinstance(rhs, CastE):
               arg = rhs.arg
@@ -566,18 +583,20 @@ class TranslationUnit:
                 if arg.type.isNumeric() and arg.val == 0:
                   rhs = AddrOfE(VarE(NULL_OBJ_NAME, rhs.info), rhs.info)
                   insn.rhs, rhs.type = rhs, NULL_OBJ_PTR_TYPE
-            if isinstance(rhs, LitE):
+            elif isinstance(rhs, LitE):
               if rhs.type.isNumeric() and rhs.val == 0:
                 rhs = AddrOfE(VarE(NULL_OBJ_NAME, rhs.info), rhs.info)
                 insn.rhs, rhs.type = rhs, NULL_OBJ_PTR_TYPE
 
 
   def addThisTUnitRefToObjs(self):  # IMPORTANT (MUST)
-    """Sets func.tUnit to this TUnit here.
+    """Sets `span.ir.constructs.Func.tUnit` to this TUnit instance.
 
-    It cannot be done in obj.Func,
+    It cannot be done in `span.ir.constructs.Func`,
+
       1. due to lack of info in the `span.ir.constructs` module.
-      2. to avoid circular dependency btw the two modules."""
+      2. to avoid circular dependency btw the two modules.
+    """
     for func in self.yieldFunctions():
       # Point func.tUnit to this TUnit object
       func.tUnit = self
@@ -588,6 +607,7 @@ class TranslationUnit:
 
     Fills `span.ir.constructs.Func`'s `span.ir.constructs.Func.cfg` field
     to contain a proper CFG graph.
+
     CFGs are constructed once the IR is in canonical form and optimized enough.
     """
     for func in self.yieldFunctionsWithBody():
@@ -595,7 +615,7 @@ class TranslationUnit:
 
 
   def yieldFunctions(self):
-    """Yields all the functions in the TUnit."""
+    """Yields all the functions (with or without body) in the TUnit."""
     for func in sorted(self.allFunctions.values(), key=lambda x: x.name):
       yield func
 
@@ -607,31 +627,50 @@ class TranslationUnit:
         yield func
 
 
+  def yieldFunctionsWithoutBody(self):
+    """Yields all the functions in the TUnit without body."""
+    for func in self.yieldFunctions():
+      if not func.hasBody():
+        yield func
+
+
+  def yieldInstructions(self):
+    """Yields all the `span.ir.instr.InstrIT` in the IR in no specific order."""
+    for func in self.yieldFunctionsWithBody():
+      for insn in func.yieldInstrSeq():
+        yield insn
+
+
   def yieldFunctionsForAnalysis(self):
     """Yields all the functions in the TUnit with body
-    that can be analyzed."""
+    that can be analyzed.
+
+    Uses the predicate `span.ir.constructs.Func.canBeAnalyzed`.
+    """
     for func in self.yieldFunctions():
       if func.canBeAnalyzed():
         yield func
 
 
-  def yieldRecords(self, rType=RecordT):
-    """Yields all the records in the TUnit.
-    rType can be either types.Struct or types.Union
-    """
-    assert rType in (RecordT, Struct, Union), f"{rType}"
+  def yieldRecords(self):
+    """Yields all the `span.ir.types.RecordT` in the TUnit. """
     for record in sorted(self.allRecords.values(), key=lambda x: x.name):
-      if isinstance(record, rType):
+      if isinstance(record, (Union, Struct)):
         yield record
 
 
-  def genBasicBlocks(self) -> None:
-    """Generates basic blocks if function objects are initialized by
-    instruction sequence only."""
-    for func in self.yieldFunctions():
-      if not func.basicBlocks and func.instrSeq:
-        # i.e. basic blocks don't exist and the function has a instr seq body
-        func.basicBlocks, func.bbEdges = constructs.Func.genBasicBlocks(func.instrSeq)
+  def yieldStructs(self):
+    """Yields all the `span.ir.types.Struct` in the TUnit. """
+    for record in self.yieldRecords():
+      if isinstance(record, Struct):
+        yield record
+
+
+  def yieldUnions(self):
+    """Yields all the `span.ir.types.Union` in the TUnit. """
+    for record in self.yieldRecords():
+      if isinstance(record, Union):
+        yield record
 
 
   def fillFuncParamTypes(self):
@@ -934,8 +973,10 @@ class TranslationUnit:
 
     This is an important step. While conversion from the Clang AST,
     many places simply refer to the structure by its unique name only.
-    This makes conversion easy. Moreover, in structures are self-referencial
-    then this names based self-reference is unavoidable.
+    This makes conversion (serialization) easy.
+    Moreover, if structures are self-referential
+    then the name based self-reference is unavoidable.
+
     Once the python object for the record type is made, then these
     name based references are replaced by the actual record obj reference.
     """
@@ -943,29 +984,29 @@ class TranslationUnit:
     for record in self.yieldRecords():
       newFields = []
       for fName, fType in record.members:
-        newType = self.findAndFillRecordType(fType)
+        newType = self.findAndFillTheRecordTypes(fType)
         newFields.append((fName, newType))
       record.members = newFields
 
     # STEP 2. Complete/Correct all the variable types.
     for varName in self.allVars.keys():
       varType = self.allVars[varName]
-      completedVarType = self.findAndFillRecordType(varType)
+      completedVarType = self.findAndFillTheRecordTypes(varType)
       self.allVars[varName] = completedVarType
 
 
-  def findAndFillRecordType(self, varType: Type):
+  def findAndFillTheRecordTypes(self, varType: Type):
     """Recursively finds the record type and replaces them with
     the reference to the complete definition in self.allRecords."""
     if isinstance(varType, (Struct, Union)):
       return self.allRecords[varType.name]
 
     elif isinstance(varType, Ptr):
-      ptrTo = self.findAndFillRecordType(varType.getPointeeTypeFinal())
+      ptrTo = self.findAndFillTheRecordTypes(varType.getPointeeTypeFinal())
       return Ptr(to=ptrTo, indlev=varType.indlev)
 
     elif isinstance(varType, ArrayT):
-      arrayOf = self.findAndFillRecordType(varType.of)
+      arrayOf = self.findAndFillTheRecordTypes(varType.of)
       if isinstance(varType, ConstSizeArray):
         return ConstSizeArray(of=arrayOf, size=varType.size)
       elif isinstance(varType, VarArray):
@@ -974,24 +1015,24 @@ class TranslationUnit:
         return IncompleteArray(of=arrayOf)
 
     elif isinstance(varType, FuncSig):
-      retType = self.findAndFillRecordType(varType.returnType)
+      retType = self.findAndFillTheRecordTypes(varType.returnType)
       paramTypes = []
       for paramType in varType.paramTypes:
-        paramTypes.append(self.findAndFillRecordType(paramType))
+        paramTypes.append(self.findAndFillTheRecordTypes(paramType))
       return FuncSig(retType, paramTypes, varType.variadic)
 
     return varType  # by default return the same type
 
 
   def canonicalize(self) -> None:
-    """Optimizes SPAN IR"""
+    """Transforms SPAN IR to a canonical form."""
     self.replaceMemAllocations()
     self.replaceZeroWithNullPtr()  # FIXME: should be used?
 
     self.removeNopInsns()  # (OPTIONAL)
     for func in self.yieldFunctionsWithBody():
       self.evaluateConstantExprs(func)  # (MUST)
-      self.evaluateCastOfConstants(func)  # (MUST)
+      self.removeRedundantTypeCasts(func)  # (MUST)
       self.evaluateConstIfStmts(func)  # (MUST)
       self.removeNopBbs(func)  # (OPTIONAL)
       self.removeUnreachableBbs(func)  # (OPTIONAL)
@@ -1000,14 +1041,13 @@ class TranslationUnit:
 
 
   def fillGlobalInitsFunction(self):
-    """Fill the special global inits function,
-    that holds the initializations of global variables,
-    with initialization to default values of variables
-    that are not present in it."""
+    """Fill the special global inits function.
+
+    It adds the initializations of uninitialized global variables.
+    """
 
     globalInitsFunc = self.allFunctions[GLOBAL_INITS_FUNC_NAME]
     globalVarNamesInitialized = self.collectGlobalVarNamesInitialized()
-    self._globalVarNames = self._getGlobalVarNames()
     globalVarNames: Set[VarNameT] = self._globalVarNames
 
     newInsns: List[AssignI] = []
@@ -1056,14 +1096,17 @@ class TranslationUnit:
     return varNames
 
 
-  def getGlobalInitFunction(self) -> constructs.Func:
+  def getGlobalInitsFunction(self) -> constructs.Func:
     return self.allFunctions[GLOBAL_INITS_FUNC_NAME]
 
 
-  def evaluateCastOfConstants(self, func: constructs.Func) -> None:
-    """Remove casts like:
-    (types.Ptr(types.Int8, 1)) "string literal"
-    FIXME: identify and add more cases
+  def removeRedundantTypeCasts(self, func: constructs.Func) -> None:
+    """Remove redundant casts.
+
+    Following types of casts are removed:
+
+    * `(types.Ptr(types.Int8, 1)) "string literal"`
+    * FIXME: identify and add more cases
     """
     assignInstrCode = ASSIGN_INSTR_IC
     for bbId, bb in func.yieldBasicBlocks():
@@ -1075,7 +1118,7 @@ class TranslationUnit:
           if isinstance(rhs, CastE):
             arg = rhs.arg
             if isinstance(arg, LitE):
-              if arg.isString():
+              if arg.isString(): # i.e. cast of a string literal
                 newRhs = arg
           if newRhs is not rhs:
             insn.rhs = newRhs
@@ -1103,11 +1146,13 @@ class TranslationUnit:
       for bbId in bbIds:
         bb = func.basicBlocks[bbId]
         newBb = [insn for insn in bb if not isinstance(insn, NopI)]
-        if bbId == -1: # start bb
+
+        if bbId == START_BB_ID:
           newBb.insert(0, NopI())  # IMPORTANT
 
         if len(newBb) == 0:
           newBb.append(NopI())  # let one NopI be (such BBs are removed later)
+
         func.basicBlocks[bbId] = newBb
 
 
@@ -1116,15 +1161,16 @@ class TranslationUnit:
     allBbIds = func.basicBlocks.keys()
 
     # collect all dest bbIds
-    destBbIds = {-1}  # start bbId is always reachable
+    destBbIds = {START_BB_ID}  # start bbId is always reachable
     for bbEdge in func.bbEdges:
       destBbIds.add(bbEdge[1])
     unreachableBbIds = allBbIds - destBbIds
 
-    # remove all edges going out of reachable bbs
+    # remove all edges going out of unreachable bbs
     takenEdges = []
     for bbEdge in func.bbEdges:
-      if bbEdge[0] in unreachableBbIds: continue
+      if bbEdge[0] in unreachableBbIds:
+        continue
       takenEdges.append(bbEdge)
     func.bbEdges = takenEdges
 
@@ -1138,10 +1184,9 @@ class TranslationUnit:
 
 
   def genCondTmpVar(self, func: constructs.Func, t: Type) -> VarE:
-    """Generates a new cond tmp var and adds its to the
-    variables map."""
+    """Generates a new cond tmp var and adds it to the variables map."""
     number: int = 90
-    fName = extractOriginalFuncName(func.name)
+    fName = extractPureFuncName(func.name)
 
     while True:
       name = f"v:{fName}:" + COND_TMPVAR_GEN_STR.format(number=number)
@@ -1157,12 +1202,12 @@ class TranslationUnit:
 
 
   def evaluateConstIfStmts(self, func: constructs.Func) -> None:
-    """Changes if stmt on a const value to, to use a tmp variable.
+    """Changes if stmt on a const value, to use a tmp variable.
     It may lead to some unreachable BBs."""
 
     for bbId, bbInsns in func.basicBlocks.items():
       if not bbInsns: continue  # if bb is blank
-      ifInsn = bbInsns[-1]
+      ifInsn = bbInsns[-1] # conditional must be the last instruction
       if isinstance(ifInsn, CondI):
         arg = ifInsn.arg
         if isinstance(arg, LitE):
@@ -1183,20 +1228,19 @@ class TranslationUnit:
   def removeNopBbs(self, func: constructs.Func) -> None:
     """Remove BBs that only have NopI(). Except START and END."""
 
-    bbIds = func.basicBlocks.keys()
-    for bbId in bbIds:
-      if bbId in START_END_BBIDS: continue  # leave START and END BBs as it is.
+    for bbId in func.basicBlocks.keys():
+      if bbId in START_END_BBIDS:
+        continue  # leave START and END BBs as it is.
 
       onlyNop = True
       for insn in func.basicBlocks[bbId]:
-        if isinstance(insn, NopI): continue
+        if isinstance(insn, NopI):
+          continue
         onlyNop = False
 
       if onlyNop:
         # then remove this bb and related edges
-        retainedEdges = []
-        predEdges = []
-        succEdges = []
+        retainedEdges, predEdges, succEdges = [], [], []
         for bbEdge in func.bbEdges:
           if bbEdge[0] == bbId:
             succEdges.append(bbEdge)  # ONLY ONE EDGE
@@ -1218,15 +1262,15 @@ class TranslationUnit:
     """
     for func in self.yieldFunctionsWithBody():
       for bb in func.basicBlocks.values():
-        for i in range(len(bb) - 1):
+        for i in range(len(bb)):
           insn = bb[i]
           # SPAN IR separates a call and its cast into two statements.
           if isinstance(insn, AssignI) and isinstance(insn.rhs, CallE):
             rhs = insn.rhs
             if self.isMemoryAllocationCall(rhs):
-              pVarE = self.addNewPpmsVar(func.name, rhs.info, insn)
-              # replace rhs: malloc() with `&pVarE`
-              insn.rhs = AddrOfE(pVarE, info=rhs.info)
+              ppmsVarE = self.addNewPpmsVar(func.name, rhs.info, insn)
+              # replace rhs: malloc() with `&ppmsVarE`
+              insn.rhs = AddrOfE(ppmsVarE, info=rhs.info)
 
 
 #   def replaceMemAllocations(self) -> None:
@@ -1296,61 +1340,22 @@ class TranslationUnit:
   ) -> PpmsVarE:
     self.ppmsCount += 1
 
-    nakedPvName = NAKED_PPMS_VAR_NAME.format(count=self.ppmsCount)
-    pureFuncName = simplifyName(funcName)
-    pvName = FULL_PPMS_VAR_NAME.format(fName=pureFuncName, name=nakedPvName)
+    nakedPpmsVarName = NAKED_PPMS_VAR_NAME.format(count=self.ppmsCount)
+    pureFuncName = extractPureFuncName(funcName)
+    ppmsVarName = FULL_PPMS_VAR_NAME.format(
+      fName=pureFuncName, name=nakedPpmsVarName)
 
-    self._allPpmsVars.add(pvName)
-    insns = [insn]
+    self._allPpmsVars.add(ppmsVarName)
 
     pvType = PPMS_VAR_TYPE
-    if util.LL1: LDB(f"NewPpmsVar(Var): {pvName}, {pvType},"
+    if util.LL1: LDB(f"NewPpmsVar(Var): {ppmsVarName}, {pvType},"
                      f" (Insn: {insn})")
-    self.addVarNames(pvName, pvType, True)
+    self.addVarNames(ppmsVarName, pvType, True)
 
-    pVarE = PpmsVarE(pvName, info=info, insns=insns)
+    pVarE = PpmsVarE(ppmsVarName, info=info, insn=insn)
     pVarE.type = pvType
 
     return pVarE
-
-#   def genPseudoVar(self,
-#       funcName: FuncNameT,
-#       info: Opt[Info],
-#       varType: Type,
-#       insn: AssignI,
-#       prevInsn: AssignI = None,
-#   ) -> PseudoVarE:
-#     if funcName not in self._funcPseudoCountMap:
-#       self._funcPseudoCountMap[funcName] = 1
-#     currCount = self._funcPseudoCountMap[funcName]
-#     self._funcPseudoCountMap[funcName] = currCount + 1
-#
-#     nakedPvName = NAKED_PSEUDO_VAR_NAME.format(count=currCount)
-#     pureFuncName = simplifyName(funcName)
-#     pvName = f"v:{pureFuncName}:{nakedPvName}"
-#
-#     self._pseudoVars.add(pvName)
-#     if prevInsn is None:  # insn can never be None
-#       sizeExpr = self.getMemAllocSizeExpr(insn)
-#       insns = [insn]
-#     else:
-#       sizeExpr = self.getMemAllocSizeExpr(prevInsn)
-#       insns = [prevInsn, insn]
-#
-#     sizeVal = self.getMemAllocSizeExprValue(sizeExpr)
-#     sizeInBytes = varType.sizeInBytes()
-#     pvType = PPMS_VAR_TYPE(of=varType)
-#     if sizeVal is not None:
-#       if sizeVal < sizeInBytes*2:  # as mismatch may happen due to alignment spaces
-#         pvType = varType
-#     if util.LL1: LDB(f"NewPseudoVar(Var): {pvName}, {pvType}, {sizeVal}"
-#                      f" (SpanTypeSize: {sizeInBytes})")
-#     self.addVarNames(pvName, pvType, True)
-#
-#     pVarE = PseudoVarE(pvName, info=info, insns=insns, sizeExpr=sizeExpr)
-#     pVarE.type = pvType
-#
-#     return pVarE
 
 
   def getMemAllocSizeExpr(self, insn: AssignI) -> ExprET:
@@ -1384,10 +1389,8 @@ class TranslationUnit:
     memAllocCall = False
     calleeName = callExpr.callee.name
     if calleeName in memAllocFunctions:
-      # memAllocCall = True
       func: constructs.Func = self.allFunctions[calleeName]
-      if func.sig == memAllocFunctions["f:malloc"] or \
-          func.sig == memAllocFunctions["f:calloc"]:
+      if func.sig == memAllocFunctions[calleeName]:
         memAllocCall = True
 
     return memAllocCall
@@ -1406,9 +1409,11 @@ class TranslationUnit:
 
 
   def collectTmpVarAssignExprs(self) -> None:
-    """Extract temporary variables and the unique expressions
-    they hold the value of.
-    It caches the result in a global map."""
+    """Extract temporary variables that are assigned only once,
+    and the unique expressions they hold the value of.
+
+    It caches the result in a global map.
+    """
 
     tmpExprMap = self._tmpVarExprMap
 
@@ -1765,7 +1770,7 @@ class TranslationUnit:
       pointeeMap: Opt[Dict[VarNameT, Any]] = None,
   ) -> Set[VarNameT]:
     """Returns the pointee names of the given pointer name,
-    if dfvIn is None it returns conservative value."""
+    if `pointeeMap` is None it returns a conservative value."""
 
     # Step 1: what type is the given name?
     varName, varType = var.name, var.type
@@ -1895,10 +1900,11 @@ class TranslationUnit:
     to a function call. This function is recursive.
 
     All variables whose address has been taken can be modified.
-    # If p is pointer to integers, then all the integer variables
-    # visible in the caller can be modified.
-    # If p is ptr-to ptr-to int, then all the ptr-to int and int variables
-    # visible in the caller can be modified.
+
+      * If p is pointer to integers, then all the integer variables
+      * visible in the caller can be modified.
+      * If p is ptr-to ptr-to int, then all the ptr-to int and int variables
+      * visible in the caller can be modified.
     """
     names = set()
     argType = self.inferTypeOfVal(argName)
@@ -2023,72 +2029,6 @@ class TranslationUnit:
            f")"
 
 
-  @staticmethod
-  def getNamesInExprMentionedDirectly(e: ExprET,
-      forLiveness = True,  # True: in '&a' discard 'a'
-      addCalleeName: bool = False, # True: in f(...) add 'f' too
-  ) -> Set[VarNameT]:
-    """Returns the names syntactically present in the expression.
-    Note if forLiveness is False,
-      It will also return the function name in a call.
-      The name of variable whose address is taken.
-    """
-    thisFunction = TranslationUnit.getNamesInExprMentionedDirectly
-
-    if isinstance(e, LitE):
-      return {e.name} if e.name else set()
-
-    elif isinstance(e, VarE):  # covers PseudoVarE too
-      return {e.name}
-
-    elif isinstance(e, SizeOfE):
-      return thisFunction(e.arg, forLiveness, addCalleeName)
-
-    elif isinstance(e, CastE):
-      return thisFunction(e.arg, forLiveness, addCalleeName)
-
-    elif isinstance(e, AddrOfE):
-      if forLiveness and isinstance(e.arg, VarE):
-        return set()  # i.e. in '&a' discard 'a'
-      else:
-        return thisFunction(e.arg, forLiveness, addCalleeName)
-
-    elif isinstance(e, DerefE):
-      return thisFunction(e.arg, forLiveness, addCalleeName)
-
-    elif isinstance(e, MemberE):
-      return thisFunction(e.of, forLiveness, addCalleeName)
-
-    elif isinstance(e, ArrayE):
-      return thisFunction(e.of, forLiveness, addCalleeName)\
-             | thisFunction(e.index, forLiveness, addCalleeName)
-
-    elif isinstance(e, UnaryE):
-      return thisFunction(e.arg, forLiveness, addCalleeName)
-
-    elif isinstance(e, BinaryE):
-      return thisFunction(e.arg1, forLiveness, addCalleeName)\
-             | thisFunction(e.arg2, forLiveness, addCalleeName)
-
-    elif isinstance(e, SelectE):
-      return thisFunction(e.cond, forLiveness, addCalleeName)\
-             | thisFunction(e.arg1, forLiveness, addCalleeName)\
-             | thisFunction(e.arg2, forLiveness, addCalleeName)
-
-    elif isinstance(e, CallE):
-      varNames = set()
-      if e.hasDereference(): # i.e. in '(*p)(a,b)' include 'p'
-        varNames = thisFunction(e.callee, forLiveness, addCalleeName)
-      elif addCalleeName:
-        varNames = {e.callee.name} # i.e. in 'f(a,b)' include 'f'
-
-      for arg in e.args:
-        varNames |= thisFunction(arg, forLiveness, addCalleeName)
-      return varNames
-
-    raise ValueError(f"{e}, {forLiveness}, {addCalleeName}")
-
-
   def getNamesInExprMentionedIndirectly(self,
       func: constructs.Func,
       e: ExprET,
@@ -2121,9 +2061,11 @@ class TranslationUnit:
 
   def canonicalizeExpressions(self):
     """Canonicalize all expressions in SPAN IR.
+
     e.g. For all commutative expressions:
-      0 == x to x == 0. (variable names first)
-      b + a  to a + b.   (sort by variable name)
+
+    *  0 == x to x == 0. (variable names first)
+    *  b + a  to a + b.   (sort by variable name)
     """
 
     for func in self.yieldFunctionsWithBody():
@@ -2169,7 +2111,7 @@ class TranslationUnit:
       if funcName in self.allFunctions:
         return self.allFunctions[funcName]
     elif funcId is not None and funcId == GLOBAL_INITS_FUNC_ID:
-      return self.getGlobalInitFunction()
+      return self.getGlobalInitsFunction()
     elif funcId is not None:
       assert funcId < len(self._indexedFuncList),\
         f"{funcId}, {len(self._indexedFuncList)}"
@@ -2179,26 +2121,6 @@ class TranslationUnit:
       assert funcName, f"{varName}"
 
     raise ValueError(f"{funcName}, {funcId}")
-
-
-
-  def filterAwayCalleesWithNoBody(self,
-      callSiteNodes: Opt[List[cfg.CfgNode]],
-  ) -> Opt[List[cfg.CfgNode]]:
-    """Filter away nodes with calls to functions with no body!"""
-    if not callSiteNodes:
-      return None
-
-    newNodeList = []
-    for node in callSiteNodes:
-      callE = getCallExpr(node.insn)
-      assert callE is not None, f"{node}"
-      func = self.getFuncObj(callE.getFuncName())
-      if func.hasBody():
-        # only add nodes with calls to functions which have body!
-        newNodeList.append(node)
-
-    return newNodeList
 
 
   def underApproxFunc(self,
@@ -2221,32 +2143,15 @@ class TranslationUnit:
     return underApprox
 
 
-  @functools.lru_cache(512)
-  def isTailFunction(self,
-      funcName: FuncNameT,
-  ) -> bool:
-    tailFunc = True
-    funcObj = self.getFuncObj(funcName)
-
-    for insn in funcObj.yieldInstrSeq():
-      if insn.hasRhsCallExpr():
-        calleeName = getCalleeFuncName(insn)
-        if not calleeName: # function pointer call can be further processed
-          tailFunc = False
-          break
-        else:
-          calleeObj = self.getFuncObj(calleeName)
-          if calleeObj.canBeAnalyzed(): # callee can be analyzed hence not tail
-            tailFunc = False
-            break
-
-    return tailFunc
-
-
   def hasAbstractVars(self,
       varNameSet: Opt[Set[VarNameT]],
   ) -> bool:
-    """Returns True if at least one abstract variable exists in the given set."""
+    """Returns True if at least one abstract variable exists in the given set.
+
+    As this function needs to check the type of the variable,
+    it needs to be in this class.
+    """
+
     if not varNameSet:
       return False
 
