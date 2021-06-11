@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """
 This is a convenience module that brings the scattered API
@@ -18,7 +18,7 @@ Note about circular dependency:
 
 import logging
 
-LOG = logging.getLogger("span")
+LOG = logging.getLogger(__name__)
 from typing import Dict, Set, Tuple, Optional, List, Callable, cast
 import subprocess as subp
 import functools

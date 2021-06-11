@@ -1,28 +1,43 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """Program diagnosis tools and interface."""
 
 import logging
 
-LOG = logging.getLogger("span")
+from span.sys.common import AnResult
 
-from typing import List, Optional as Opt, Dict
+LOG = logging.getLogger(__name__)
+
+from typing import List, Optional as Opt, Dict, Type, Set
 import io
 
 import span.util.util as util
 
-import span.api.analysis as analysis
-import span.api.dfv as dfv
-import span.ir.types as types
-import span.ir.constructs as obj
+from span.api.analysis import (AnalysisNameT,)
+from span.api.dfv import (DfvPairL,)
+from span.ir.types import (Loc, NodeIdT, FuncNameT, AnNameT, )
+
+from span.ir.constructs import Func
 
 AnalysisClassT = type
 DiagnosisNameT = str
 DiagnosisClassT = type
 
+MethodT = str
+PlainMethod: MethodT = "plain"
+CascadingMethod: MethodT = "cascading"
+LernerMethod: MethodT = "lerner"
+SpanMethod: MethodT = "span"
+
+AllMethods: Set[MethodT] = {
+  PlainMethod,
+  CascadingMethod,
+  LernerMethod,
+  SpanMethod
+}
 
 class Message:
   """A message and location of the diagnostic report."""
@@ -30,7 +45,7 @@ class Message:
 
   def __init__(self,
       msg: str,
-      loc: types.Loc,
+      loc: Loc,
   ) -> None:
     self.msg = msg
     self.loc = loc
@@ -81,6 +96,17 @@ class Report:
     return ret
 
 
+class MethodDetails:
+  def __init__(self,
+      methodName: str,
+      anNames: List, # list of analyses the method uses
+      configSeq: List[int],
+  ):
+    self.methodName = methodName
+    self.anNames = anNames
+    self.configSeq = configSeq
+
+
 class DiagnosisRT:
   """The base class for all diagnoses reporting classes.
   Changed suffix "DT" to "RT" since "D" was clashing with Direction (ForwardD..)
@@ -93,18 +119,49 @@ class DiagnosisRT:
   # diagnosis just becomes less precise
   OptionalNeeds: List[AnalysisClassT] = []
 
-  AnalysesSeqCascading: Opt[List[List[analysis.AnalysisNameT]]] = None
-  AnalysesSeqLerner: Opt[List[List[analysis.AnalysisNameT]]] = None
+  AnalysesSeqCascading: Opt[List[List[AnalysisNameT]]] = None
+  AnalysesSeqLerner: Opt[List[List[AnalysisNameT]]] = None
+
+  MethodSequence = [
+    MethodDetails(
+      PlainMethod,
+      ["IntervalA"],
+      [0],
+    ),
+    MethodDetails(
+      CascadingMethod,
+      ["IntervalA", "PointsToA"],
+      [0]
+    ),
+    MethodDetails(
+      LernerMethod,
+      ["IntervalA", "PointsToA"],
+      [0]
+    ),
+    MethodDetails(
+      SpanMethod,
+      ["IntervalA", "PointsToA"],
+      [0]
+    ),
+  ]
 
 
   def __init__(self):
     super().__init__()
 
 
+  def computeResults(self,
+      method: MethodT,
+      config: int,
+      anClassMap: Dict[AnNameT, Type[AnalysisClassT]],
+  ) -> Dict[FuncNameT, Dict[AnNameT, AnResult]]:
+    """Override this function to run any desired method with a desired config."""
+    raise NotImplementedError()
+
+
   def handleResults(self,
-      results: Dict[analysis.AnalysisNameT,
-                          Dict[types.NodeIdT, dfv.NodeDfvL]],
-      func: obj.Func,
+      results: Dict[FuncNameT, Dict[AnNameT, AnResult]],
+      anClassMap: Dict[AnNameT, Type[AnalysisClassT]],
   ) -> Opt[List[Report]]:
     """
     Analyze the analysis results and produce reports.
@@ -113,7 +170,7 @@ class DiagnosisRT:
       results: dictionary of analysis results for each analysis.
                The analyses in the dict are the ones requested in,
                Needs and OptionalNeeds class member variables.
-      func: the obj.Func object the diagnosis is to run on
+      func: the Func object the diagnosis is to run on
 
     Returns:
       List of reports that are to be delivered to Clang.

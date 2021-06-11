@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """Interval (Range) Analysis."""
 
 import logging
-
-from span.ir.tunit import TranslationUnit
-
-LOG = logging.getLogger("span")
+LOG = logging.getLogger(__name__)
 
 from typing import Tuple, Dict, Set, List, Optional as Opt, cast, Callable, Type
 
+from span.ir.tunit import TranslationUnit
 import span.ir.types as types
 import span.ir.op as op
 import span.ir.expr as expr
@@ -30,7 +28,7 @@ from span.api.lattice import \
    getBasicString,
    DataLT, )
 import span.api.dfv as dfv
-from span.api.dfv import NodeDfvL
+from span.api.dfv import DfvPairL
 import span.api.analysis as analysis
 from span.api.analysis import SimFailed, SimPending, BoolValue, \
   NumValue, ValueTypeT, AnalysisAT
@@ -447,13 +445,13 @@ class OverallL(dfv.OverallL):
       bot: bool = False
   ) -> None:
     super().__init__(func, val, top, bot, ComponentL, "IntervalA")
-    # self.componentTop = ComponentL(self.func, top=True)
-    # self.componentBot = ComponentL(self.func, bot=True)
 
 
   def countConstants(self) -> int:
     """Gives the count of number of constant in the data flow value."""
-    if self.top or self.bot: return 0
+    if self.top or self.bot:
+      return 0
+
     assert self.val, f"{self}"
     return sum(1 for v in self.val.values() if v.isConstant())  # type: ignore
 
@@ -464,13 +462,13 @@ class OverallL(dfv.OverallL):
   ) -> Tuple['OverallL', ChangedT]:
     if other is None: return self, not Changed
 
-    if other.top:        # no widening needed
+    if other.top:         # no widening needed
       return self, not Changed
     elif self.top:        # no widening needed
       return (self, not Changed) if other.top else (other, Changed)
     elif self.bot:        # no widening needed
       return self, not Changed
-    elif self != other:  # WIDEN-WIDEN
+    elif self != other:   # WIDENing needed!
       if other.bot:
         return other, Changed
       else:
@@ -478,7 +476,7 @@ class OverallL(dfv.OverallL):
     else:                 # no widening needed
       return self, not Changed
 
-    # widen individual entities (variables)
+    # If here, then widen individual entities (variables).
     widened_val: Dict[types.VarNameT, ComponentL] = {}
     vNames = set(self.val.keys())
     vNames.update(other.val.keys())
@@ -495,6 +493,7 @@ class OverallL(dfv.OverallL):
 
     if not changed:
       return self, not Changed
+
     value = OverallL(self.func, val=widened_val)
     return value, Changed
 
@@ -534,15 +533,7 @@ class IntervalA(analysis.ValueAnalysisAT):
   ################################################
   # BOUND START: Normal_Instructions
   ################################################
-
-  # def Ptr_Assign_Instr(self,
-  #     nodeId: types.NodeIdT,
-  #     insn: instr.AssignI,
-  #     nodeDfv: NodeDfvL,
-  #     calleeBi: Opt[NodeDfvL] = None,  #IPA
-  # ) -> NodeDfvL:
-  #   return self.Nop_Instr(nodeId, insn, nodeDfv)
-
+  # uses default implementation in analysis.ValueAnalysisAT class
   ################################################
   # BOUND END  : Normal_Instructions
   ################################################
@@ -553,7 +544,7 @@ class IntervalA(analysis.ValueAnalysisAT):
 
   def Num_Var__to__Num_Lit(self,
       e: expr.VarE,
-      nodeDfv: Opt[NodeDfvL] = None,
+      nodeDfv: Opt[DfvPairL] = None,
       values: Opt[Set[types.NumericT]] = None,
   ) -> Opt[Set[types.NumericT]]:
     # STEP 1: tell the system if the expression can be evaluated
@@ -582,7 +573,7 @@ class IntervalA(analysis.ValueAnalysisAT):
 
   def Num_Bin__to__Num_Lit(self,
       e: expr.BinaryE,
-      nodeDfv: Opt[NodeDfvL] = None,
+      nodeDfv: Opt[DfvPairL] = None,
       values: Opt[Set[types.NumericT]] = None,
   ) -> Opt[Set[types.NumericT]]:
     """Specifically for expression: '_ <relop> _'."""
@@ -619,7 +610,7 @@ class IntervalA(analysis.ValueAnalysisAT):
 
   def Cond__to__UnCond(self,
       e: expr.VarE,
-      nodeDfv: Opt[NodeDfvL] = None,
+      nodeDfv: Opt[DfvPairL] = None,
       values: Opt[Set[bool]] = None,
   ) -> Opt[Set[bool]]:
     # STEP 1: tell the system if the expression can be evaluated
@@ -680,9 +671,9 @@ class IntervalA(analysis.ValueAnalysisAT):
 
   def genNodeDfvL(self,
       outDfvValues: Dict[types.VarNameT, dfv.ComponentL],
-      nodeDfv: NodeDfvL,
+      nodeDfv: DfvPairL,
       callNode: bool = False, #IPA maybe True if a callE present.
-  ) -> NodeDfvL:
+  ) -> DfvPairL:
     """A convenience function to create and return the NodeDfvL."""
     dfvIn = newOut = cast(OverallL, nodeDfv.dfvIn)
     if callNode: #IPA modify the current dfvOut
@@ -700,7 +691,7 @@ class IntervalA(analysis.ValueAnalysisAT):
           oldOutValue: ComponentL = dfvOutGetVal(name)
           newValue, _ = oldOutValue.widen(value)
           newOutSetVal(name, newValue)
-    return NodeDfvL(dfvIn, newOut)
+    return DfvPairL(dfvIn, newOut)
 
 
   def getExprDfvLitE(self,
@@ -918,7 +909,7 @@ class IntervalA(analysis.ValueAnalysisAT):
   @staticmethod
   def countSimCondToUncond(
       func: constructs.Func,
-      dfvDict: Dict[types.NodeIdT, NodeDfvL]
+      dfvDict: Dict[types.NodeIdT, DfvPairL]
   ) -> int:
     tUnit: TranslationUnit = func.tUnit
     count = 0

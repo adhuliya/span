@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """Strong Liveness analysis."""
 
 import logging
 
-LOG = logging.getLogger("span")
+LOG = logging.getLogger(__name__)
 from typing import Optional as Opt, Set, Tuple, List, Callable, cast, Any
 
 from span.util.util import LS
@@ -25,7 +25,7 @@ from span.ir.ir import \
 from span.api.lattice import \
   (ChangedT, Changed, DataLT, basicEqualsTest, basicLessThanTest,
    getBasicString)
-from span.api.dfv import NodeDfvL
+from span.api.dfv import DfvPairL
 from span.api.analysis import AnalysisAT, BackwardD, SimFailed, SimPending
 
 ################################################
@@ -191,9 +191,9 @@ class StrongLiveVarsA(AnalysisAT):
 
 
   def getBoundaryInfo(self,
-      nodeDfv: Opt[NodeDfvL] = None,
+      nodeDfv: Opt[DfvPairL] = None,
       ipa: bool = False,
-  ) -> NodeDfvL:
+  ) -> DfvPairL:
     """Must generate a valid boundary info."""
     if ipa and not nodeDfv:
       raise ValueError(f"{ipa}, {nodeDfv}")
@@ -210,10 +210,10 @@ class StrongLiveVarsA(AnalysisAT):
 
       if dfvIn.val: dfvIn.val = dfvIn.val & vNames
       if dfvOut.val: dfvOut.val = dfvOut.val & vNames
-      return NodeDfvL(dfvIn, dfvOut)
+      return DfvPairL(dfvIn, dfvOut)
 
     if nodeDfv: inBi, outBi = nodeDfv.dfvIn, nodeDfv.dfvOut
-    return NodeDfvL(inBi, outBi)  # good to create a copy
+    return DfvPairL(inBi, outBi)  # good to create a copy
 
 
   def getAllVars(self) -> Set[types.VarNameT]:
@@ -234,48 +234,48 @@ class StrongLiveVarsA(AnalysisAT):
   def Nop_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.InstrIT,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """An identity backward transfer function."""
     nodeOut = nodeDfv.dfvOut
     nodeIn = nodeDfv.dfvIn
     if nodeIn is nodeOut:
       return nodeDfv  # to avoid making a fresh object
     else:
-      return NodeDfvL(nodeOut, nodeOut)
+      return DfvPairL(nodeOut, nodeOut)
 
 
   def ExRead_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.ExReadI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     newIn = OverallL(self.func, top=True)
     newIn.setValLive(insn.vars)
-    return NodeDfvL(newIn, nodeDfv.dfvOut)
+    return DfvPairL(newIn, nodeDfv.dfvOut)
 
 
   def UnDefVal_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.UnDefValI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     return self._killGen(nodeDfv, kill={insn.lhsName})
 
 
   def Use_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.UseI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     return self._killGen(nodeDfv, gen=insn.vars)
 
 
   def CondRead_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.CondReadI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     lName = insn.lhs
     rNames = insn.rhs
     dfvOut = nodeDfv.dfvOut
@@ -298,9 +298,9 @@ class StrongLiveVarsA(AnalysisAT):
   def Num_Assign_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-      calleeBi: Opt[NodeDfvL] = None,  #IPA
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+      calleeBi: Opt[DfvPairL] = None,  #IPA
+  ) -> DfvPairL:
     """Instr_Form: numeric: lhs = rhs.
     Convention:
       Type of lhs and rhs is numeric.
@@ -311,9 +311,9 @@ class StrongLiveVarsA(AnalysisAT):
   def Ptr_Assign_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-      calleeBi: Opt[NodeDfvL] = None,  #IPA
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+      calleeBi: Opt[DfvPairL] = None,  #IPA
+  ) -> DfvPairL:
     """Instr_Form: pointer: lhs = rhs.
     Convention:
       Type of lhs and rhs is a record.
@@ -324,9 +324,9 @@ class StrongLiveVarsA(AnalysisAT):
   def Record_Assign_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-      calleeBi: Opt[NodeDfvL] = None,  #IPA
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+      calleeBi: Opt[DfvPairL] = None,  #IPA
+  ) -> DfvPairL:
     """Instr_Form: record: lhs = rhs.
     Convention:
       Type of lhs and rhs is a record.
@@ -337,10 +337,10 @@ class StrongLiveVarsA(AnalysisAT):
   def Call_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.CallI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     dfvOut = nodeDfv.dfvOut
-    if dfvOut.bot: return NodeDfvL(dfvOut, dfvOut)
+    if dfvOut.bot: return DfvPairL(dfvOut, dfvOut)
     varNames = self.processCallE(insn.arg)
     return self._killGen(nodeDfv, gen=varNames)
 
@@ -348,16 +348,16 @@ class StrongLiveVarsA(AnalysisAT):
   def Conditional_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.CondI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     return self._killGen(nodeDfv, gen={insn.arg.name})
 
 
   def Return_Var_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.ReturnI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     return self._killGen(nodeDfv, gen={insn.arg.name})
 
   ################################################
@@ -370,7 +370,7 @@ class StrongLiveVarsA(AnalysisAT):
 
   def LhsVar__to__Nil(self,
       e: expr.VarE,
-      nodeDfv: Opt[NodeDfvL] = None,
+      nodeDfv: Opt[DfvPairL] = None,
       values: Opt[Set[types.VarNameT]] = None,
   ) -> Opt[Set[types.VarNameT]]:
     if nodeDfv is None:
@@ -390,17 +390,17 @@ class StrongLiveVarsA(AnalysisAT):
   ################################################
 
   def _killGen(self,
-      nodeDfv: NodeDfvL,
+      nodeDfv: DfvPairL,
       kill: Opt[Set[types.VarNameT]] = None,
       gen: Opt[Set[types.VarNameT]] = None,
-  ) -> NodeDfvL:
+  ) -> DfvPairL:
     dfvOut = nodeDfv.dfvOut
     assert isinstance(dfvOut, OverallL), f"{dfvOut}"
 
     if LS: LOG.debug(f"StrongLiveVarsA: Kill={kill}, Gen={gen}")
 
-    if dfvOut.bot and not kill: return NodeDfvL(dfvOut, dfvOut)
-    if dfvOut.top and not gen: return NodeDfvL(dfvOut, dfvOut)
+    if dfvOut.bot and not kill: return DfvPairL(dfvOut, dfvOut)
+    if dfvOut.top and not gen: return DfvPairL(dfvOut, dfvOut)
 
     outVal, newIn = dfvOut.val, dfvOut
     if outVal is None:
@@ -413,14 +413,14 @@ class StrongLiveVarsA(AnalysisAT):
       newIn = dfvOut.getCopy()
       if realKill: newIn.setValDead(kill)
       if gen: newIn.setValLive(gen)
-    return NodeDfvL(newIn, dfvOut)
+    return DfvPairL(newIn, dfvOut)
 
 
   def processLhsRhs(self,
       lhs: expr.ExprET,
       rhs: expr.ExprET,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     """Processes all kinds of assignment instructions.
     The record types are also handled without any special treatment."""
     dfvOut = nodeDfv.dfvOut  # dfv at OUT of a node
@@ -441,7 +441,7 @@ class StrongLiveVarsA(AnalysisAT):
 
     # Now take action
     if not rhsNamesAreLive:
-      return NodeDfvL(dfvOut, dfvOut)
+      return DfvPairL(dfvOut, dfvOut)
 
     if rhsIsCallExpr:
       rhsNames = self.processCallE(rhs)

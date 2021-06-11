@@ -1,7 +1,7 @@
 #!/usr/bin/env python3.6
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """
 Python 3.6 or above.
@@ -16,7 +16,7 @@ import logging
 # @PRODUCTION: use span.util.util.LL<0-5> to control logging.
 logger.initLogger(appName="span", logLevel=logger.LogLevels.DEBUG)
 
-LOG: logging.Logger = logging.getLogger("span")
+LOG: logging.Logger = logging.getLogger(__name__)
 
 import span.ir.callgraph
 import io

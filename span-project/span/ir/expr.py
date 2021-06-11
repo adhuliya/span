@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """
 All possible expressions used in an instruction.
 """
 
 import logging
-LOG = logging.getLogger("span")
+LOG = logging.getLogger(__name__)
 LER = LOG.error
 
 from typing import List, Set, Any, Optional as Opt

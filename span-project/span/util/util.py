@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """Project wide utility functions.
 
@@ -10,7 +10,7 @@ are needed by this project.
 """
 
 import logging
-_LOG = logging.getLogger("span")
+_LOG = logging.getLogger(__name__)
 
 import sys
 

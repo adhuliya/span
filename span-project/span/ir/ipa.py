@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """
 (Depricated) Inter-Procedural Analysis (IPA) IR module.
@@ -14,7 +14,7 @@ Prepares the IR for the IPA.
 """
 
 import logging
-LOG = logging.getLogger("span")
+LOG = logging.getLogger(__name__)
 
 from typing import Dict, Tuple, Set, List, Callable
 from typing import Optional as Opt

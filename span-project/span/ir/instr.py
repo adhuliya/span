@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """All instructions of IR
 
@@ -9,7 +9,7 @@ Note: use names in this module with module name: e.g. instr.UseI...
 """
 import functools
 import logging
-LOG = logging.getLogger("span")
+LOG = logging.getLogger(__name__)
 
 from typing import Set, List
 from typing import Optional as Opt

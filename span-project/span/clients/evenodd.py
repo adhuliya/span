@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """Even-Odd Analysis.
 
@@ -14,7 +14,7 @@ import logging
 
 from span.ir.conv import Forward
 
-LOG = logging.getLogger("span")
+LOG = logging.getLogger(__name__)
 from typing import Tuple, Dict, Set, List, Optional as Opt, Callable, cast
 
 import span.ir.types as types
@@ -26,7 +26,7 @@ import span.ir.constructs as constructs
 from span.api.lattice import DataLT, ChangedT, Changed,\
   basicMeetOp, basicLessThanTest, basicEqualsTest, getBasicString
 import span.api.dfv as dfv
-from span.api.dfv import NodeDfvL
+from span.api.dfv import DfvPairL
 import span.api.analysis as analysis
 from span.api.analysis import SimFailed, SimPending, BoolValue, \
   NumValue, ValueTypeT, AnalysisAT
@@ -160,8 +160,8 @@ class EvenOddA(analysis.ValueAnalysisAT):
   def Ptr_Assign_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     return self.Nop_Instr(nodeId, insn, nodeDfv)
 
   ################################################
@@ -174,7 +174,7 @@ class EvenOddA(analysis.ValueAnalysisAT):
 
   def Num_Var__to__Num_Lit(self,
       e: expr.VarE,
-      nodeDfv: Opt[NodeDfvL] = None,
+      nodeDfv: Opt[DfvPairL] = None,
       values: Opt[Set[types.NumericT]] = None,
   ) -> Opt[Set[types.NumericT]]:
     # STEP 1: tell the system if the expression can be evaluated
@@ -197,7 +197,7 @@ class EvenOddA(analysis.ValueAnalysisAT):
 
   def Num_Bin__to__Num_Lit(self,
       e: expr.BinaryE,
-      nodeDfv: Opt[NodeDfvL] = None,
+      nodeDfv: Opt[DfvPairL] = None,
       values: Opt[Set[types.NumericT]] = None,
   ) -> Opt[Set[types.NumericT]]:
     """Specifically for expression: 'var % 2'."""
@@ -230,7 +230,7 @@ class EvenOddA(analysis.ValueAnalysisAT):
 
   def Cond__to__UnCond(self,
       e: expr.VarE,
-      nodeDfv: Opt[NodeDfvL] = None,
+      nodeDfv: Opt[DfvPairL] = None,
       values: Opt[Set[bool]] = None,
   ) -> Opt[Set[bool]]:
     # STEP 1: tell the system if the expression can be evaluated

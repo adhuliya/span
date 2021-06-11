@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """Holds the `Func` class."""
 
 import logging
-LOG = logging.getLogger("span")
+LOG = logging.getLogger(__name__)
 LER = LOG.error
 
 from typing import List, Dict, Tuple, Optional as Opt, Set

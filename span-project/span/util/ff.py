@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """The Feature Flags (ff) module contains the flags
 and values for various system wide features.
@@ -12,7 +12,7 @@ Note: Keep all the flags in the global scope of this module.
 """
 
 import logging
-_LOG = logging.getLogger("span")
+_LOG = logging.getLogger(__name__)
 
 import io
 

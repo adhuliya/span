@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """Points-to analysis.
 
@@ -11,7 +11,7 @@ This (and every) analysis subclasses,
 """
 
 import logging
-LOG = logging.getLogger("span")
+LOG = logging.getLogger(__name__)
 LDB, LIN, LER, LWA = LOG.debug, LOG.info, LOG.error, LOG.warning
 
 from typing import Tuple, Dict, List, Optional as Opt, Set, Callable, cast, Type
@@ -34,7 +34,7 @@ import span.ir.constructs as constructs
 from span.api.lattice import (ChangedT, Changed, basicLessThanTest,
                               basicEqualsTest, getBasicString, mergeAll, DataLT, )
 import span.api.dfv as dfv
-from span.api.dfv import NodeDfvL
+from span.api.dfv import DfvPairL
 import span.api.analysis as analysis
 from span.api.analysis import (
   SimFailed, SimPending, ValueTypeT,
@@ -280,7 +280,7 @@ class PointsToA(analysis.ValueAnalysisAT):
 
   def Deref__to__Vars(self,
       e: expr.VarE,
-      nodeDfv: Opt[NodeDfvL] = None,
+      nodeDfv: Opt[DfvPairL] = None,
       values: Opt[Set[types.VarNameT]] = None,
   ) -> Opt[Set[types.VarNameT]]:
     varName = e.name
@@ -314,7 +314,7 @@ class PointsToA(analysis.ValueAnalysisAT):
 
   def Cond__to__UnCond(self,
       e: expr.VarE,
-      nodeDfv: Opt[NodeDfvL] = None,
+      nodeDfv: Opt[DfvPairL] = None,
       values: Opt[Set[bool]] = None,
   ) -> Opt[Set[bool]]:
     # STEP 1: check if the expression can be evaluated
@@ -345,7 +345,7 @@ class PointsToA(analysis.ValueAnalysisAT):
 
   def Num_Bin__to__Num_Lit(self,
       e: expr.BinaryE,
-      nodeDfv: Opt[NodeDfvL] = None,
+      nodeDfv: Opt[DfvPairL] = None,
       values: Opt[Set[types.NumericT]] = None,
   ) -> Opt[Set[types.NumericT]]:
     """Specifically for expressions: x == y, x != y"""
@@ -420,7 +420,8 @@ class PointsToA(analysis.ValueAnalysisAT):
   def getExprDfv(self,
       rhs: expr.ExprET,
       dfvIn: OverallL,
-      calleeBi: Opt[NodeDfvL] = None,  #IPA
+      calleeBi: Opt[DfvPairL] = None,  #IPA
+      nodeId: NodeIdT = 0,
   ) -> dfv.ComponentL:
     """Returns the effective component dfv of the rhs.
     It expects the rhs to be pointer type or an array type."""

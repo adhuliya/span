@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """The analysis interface."""
 
 import logging
-LOG = logging.getLogger("span")
+LOG = logging.getLogger(__name__)
 LDB, LWR, LER = LOG.debug, LOG.warning, LOG.error
 
 from span.ir.tunit import TranslationUnit
@@ -43,7 +43,7 @@ from span.ir.ir import \
    isDummyGlobalFunc)
 
 from span.api.dfv import (
-  OLD_IN_OUT, NEW_IN_ONLY, NodeDfvL, ChangePairL,
+  OLD_IN_OUT, NEW_IN_ONLY, DfvPairL, ChangePairL,
 )
 import span.api.dfv as dfv
 from span.api.lattice import ChangedT, Changed, DataLT, mergeAll
@@ -431,7 +431,7 @@ class DirectionDT:
       super().__init__()
     self.cfg = func.cfg
     self.anResult: dfv.AnResult = dfv.AnResult(anName, func, top)
-    self.topNdfv: NodeDfvL = NodeDfvL(top, top)
+    self.topNdfv: DfvPairL = DfvPairL(top, top)
     for nid in self.cfg.nodeMap.keys():
       self.anResult[nid] = self.topNdfv
     # set this to true once boundary values are initialized
@@ -455,7 +455,7 @@ class DirectionDT:
 
   def update(self,
       node: cfg.CfgNode,
-      nodeDfv: NodeDfvL,
+      nodeDfv: DfvPairL,
       widen: bool = False, # apply widening
   ) -> ChangePairL:
     """Update, the node dfv in wl if changed.
@@ -476,7 +476,7 @@ class DirectionDT:
       assert newOut is newOutTrue and newOut is newOutFalse
       newIn, c1 = oldIn.widen(newIn)
       newOut, c2 = oldOut.widen(newOut)
-      nodeDfv = NodeDfvL(newIn, newOut)  # nodeDfv OVER-WRITTEN
+      nodeDfv = DfvPairL(newIn, newOut)  # nodeDfv OVER-WRITTEN
       newOutFalse = newOutTrue = newOut
 
     if util.CC3:
@@ -510,14 +510,14 @@ class DirectionDT:
   def calcInOut(self,
       node: cfg.CfgNode,
       fcfg: cfg.FeasibleEdges
-  ) -> Tuple[NodeDfvL, ChangePairL]:
+  ) -> Tuple[DfvPairL, ChangePairL]:
     """Merges dfv from feasible edges."""
     raise NotImplementedError()
 
 
   def getDfv(self,
       nodeId: cfg.CfgNodeId
-  ) -> NodeDfvL:
+  ) -> DfvPairL:
     return self.anResult.get(nodeId, self.topNdfv)
 
 
@@ -553,7 +553,7 @@ class ForwardDT(DirectionDT):
 
   def update(self,
       node: cfg.CfgNode,
-      nodeDfv: NodeDfvL,
+      nodeDfv: DfvPairL,
       widen: bool = False, # apply widening
   ) -> ChangePairL:
     """Update, for forward direction.
@@ -578,7 +578,7 @@ class ForwardDT(DirectionDT):
   def calcInOut(self,
       node: cfg.CfgNode,
       fcfg: cfg.FeasibleEdges
-  ) -> Tuple[NodeDfvL, ChangePairL]:
+  ) -> Tuple[DfvPairL, ChangePairL]:
     """Forward: Merges OUT of feasible predecessors.
 
     It also updates the self.anResult to make the change visible (if any).
@@ -611,7 +611,7 @@ class ForwardDT(DirectionDT):
 
     # Update in map for use in evaluation functions.
     assert newIn is not None
-    newNodeDfv = NodeDfvL(newIn, ndfv.dfvOut)
+    newNodeDfv = DfvPairL(newIn, ndfv.dfvOut)
     self.anResult[nid] = newNodeDfv  # updates the node dfv map
     return newNodeDfv, NEW_IN_ONLY
 
@@ -652,7 +652,7 @@ class BackwardDT(DirectionDT):
 
   def update(self,
       node: cfg.CfgNode,
-      nodeDfv: NodeDfvL,
+      nodeDfv: DfvPairL,
       widen: bool = False, # apply widening
   ) -> ChangePairL:
     """Update, for backward direction.
@@ -680,7 +680,7 @@ class BackwardDT(DirectionDT):
   def calcInOut(self,
       node: cfg.CfgNode,
       fcfg: cfg.FeasibleEdges
-  ) -> Tuple[NodeDfvL, ChangePairL]:
+  ) -> Tuple[DfvPairL, ChangePairL]:
     """Backward: Merges IN of feasible successors.
 
     It also updates the self.anResult to make the change visible (if any).
@@ -708,7 +708,7 @@ class BackwardDT(DirectionDT):
 
     # Update in map for use in evaluation functions.
     assert newOut is not None
-    newNodeDfv = NodeDfvL(ndfv.dfvIn, newOut)
+    newNodeDfv = DfvPairL(ndfv.dfvIn, newOut)
     self.anResult[nid] = newNodeDfv  # updates the node dfv map
     return newNodeDfv, NEW_IN_ONLY
 
@@ -779,11 +779,11 @@ class AnalysisAT:
 
 
   def getBoundaryInfo(self,
-      nodeDfv: Opt[NodeDfvL] = None,
+      nodeDfv: Opt[DfvPairL] = None,
       ipa: bool = False,
       entryFunc: bool = False,
       func: Opt[constructs.Func] = None,
-  ) -> NodeDfvL:
+  ) -> DfvPairL:
     """Must generate a valid boundary info."""
     if ipa and not nodeDfv:
       raise ValueError(f"{ipa}, {nodeDfv}")
@@ -791,15 +791,15 @@ class AnalysisAT:
     inBi, outBi = self.overallBot, self.overallBot
     if ipa: raise NotImplementedError()  # for IPA override this function
     if nodeDfv: inBi, outBi = nodeDfv.dfvIn, nodeDfv.dfvOut
-    return NodeDfvL(inBi, outBi)  # good to create a copy
+    return DfvPairL(inBi, outBi)  # good to create a copy
 
 
   def getLocalizedCalleeBi(self, #IPA
       nodeId: NodeIdT,
       insn: instr.InstrIT,
-      nodeDfv: NodeDfvL,
-      calleeBi: Opt[NodeDfvL] = None,  #IPA
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+      calleeBi: Opt[DfvPairL] = None,  #IPA
+  ) -> DfvPairL:
     """Computes the value context of the callee, given
     the data flow value of the caller."""
     raise NotImplementedError
@@ -810,9 +810,9 @@ class AnalysisAT:
   def Any_Instr(self,
       nodeId: NodeIdT,
       insn: instr.InstrIT,
-      nodeDfv: NodeDfvL,
-      calleeBi: Opt[NodeDfvL] = None,  #IPA
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+      calleeBi: Opt[DfvPairL] = None,  #IPA
+  ) -> DfvPairL:
     """For any SPAN IR instruction.
     Default behaviour is to delegate the control to specialized functions.
     """
@@ -830,9 +830,9 @@ class AnalysisAT:
   def Default_Instr(self,
       nodeId: NodeIdT,
       insn: instr.InstrIT,
-      nodeDfv: NodeDfvL,
-      calleeBi: Opt[NodeDfvL] = None,  #IPA
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+      calleeBi: Opt[DfvPairL] = None,  #IPA
+  ) -> DfvPairL:
     """The default behaviour for unimplemented instructions.
     Analysis should override this method if unimplemented
     instructions have to be handled in a way other than
@@ -844,8 +844,8 @@ class AnalysisAT:
   def Nop_Instr(self,
       nodeId: NodeIdT,
       insn: instr.InstrIT,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Instr_Form: void: NopI()."""
     D = self.D
 
@@ -854,14 +854,14 @@ class AnalysisAT:
       if dfvIn is nodeDfv.dfvOut:
         return nodeDfv
       else:
-        return NodeDfvL(dfvIn, dfvIn)
+        return DfvPairL(dfvIn, dfvIn)
 
     elif D == Backward:
       dfvOut = nodeDfv.dfvOut
       if dfvOut is nodeDfv.dfvIn:
         return nodeDfv
       else:
-        return NodeDfvL(dfvOut, dfvOut)
+        return DfvPairL(dfvOut, dfvOut)
 
     else: # ForwBack?
       raise ValueError("ForwBack NOP not defined!")
@@ -870,8 +870,8 @@ class AnalysisAT:
   def Barrier_Instr(self,
       nodeId: NodeIdT,
       insn: instr.InstrIT,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     """Data Flow information is blocked from travelling
     from IN-to-OUT and OUT-to-IN.
 
@@ -883,8 +883,8 @@ class AnalysisAT:
   def Use_Instr(self,
       nodeId: NodeIdT,
       insn: instr.UseI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Instr_Form: void: UseI(x).
     Value of x is read from memory."""
     return self.Default_Instr(nodeId, insn, nodeDfv)
@@ -893,8 +893,8 @@ class AnalysisAT:
   def ExRead_Instr(self,
       nodeId: NodeIdT,
       insn: instr.ExReadI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Instr_Form: void: ExReadI(x).
     x and only x is read, others are forcibly
     marked as not read (in backward direction)."""
@@ -904,8 +904,8 @@ class AnalysisAT:
   def CondRead_Instr(self,
       nodeId: NodeIdT,
       insn: instr.CondReadI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Instr_Form: void: CondReadI(x, {y, z}).
     y and z are read if x is read."""
     return self.Barrier_Instr(nodeId, insn, nodeDfv)
@@ -914,8 +914,8 @@ class AnalysisAT:
   def UnDefVal_Instr(self,
       nodeId: NodeIdT,
       insn: instr.UnDefValI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Instr_Form: void: input(x). (user supplies value of x)
     Thus value of x is undefined."""
     return self.Default_Instr(nodeId, insn, nodeDfv)
@@ -924,8 +924,8 @@ class AnalysisAT:
   def Filter_Instr(self,
       nodeId: NodeIdT,
       insn: instr.FilterI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Instr_Form: void: FilterI({x,y,z}).
     x,y,z are known to be dead after this program point."""
     return self.Default_Instr(nodeId, insn, nodeDfv)
@@ -939,9 +939,9 @@ class AnalysisAT:
   def Assign_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-      calleeBi: Opt[NodeDfvL] = None,  #IPA
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+      calleeBi: Opt[DfvPairL] = None,  #IPA
+  ) -> DfvPairL:
     iType = insn.type
     if iType.isNumericOrVoid():
       return self.Num_Assign_Instr(nodeId, insn, nodeDfv, calleeBi)
@@ -956,9 +956,9 @@ class AnalysisAT:
   def Num_Assign_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-      calleeBi: Opt[NodeDfvL] = None,  #IPA
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+      calleeBi: Opt[DfvPairL] = None,  #IPA
+  ) -> DfvPairL:
     """Instr_Form: numeric: lhs = rhs.
     Convention:
       Type of lhs and rhs is numeric.
@@ -974,9 +974,9 @@ class AnalysisAT:
   def Ptr_Assign_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-      calleeBi: Opt[NodeDfvL] = None,  #IPA
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+      calleeBi: Opt[DfvPairL] = None,  #IPA
+  ) -> DfvPairL:
     """Instr_Form: pointer: lhs = rhs.
     Convention:
       Type of lhs and rhs is a record.
@@ -992,9 +992,9 @@ class AnalysisAT:
   def Record_Assign_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-      calleeBi: Opt[NodeDfvL] = None,  #IPA
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+      calleeBi: Opt[DfvPairL] = None,  #IPA
+  ) -> DfvPairL:
     """Instr_Form: record: lhs = rhs.
     Convention:
       Type of lhs and rhs is a record.
@@ -1010,8 +1010,8 @@ class AnalysisAT:
   def Num_Assign_Var_Var_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Instr_Form: numeric: a = b.
     Convention:
       a and b are variables.
@@ -1022,8 +1022,8 @@ class AnalysisAT:
   def Ptr_Assign_Var_Var_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Instr_Form: pointer: u = v.
     Convention:
       u and v are variables.
@@ -1034,8 +1034,8 @@ class AnalysisAT:
   def Ptr_Assign_Var_FuncName_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Instr_Form: pointer: u = f.
     Convention:
       u is a variable.
@@ -1047,8 +1047,8 @@ class AnalysisAT:
   def Record_Assign_Var_Var_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     """Instr_Form: record(struct/union): a = b.
     Convention:
       a and b are variables.
@@ -1059,8 +1059,8 @@ class AnalysisAT:
   def Num_Assign_Var_Lit_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Instr_Form: numeric: a = b.
     Convention:
       a is a variable.
@@ -1072,8 +1072,8 @@ class AnalysisAT:
   def Ptr_Assign_Var_Lit_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Instr_Form: pointer: a = b.
     Convention:
       a is a variable.
@@ -1085,8 +1085,8 @@ class AnalysisAT:
   def Num_Assign_Var_SizeOf_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Instr_Form: numeric: a = sizeof(b).
     Convention:
       a and b are both variables.
@@ -1098,8 +1098,8 @@ class AnalysisAT:
   def Num_Assign_Var_UnaryArith_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Instr_Form: numeric: a = <unary arith/bit/logical op> b.
     Convention:
       a and b are both variables.
@@ -1110,8 +1110,8 @@ class AnalysisAT:
   def Num_Assign_Var_BinArith_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Instr_Form: numeric: a = b <binary arith/rel/bit/shift> c.
     Convention:
       a is a variable.
@@ -1123,8 +1123,8 @@ class AnalysisAT:
   def Ptr_Assign_Var_BinArith_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Instr_Form: numeric: a = b <binary +/-> c.
     Convention:
       a is a variable.
@@ -1136,8 +1136,8 @@ class AnalysisAT:
   def Num_Assign_Var_Deref_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Instr_Form: numeric: a = *u.
     Convention:
       a and u are variables.
@@ -1148,8 +1148,8 @@ class AnalysisAT:
   def Ptr_Assign_Var_Deref_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Instr_Form: pointer: u = *v.
     Convention:
       u and v are variables.
@@ -1160,8 +1160,8 @@ class AnalysisAT:
   def Record_Assign_Var_Deref_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     """Instr_Form: record: u = *v.
     Convention:
       v and u are variables.
@@ -1172,8 +1172,8 @@ class AnalysisAT:
   def Num_Assign_Var_Array_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     """Instr_Form: numeric: a = b[i].
     Convention:
       a and b are variables.
@@ -1185,8 +1185,8 @@ class AnalysisAT:
   def Ptr_Assign_Var_Array_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     """Instr_Form: pointer: u = a[i].
     Convention:
       u and a are variables.
@@ -1198,8 +1198,8 @@ class AnalysisAT:
   def Record_Assign_Var_Array_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     """Instr_Form: record(struct/union): r = a[i].
     Convention:
       u and a are variables.
@@ -1211,8 +1211,8 @@ class AnalysisAT:
   def Num_Assign_Var_Member_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     """Instr_Form: numeric: a = b.x or a = b->x.
     Convention:
       a and b are variables.
@@ -1224,8 +1224,8 @@ class AnalysisAT:
   def Ptr_Assign_Var_Member_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     """Instr_Form: pointer: a = b.x or a = b->x.
     Convention:
       a and b are variables.
@@ -1237,8 +1237,8 @@ class AnalysisAT:
   def Record_Assign_Var_Member_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     """Instr_Form: record(struct/union): a = b.x or a = b->x.
     Convention:
       a and b are variables.
@@ -1250,8 +1250,8 @@ class AnalysisAT:
   def Num_Assign_Var_Select_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     """Instr_Form: numeric: b = c ? d : e.
     Convention:
       b, c, are always variables.
@@ -1263,8 +1263,8 @@ class AnalysisAT:
   def Ptr_Assign_Var_Select_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     """Instr_Form: pointer: p = c ? d : e.
     Convention:
       b, c, are always variables.
@@ -1276,8 +1276,8 @@ class AnalysisAT:
   def Record_Assign_Var_Select_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     """Instr_Form: record: b = c ? d : e.
     Convention:
       b, c, d, e are always variables.
@@ -1288,9 +1288,9 @@ class AnalysisAT:
   def Num_Assign_Var_Call_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-      calleeBi: Opt[NodeDfvL] = None,  #IPA
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+      calleeBi: Opt[DfvPairL] = None,  #IPA
+  ) -> DfvPairL:
     """Instr_Form: numeric: b = func(args...).
     Convention:
       b is a variable.
@@ -1303,9 +1303,9 @@ class AnalysisAT:
   def Ptr_Assign_Var_Call_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-      calleeBi: Opt[NodeDfvL] = None,  #IPA
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+      calleeBi: Opt[DfvPairL] = None,  #IPA
+  ) -> DfvPairL:
     """Instr_Form: pointer: p = func()."""
     return self.Default_Instr(nodeId, insn, nodeDfv)
 
@@ -1313,9 +1313,9 @@ class AnalysisAT:
   def Record_Assign_Var_Call_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-      calleeBi: Opt[NodeDfvL] = None,  #IPA
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+      calleeBi: Opt[DfvPairL] = None,  #IPA
+  ) -> DfvPairL:
     """Instr_Form: record: r = func()."""
     return self.Default_Instr(nodeId, insn, nodeDfv)
 
@@ -1323,8 +1323,8 @@ class AnalysisAT:
   def Num_Assign_Var_CastVar_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     """Instr_Form: numeric: a = (int) b.
     Convention:
       a and b are variables.
@@ -1335,8 +1335,8 @@ class AnalysisAT:
   def Ptr_Assign_Var_CastVar_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     """Instr_Form: pointer: a = (int*) b.
     Convention:
       a and b are variables.
@@ -1347,8 +1347,8 @@ class AnalysisAT:
   def Ptr_Assign_Var_CastArr_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     """Instr_Form: pointer: b = (int*)a[i].
     Convention:
       b and a are variables.
@@ -1371,8 +1371,8 @@ class AnalysisAT:
   def Ptr_Assign_Var_AddrOfVar_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Instr_Form: pointer: u = &x.
     Convention:
       u and x are variables.
@@ -1383,8 +1383,8 @@ class AnalysisAT:
   def Ptr_Assign_Var_AddrOfArray_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Instr_Form: pointer: u = &a[i]
     Convention:
       u and a are variables.
@@ -1396,8 +1396,8 @@ class AnalysisAT:
   def Ptr_Assign_Var_AddrOfMember_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Instr_Form: pointer: u = &r.x or u = &r->x.
     Convention:
       u and r are variables.
@@ -1409,8 +1409,8 @@ class AnalysisAT:
   def Ptr_Assign_Var_AddrOfDeref_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Instr_Form: pointer: u = &*x
     Convention:
       u is a pointer variable
@@ -1422,8 +1422,8 @@ class AnalysisAT:
   def Ptr_Assign_Var_AddrOfFunc_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Instr_Form: pointer: u = &f.
     Convention:
       u is a variable.
@@ -1438,8 +1438,8 @@ class AnalysisAT:
   def Num_Assign_Deref_Var_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Instr_Form: numeric: *u = b.
     Convention:
       u and b are variables.
@@ -1450,8 +1450,8 @@ class AnalysisAT:
   def Num_Assign_Deref_Lit_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Instr_Form: numeric: *u = b.
     Convention:
       u is a variable.
@@ -1463,8 +1463,8 @@ class AnalysisAT:
   def Ptr_Assign_Deref_Var_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Instr_Form: pointer: *u = v.
     Convention:
       u and v are variables.
@@ -1475,8 +1475,8 @@ class AnalysisAT:
   def Ptr_Assign_Deref_Lit_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Instr_Form: pointer: *u = b.
     Convention:
       u is a variable.
@@ -1488,8 +1488,8 @@ class AnalysisAT:
   def Record_Assign_Deref_Var_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     """Instr_Form: record: *u = v.
     Convention:
       u and v are variables.
@@ -1503,8 +1503,8 @@ class AnalysisAT:
   def Num_Assign_Array_Var_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     """Instr_Form: numeric: a[i] = b.
     Convention:
       a and b are variables.
@@ -1516,8 +1516,8 @@ class AnalysisAT:
   def Num_Assign_Array_Lit_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     """Instr_Form: numeric: a[i] = b.
     Convention:
       a is a variable.
@@ -1530,8 +1530,8 @@ class AnalysisAT:
   def Ptr_Assign_Array_Var_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     """Instr_Form: pointer: a[i] = b.
     Convention:
       a and b are variables.
@@ -1543,8 +1543,8 @@ class AnalysisAT:
   def Ptr_Assign_Array_Lit_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     """Instr_Form: pointer: a[i] = b.
     Convention:
       a is a variable.
@@ -1557,8 +1557,8 @@ class AnalysisAT:
   def Record_Assign_Array_Var_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     """Instr_Form: record(struct/union): a[i] = b.
     Convention:
       a and b are variables.
@@ -1573,8 +1573,8 @@ class AnalysisAT:
   def Num_Assign_Member_Var_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     """Instr_Form: numeric: r.x = b  or r->x = b.
     Convention:
       r is a variable.
@@ -1587,8 +1587,8 @@ class AnalysisAT:
   def Num_Assign_Member_Lit_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     """Instr_Form: numeric: r.x = b or r->x = b.
     Convention:
       r is a variable.
@@ -1601,8 +1601,8 @@ class AnalysisAT:
   def Ptr_Assign_Member_Var_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     """Instr_Form: pointer: r.x = b  or r->x = b.
     Convention:
       r is a variable.
@@ -1615,8 +1615,8 @@ class AnalysisAT:
   def Ptr_Assign_Member_Lit_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     """Instr_Form: pointer: r.x = b or r->x = b.
     Convention:
       r is a variable.
@@ -1629,8 +1629,8 @@ class AnalysisAT:
   def Record_Assign_Member_Var_Instr(self,
       nodeId: NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     """Instr_Form: record(struct/union): r.x = b or r->x = b.
     Convention:
       r and b are variables.
@@ -1645,9 +1645,9 @@ class AnalysisAT:
   def Call_Instr(self,
       nodeId: NodeIdT,
       insn: instr.CallI,
-      nodeDfv: NodeDfvL,
-      calleeBi: Opt[NodeDfvL] = None,  #IPA
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+      calleeBi: Opt[DfvPairL] = None,  #IPA
+  ) -> DfvPairL:
     """Instr_Form: void: func(args...) (just a call statement).
     Convention:
       args are either a variable, a literal or addrof expression.
@@ -1658,8 +1658,8 @@ class AnalysisAT:
   def Return_Var_Instr(self,
       nodeId: NodeIdT,
       insn: instr.ReturnI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Instr_Form: void: return b.
     Convention:
       b is a variable.
@@ -1670,8 +1670,8 @@ class AnalysisAT:
   def Return_Lit_Instr(self,
       nodeId: NodeIdT,
       insn: instr.ReturnI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Instr_Form: void: return b.
     Convention:
       b is a literal.
@@ -1682,8 +1682,8 @@ class AnalysisAT:
   def Return_Void_Instr(self,
       nodeId: NodeIdT,
       insn: instr.ReturnI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Instr_Form: void: return;
     """
     return self.Default_Instr(nodeId, insn, nodeDfv)
@@ -1692,8 +1692,8 @@ class AnalysisAT:
   def Conditional_Instr(self,
       nodeId: NodeIdT,
       insn: instr.CondI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Instr_Form: void: if b.
     Convention:
       b is a variable.
@@ -1724,7 +1724,7 @@ class AnalysisAT:
 
   def Node__to__Nil(self,
       nodeId: NodeIdT,
-      nodeDfv: Opt[NodeDfvL] = None,
+      nodeDfv: Opt[DfvPairL] = None,
       values: Opt[bool] = None,
   ) -> Opt[Set[bool]]:
     """Node is simplified to Nil if its basically unreachable."""
@@ -1733,7 +1733,7 @@ class AnalysisAT:
 
   def LhsVar__to__Nil(self,
       e: expr.VarE,
-      nodeDfv: Opt[NodeDfvL] = None,
+      nodeDfv: Opt[DfvPairL] = None,
       values: Opt[List[bool]] = None,
   ) -> Opt[Set[bool]]:
     """Returns a set of live variables at out of the node."""
@@ -1742,7 +1742,7 @@ class AnalysisAT:
 
   def Num_Var__to__Num_Lit(self,
       e: expr.VarE,
-      nodeDfv: Opt[NodeDfvL] = None,
+      nodeDfv: Opt[DfvPairL] = None,
       values: Opt[List[NumericT]] = None,
   ) -> Opt[Set[NumericT]]:
     """Simplify to a single literal if the variable can take that value."""
@@ -1751,7 +1751,7 @@ class AnalysisAT:
 
   def Num_Bin__to__Num_Lit(self,
       e: expr.BinaryE,
-      nodeDfv: Opt[NodeDfvL] = None,
+      nodeDfv: Opt[DfvPairL] = None,
       values: Opt[List[NumericT]] = None,
   ) -> Opt[Set[NumericT]]:
     """Simplify to a single literal if the expr can take that value."""
@@ -1760,7 +1760,7 @@ class AnalysisAT:
 
   def Deref__to__Vars(self,
       e: expr.VarE,
-      nodeDfv: Opt[NodeDfvL] = None,
+      nodeDfv: Opt[DfvPairL] = None,
       values: Opt[List[VarNameT]] = None
   ) -> Opt[Set[VarNameT]]:
     """Simplify a deref expr de-referencing varName
@@ -1770,7 +1770,7 @@ class AnalysisAT:
 
   def Cond__to__UnCond(self,
       e: expr.VarE,
-      nodeDfv: Opt[NodeDfvL] = None,
+      nodeDfv: Opt[DfvPairL] = None,
       values: Opt[bool] = None,
   ) -> Opt[Set[bool]]:
     """Simplify conditional jump to unconditional jump."""
@@ -1859,18 +1859,19 @@ class ValueAnalysisAT(AnalysisAT):
 
 
   def getBoundaryInfo(self,
-      nodeDfv: Opt[NodeDfvL] = None, # needs to be localized to the target func
+      nodeDfv: Opt[DfvPairL] = None, # needs to be localized to the target func
       ipa: bool = False,  #IPA
       entryFunc: bool = False,
       forFunc: Opt[constructs.Func] = None,
-  ) -> NodeDfvL:
+  ) -> DfvPairL:
     """
       * IPA/Intra: initialize all local (non-parameter) vars to Top.
       * IPA: initialize all non-initialized globals to Top
         only at the entry of the main function. (DONE)
       * Intra: initialize all globals to Bot. (as is done currently)
     """
-    if ipa and not nodeDfv: raise ValueError(f"{ipa}, {nodeDfv}")
+    if ipa and not nodeDfv:
+      raise ValueError(f"{ipa}, {nodeDfv}")
 
     func = forFunc if forFunc else self.func
 
@@ -1906,16 +1907,16 @@ class ValueAnalysisAT(AnalysisAT):
           if self.L.isAcceptedType(tUnitGetNameInfo(vName).type):
             inBiSetVal(vName, compBot)
 
-    nDfv1 = NodeDfvL(inBi, outBi)
+    nDfv1 = DfvPairL(inBi, outBi)
     return nDfv1
 
 
   def getLocalizedCalleeBi(self, #IPA
       nodeId: NodeIdT,
       insn: instr.InstrIT,
-      nodeDfv: NodeDfvL,  # caller's node IN/OUT
-      calleeBi: Opt[NodeDfvL] = None,  #IPA
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,  # caller's node IN/OUT
+      calleeBi: Opt[DfvPairL] = None,  #IPA
+  ) -> DfvPairL:
     """Computes the value context of the callee, given
     the data flow value of the caller."""
     assert insn.hasRhsCallExpr(), f"{self.func.name}, {nodeId}, {insn}, {insn.info}"
@@ -1933,7 +1934,7 @@ class ValueAnalysisAT(AnalysisAT):
 
     newDfvIn = nodeDfv.dfvIn.localize(calleeFuncObj, keepParams=True)
 
-    localized = NodeDfvL(newDfvIn, outDfv)
+    localized = DfvPairL(newDfvIn, outDfv)
     localized = self.getBoundaryInfo(localized, ipa=True, forFunc=calleeFuncObj)
     if LS: LDB("CalleeCallSiteDfv(Localized): %s", localized)
     return localized
@@ -1946,31 +1947,31 @@ class ValueAnalysisAT(AnalysisAT):
   def Filter_Instr(self,
       nodeId: NodeIdT,
       insn: instr.FilterI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     dfvIn = cast(dfv.OverallL, nodeDfv.dfvIn)
     varNames = insn.varNames
 
     if not varNames or dfvIn.top:  # i.e. nothing to filter or no DFV to filter == Nop
-      return NodeDfvL(dfvIn, dfvIn)  # = NopI
+      return DfvPairL(dfvIn, dfvIn)  # = NopI
 
     newDfvOut = dfvIn.getCopy()
     newDfvOut.filterVals(varNames)
-    return NodeDfvL(dfvIn, newDfvOut)
+    return DfvPairL(dfvIn, newDfvOut)
 
 
   def UnDefVal_Instr(self,
       nodeId: NodeIdT,
       insn: instr.UnDefValI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     if not self.L.isAcceptedType(insn.type):
       return self.Default_Instr(nodeId, insn, nodeDfv)
     newOut = dfvIn = cast(dfv.OverallL, nodeDfv.dfvIn)
     if not dfvIn.getVal(insn.lhsName).bot:
       newOut = dfvIn.getCopy()
       newOut.setVal(insn.lhsName, self.componentBot)
-    return NodeDfvL(dfvIn, newOut)
+    return DfvPairL(dfvIn, newOut)
 
 
   ################################################
@@ -1981,46 +1982,41 @@ class ValueAnalysisAT(AnalysisAT):
   # BOUND START: Normal_Instructions
   ################################################
 
-  def Any_Instr(self,
+  def Assign_Instr(self,
       nodeId: NodeIdT,
-      insn: instr.InstrIT,
-      nodeDfv: NodeDfvL,
-      calleeBi: Opt[NodeDfvL] = None,  #IPA
-  ) -> NodeDfvL:
-    """For any SPAN IR instruction.
-    Default behaviour is to delegate the control to specialized functions.
-    """
-    if isinstance(insn, instr.AssignI):
-      return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv, calleeBi)
-    else:
-      return super().Any_Instr(nodeId, insn, nodeDfv, calleeBi)
+      insn: instr.AssignI,
+      nodeDfv: DfvPairL,
+      calleeBi: Opt[DfvPairL] = None,  #IPA
+  ) -> DfvPairL:
+    return self.processLhsRhs(nodeId, insn.lhs, insn.rhs, nodeDfv, calleeBi)
 
 
   def Conditional_Instr(self,
       nodeId: NodeIdT,
       insn: instr.CondI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     dfvIn = cast(dfv.OverallL, nodeDfv.dfvIn)
     if not self.L.isAcceptedType(insn.arg.type):  # special case
-      return NodeDfvL(dfvIn, dfvIn)
+      return DfvPairL(dfvIn, dfvIn)
     outDfvFalse, outDfvTrue = self.calcFalseTrueDfv(insn.arg, dfvIn)
-    return NodeDfvL(dfvIn, None, outDfvTrue, outDfvFalse)
+    return DfvPairL(dfvIn, None, outDfvTrue, outDfvFalse)
 
 
   def Call_Instr(self,
       nodeId: NodeIdT,
       insn: instr.CallI,
-      nodeDfv: NodeDfvL,
-      calleeBi: Opt[NodeDfvL] = None,  #IPA
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+      calleeBi: Opt[DfvPairL] = None,  #IPA
+  ) -> DfvPairL:
     dfvIn = cast(dfv.OverallL, nodeDfv.dfvIn)
     if not calleeBi: #INTRA handle intra-procedurally
-      return self.genNodeDfvL(self.processCallE(insn.arg, dfvIn), nodeDfv)
+      return self.genNodeDfvL(
+        self.processCallE(insn.arg, dfvIn, nodeId), nodeDfv)
     else: # handle for #IPA
       newOut = calleeBi.dfvOut.localize(self.func)
       newOut.addLocals(dfvIn)
-      return NodeDfvL(dfvIn, newOut)
+      return DfvPairL(dfvIn, newOut)
 
 
   ################################################
@@ -2032,11 +2028,12 @@ class ValueAnalysisAT(AnalysisAT):
   ################################################
 
   def processLhsRhs(self,
+      nodeId: NodeIdT,
       lhs: expr.ExprET,
       rhs: expr.ExprET,
-      nodeDfv: NodeDfvL,
-      calleeBi: Opt[NodeDfvL] = None,  #IPA
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+      calleeBi: Opt[DfvPairL] = None,  #IPA
+  ) -> DfvPairL:
     """A common function to handle various assignment instructions.
     This is a common function to all the value analyses.
     """
@@ -2049,7 +2046,7 @@ class ValueAnalysisAT(AnalysisAT):
     outDfvValues: Dict[VarNameT, dfv.ComponentL] = {}
 
     if isinstance(lhsType, RecordT):
-      outDfvValues = self.processLhsRhsRecordType(lhs, rhs, dfvIn)
+      outDfvValues = self.processLhsRhsRecordType(nodeId, lhs, rhs, dfvIn)
 
     elif self.L.isAcceptedType(lhsType):
       func = self.func
@@ -2058,9 +2055,6 @@ class ValueAnalysisAT(AnalysisAT):
       mustUpdate = len(lhsVarNames) == 1
 
       rhsDfv = self.getExprDfv(rhs, dfvIn, calleeBi)
-
-      if rhsDfv.bot and util.VV2 and type(self).__name__ == "PointsToA":
-        print(f"BOT_RHS_PTR (PointsToA): ({self.func.name}) {lhs} = {rhs} ({lhs.info})")
 
       if util.LL5: LDB("Analysis %s: RhsDfvOfExpr: '%s' (type: %s) is %s,"
                        " lhsVarNames are %s",
@@ -2071,13 +2065,13 @@ class ValueAnalysisAT(AnalysisAT):
         if util.LL5: LWR(f"NO_LVALUE_NAMES: {self.__class__.__name__},"
                          f" {func.name}, {lhs} = {rhs}, {lhs.info}"
                          f"\n  Hence treating it as NopI.")
-        return NodeDfvL(dfvIn, dfvIn)  # i.e. NopI
+        return DfvPairL(dfvIn, dfvIn)  # i.e. NopI
 
       for name in lhsVarNames: # loop enters only once if mustUpdate == True
-        newVal, oldVal = rhsDfv, dfvInGetVal(name)
-        if not mustUpdate or nameHasArray(func, name) or nameHasPpmsVar(name):
-          newVal, _ = oldVal.meet(newVal) # do a may update
-        if newVal != oldVal:
+        newVal = self.computeLhsDfvFromRhs(
+          name, rhsDfv, dfvIn, nodeId, mustUpdate
+        )
+        if newVal:
           outDfvValues[name] = newVal
 
     callNode = False  #IPA
@@ -2088,50 +2082,17 @@ class ValueAnalysisAT(AnalysisAT):
         if util.LL5: LDB("CallerCallSiteDfv(Out:noLocals): %s", newOut)
         newOut.addLocals(dfvIn)
         if util.LL5: LDB("CallerCallSiteDfv(Out:withLocals): %s", newOut)
-        nodeDfv = NodeDfvL(dfvIn, newOut)
+        nodeDfv = DfvPairL(dfvIn, newOut)
         callNode = True  #IPA
       else: #INTRA
-        outDfvValues.update(self.processCallE(rhs, dfvIn))
+        outDfvValues.update(self.processCallE(rhs, dfvIn, nodeId))
 
     nDfv = self.genNodeDfvL(outDfvValues, nodeDfv, callNode)
     return nDfv
 
 
-  def getExprLValueNames(self,
-      func: constructs.Func,
-      lhs: expr.ExprET,
-      dfvIn: dfv.OverallL
-  ) -> Set[VarNameT]:
-    """Points-to analysis overrides this function."""
-    return getNamesLValuesOfExpr(func, lhs)
-
-
-  def genNodeDfvL(self,
-      outDfvValues: Dict[VarNameT, dfv.ComponentL],
-      nodeDfv: NodeDfvL,
-      callNode: bool = False, #IPA True if the node has a call expression
-  ) -> NodeDfvL:
-    """A convenience function to create and return the NodeDfvL.
-    When callNode == True, don't copy dfvIn
-    but directly work on the dfvOut.
-    """
-    dfvIn = newOut = nodeDfv.dfvIn
-    if callNode: #IPA
-      newOut = nodeDfv.dfvOut
-      if outDfvValues:
-        newOutSetVal = newOut.setVal
-        for name, value in outDfvValues.items():
-          newOutSetVal(name, value) # modify the out in-place
-    else: #INTRA
-      if outDfvValues:
-        newOut = cast(dfv.OverallL, dfvIn.getCopy())
-        newOutSetVal = newOut.setVal
-        for name, value in outDfvValues.items():
-          newOutSetVal(name, value)
-    return NodeDfvL(dfvIn, newOut)
-
-
   def processLhsRhsRecordType(self,
+      nodeId: NodeIdT,
       lhs: expr.ExprET,
       rhs: expr.ExprET,
       dfvIn: dfv.OverallL,
@@ -2139,8 +2100,6 @@ class ValueAnalysisAT(AnalysisAT):
     """Processes assignment instruction with RecordT"""
     instrType = lhs.type
     assert isinstance(instrType, RecordT), f"{lhs}, {rhs}: {instrType}"
-
-    dfvInGetVal: Callable[[VarNameT], dfv.ComponentL] = dfvIn.getVal
 
     lhsVarNames = self.getExprLValueNames(self.func, lhs, dfvIn)
     if not len(lhsVarNames):
@@ -2171,24 +2130,101 @@ class ValueAnalysisAT(AnalysisAT):
     for memberInfo in filter(lambda x: isAcceptedType(x.type), allMemberInfo):
       memName = memberInfo.name
       for lhsName in lhsVarNames:
-        if rhsVarNames is not None:  # None only if rhs is CallE
-          rhsDfv = mergeAll(  # merge all rhs dfvs of the same member
-            dfvInGetVal(f"{n}.{memName}") for n in rhsVarNames)
-        else:
-          rhsDfv = self.componentBot #INTRA #FIXME: for #IPA
         fullLhsVarName = f"{lhsName}.{memName}"
-        oldLhsDfv = dfvInGetVal(fullLhsVarName)
-        if not mustUpdate or nameHasArray(func, fullLhsVarName) or\
-            nameHasPpmsVar(fullLhsVarName):
-          rhsDfv, _ = oldLhsDfv.meet(rhsDfv)
-        if oldLhsDfv != rhsDfv:
+        rhsDfv = self.computeLhsDfvFromRhsNames(
+          rhsVarNames, memName, fullLhsVarName, dfvIn, nodeId, mustUpdate=False)
+        if rhsDfv:
           outDfvValues[fullLhsVarName] = rhsDfv
     return outDfvValues
+
+
+  def computeLhsDfvFromRhs(self,
+      lhsName: VarNameT,
+      rhsDfv: dfv.ComponentL,
+      dfvIn: dfv.OverallL,
+      nodeId: NodeIdT,
+      mustUpdate: bool,
+  ) -> Opt[dfv.ComponentL]:
+    """Computes the DFV of the LHS variable from a given RHS DFV."""
+
+    dfvInGetVal = cast(Callable[[VarNameT], dfv.ComponentL], dfvIn.getVal)
+
+    newVal, oldVal = rhsDfv, dfvInGetVal(lhsName)
+    if not mustUpdate or nameHasArray(dfvIn.func, lhsName) or nameHasPpmsVar(lhsName):
+      newVal, _ = oldVal.meet(newVal) # do a may update
+
+    return newVal if newVal != oldVal else None
+
+
+  def computeLhsDfvFromRhsNames(self,
+      rhsVarNames: Opt[Set[VarNameT]],
+      memName: types.MemberNameT,
+      fullLhsVarName: VarNameT,
+      dfvIn: dfv.OverallL,
+      nodeId: NodeIdT,
+      mustUpdate: bool,
+  ) -> Opt[dfv.ComponentL]:
+    """Computes the combined DFV of RHS names with a record type.
+
+    Given a set of RHS names and a member, it computes
+    the combined DFV of all the `name.member` possible.
+    """
+    dfvInGetVal: Callable[[VarNameT], dfv.ComponentL] = dfvIn.getVal
+
+    if rhsVarNames is not None:  # None only if rhs is CallE
+      rhsDfv = mergeAll(  # merge all rhs dfvs of the same member
+        dfvInGetVal(f"{n}.{memName}") for n in rhsVarNames)
+    else:
+      rhsDfv = self.componentBot #INTRA #FIXME: for #IPA
+
+    oldLhsDfv = dfvInGetVal(fullLhsVarName)
+    if not mustUpdate or nameHasArray(dfvIn.func, fullLhsVarName) or \
+        nameHasPpmsVar(fullLhsVarName):
+      rhsDfv, _ = oldLhsDfv.meet(rhsDfv)
+
+    rhsDfv = rhsDfv if oldLhsDfv != rhsDfv else None
+
+    return rhsDfv
+
+
+  def getExprLValueNames(self,
+      func: constructs.Func,
+      lhs: expr.ExprET,
+      dfvIn: dfv.OverallL
+  ) -> Set[VarNameT]:
+    """Points-to analysis overrides this function."""
+    return getNamesLValuesOfExpr(func, lhs)
+
+
+  def genNodeDfvL(self,
+      outDfvValues: Dict[VarNameT, dfv.ComponentL],
+      nodeDfv: DfvPairL,
+      callNode: bool = False, #IPA True if the node has a call expression
+  ) -> DfvPairL:
+    """A convenience function to create and return the NodeDfvL.
+    When callNode == True, don't copy dfvIn
+    but directly work on the dfvOut.
+    """
+    dfvIn = newOut = nodeDfv.dfvIn
+    if callNode: #IPA
+      newOut = nodeDfv.dfvOut
+      if outDfvValues:
+        newOutSetVal = newOut.setVal
+        for name, value in outDfvValues.items():
+          newOutSetVal(name, value) # modify the out in-place
+    else: #INTRA
+      if outDfvValues:
+        newOut = cast(dfv.OverallL, dfvIn.getCopy())
+        newOutSetVal = newOut.setVal
+        for name, value in outDfvValues.items():
+          newOutSetVal(name, value)
+    return DfvPairL(dfvIn, newOut)
 
 
   def processCallE(self, #INTRA only for intra-procedural
       e: expr.ExprET,
       dfvIn: DataLT,
+      nodeId: NodeIdT,
   ) -> Dict[VarNameT, dfv.ComponentL]:
     """Under-approximates specific functions.
     See TranslationUnit.underApproxFunc() definition.
@@ -2227,9 +2263,11 @@ class ValueAnalysisAT(AnalysisAT):
   def getExprDfv(self,
       e: expr.ExprET,
       dfvIn: dfv.OverallL,
-      calleeBi: Opt[NodeDfvL] = None,  #IPA
+      calleeBi: Opt[DfvPairL] = None,  #IPA
+      nodeId: NodeIdT = 0,
   ) -> dfv.ComponentL:
     """Returns the effective component dfv of the rhs.
+
     It expects that the rhs is a non-record type.
     (Record type expressions are handled separately.)
     """
@@ -2368,7 +2406,7 @@ class ValueAnalysisAT(AnalysisAT):
 
   def getExprDfvCallE(self,
       e: expr.CallE,
-      calleeBi: Opt[NodeDfvL] = None,  #IPA
+      calleeBi: Opt[DfvPairL] = None,  #IPA
   ) -> dfv.ComponentL:
     """A default implementation."""
     tUnit: TranslationUnit = self.func.tUnit

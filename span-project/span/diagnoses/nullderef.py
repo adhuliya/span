@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
-"""The dead code diagnosis reporter."""
+"""Detect possible null dereferences"""
 
 import logging
-
-LOG = logging.getLogger("span")
+LOG = logging.getLogger(__name__)
 
 from typing import List, Optional as Opt, Dict, Set, cast
 import io
@@ -54,7 +53,7 @@ class NullDerefR(diagnosis.DiagnosisRT):
 
   def handleResults(self,
       results: Dict[analysis.AnalysisNameT,
-                           Dict[types.NodeIdT, dfv.NodeDfvL]],
+                           Dict[types.NodeIdT, dfv.DfvPairL]],
       func: obj.Func,
   ) -> Opt[List[Report]]:
     reports: List[Report] = []

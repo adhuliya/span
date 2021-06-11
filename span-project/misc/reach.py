@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """Reachability analysis.
 
@@ -12,7 +12,7 @@ This (and every) analysis subclasses,
 
 import logging
 
-LOG = logging.getLogger("span")
+LOG = logging.getLogger(__name__)
 from typing import Tuple, List, Optional as Opt
 
 import span.ir.types as types
@@ -21,7 +21,7 @@ import span.ir.constructs as obj
 import span.ir.tunit as irTUnit
 
 from span.api.lattice import ChangeL, Changed, NoChange, DataLT
-from span.api.dfv import NodeDfvL
+from span.api.dfv import DfvPairL
 import span.api.sim as sim
 import span.api.analysis as analysis
 
@@ -121,31 +121,31 @@ class ReachA(analysis.AnalysisAT):
 
   def Nop_Instr(self,
       nodeId: types.NodeIdT,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     dfvIn = nodeDfv.dfvIn
-    return NodeDfvL(dfvIn, dfvIn)
+    return DfvPairL(dfvIn, dfvIn)
 
 
   def Return_Var_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.ReturnI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return NodeDfvL(nodeDfv.dfvIn, self._theTop)
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
+    return DfvPairL(nodeDfv.dfvIn, self._theTop)
 
 
   def Return_Lit_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.ReturnI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
-    return NodeDfvL(nodeDfv.dfvIn, self._theTop)
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
+    return DfvPairL(nodeDfv.dfvIn, self._theTop)
 
 
   def Node__to__Nil(self,
       nodeId: types.NodeIdT,
-      nodeDfv: NodeDfvL,
+      nodeDfv: DfvPairL,
   ) -> sim.SimToNilL:
     # sim.SimToNilPending is never returned
     if nodeDfv.dfvIn.bot: return sim.SimToNilFailed

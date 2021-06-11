@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """Strong Liveness analysis."""
 
@@ -9,7 +9,7 @@ import logging
 
 from ..ir.conv import Backward
 
-LOG = logging.getLogger("span")
+LOG = logging.getLogger(__name__)
 from typing import Optional as Opt, Set, Tuple, List, Callable, cast
 
 import span.ir.types as types
@@ -19,7 +19,7 @@ import span.ir.constructs as obj
 import span.ir.ir as ir
 
 from span.api.lattice import DataLT
-from span.api.dfv import NodeDfvL
+from span.api.dfv import DfvPairL
 from span.api.analysis import AnalysisAT, BackwardD, SimPending, SimFailed
 
 ################################################
@@ -90,37 +90,37 @@ class LiveVarsA(AnalysisAT):
   def Nop_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.InstrIT,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """An identity backward transfer function."""
     nodeOut = nodeDfv.dfvOut
     nodeIn = nodeDfv.dfvIn
     if nodeIn is nodeOut:
       return nodeDfv  # to avoid making a fresh object
     else:
-      return NodeDfvL(nodeOut, nodeOut)
+      return DfvPairL(nodeOut, nodeOut)
 
 
   def Num_Assign_Var_Lit_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
 
   def Num_Assign_Var_Var_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
 
   def Num_Assign_Var_UnaryArith_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
+      nodeDfv: DfvPairL
   ):
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
@@ -128,151 +128,151 @@ class LiveVarsA(AnalysisAT):
   def Num_Assign_Var_BinArith_Instr(self,
       hello: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
 
   def Num_Assign_Var_Deref_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
 
   def Num_Assign_Var_Call_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
 
   def Num_Assign_Var_Array_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
 
   def Num_Assign_Var_CastVar_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
 
   def Num_Assign_Var_Member_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
 
   def Num_Assign_Var_Select_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
 
   def Num_Assign_Var_SizeOf_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
 
   def Num_Assign_Deref_Lit_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
 
   def Num_Assign_Deref_Var_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
 
   def Num_Assign_Member_Var_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
 
   def Num_Assign_Member_Lit_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
 
   def Num_Assign_Array_Var_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
 
   def Num_Assign_Array_Lit_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
 
   def Ptr_Assign_Var_Var_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
 
   def Ptr_Assign_Deref_Var_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
 
   def Ptr_Assign_Var_Deref_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
 
   def Ptr_Assign_Var_AddrOfVar_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
 
   def Ptr_Assign_Array_Lit_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
+      nodeDfv: DfvPairL,
   ):
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
@@ -280,7 +280,7 @@ class LiveVarsA(AnalysisAT):
   def Ptr_Assign_Array_Var_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
+      nodeDfv: DfvPairL,
   ):
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
@@ -288,7 +288,7 @@ class LiveVarsA(AnalysisAT):
   def Ptr_Assign_Deref_Lit_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
+      nodeDfv: DfvPairL
   ):
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
@@ -296,7 +296,7 @@ class LiveVarsA(AnalysisAT):
   def Ptr_Assign_Member_Lit_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
+      nodeDfv: DfvPairL,
   ):
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
@@ -304,7 +304,7 @@ class LiveVarsA(AnalysisAT):
   def Ptr_Assign_Member_Var_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
+      nodeDfv: DfvPairL,
   ):
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
@@ -312,7 +312,7 @@ class LiveVarsA(AnalysisAT):
   def Ptr_Assign_Var_AddrOfArray_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
+      nodeDfv: DfvPairL
   ):
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
@@ -320,7 +320,7 @@ class LiveVarsA(AnalysisAT):
   def Ptr_Assign_Var_AddrOfFunc_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
+      nodeDfv: DfvPairL
   ):
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
@@ -328,7 +328,7 @@ class LiveVarsA(AnalysisAT):
   def Ptr_Assign_Var_AddrOfMember_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
+      nodeDfv: DfvPairL
   ):
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
@@ -336,7 +336,7 @@ class LiveVarsA(AnalysisAT):
   def Ptr_Assign_Var_Array_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
+      nodeDfv: DfvPairL,
   ):
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
@@ -344,7 +344,7 @@ class LiveVarsA(AnalysisAT):
   def Ptr_Assign_Var_BinArith_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
+      nodeDfv: DfvPairL
   ):
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
@@ -352,7 +352,7 @@ class LiveVarsA(AnalysisAT):
   def Ptr_Assign_Var_Call_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
+      nodeDfv: DfvPairL,
   ):
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
@@ -360,7 +360,7 @@ class LiveVarsA(AnalysisAT):
   def Ptr_Assign_Var_CastArr_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
+      nodeDfv: DfvPairL,
   ):
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
@@ -368,7 +368,7 @@ class LiveVarsA(AnalysisAT):
   def Ptr_Assign_Var_CastVar_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
+      nodeDfv: DfvPairL,
   ):
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
@@ -376,7 +376,7 @@ class LiveVarsA(AnalysisAT):
   def Ptr_Assign_Var_FuncName_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
+      nodeDfv: DfvPairL
   ):
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
@@ -384,7 +384,7 @@ class LiveVarsA(AnalysisAT):
   def Ptr_Assign_Var_Lit_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
+      nodeDfv: DfvPairL
   ):
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
@@ -392,7 +392,7 @@ class LiveVarsA(AnalysisAT):
   def Ptr_Assign_Var_Member_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
+      nodeDfv: DfvPairL,
   ):
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
@@ -400,7 +400,7 @@ class LiveVarsA(AnalysisAT):
   def Ptr_Assign_Var_Select_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
+      nodeDfv: DfvPairL,
   ):
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
 
@@ -408,12 +408,12 @@ class LiveVarsA(AnalysisAT):
   def Call_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.CallI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     oldOut = nodeDfv.dfvOut
 
     if oldOut.bot:
-      return NodeDfvL(oldOut, oldOut)
+      return DfvPairL(oldOut, oldOut)
 
     varNames = ir.getNamesUsedInExprSyntactically(insn.arg) | \
                ir.getNamesInExprMentionedIndirectly(self.func, insn.arg)
@@ -424,8 +424,8 @@ class LiveVarsA(AnalysisAT):
   def Conditional_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.CondI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     names = ir.getNamesUsedInExprSyntactically(insn.arg)
 
     if names:
@@ -438,35 +438,35 @@ class LiveVarsA(AnalysisAT):
   def ExRead_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.ExReadI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     newIn = OverallL(self.func, top=True)
     newIn.setValLive(insn.vars)
 
-    return NodeDfvL(newIn, nodeDfv.dfvOut)
+    return DfvPairL(newIn, nodeDfv.dfvOut)
 
 
   def UnDefVal_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.UnDefValI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     return self._killGen(nodeDfv, kill={insn.lhsName})
 
 
   def Use_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.UseI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     return self._killGen(nodeDfv, gen=insn.vars)
 
 
   def Return_Var_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.ReturnI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     assert isinstance(insn.arg, expr.VarE)
     return self._killGen(nodeDfv, gen={insn.arg.name})
 
@@ -474,8 +474,8 @@ class LiveVarsA(AnalysisAT):
   def CondRead_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.CondReadI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     lName = insn.lhs
     rNames = insn.rhs
 
@@ -487,10 +487,10 @@ class LiveVarsA(AnalysisAT):
 
 
   def _killGen(self,
-      nodeDfv: NodeDfvL,
+      nodeDfv: DfvPairL,
       kill: Opt[Set[types.VarNameT]] = None,
       gen: Opt[Set[types.VarNameT]] = None,
-  ) -> NodeDfvL:
+  ) -> DfvPairL:
     # FIXME: Optimize me.
     oldOut = cast(OverallL, nodeDfv.dfvOut)
 
@@ -500,12 +500,12 @@ class LiveVarsA(AnalysisAT):
     if gen:
       newIn.setValLive(gen)
 
-    return NodeDfvL(newIn, oldOut)
+    return DfvPairL(newIn, oldOut)
 
 
   def LhsVar__to__Nil(self,
       e: expr.VarE,
-      nodeDfv: Opt[NodeDfvL] = None,
+      nodeDfv: Opt[DfvPairL] = None,
       values: Opt[Set[types.VarNameT]] = None,
   ) -> Opt[Set[types.VarNameT]]:
     if nodeDfv is None:
@@ -520,8 +520,8 @@ class LiveVarsA(AnalysisAT):
   def processLhsRhs(self,
       lhs: expr.ExprET,
       rhs: expr.ExprET,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     dfvOut = cast(OverallL, nodeDfv.dfvOut)  # dfv at OUT of a node
     rhsNamesAreLive: bool = True  # its simple liveness
 

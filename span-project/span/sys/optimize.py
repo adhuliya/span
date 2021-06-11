@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """Optimize C program."""
 
 import logging
-LOG = logging.getLogger("span")
+LOG = logging.getLogger(__name__)
 from typing import Optional as Opt, Dict, Set, List
 
 from span.api.analysis import SimNameT, AnalysisNameT, SimFailed, SimPending, AnalysisAT
-from span.api.dfv import NodeDfvL
+from span.api.dfv import DfvPairL
 from span.ir import cfg, expr, instr
 from span.ir.constructs import Func
 from span.ir.conv import TRANSFORM_INFO_FILE_NAME
@@ -116,7 +116,7 @@ class TransformCode:
   def genTransformInfo_Instr(self,
       node: cfg.CfgNode,
       func: Func,
-      funcResults: Dict[AnalysisNameT, Dict[cfg.CfgNodeId, NodeDfvL]],
+      funcResults: Dict[AnalysisNameT, Dict[cfg.CfgNodeId, DfvPairL]],
   ) -> Opt[TrInfo]:
     """Generate the transformation info for a statement."""
     nid, insn = node.id, node.insn
@@ -136,7 +136,7 @@ class TransformCode:
       insn: instr.CondI,
       node: cfg.CfgNode,
       func: Func,
-      funcResults: Dict[AnalysisNameT, Dict[cfg.CfgNodeId, NodeDfvL]],
+      funcResults: Dict[AnalysisNameT, Dict[cfg.CfgNodeId, DfvPairL]],
   ) -> Opt[TrInfo]:
     assert insn.hasCondExpr(), f"{insn}, {node}, {func}"
     simName = AnalysisAT.Cond__to__UnCond.__name__
@@ -151,7 +151,7 @@ class TransformCode:
       insn: instr.AssignI,
       node: cfg.CfgNode,
       func: Func,
-      funcResults: Dict[AnalysisNameT, Dict[cfg.CfgNodeId, NodeDfvL]],
+      funcResults: Dict[AnalysisNameT, Dict[cfg.CfgNodeId, DfvPairL]],
   ) -> Opt[TrInfo]:
     assert insn.hasRhsNumVarExpr(), f"{insn}, {node}, {func}"
     simName = AnalysisAT.Num_Var__to__Num_Lit.__name__
@@ -166,7 +166,7 @@ class TransformCode:
       insn: instr.AssignI,
       node: cfg.CfgNode,
       func: Func,
-      funcResults: Dict[AnalysisNameT, Dict[cfg.CfgNodeId, NodeDfvL]],
+      funcResults: Dict[AnalysisNameT, Dict[cfg.CfgNodeId, DfvPairL]],
   ) -> Opt[TrInfo]:
     assert insn.hasRhsNumBinaryExpr(), f"{insn}, {node}, {func}"
     simName = AnalysisAT.Num_Bin__to__Num_Lit.__name__
@@ -191,7 +191,7 @@ def collectAndMergeResults(
     e: Opt[expr.ExprET],
     node: cfg.CfgNode,
     func: Func,
-    funcResults: Dict[AnalysisNameT, Dict[cfg.CfgNodeId, NodeDfvL]],
+    funcResults: Dict[AnalysisNameT, Dict[cfg.CfgNodeId, DfvPairL]],
 ) -> Opt[Set]:  # A None value indicates failed sim
   """Collects and merges the simplification by various analyses.
   Step 1: Select one working simplification from any one analysis.
@@ -235,7 +235,7 @@ def calculateSimValue(
     simAnName: AnalysisNameT,
     simName: SimNameT,
     node: cfg.CfgNode,
-    nDfv: NodeDfvL,
+    nDfv: DfvPairL,
     e: Opt[expr.ExprET] = None,
     values: Opt[Set] = None,
 ) -> Opt[Set]:

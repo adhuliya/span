@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """Adds logging to the project.
 
@@ -16,13 +16,13 @@ How to use?
     |  def initialize():
     |    global _log
     |    logger.initLogger(appName="span", logLevel=logger.LogLevels.DEBUG)
-    |    _log = logging.getLogger("span")
+    |    _log = logging.getLogger(__name__)
     |
     |  if __name__ == "__main__":
     |    initialize()
   STEP 2: For each module in the application,
     |  import logging
-    |  _log = logging.getLogger("span")
+    |  _log = logging.getLogger(__name__)
 
 Logging levels available:
     |  CRITICAL    50 logging.critical()
@@ -183,7 +183,7 @@ def initLogger(
                     appName,
                     repr(logFormat))
 
-  _LOG = logging.getLogger("span")
+  _LOG = logging.getLogger(__name__)
 
   _INITIALIZED = True
   return True

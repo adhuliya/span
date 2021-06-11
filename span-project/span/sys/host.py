@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """The Host that manages SPAN."""
 
 import logging
-LOG = logging.getLogger("span")
+LOG = logging.getLogger(__name__)
 LDB, LIN, LER, LWA = LOG.debug, LOG.info, LOG.error, LOG.warning
 
 from typing import Dict, Tuple, Set, List, Callable,\
@@ -38,7 +38,7 @@ from span.ir.expr import (
   evalExpr,
 )
 
-from span.api.dfv import NodeDfvL, ChangePairL, OLD_IN_OUT
+from span.api.dfv import DfvPairL, ChangePairL, OLD_IN_OUT
 from span.api.analysis import SimNameT, SimDirnMap, SimFailed, SimPending
 from span.api.lattice import mergeAll, DataLT
 from span.api.analysis import (AnalysisAT, AnalysisNameT as AnNameT,\
@@ -629,7 +629,7 @@ class Host:
     activeAnName = self.activeAnName
     for anName in anNames:
       if anName == activeAnName: continue  # don't add active analysis
-      if util.LL4: LDB("Adding_analyses_dependent_on %s to worklist. Adding: %s, Node %s",
+      if util.LL4: LDB("Adding_analyses_dependent_on %s to worklist. Adding: %s, Node_%s",
                        self.activeAnName, anName, nid)
       self.addAnToWorklist(anName)
       self.anWorkDict[anName].add(node)
@@ -727,7 +727,7 @@ class Host:
   def calcInOut(self,
       node: cfg.CfgNode,
       dirn: DirectionDT
-  ) -> Tuple[NodeDfvL, ChangePairL, Reachability]:
+  ) -> Tuple[DfvPairL, ChangePairL, Reachability]:
     """Merge info at IN and OUT of a node."""
     nid = node.id
     if self.ef.isFeasibleNode(node):
@@ -777,8 +777,8 @@ class Host:
         nDfv = self.activeAnObj.getBoundaryInfo()
         bi = (nDfv.dfvIn, nDfv.dfvOut)
 
-      dirn.anResult[startNodeId] = NodeDfvL(bi[0], top)
-      dirn.anResult[endNodeId] = NodeDfvL(top, bi[1])
+      dirn.anResult[startNodeId] = DfvPairL(bi[0], top)
+      dirn.anResult[endNodeId] = DfvPairL(top, bi[1])
       dirn.boundaryInfoInitialized = True
       if util.LL4: LDB("Init_Boundary_Info(%s, %s):"
                        "\n BI Node_%s: IN : %s\n BI Node_%s: OUT: %s",
@@ -862,9 +862,9 @@ class Host:
   def analyzeInstr(self,
       node: cfg.CfgNode,
       insn: InstrIT,
-      nodeDfv: NodeDfvL,
+      nodeDfv: DfvPairL,
       treatAsNop: Opt[bool] = False,
-  ) -> NodeDfvL:
+  ) -> DfvPairL:
     """
     This function handles node with parallel instruction as well.
     self._analyzeInstr() does the main work.
@@ -890,8 +890,8 @@ class Host:
   def _analyzeInstr(self,
       node: cfg.CfgNode,
       insn: InstrIT,  # could be a simplified form of node.insn
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     LLS, nid = LS, node.id
     if util.LL4: LDB("Analyzing_Instr (Node_%s): %s, iType: %s",
                       nid, insn, insn.type)
@@ -1020,9 +1020,9 @@ class Host:
   def processInstrWithCall(self, #IPA
       node: cfg.CfgNode,
       insn: InstrIT,
-      nodeDfv: NodeDfvL,
+      nodeDfv: DfvPairL,
       tFuncName: str, # just for logging
-  ) -> NodeDfvL:
+  ) -> DfvPairL:
     """
     # Inter-procedural analysis does not process the instructions with call
     # currently: function pointer based calls are handled intra-procedurally
@@ -1068,8 +1068,8 @@ class Host:
   def processCallArguments(self,
       node: cfg.CfgNode,
       callE: CallE, # must not be a pointer-call
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Analyzes the argument assignment to function params."""
     funcName = callE.getFuncName()
     assert funcName, f"{self.func.name}, {callE}: {callE.info}"
@@ -1077,9 +1077,9 @@ class Host:
 
     # adding Top to avoid unintended widening of params (esp. IntervalA)
     if self.activeAnDirn == Forward:
-      nextNodeDfv = NodeDfvL(nodeDfv.dfvIn, self.activeAnTop)
+      nextNodeDfv = DfvPairL(nodeDfv.dfvIn, self.activeAnTop)
     elif self.activeAnDirn == Backward:
-      nextNodeDfv = NodeDfvL(self.activeAnTop, nodeDfv.dfvOut)
+      nextNodeDfv = DfvPairL(self.activeAnTop, nodeDfv.dfvOut)
     else:
       raise ValueError(f"{self.activeAnDirn}")
 
@@ -1093,9 +1093,9 @@ class Host:
 
       # in/out of succ/pred becomes out/in of the current node
       if self.activeAnDirn == Forward:
-        nextNodeDfv = NodeDfvL(nextNodeDfv.dfvOut, self.activeAnTop)
+        nextNodeDfv = DfvPairL(nextNodeDfv.dfvOut, self.activeAnTop)
       elif self.activeAnDirn == Backward:
-        nextNodeDfv = NodeDfvL(self.activeAnTop, nextNodeDfv.dfvIn)
+        nextNodeDfv = DfvPairL(self.activeAnTop, nextNodeDfv.dfvIn)
       else:
         raise ValueError(f"{self.activeAnDirn}")
 
@@ -1115,7 +1115,7 @@ class Host:
     return nextNodeDfv
 
 
-  def handleNodeReachability(self, node, insn, nodeDfv) -> Opt[NodeDfvL]:
+  def handleNodeReachability(self, node, insn, nodeDfv) -> Opt[DfvPairL]:
     nilSim = self.getSim(node, Node__to__Nil__Name)
     if nilSim is not None:
       if util.LL4: LDB("Unreachable_Node: %s: %s", node.id, insn)
@@ -1188,8 +1188,8 @@ class Host:
       insn: InstrIT,
       e: ExprET,
       newInsn: InstrIT,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     """Encapsulates common sequence of computation in many functions."""
     self.tUnit.inferTypeOfInstr(newInsn)
     self.setCachedInstrSim(node.id, simName, insn, e, newInsn)
@@ -1215,8 +1215,8 @@ class Host:
   def handleLivenessSim(self,
       node: cfg.CfgNode,
       insn: AssignI,
-      nodeDfv: NodeDfvL
-  ) -> Opt[NodeDfvL]:
+      nodeDfv: DfvPairL
+  ) -> Opt[DfvPairL]:
     """Handles liveness simplification for assignment instructions, where,
     lhs is a variable.
 
@@ -1255,8 +1255,8 @@ class Host:
   def handleLhsDerefSim(self,
       node: cfg.CfgNode,
       insn: AssignI,  # lhs is DerefE
-      nodeDfv: NodeDfvL
-  ) -> Opt[NodeDfvL]:
+      nodeDfv: DfvPairL
+  ) -> Opt[DfvPairL]:
     newInsn = self.getLhsDerefSimInstr(node, insn)
     if newInsn is None:
       return None  # i.e. process_the_original_insn
@@ -1299,8 +1299,8 @@ class Host:
   def handleRhsDerefSim(self,
       node: cfg.CfgNode,
       insn: AssignI,
-      nodeDfv: NodeDfvL
-  ) -> Opt[NodeDfvL]:
+      nodeDfv: DfvPairL
+  ) -> Opt[DfvPairL]:
     newInsn = self.getRhsDerefSimInstr(node, insn)
     if newInsn is None:
       return None  # i.e. process_the_original_insn
@@ -1345,8 +1345,8 @@ class Host:
   def handleLhsArrayDerefSim(self,
       node: cfg.CfgNode,
       insn: AssignI,  # lhs is ArrayE with dereference
-      nodeDfv: NodeDfvL
-  ) -> Opt[NodeDfvL]:
+      nodeDfv: DfvPairL
+  ) -> Opt[DfvPairL]:
     newInsn = self.getLhsArrayDerefSimInstr(node, insn)
     if newInsn is None:
       return None  # i.e. process_the_original_insn
@@ -1391,8 +1391,8 @@ class Host:
   def handleRhsArrayDerefSim(self,
       node: cfg.CfgNode,
       insn: AssignI,  # rhs is ArrayE with dereference
-      nodeDfv: NodeDfvL
-  ) -> Opt[NodeDfvL]:
+      nodeDfv: DfvPairL
+  ) -> Opt[DfvPairL]:
     newInsn = self.getRhsArrayDerefSimInstr(node, insn)
     if newInsn is None:
       return None  # i.e. process_the_original_insn
@@ -1437,8 +1437,8 @@ class Host:
   def handleLhsMemDerefSim(self,
       node: cfg.CfgNode,
       insn: AssignI,
-      nodeDfv: NodeDfvL
-  ) -> Opt[NodeDfvL]:
+      nodeDfv: DfvPairL
+  ) -> Opt[DfvPairL]:
     newInsn = self.getLhsMemDerefSimInstr(node, insn)
     if newInsn is None:
       return None  # i.e. process_the_original_insn
@@ -1487,8 +1487,8 @@ class Host:
   def handleRhsMemDerefSim(self,
       node: cfg.CfgNode,
       insn: AssignI,
-      nodeDfv: NodeDfvL
-  ) -> Opt[NodeDfvL]:
+      nodeDfv: DfvPairL
+  ) -> Opt[DfvPairL]:
     newInsn = self.getRhsMemDerefSimInstr(node, insn)
     if newInsn is None:
       return None  # i.e. process_the_original_insn
@@ -1533,8 +1533,8 @@ class Host:
   def handleRhsPtrCallSim(self,
       node: cfg.CfgNode,
       insn: AssignI,
-      nodeDfv: NodeDfvL
-  ) -> Opt[NodeDfvL]:
+      nodeDfv: DfvPairL
+  ) -> Opt[DfvPairL]:
     newInsn = self.getRhsPtrCallSimInstr(node, insn)
     if newInsn is None:
       return None  # i.e. process_the_original_insn
@@ -1577,8 +1577,8 @@ class Host:
   def handlePtrCallSim(self,
       node: cfg.CfgNode,
       insn: CallI,
-      nodeDfv: NodeDfvL
-  ) -> Opt[NodeDfvL]:
+      nodeDfv: DfvPairL
+  ) -> Opt[DfvPairL]:
     newInsn = self.getPtrCallSimInstr(node, insn)
     if newInsn is None:
       return None  # i.e. process_the_original_insn
@@ -1619,8 +1619,8 @@ class Host:
   def handleRhsNumVar(self,
       node: cfg.CfgNode,
       insn: AssignI,
-      nodeDfv: NodeDfvL
-  ) -> Opt[NodeDfvL]:
+      nodeDfv: DfvPairL
+  ) -> Opt[DfvPairL]:
     assert isinstance(insn.rhs, VarE), f"{node.id}: {insn}"
     lhs, rhs, simName = insn.lhs, insn.rhs, Num_Var__to__Num_Lit__Name
 
@@ -1658,8 +1658,8 @@ class Host:
   def handleRhsUnaryArith(self,
       node: cfg.CfgNode,
       insn: AssignI,
-      nodeDfv: NodeDfvL
-  ) -> Opt[NodeDfvL]:
+      nodeDfv: DfvPairL
+  ) -> Opt[DfvPairL]:
     assert isinstance(insn.rhs, UnaryE), f"{node.id}: {insn}"
     lhs, rhsArg, simName = insn.lhs, insn.rhs.arg, Num_Var__to__Num_Lit__Name
 
@@ -1684,8 +1684,8 @@ class Host:
   def handleRhsBinArith(self,
       node: cfg.CfgNode,
       insn: AssignI,
-      nodeDfv: NodeDfvL
-  ) -> Opt[NodeDfvL]:
+      nodeDfv: DfvPairL
+  ) -> Opt[DfvPairL]:
     lhs, rhs, simName = insn.lhs, insn.rhs, Num_Bin__to__Num_Lit__Name
 
     newInsn, valid = self.getCachedInstrSimResult(node, simName, insn, rhs)
@@ -1708,9 +1708,9 @@ class Host:
   def handleRhsBinArithArgs(self,
       node: cfg.CfgNode,
       insn: AssignI,
-      nodeDfv: NodeDfvL,
+      nodeDfv: DfvPairL,
       argPos: int,  # 1 or 2 only
-  ) -> Opt[NodeDfvL]:
+  ) -> Opt[DfvPairL]:
     assert argPos in (1, 2), f"{argPos}"
 
     lhs, rhs, simName = insn.lhs, insn.rhs, Num_Var__to__Num_Lit__Name
@@ -1747,8 +1747,8 @@ class Host:
   def Conditional_Instr(self,
       node: cfg.CfgNode,
       insn: CondI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     # always handle conditional instruction
     if util.LL4: LDB("FinallyInvokingInstrFunc: Conditional_Instr() on %s", insn)
     self.stats.instrAnTimer.stop() # okay - excluding edge feasibility computation
@@ -1792,8 +1792,8 @@ class Host:
   def Barrier_Instr(self,
       node: cfg.CfgNode,  # redundant but needed
       insn: InstrIT,  # redundant but needed
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """block all info from crossing (forw&back) from within the node."""
     if util.LL4: LDB("FinallyInvokingInstrFunc (Node_%s): BarrierI()", node.id)
     # return self.activeAnObj.Barrier_Instr(nodeDfv)
@@ -2198,8 +2198,8 @@ class Host:
 
       nodeId = 1 if anDirn == Forward else len(self.funcCfg.nodeMap)
       node = self.funcCfg.nodeMap[nodeId]
-      if anDirn == Forward: updateDfv = NodeDfvL(nDfv.dfvIn, nDfv.dfvIn)
-      elif anDirn == Backward: updateDfv = NodeDfvL(nDfv.dfvOut, nDfv.dfvOut)
+      if anDirn == Forward: updateDfv = DfvPairL(nDfv.dfvIn, nDfv.dfvIn)
+      elif anDirn == Backward: updateDfv = DfvPairL(nDfv.dfvOut, nDfv.dfvOut)
       else: raise TypeError("Analysis Direction ForwBack not handled.")
       inOutChange = dirnObj.update(node, updateDfv)
       if inOutChange:
@@ -2227,7 +2227,7 @@ class Host:
     for anName, res in self.anWorkDict.items():
       startIn = res.anResult.get(startId).dfvIn  # type: ignore
       endOut = res.anResult.get(endId).dfvOut  # type: ignore
-      results[anName] = NodeDfvL(startIn, endOut)
+      results[anName] = DfvPairL(startIn, endOut)
 
     return results
 
@@ -2236,7 +2236,7 @@ class Host:
       nodeId: NodeIdT,
       calleeName: FuncNameT,
       anName: AnNameT,
-      nodeDfv: NodeDfvL,
+      nodeDfv: DfvPairL,
   ) -> None:
     """
     Update the results for the call site.
@@ -2262,7 +2262,7 @@ class Host:
       nodeId: NodeIdT,
       calleeName: Opt[FuncNameT],
       anName: AnNameT,
-  ) -> Opt[NodeDfvL]:
+  ) -> Opt[DfvPairL]:
     """Gets the callee BI as provided by IpaHost to the Host.
     This method is only called by the Host.
     """

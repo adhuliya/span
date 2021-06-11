@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """Simplification related utilities..."""
 
 import logging
-_LOG = logging.getLogger("span")
+_LOG = logging.getLogger(__name__)
 LDB = _LOG.debug
 
 from typing import List, Set, Dict
@@ -14,7 +14,7 @@ from typing import Optional as Opt
 
 from span.sys.clients import getAnObj
 
-from span.api.dfv import NodeDfvL
+from span.api.dfv import DfvPairL
 from span.ir import cfg
 from span.ir.constructs import Func
 from span.ir.expr import ExprET
@@ -87,7 +87,7 @@ def computeSimAlgo04(
     func: Func,
     node: cfg.CfgNode,
     simName: SimNameT,
-    nodeDfvs: Dict[AnNameT, NodeDfvL], # data flow values
+    nodeDfvs: Dict[AnNameT, DfvPairL], # data flow values
     e: Opt[ExprET] = None,  # could be None (in case of Node__to__Nil)
     transform: bool = False, # False = by default use SPAN
 ) -> Opt[Set]:  # A None value indicates failed sim

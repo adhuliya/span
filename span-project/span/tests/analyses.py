@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """
 Tests to check correct span analysis results.
@@ -126,7 +126,7 @@ class SpanAnalysisTests(unittest.TestCase):
     print(f"    {cFileName}: Args: span {argList}")
     args = parser.parse_args(args=argList)
     ipaHost = args.func(args)
-    resultsDict: Dict[FuncNameT, Dict[AnNameT, Dict[NodeIdT, dfv.NodeDfvL]]] \
+    resultsDict: Dict[FuncNameT, Dict[AnNameT, Dict[NodeIdT, dfv.DfvPairL]]] \
       = ipaHost.vci.finalResult
 
     propName = "analysis.results"
@@ -149,7 +149,7 @@ class SpanAnalysisTests(unittest.TestCase):
 
   def compareAnResults(self,
       anName: AnNameT,
-      computedAnRes: Dict[cfg.CfgNodeId, dfv.NodeDfvL],
+      computedAnRes: Dict[cfg.CfgNodeId, dfv.DfvPairL],
       correctAnRes: Dict[cfg.CfgNodeId, Tuple],
       cFileName: str,
   ) -> bool:

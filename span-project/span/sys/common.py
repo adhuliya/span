@@ -1,27 +1,24 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """Common functionality needed by other sys modules.
 """
-import io
 import logging
-
-from span.ir.constructs import Func
-
-_LOG = logging.getLogger("span")
+_LOG = logging.getLogger(__name__)
 LDB, LIN = _LOG.debug, _LOG.info
 
+import io
 from typing import Dict, Tuple, Set, List, cast, Optional as Opt
 
+from span.ir.constructs import Func
 import span.sys.clients as clients
 from span.ir.conv import Forward, Backward, getFuncNodeIdStr, getNodeId, getFuncId
 from span.ir.types import FuncNameT, NodeSiteT, NodeIdT, FuncIdT
 from span.api.analysis import AnalysisNameT as AnNameT
-from span.api.dfv import NodeDfvL
+from span.api.dfv import DfvPairL
 
-import span.util.ff as ff
 import span.util.util as util
 
 
@@ -96,7 +93,7 @@ class DfvDict:
   __slots__ = ["dfvs", "depth"]
 
   def __init__(self,
-      dfvs: Opt[Dict[AnNameT, NodeDfvL]] = None,
+      dfvs: Opt[Dict[AnNameT, DfvPairL]] = None,
       depth: int = 0, # useful when using widening
   ):
     self.dfvs = dfvs if dfvs else {}
@@ -116,7 +113,7 @@ class DfvDict:
 
   def setValue(self,
       anName: AnNameT,
-      nDfv: NodeDfvL,
+      nDfv: DfvPairL,
   ) -> None:
     self.dfvs[anName] = nDfv
 
@@ -141,7 +138,7 @@ class DfvDict:
     return self.dfvs[anName]
 
 
-  def __setitem__(self, key: AnNameT, val: NodeDfvL):
+  def __setitem__(self, key: AnNameT, val: DfvPairL):
     self.dfvs[key] = val
 
 
@@ -209,7 +206,7 @@ class AnResult:
   def __init__(self,
       anName: AnNameT,
       func: Func,
-      result: Opt[Dict[NodeIdT, NodeDfvL]] = None,
+      result: Opt[Dict[NodeIdT, DfvPairL]] = None,
   ):
     self.anName = anName
     self.func = func
@@ -230,7 +227,7 @@ class AnResult:
     return self.result[nid]
 
 
-  def __setitem__(self, nid: NodeIdT, value: NodeDfvL):
+  def __setitem__(self, nid: NodeIdT, value: DfvPairL):
     self.result[nid] = value
 
 

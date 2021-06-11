@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """Defines the base lattice class."""
 
@@ -9,7 +9,7 @@ import logging
 
 from span.util.consts import TOP_STR, BOT_STR
 
-_LOG = logging.getLogger("span")
+_LOG = logging.getLogger(__name__)
 
 from typing import Tuple, Any, List, TypeVar, Optional as Opt, Sequence as Seq, Iterable
 
@@ -156,6 +156,7 @@ class DataLT(LatticeLT):
       ipa: bool = False,  # special case #IPA FIXME: is this needed?
   ) -> Tuple['DataLT', ChangedT]:
     """Apply widening w.r.t. the prev value.
+
     MUST override this function if widening is needed.
     """
     if self != other:

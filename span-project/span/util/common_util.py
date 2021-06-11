@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """
 Common utility functions module which can be used in any project.
@@ -15,7 +15,7 @@ The idea is that the project local `util` module can import common
 utils and define other project specific utilities as needed.
 """
 import logging
-_LOG = logging.getLogger("span")
+_LOG = logging.getLogger(__name__)
 
 
 import os

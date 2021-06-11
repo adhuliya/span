@@ -1,7 +1,7 @@
 #!/usr/bin/env python3.6
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """
 Python 3.6 or above.
@@ -17,7 +17,7 @@ Once aliased, invoke `span -h` to get help with the command line options.
 import span.sys.driver as driver  # IMPORTANT
 import span.util.logger as logger
 import logging
-LOG: logging.Logger = logging.getLogger("span")
+LOG: logging.Logger = logging.getLogger(__name__)
 
 from span.util.util import LS
 import span.util.util as util

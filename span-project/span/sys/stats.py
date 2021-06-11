@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """Collecting statistics of the system."""
 
 import logging
 
-LOG = logging.getLogger("span")
+LOG = logging.getLogger(__name__)
 
 from typing import Dict, Tuple, Set, List, Callable
 from typing import Optional as Opt

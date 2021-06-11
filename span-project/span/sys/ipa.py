@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """
 Inter-Procedural Analysis (IPA)
@@ -10,7 +10,7 @@ Using the Value-Context Method.
 Note: All IR related processing for IPA is done in span.ir.ipa module.
 """
 import logging
-_LOG = logging.getLogger("span")
+_LOG = logging.getLogger(__name__)
 LDB, LIN = _LOG.debug, _LOG.info
 
 import io
@@ -35,7 +35,7 @@ from span.ir.conv import (GLOBAL_INITS_FUNC_NAME,
 from span.ir.types import FuncNameT, NodeSiteT, NodeIdT
 from span.ir.tunit import TranslationUnit
 from span.api.analysis import AnalysisNameT as AnNameT, DirectionDT, AnalysisAT, SimFailed
-from span.api.dfv import NodeDfvL, OverallL
+from span.api.dfv import DfvPairL, OverallL
 
 from span.sys.host import Host
 from span.sys.common import CallSitePair, DfvDict, AnResult
@@ -71,7 +71,7 @@ class ValueContext:
 
   def addValue(self,
       anName: AnNameT,
-      nodeDfv: NodeDfvL
+      nodeDfv: DfvPairL
   ) -> None:
     self.dfvDict[anName] = nodeDfv
 
@@ -624,7 +624,7 @@ class IpaHost:
       # localize the boundary info
       newDfvIn = nDfv.dfvIn.localize(func, keepParams=True)
       newDfvOut = nDfv.dfvOut.localize(func, keepParams=True)
-      localized = NodeDfvL(newDfvIn, newDfvOut)
+      localized = DfvPairL(newDfvIn, newDfvOut)
 
       newBi[anName] = anObj.getBoundaryInfo(localized, ipa=True, entryFunc=True)
 
@@ -747,7 +747,7 @@ class IpaHost:
 
   def delitTestResult(self,  #delit
       anName: str,
-      res: Dict[cfg.CfgNodeId, NodeDfvL],
+      res: Dict[cfg.CfgNodeId, DfvPairL],
       nid: int,
       vName: str,
   ):
@@ -761,9 +761,9 @@ class IpaHost:
 
 
   @staticmethod
-  def mergeAnalysisResult(result1: Dict[cfg.CfgNodeId, NodeDfvL],
-      result2: Dict[cfg.CfgNodeId, NodeDfvL]
-  ) -> Dict[cfg.CfgNodeId, NodeDfvL]:
+  def mergeAnalysisResult(result1: Dict[cfg.CfgNodeId, DfvPairL],
+      result2: Dict[cfg.CfgNodeId, DfvPairL]
+  ) -> Dict[cfg.CfgNodeId, DfvPairL]:
     """Modifies `result1` argument (and returns it)."""
     cfgNodeIds = set(result1.keys())
     cfgNodeIds.update(result2.keys())

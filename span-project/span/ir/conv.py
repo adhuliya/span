@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """
 Conventions and related utility functions in SPAN IR.
@@ -11,7 +11,7 @@ Hence, except `span.ir.types` module all other modules can import this module.
 """
 
 import logging
-LOG = logging.getLogger("span")
+LOG = logging.getLogger(__name__)
 
 from typing import Optional as Opt, Set, Tuple
 from span.util.util import LS
@@ -225,9 +225,9 @@ def isCorrectNameFormat(name: str) -> bool:
 
   colonCount1 = colonCount == 1
   if isGlobalName(name): return colonCount1
+  if isLocalVarName(name): return colonCount == 2
   if isFuncName(name): return colonCount1
   if isRecordName(name): return colonCount1
-  if isLocalVarName(name): return colonCount == 2
 
   assert False, f"Unknown name: {name}"
 

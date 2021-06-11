@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """Record the analyses listed in span.clients.register.
 
@@ -13,7 +13,7 @@ import logging
 
 from span.ir.constructs import Func
 
-LOG = logging.getLogger("span")
+LOG = logging.getLogger(__name__)
 LDB = LOG.debug
 
 from typing import Dict, Set, Optional as Opt, cast, Type, TypeVar, Tuple

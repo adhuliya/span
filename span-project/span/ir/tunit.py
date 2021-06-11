@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """
 Defines a translation unit.
@@ -21,7 +21,7 @@ Following important things are available here,
 """
 import functools
 import logging
-LOG = logging.getLogger("span")
+LOG = logging.getLogger(__name__)
 LDB, LIN, LER, LWA = LOG.debug, LOG.info, LOG.error, LOG.warning
 
 from typing import Dict, Set, Tuple, List, Callable, Any

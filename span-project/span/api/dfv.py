@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """The analysis' common data flow value declarations."""
 
 import logging
-LOG = logging.getLogger("span")
+LOG = logging.getLogger(__name__)
 LDB = LOG.debug
 
 from typing import Tuple, Optional as Opt, Dict, Any, Set,\
@@ -119,7 +119,7 @@ def getNewOldObj(newIn: ChangedT, newOut: ChangedT) -> ChangePairL:
   raise ValueError()
 
 
-class NodeDfvL(LatticeLT):
+class DfvPairL(LatticeLT):
   """
   Stores the data flow value at IN and OUT of a node.
 
@@ -160,8 +160,8 @@ class NodeDfvL(LatticeLT):
                      bot=bool(self.dfvIn.bot and self.dfvOut.bot))
 
 
-  def meet(self, other) -> Tuple['NodeDfvL', ChangedT]:
-    assert isinstance(other, NodeDfvL), f"{other}"
+  def meet(self, other) -> Tuple['DfvPairL', ChangedT]:
+    assert isinstance(other, DfvPairL), f"{other}"
     if self is other:
       return self, not Changed
 
@@ -195,14 +195,14 @@ class NodeDfvL(LatticeLT):
 
     if util.LL4: LDB(f"NodeDfv (MeetWithPrevNodeDfv):"
                      f" {getNewOldObj(chIn, chOut)}")
-    return NodeDfvL(dfvIn, dfvOut, dfvOutTrue, dfvOutFalse), chIn or chOut
+    return DfvPairL(dfvIn, dfvOut, dfvOutTrue, dfvOutFalse), chIn or chOut
 
 
   def widen(self,
-      other: Opt['NodeDfvL'] = None,
+      other: Opt['DfvPairL'] = None,
       ipa: bool = False,  # special case #IPA FIXME: is this needed?
-  ) -> Tuple['NodeDfvL', ChangedT]:
-    assert isinstance(other, NodeDfvL), f"{self.dfvIn.func}, {self}, {other}"
+  ) -> Tuple['DfvPairL', ChangedT]:
+    assert isinstance(other, DfvPairL), f"{self.dfvIn.func}, {self}, {other}"
     if self is other:
       return self, not Changed
 
@@ -234,7 +234,7 @@ class NodeDfvL(LatticeLT):
 
     if util.LL4: LDB(f"NodeDfv (WidenedWithPrevNodeDfv):"
                      f" {getNewOldObj(chIn, chOut)}")
-    return NodeDfvL(dfvIn, dfvOut, dfvOutTrue, dfvOutFalse), chIn or chOut
+    return DfvPairL(dfvIn, dfvOut, dfvOutTrue, dfvOutFalse), chIn or chOut
 
 
   def checkInvariants(self):
@@ -252,10 +252,10 @@ class NodeDfvL(LatticeLT):
       dfvOutTrueCopy = self.dfvOutTrue.getCopy()
       dfvOutFalseCopy = self.dfvOutFalse.getCopy()
 
-    return NodeDfvL(dfvInCopy, dfvOutCopy, dfvOutTrueCopy, dfvOutFalseCopy)
+    return DfvPairL(dfvInCopy, dfvOutCopy, dfvOutTrueCopy, dfvOutFalseCopy)
 
 
-  def __lt__(self, other: 'NodeDfvL') -> bool:
+  def __lt__(self, other: 'DfvPairL') -> bool:
     if self.dfvIn < other.dfvIn and self.dfvOut < other.dfvOut:
       return True
     return False
@@ -264,7 +264,7 @@ class NodeDfvL(LatticeLT):
   def __eq__(self, other) -> bool:
     if self is other:
       return True
-    if not isinstance(other, NodeDfvL):
+    if not isinstance(other, DfvPairL):
       raise NotImplemented
     return self.dfvIn == other.dfvIn and self.dfvOut == other.dfvOut
 
@@ -389,6 +389,7 @@ class OverallL(DataLT):
   ) -> bool:
     """Returns True if the type t (of an instr/expr) is
     of interest to the analysis.
+
     By default it selects only Numeric types.
     """
     check1 = t.isNumericOrVoid()
@@ -400,10 +401,11 @@ class OverallL(DataLT):
   @classmethod
   def getAllVars(cls, func: constructs.Func) -> Set[VarNameT]:
     """Gets all the variables of the accepted type.
+
     Note: PPMS vars with field sensitivity are never returned.
           Vars like `1p.f` are added into the lattice as per
           the occurrence of such variables.
-          Reason: PPMS vars type is not known beforehand.
+          Reason: PPMS var type is polymorphic.
     """
     names = ir.getNamesEnv(func)
     return ir.filterNames(func, names, cls.isAcceptedType)
@@ -649,7 +651,7 @@ class AnResult:
       anName: types.AnNameT,
       func: constructs.Func,
       topVal: DataLT,
-      result: Opt[Dict[types.NodeIdT, NodeDfvL]] = None,
+      result: Opt[Dict[types.NodeIdT, DfvPairL]] = None,
   ):
     self.anName = anName
     self.func = func
@@ -708,7 +710,7 @@ class AnResult:
     return self.result[nid]
 
 
-  def __setitem__(self, nid: types.NodeIdT, value: NodeDfvL):
+  def __setitem__(self, nid: types.NodeIdT, value: DfvPairL):
     self.result[nid] = value
 
 

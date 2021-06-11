@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """
 This file has utility functions for syntactic queries on the IR.
@@ -11,7 +11,7 @@ import logging
 
 from span.ir import callgraph, tunit
 
-LOG = logging.getLogger("span")
+LOG = logging.getLogger(__name__)
 
 from typing import Dict, List, Callable, Any
 import functools

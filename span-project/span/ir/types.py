@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """All types available in the IR and many other places.
 
@@ -15,7 +15,7 @@ modules from SPAN's `span.util` package.
 # FIXME: make all Type objects immutable. Till then assume immutable.
 
 import logging
-LOG = logging.getLogger("span")
+LOG = logging.getLogger(__name__)
 
 from typing import TypeVar, List, Optional as Opt, Tuple, Dict,\
   Set, Union as TypingUnion
@@ -56,7 +56,12 @@ LitT = TypingUnion[int, float, str]
 
 NodeIdT = int  # Node id (CFG) (18 bit) (>=0,<2^18)
 FuncIdT = int  # Function id (14 bit) (>=0,<2^14)
-NodeSiteT = int # FuncId || NodeId (32 bit) # also used to denote a callsite
+
+NodeSiteT = int
+"""NodeSiteT is a (FuncId || NodeId) (32 bit) unsigned integer.
+
+It uniquely identifies a node, and is also used to track a callsite."""
+
 BasicBlockIdT = int
 
 LineNumT = int

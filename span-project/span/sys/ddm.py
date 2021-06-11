@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Akshat Garg, Anshuman Dhuliya
+# Copyright (C) 2021 Akshat Garg, Anshuman Dhuliya
 
 """Demand Driven Method (#DDM) Augmentation
 This module provides the demand driven logic to SPAN.
@@ -11,7 +11,7 @@ import logging
 
 from span.ir import conv
 
-LOG = logging.getLogger("span")
+LOG = logging.getLogger(__name__)
 from typing import List, Set, Dict, Tuple, Callable, FrozenSet, Any
 from typing import Optional as Opt
 import functools
@@ -32,7 +32,7 @@ from span.ir.expr import (VAR_EXPR_EC, LIT_EXPR_EC, UNARY_EXPR_EC,
                           SIZEOF_EXPR_EC, FUNC_EXPR_EC, CALL_EXPR_EC, SELECT_EXPR_EC,
                           CAST_EXPR_EC, DEREF_EXPR_EC, )
 
-from span.api.dfv import NodeDfvL, ChangePairL, OLD_IN_OUT
+from span.api.dfv import DfvPairL, ChangePairL, OLD_IN_OUT
 import span.api.lattice as lattice
 from span.api.lattice import LatticeLT, DataLT
 import span.ir.cfg as cfg
@@ -721,9 +721,9 @@ class DdMethod:
 
 
 def ddmFilterInDfv(
-    nDfv: NodeDfvL,
+    nDfv: DfvPairL,
     ddmVarNameSet: Opt[Set[types.VarNameT]],
-) -> NodeDfvL:
+) -> DfvPairL:
   """Filters away redundant variables w.r.t. the DDM demand set at IN of the node.
   A common filter function for ConstA, PointsToA, EvenOddA, IntervalA
   """
@@ -749,6 +749,6 @@ def ddmFilterInDfv(
   if newDfvIn is dfvIn:
     return nDfv
   else:
-    return NodeDfvL(newDfvIn, nDfv.dfvOut, nDfv.dfvOutTrue, nDfv.dfvOutFalse)
+    return DfvPairL(newDfvIn, nDfv.dfvOut, nDfv.dfvOutTrue, nDfv.dfvOutFalse)
 
 

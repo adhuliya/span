@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2020 Anshuman Dhuliya
+# Copyright (C) 2021 Anshuman Dhuliya
 
 """Sign Analysis
 
@@ -15,7 +15,7 @@ import logging
 
 from span.ir.conv import Forward
 
-LOG = logging.getLogger("span")
+LOG = logging.getLogger(__name__)
 from typing import Tuple, Dict, Set, List, Optional as Opt
 import io
 
@@ -30,7 +30,7 @@ import span.ir.constructs as constructs
 import span.ir.ir as ir
 
 from span.api.lattice import DataLT, ChangeL, Changed, NoChange
-from span.api.dfv import NodeDfvL
+from span.api.dfv import DfvPairL
 import span.api.sim as sim
 import span.api.analysis as analysis
 import span.ir.tunit as irTUnit
@@ -408,18 +408,18 @@ class EvenOddA(analysis.AnalysisAT):
 
   def Nop_Instr(self,
       nodeId: types.NodeIdT,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """An identity forward transfer function."""
     dfvIn = nodeDfv.dfvIn
-    return NodeDfvL(dfvIn, dfvIn)
+    return DfvPairL(dfvIn, dfvIn)
 
 
   def Filter_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.FilterI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     """Filter away dead variables.
     The set of named locations that are dead."""
     dfvIn: OverallL = nodeDfv.dfvIn
@@ -432,14 +432,14 @@ class EvenOddA(analysis.AnalysisAT):
 
     newDfvOut.filterVals(ir.filterNamesNumeric(self.func, insn.varNames))
 
-    return NodeDfvL(dfvIn, newDfvOut)
+    return DfvPairL(dfvIn, newDfvOut)
 
 
   def UnDefVal_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.UnDefValI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     if not insn.type.isNumeric():
       return self.Nop_Instr(nodeId, nodeDfv)
 
@@ -448,7 +448,7 @@ class EvenOddA(analysis.AnalysisAT):
     newOut = oldIn.getCopy()
     newOut.setVal(insn.lhsName, self.componentBot)
 
-    return NodeDfvL(oldIn, newOut)
+    return DfvPairL(oldIn, newOut)
 
 
   ################################################
@@ -462,175 +462,175 @@ class EvenOddA(analysis.AnalysisAT):
   def Num_Assign_Var_Lit_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
 
 
   def Num_Assign_Var_Var_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
 
 
   def Num_Assign_Var_Deref_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
 
 
   def Num_Assign_Var_CastVar_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
 
 
   def Num_Assign_Var_SizeOf_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
 
 
   def Num_Assign_Var_UnaryArith_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
 
 
   def Num_Assign_Var_BinArith_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
 
 
   def Num_Assign_Var_Select_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
 
 
   def Num_Assign_Var_Array_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
 
 
   def Num_Assign_Var_Member_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
 
 
   def Num_Assign_Var_Call_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
 
 
   def Ptr_Assign_Var_Call_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     return self.processCallE(insn.rhs, nodeDfv.dfvIn)
 
 
   def Record_Assign_Var_Call_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     return self.processCallE(insn.rhs, nodeDfv.dfvIn)
 
 
   def Num_Assign_Deref_Lit_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
 
 
   def Num_Assign_Deref_Var_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
 
 
   def Num_Assign_Array_Lit_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
 
 
   def Num_Assign_Array_Var_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
 
 
   def Num_Assign_Member_Lit_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
 
 
   def Num_Assign_Member_Var_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv.dfvIn)
 
 
   def Conditional_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.CondI,
-      nodeDfv: NodeDfvL
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
     oldIn: OverallL = nodeDfv.dfvIn
     # special case
     if isinstance(insn.arg.type, types.Ptr):
-      return NodeDfvL(oldIn, oldIn)
+      return DfvPairL(oldIn, oldIn)
 
     dfvFalse, dfvTrue = self.calcFalseTrueDfv(insn.arg, oldIn)
 
-    return NodeDfvL(oldIn, None, dfvTrue, dfvFalse)
+    return DfvPairL(oldIn, None, dfvTrue, dfvFalse)
 
 
   def Call_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.CallI,
-      nodeDfv: NodeDfvL,
-  ) -> NodeDfvL:
+      nodeDfv: DfvPairL,
+  ) -> DfvPairL:
     return self.processCallE(insn.arg, nodeDfv.dfvIn)
 
 
@@ -644,7 +644,7 @@ class EvenOddA(analysis.AnalysisAT):
 
   def Num_Bin__to__Num_Lit(self,
       e: expr.BinaryE,
-      nodeDfv: Opt[NodeDfvL] = None,
+      nodeDfv: Opt[DfvPairL] = None,
   ) -> sim.SimToNumL:
     """Specifically for expression: 'var % 2'."""
     # STEP 1: check if the expression can be evaluated
@@ -671,7 +671,7 @@ class EvenOddA(analysis.AnalysisAT):
 
   def Cond__to__UnCond(self,
       e: expr.VarE,
-      nodeDfv: Opt[NodeDfvL] = None,
+      nodeDfv: Opt[DfvPairL] = None,
   ) -> sim.SimToBoolL:
     # STEP 1: check if the expression can be evaluated
     exprType = e.type
@@ -706,19 +706,19 @@ class EvenOddA(analysis.AnalysisAT):
       lhs: expr.ExprET,
       rhs: expr.ExprET,
       dfvIn: OverallL
-  ) -> NodeDfvL:
+  ) -> DfvPairL:
     """A common function to handle various IR instructions."""
 
     # Very Special Case
     if dfvIn.bot and not isinstance(rhs, expr.LitE):
-      return NodeDfvL(dfvIn, dfvIn)
+      return DfvPairL(dfvIn, dfvIn)
 
     lhsvarNames = ir.getNamesLValuesOfExpr(self.func, lhs)
     assert len(lhsvarNames) >= 1
 
     # Yet another Very Special Case
     if dfvIn.bot and len(lhsvarNames) > 1:
-      return NodeDfvL(dfvIn, dfvIn)
+      return DfvPairL(dfvIn, dfvIn)
 
     oldIn: OverallL = dfvIn
     newOut: OverallL = oldIn.getCopy()
@@ -746,7 +746,7 @@ class EvenOddA(analysis.AnalysisAT):
       for name in names:
         newOut.setVal(name, self.componentBot)
 
-    return NodeDfvL(oldIn, newOut)
+    return DfvPairL(oldIn, newOut)
 
 
   def getExprDfv(self,
@@ -842,7 +842,7 @@ class EvenOddA(analysis.AnalysisAT):
   def processCallE(self,
       e: expr.CallE,
       dfvIn: OverallL,
-  ) -> NodeDfvL:
+  ) -> DfvPairL:
     newOut = dfvIn.getCopy()
 
     names = ir.getNamesInExprMentionedIndirectly(self.func, e)
@@ -850,7 +850,7 @@ class EvenOddA(analysis.AnalysisAT):
     for name in names:
       newOut.setVal(name, self.componentBot)
 
-    return NodeDfvL(dfvIn, newOut)
+    return DfvPairL(dfvIn, newOut)
 
 
   def calcFalseTrueDfv(self,
