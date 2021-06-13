@@ -10,9 +10,6 @@ for use in the rest of the system.
 """
 
 import logging
-
-from span.ir.constructs import Func
-
 LOG = logging.getLogger(__name__)
 LDB = LOG.debug
 
@@ -20,24 +17,22 @@ from typing import Dict, Set, Optional as Opt, cast, Type, TypeVar, Tuple
 import io
 import functools
 
-import span.util.util as util
 import span.clients.register as register
+import span.util.util as util
+from span.ir.constructs import Func
 
 import span.ir.conv as irConv
-import span.api.analysis as analysis
 from span.api.analysis import (
   AnNameT, AnalysisAT, SimNameT, SimNames,
-  DirectionDT, ForwardD, BackwardD,
+  DirectionDT, ForwardD, BackwardD, AnalysisAClassT,
+  Deref__to__Vars__Name, Num_Var__to__Num_Lit__Name, LhsVar__to__Nil__Name,
+  Num_Bin__to__Num_Lit__Name, Cond__to__UnCond__Name, Node__to__Nil__Name,
 )
 import span.ir.types as types
 
-LhsVar__to__Nil__Name = AnalysisAT.LhsVar__to__Nil.__name__
-
-AnAT = TypeVar('AnAT', bound=AnalysisAT)
-
 # list of all concrete analysis class given
 # this dictionary is used with in package span.sys only.
-analyses: Dict[AnNameT, Type[AnAT]] = dict()
+analyses: Dict[AnNameT, Type[AnalysisAClassT]] = dict()
 # record of analyses names, that implement a particular expr evaluation
 # NOTE: if no analysis simplifies a particular sim func, still
 # add an empty set corresponding to the key.
@@ -164,28 +159,28 @@ def getSimNamesNeeded(anClass: Type[AnalysisAT]) -> Set[str]:
   simNames = set()
 
   if anClass.needsRhsDerefToVarsSim:
-    simNames.add(analysis.Deref__to__Vars__Name)
+    simNames.add(Deref__to__Vars__Name)
   if anClass.needsLhsDerefToVarsSim:
-    simNames.add(analysis.Deref__to__Vars__Name)
+    simNames.add(Deref__to__Vars__Name)
   if anClass.needsNumVarToNumLitSim:
-    simNames.add(analysis.Num_Var__to__Num_Lit__Name)
+    simNames.add(Num_Var__to__Num_Lit__Name)
   if anClass.needsNumBinToNumLitSim:
-    simNames.add(analysis.Num_Bin__to__Num_Lit__Name)
+    simNames.add(Num_Bin__to__Num_Lit__Name)
   if anClass.needsCondToUnCondSim:
-    simNames.add(analysis.Cond__to__UnCond__Name)
+    simNames.add(Cond__to__UnCond__Name)
   if anClass.needsLhsVarToNilSim:
-    simNames.add(analysis.LhsVar__to__Nil__Name)
+    simNames.add(LhsVar__to__Nil__Name)
   if anClass.needsNodeToNilSim:
-    simNames.add(analysis.Node__to__Nil__Name)
+    simNames.add(Node__to__Nil__Name)
   if anClass.needsFpCallSim:
-    simNames.add(analysis.Deref__to__Vars__Name)
+    simNames.add(Deref__to__Vars__Name)
 
   return simNames
 
 
 @functools.lru_cache(32)
 def getAnClass(anName: AnNameT
-) -> Opt[Type[AnAT]]:
+) -> Opt[Type[AnalysisAClassT]]:
   if anName in analyses:
     return analyses[anName]
   raise ValueError(f"UnknownAnalysis: {anName}")

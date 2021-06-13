@@ -25,7 +25,7 @@ import span.ir.constructs as obj
 import span.ir.ir as ir
 
 from span.util.util import LS
-from span.api.diagnosis import Report, Message
+from span.api.diagnosis import ClangReport, ClangMessage
 
 # import the analysis classes
 from span.clients.pointsto import PointsToA
@@ -55,8 +55,8 @@ class NullDerefR(diagnosis.DiagnosisRT):
       results: Dict[analysis.AnalysisNameT,
                            Dict[types.NodeIdT, dfv.DfvPairL]],
       func: obj.Func,
-  ) -> Opt[List[Report]]:
-    reports: List[Report] = []
+  ) -> Opt[List[ClangReport]]:
+    reports: List[ClangReport] = []
     if func.sig.variadic:  # SkipVariadicFunctions
       if LS: LOG.info("SkippingVariadicFunction: %s", func.name)
       return reports
@@ -120,8 +120,8 @@ class NullDerefR(diagnosis.DiagnosisRT):
             message = f"{derefvarName} may be NULL"
 
       if message and derefObjLoc:
-        report = Report(self.name, self.category)
-        messageObj = Message(msg=message, loc=derefObjLoc)
+        report = ClangReport(self.name, self.category)
+        messageObj = ClangMessage(msg=message, loc=derefObjLoc)
         report.addMessage(messageObj)
         reports.append(report)
 

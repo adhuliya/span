@@ -22,7 +22,10 @@ from span.util import util #IMPORTANT
 
 from span.ir.tunit import TranslationUnit
 import span.ir.ir as ir
-import span.ir.types as types
+from span.ir.types import (
+  VarNameT, Type as SpanType, Ptr, ArrayT, FuncSig,
+  NodeIdT, NumericT, T, DirectionT,
+)
 from span.ir.conv import (
   simplifyName, Forward, NULL_OBJ_NAME, NULL_OBJ_SINGLETON_SET
 )
@@ -57,12 +60,12 @@ class ComponentL(dfv.ComponentL):
 
   def __init__(self,
       func: constructs.Func,
-      val: Opt[Set[types.VarNameT]] = None,
+      val: Opt[Set[VarNameT]] = None,
       top: bool = False,
       bot: bool = False
   ) -> None:
     super().__init__(func, val, top, bot)
-    self.val: Opt[Set[types.VarNameT]] = val # to charm pycharm
+    self.val: Opt[Set[VarNameT]] = val # to charm pycharm
     if self.val is not None and len(self.val) == 0:
       raise ValueError(f"{self}")
 
@@ -94,12 +97,12 @@ class ComponentL(dfv.ComponentL):
     return len(self.val)
 
 
-  def __contains__(self, varName: types.VarNameT):
+  def __contains__(self, varName: VarNameT):
     return self.isPointee(varName)
 
 
   def isPointee(self,
-      varName: types.VarNameT
+      varName: VarNameT
   ) -> bool:
     """Given a valid varName, returns True if its a possible pointee."""
     if self.top: return False
@@ -110,7 +113,7 @@ class ComponentL(dfv.ComponentL):
 
 
   def addPointee(self,
-      varName: types.VarNameT
+      varName: VarNameT
   ) -> None:
     """Adds a given pointee. Mutates 'self'."""
     if   self.top: self.top, self.val = False, {varName}
@@ -119,7 +122,7 @@ class ComponentL(dfv.ComponentL):
 
 
   def addPointees(self,
-      varNames: Set[types.VarNameT]
+      varNames: Set[VarNameT]
   ) -> None:
     """Adds the given set of pointees. Mutates 'self'."""
     if self.top: self.top, self.val = False, set(varNames)  # forced copy
@@ -186,18 +189,18 @@ class OverallL(dfv.OverallL):
 
   def __init__(self,
       func: constructs.Func,
-      val: Opt[Dict[types.VarNameT, ComponentL]] = None,
+      val: Opt[Dict[VarNameT, ComponentL]] = None,
       top: bool = False,
       bot: bool = False
   ) -> None:
     super().__init__(func, val, top, bot, ComponentL, "PointsToA")  # type: ignore
-    self.val: Opt[Dict[types.VarNameT, ComponentL]] = val  # type: ignore
+    self.val: Opt[Dict[VarNameT, ComponentL]] = val  # type: ignore
 
 
   @classmethod
   def isAcceptedType(cls,
-      t: types.Type,
-      name: Opt[types.VarNameT] = None,
+      t: SpanType,
+      name: Opt[VarNameT] = None,
   ) -> bool:
     """Returns True if the type of the instruction/variable is
     of interest to the analysis, i.e. a pointer type.
@@ -208,7 +211,7 @@ class OverallL(dfv.OverallL):
 
 
 #   @classmethod
-#   def getAllVars(cls, func: constructs.Func) -> Set[types.VarNameT]:
+#   def getAllVars(cls, func: constructs.Func) -> Set[VarNameT]:
 #     """Returns all names which the points-to analysis is interested in.
 #     All array names and function names are technically pointers,
 #     but they are avoided as the associated info is trivial.
@@ -230,7 +233,7 @@ class PointsToA(analysis.ValueAnalysisAT):
   __slots__ : List[str] = []
 
   L: Type[dfv.OverallL] = OverallL
-  D: types.DirectionT = Forward
+  D: DirectionT = Forward
 
 
   needsRhsDerefToVarsSim: bool = False
@@ -263,7 +266,7 @@ class PointsToA(analysis.ValueAnalysisAT):
   ################################################
 
   # def Num_Assign_Instr(self,
-  #     nodeId: types.NodeIdT,
+  #     nodeId: NodeIdT,
   #     insn: instr.AssignI,
   #     nodeDfv: NodeDfvL,
   #     calleeBi: Opt[NodeDfvL] = None,  #IPA
@@ -281,8 +284,8 @@ class PointsToA(analysis.ValueAnalysisAT):
   def Deref__to__Vars(self,
       e: expr.VarE,
       nodeDfv: Opt[DfvPairL] = None,
-      values: Opt[Set[types.VarNameT]] = None,
-  ) -> Opt[Set[types.VarNameT]]:
+      values: Opt[Set[VarNameT]] = None,
+  ) -> Opt[Set[VarNameT]]:
     varName = e.name
 
     # STEP 1: check if the expression can be evaluated
@@ -302,7 +305,7 @@ class PointsToA(analysis.ValueAnalysisAT):
 
     # STEP 4: If here, eval the expression
     # special case (deref of array is the array itself)
-    if isinstance(varType, types.ArrayT):
+    if isinstance(varType, ArrayT):
       if LS: LWA("Deref_of_Array: %s, %s", e, varType)
       return {varName}
 
@@ -346,8 +349,8 @@ class PointsToA(analysis.ValueAnalysisAT):
   def Num_Bin__to__Num_Lit(self,
       e: expr.BinaryE,
       nodeDfv: Opt[DfvPairL] = None,
-      values: Opt[Set[types.NumericT]] = None,
-  ) -> Opt[Set[types.NumericT]]:
+      values: Opt[Set[NumericT]] = None,
+  ) -> Opt[Set[NumericT]]:
     """Specifically for expressions: x == y, x != y"""
     # STEP 1: check if the expression can be evaluated
     opCode = e.opr.opCode
@@ -386,10 +389,10 @@ class PointsToA(analysis.ValueAnalysisAT):
   def filterTest(self,
       exprVal: dfv.ComponentL,
       valueType: ValueTypeT = NumValue,
-  ) -> Callable[[types.T], bool]:
+  ) -> Callable[[T], bool]:
     assert isinstance(exprVal, ComponentL), f"{exprVal}"
     if valueType == NumValue:
-      def valueTestNumeric(numVal: types.NumericT) -> bool:
+      def valueTestNumeric(numVal: NumericT) -> bool:
         return True
       return valueTestNumeric  # return the test function
 
@@ -401,7 +404,7 @@ class PointsToA(analysis.ValueAnalysisAT):
       return valueTestBoolean  # return the test function
 
     elif valueType == NameValue:
-      def valueTestName(nameVal: types.VarNameT) -> bool:
+      def valueTestName(nameVal: VarNameT) -> bool:
         if exprVal.top: return False
         if exprVal.bot: return True
         return nameVal in exprVal.val
@@ -427,7 +430,7 @@ class PointsToA(analysis.ValueAnalysisAT):
     It expects the rhs to be pointer type or an array type."""
     value: dfv.ComponentL = self.componentTop
     rhsType, dfvInGetVal = rhs.type, dfvIn.getVal
-    # assert isinstance(rhsType, (types.Ptr, types.ArrayT, types.FuncSig)), \
+    # assert isinstance(rhsType, (Ptr, ArrayT, FuncSig)), \
     #   f"{type(rhs)}: {rhsType}, {rhs}"
 
     if isinstance(rhs, expr.LitE):
@@ -439,14 +442,14 @@ class PointsToA(analysis.ValueAnalysisAT):
         return self.componentBot  # a sound over-approximation
 
     if not rhsType.isPointerOrVoid() and \
-        not isinstance(rhsType, (types.ArrayT, types.FuncSig)):
+        not isinstance(rhsType, (ArrayT, FuncSig)):
       return self.componentBot  #FIXME: safe approximation
       #raise ValueError(f"{rhs}, {rhsType}, {rhs.info}")
 
     if isinstance(rhs, expr.VarE):  # handles PpmsVarE too
-      if isinstance(rhsType, types.Ptr) or rhsType.isVoid():  # don't use isPointer()
+      if isinstance(rhsType, Ptr) or rhsType.isVoid():  # don't use isPointer()
         return dfvInGetVal(rhs.name)
-      elif isinstance(rhsType, (types.ArrayT, types.FuncSig)):
+      elif isinstance(rhsType, (ArrayT, FuncSig)):
         return ComponentL(self.func, val={rhs.name})
       else:  # for all other types
         raise ValueError(f"{rhs}, {rhsType}, {rhs.info}")
@@ -515,7 +518,7 @@ class PointsToA(analysis.ValueAnalysisAT):
       dfvIn: OverallL
   ) -> dfv.ComponentL:
     """Processes binary expressions with ptr type."""
-    if not isinstance(binExpr.type, types.Ptr):
+    if not isinstance(binExpr.type, Ptr):
       return self.componentBot
 
     arg1, arg2 = binExpr.arg1, binExpr.arg2
@@ -541,7 +544,7 @@ class PointsToA(analysis.ValueAnalysisAT):
   def namesPossiblyModifiedInCallE(self,
       e: expr.CallE,
       dfvIn: OverallL,
-  ) -> Set[types.VarNameT]:
+  ) -> Set[VarNameT]:
     """Pointers that may be modified in a call (conservative)."""
     names = PointsToA.getNamesInExprMentionedIndirectly(self.func, e, dfvIn)
     names = ir.filterNamesPointer(self.func, names)
@@ -552,7 +555,7 @@ class PointsToA(analysis.ValueAnalysisAT):
   def getNamesLValuesOfExpr(func: constructs.Func,
       e: expr.ExprET,
       dfvIn: OverallL = None
-  ) -> Set[types.VarNameT]:
+  ) -> Set[VarNameT]:
     """Returns the locations that may be modified,
     if this expression was on the LHS of an assignment."""
     if dfvIn is None:  # become conservative
@@ -588,7 +591,7 @@ class PointsToA(analysis.ValueAnalysisAT):
       func: constructs.Func,
       lhs: expr.ExprET,
       dfvIn: dfv.OverallL
-  ) -> Set[types.VarNameT]:
+  ) -> Set[VarNameT]:
     return PointsToA.getNamesLValuesOfExpr(func, lhs, dfvIn)
 
 
@@ -597,7 +600,7 @@ class PointsToA(analysis.ValueAnalysisAT):
       func: constructs.Func,
       e: expr.ExprET,
       dfvIn: OverallL = None,
-  ) -> Set[types.VarNameT]:
+  ) -> Set[VarNameT]:
     """
     This function returns the possible locations used in a DerefET/CallE
     expression conservatively/using the given points-to information.
@@ -628,16 +631,16 @@ class PointsToA(analysis.ValueAnalysisAT):
     elif isinstance(e, expr.CallE): #INTRA
       for arg in e.args:  # iterate over the call arguments
         argType = arg.type
-        if isinstance(argType, types.ArrayT):
+        if isinstance(argType, ArrayT):
           argType = argType.getElementTypeFinal()
-        if isinstance(argType, types.Ptr): # only ptr arguments matter
+        if isinstance(argType, Ptr): # only ptr arguments matter
           if isinstance(arg, expr.AddrOfE):
             assert isinstance(arg.arg, expr.VarE), f"{arg}"
             varNames.add(arg.arg.name)
             arg = arg.arg
-            if not isinstance(arg, types.Ptr): continue
+            if not isinstance(arg, Ptr): continue
           assert isinstance(arg, expr.VarE), f"{arg}"
-          names: Set[types.VarNameT] = set()
+          names: Set[VarNameT] = set()
           PointsToA._getNamesOfArgPointeesPtr(func, arg.name, names, dfvIn)
           varNames.update(names)
       varNames.update(ir.getNamesGlobal(func))  # non-pointer vars included
@@ -647,8 +650,8 @@ class PointsToA(analysis.ValueAnalysisAT):
 
   @staticmethod
   def _getNamesOfArgPointeesPtr(func,
-      varName: types.VarNameT,
-      names: Set[types.VarNameT],
+      varName: VarNameT,
+      names: Set[VarNameT],
       dfvIn: OverallL = None,
   ) -> None:
     """
@@ -666,18 +669,18 @@ class PointsToA(analysis.ValueAnalysisAT):
   @staticmethod
   def getNamesOfPointees(
       func: constructs.Func,
-      varName: types.VarNameT,
+      varName: VarNameT,
       dfvIn: OverallL = None
-  ) -> Set[types.VarNameT]:
+  ) -> Set[VarNameT]:
     """Returns the pointee names of the given pointer name,
     if dfvIn is None it returns a conservative value."""
 
     # Step 1: what type is the given name?
     varType = ir.inferTypeOfVal(func, varName)
-    if isinstance(varType, types.ArrayT):
+    if isinstance(varType, ArrayT):
       varType = varType.getElementTypeFinal()
 
-    if not isinstance(varType, types.Ptr):
+    if not isinstance(varType, Ptr):
       raise ValueError(f"{varName}: {varType}")
 
     # Step 2: if here its a pointer, get its pointees

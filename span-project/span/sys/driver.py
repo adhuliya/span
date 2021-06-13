@@ -46,7 +46,7 @@ import span.sys.host      as host
 import span.sys.ipa       as sysIpa
 import span.sys.clients   as clients
 import span.sys.diagnosis as sysDiagnosis
-import span.api.diagnosis as apiDiagnosis
+from span.api.diagnosis import (AllMethods, SpanMethod, UseAllMethods)
 import span.sys.optimize  as sysOpt
 sysDiagnosis.init()  # IMPORTANT
 
@@ -214,10 +214,10 @@ def optimizeSpanIr(args: argparse.Namespace) -> None:
 def diagnoseSpanIr(args: argparse.Namespace) -> None:
   """Runs the given diagnosis on the spanir file for each function."""
   diName = args.diagnosisName
-  cascade = args.diagnosisStyle == "cascade"
-  lerner  = args.diagnosisStyle == "lerner"
-  span    = args.diagnosisStyle == "span" # default case too
+  diMethod = args.diagnosisMethod
   fileName = args.fileName
+  configId = args.config
+
   util.setupLL(args.logging)
   util.setupVV(args.verbose)
   util.setupDD(args.detail)
@@ -226,36 +226,43 @@ def diagnoseSpanIr(args: argparse.Namespace) -> None:
   spanirFileName = convertIfCFile(fileName)
   currTUnit: tunit.TranslationUnit = ir.readSpanIr(spanirFileName)
 
-  reports = []
-  for func in currTUnit.yieldFunctionsWithBody():
-    if func.basicBlocks: # if function is not empty
-      report = sysDiagnosis.runDiagnosis(diName, func,
-                                         cascade=cascade, lerner=lerner)
-      if report:
-        reports.extend(report)
+  sysDiagnosis.runDiagnosisNew(
+    diName,
+    diMethod,
+    configId,
+    fileName,
+    currTUnit,
+  )
 
-  # sort the reports
-  reports.sort(key=lambda r:
-  (r.messages[0].loc.line, r.messages[0].loc.col))  # type: ignore
-  # dump the span reports in the designated file
-  apiDiagnosis.dumpReports(currTUnit.name, reports)
+  # reports = []
+  # for func in currTUnit.yieldFunctionsWithBody():
+  #   if func.basicBlocks: # if function is not empty
+  #     report = sysDiagnosis.runDiagnosis(diName, func,
+  #                                        cascade=cascade, lerner=lerner)
+  #     if report:
+  #       reports.extend(report)
 
-  # now run scan-build to visualize the reports
-  # if not reports:
-  #   print("No report generated.")
-  #   exit(0)
-  # return # to avoid the diagnosis reports to display (delit - its temporary)
+  # # sort the reports
+  # reports.sort(key=lambda r: (r.messages[0].loc.line, r.messages[0].loc.col))  # type: ignore
+  # # dump the span reports in the designated file
+  # apiDiagnosis.dumpClangReports(currTUnit.name, reports)
 
-  util.exitIfProgramDoesnotExist("clang")
-  util.exitIfProgramDoesnotExist("scan-build")
+  # # now run scan-build to visualize the reports
+  # # if not reports:
+  # #   print("No report generated.")
+  # #   exit(0)
+  # # return # to avoid the diagnosis reports to display (delit - its temporary)
 
-  includesString = getIncludesString()
-  cFileName = ".".join(spanirFileName.split(".")[:-1]) # remove .spanir extension
-  cmd = consts.CMD_F_SLANG_BUG.format(includesString=includesString, cFileName=cFileName)
-  completed = subp.run(cmd, shell=True)
-  if util.VV1: print("Return Code:", completed.returncode)
-  if completed.returncode != 0:
-    print("SPAN: ERROR.")
+  # util.exitIfProgramDoesnotExist("clang")
+  # util.exitIfProgramDoesnotExist("scan-build")
+
+  # includesString = getIncludesString()
+  # cFileName = ".".join(spanirFileName.split(".")[:-1]) # remove .spanir extension
+  # cmd = consts.CMD_F_SLANG_BUG.format(includesString=includesString, cFileName=cFileName)
+  # completed = subp.run(cmd, shell=True)
+  # if util.VV1: print("Return Code:", completed.returncode)
+  # if completed.returncode != 0:
+  #   print("SPAN: ERROR.")
 
 
 def getIncludesString() -> str:
@@ -888,25 +895,25 @@ def getParser() -> argparse.ArgumentParser:
   # mem2binParser.add_argument("fileName", help=cOrSpanirFile)
 
   # subcommand: diagnose
-  subpar = subParser.add_parser("diagnose",
-                                help="Diagnose the program")
+  subpar = subParser.add_parser("diagnose", help="Diagnose the program")
   subpar.set_defaults(func=diagnoseSpanIr)
   subpar.add_argument('-l', '--logging', action='count', default=0)
   subpar.add_argument('-v', '--verbose', action='count', default=0)
   subpar.add_argument('-d', '--detail', action='count', default=0)
   subpar.add_argument('-c', '--check', action='count', default=0)
+  subpar.add_argument('-g', '--config', action='count', default=-1,
+                      help="Choose a specific configuration number.")
   subpar.add_argument("diagnosisName",
                       help="Diagnosis to run",
                       choices=getRegisteredDiagnosesList())
-  subpar.add_argument("diagnosisStyle",
-                      choices=["cascade","lerner","span"],
-                      default="span",
-                      help="The algorithm to use. (default is 'span')")
+  subpar.add_argument("diagnosisMethod",
+                      choices=AllMethods,
+                      default=UseAllMethods,
+                      help=f"The method to use.")
   subpar.add_argument("fileName", help=cOrSpanirFile)
 
   # subcommand: ipadiagnose
-  subpar = subParser.add_parser("ipadiagnose",
-                                help="IPA Diagnose the program")
+  subpar = subParser.add_parser("ipadiagnose", help="IPA Diagnose the program")
   subpar.set_defaults(func=ipaDiagnoseSpanIr)
   subpar.add_argument('-l', '--logging', action='count', default=0)
   subpar.add_argument('-v', '--verbose', action='count', default=0)

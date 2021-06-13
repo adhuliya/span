@@ -1120,6 +1120,20 @@ def getCallExpr(insn: InstrIT) -> Opt[expr.CallE]:
   return None
 
 
+def extractArrayE(insn: InstrIT) -> Opt[expr.ArrayE]:
+  """Extract ArrayE if present in the given instruction."""
+  if isinstance(insn, AssignI):
+    lhs, rhs = insn.lhs, insn.rhs
+    if isinstance(lhs, expr.ArrayE):
+      return lhs
+    if isinstance(rhs, expr.ArrayE):
+      return rhs
+    if isinstance(rhs, expr.AddrOfE):
+      if isinstance(rhs.arg, expr.ArrayE):
+        return rhs.arg
+  return None
+
+
 def getCalleeFuncName(insn: InstrIT) -> Opt[types.FuncNameT]:
   """Get the callee name if its a proper function."""
   callE = getCallExpr(insn)

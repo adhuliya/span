@@ -483,6 +483,18 @@ class Func(ConstructT):
       yield from []
 
 
+  def yieldNodeIdInstrTupleSeq(self):
+    """Yield all the (nodeId, instr) pairs in NodeIdT sorted order."""
+    assert self.cfg, f"CFG representation is needed."
+
+    if self.cfg:
+      nodeMap = self.cfg.nodeMap
+      for nid in sorted(nodeMap.keys()):
+        yield nid, nodeMap[nid].insn
+    else:
+      raise ValueError(f"{self.name}: CFG representation empty.")
+
+
   def yieldBasicBlocks(self):
     """Yields tuples of (BBId, InstructionSequence) in no particular order."""
     if self.basicBlocks:

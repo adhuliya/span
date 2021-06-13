@@ -14,9 +14,9 @@
 # BOUND START: import_the_diagnosis_class_here
 ################################################
 
-from span.diagnoses.deadstore import DeadStoreR
-from span.diagnoses.nullderef import NullDerefR
-from span.diagnoses.constants import ConstantsCountR
+# from span.diagnoses.deadstore import DeadStoreR
+# from span.diagnoses.nullderef import NullDerefR
+# from span.diagnoses.constants import ConstantsCountR
 from span.diagnoses.arrayindex import ArrayIndexOutOfBoundsR
 
 ################################################

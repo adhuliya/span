@@ -217,7 +217,7 @@ class AnResult:
     return len(self.result)
 
 
-  def get(self, nid: NodeIdT, default=None):
+  def get(self, nid: NodeIdT, default=None) -> Opt[DfvPairL]:
     if nid in self.result:
       return self.result[nid]
     return default

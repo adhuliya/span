@@ -7,39 +7,40 @@
 
 import logging
 
-from span.sys.common import AnResult
+from span.ir.tunit import TranslationUnit
 
 LOG = logging.getLogger(__name__)
 
-from typing import List, Optional as Opt, Dict, Type, Set
+from typing import List, Optional as Opt, Dict, Type, Set, Any, TypeVar
 import io
 
 import span.util.util as util
+from span.sys.common import AnResult
 
-from span.api.analysis import (AnalysisNameT,)
+from span.api.analysis import (AnalysisNameT, AnalysisAT, )
 from span.api.dfv import (DfvPairL,)
 from span.ir.types import (Loc, NodeIdT, FuncNameT, AnNameT, )
 
 from span.ir.constructs import Func
 
-AnalysisClassT = type
 DiagnosisNameT = str
-DiagnosisClassT = type
 
 MethodT = str
 PlainMethod: MethodT = "plain"
 CascadingMethod: MethodT = "cascading"
 LernerMethod: MethodT = "lerner"
 SpanMethod: MethodT = "span"
+UseAllMethods: MethodT = "all"
 
 AllMethods: Set[MethodT] = {
   PlainMethod,
   CascadingMethod,
   LernerMethod,
-  SpanMethod
+  SpanMethod,
+  UseAllMethods,
 }
 
-class Message:
+class ClangMessage:
   """A message and location of the diagnostic report."""
 
 
@@ -60,14 +61,14 @@ class Message:
     return ret
 
 
-class Report:
+class ClangReport:
   """A diagnosis report with many message(s)."""
 
 
   def __init__(self,
       name: str,
       category: str,
-      messages: Opt[List[Message]] = None,  # first msg is the master
+      messages: Opt[List[ClangMessage]] = None,  # first msg is the master
   ) -> None:
     self.name = name
     self.category = category
@@ -75,7 +76,7 @@ class Report:
 
 
   def addMessage(self,
-      message: Message,
+      message: ClangMessage,
   ) -> None:
     self.messages = self.messages if self.messages else []
     self.messages.append(message)
@@ -96,97 +97,133 @@ class Report:
     return ret
 
 
-class MethodDetails:
+class MethodDetail:
+  """Method details on how to compute results.
+
+  This class just holds the "name" of the method,
+  and the analyses that it may need to compute DFVs.
+  Based on this class object, appropriate logic is
+  invoked by the user.
+  """
   def __init__(self,
       methodName: str,
-      anNames: List, # list of analyses the method uses
       configSeq: List[int],
+      anNames: List, # list of analyses the method uses
   ):
-    self.methodName = methodName
+    self.name = methodName
     self.anNames = anNames
     self.configSeq = configSeq
 
 
+  def __str__(self):
+    return f"MethodDetail({self.name}, {self.configSeq}, {self.anNames})"
+
+
+  def __repr__(self):
+    return str(self)
+
+
 class DiagnosisRT:
-  """The base class for all diagnoses reporting classes.
-  Changed suffix "DT" to "RT" since "D" was clashing with Direction (ForwardD..)
+  """The base class for all diagnoses.
+
+  To define and run a custom diagnosis, create a child class,
+  in a module in `span.diagnoses` package.
   """
-  # the list of analyses, needed by the diagnostic class
-  Needs: List[AnalysisClassT] = []
 
-  # the list of analyses, optionally needed by the diagnostic class
-  # i.e. if this optional requirement is not met,
-  # diagnosis just becomes less precise
-  OptionalNeeds: List[AnalysisClassT] = []
-
-  AnalysesSeqCascading: Opt[List[List[AnalysisNameT]]] = None
-  AnalysesSeqLerner: Opt[List[List[AnalysisNameT]]] = None
-
-  MethodSequence = [
-    MethodDetails(
+  #NOTE: A default init for reference only. Must Override.
+  MethodSequence: List[MethodDetail] = [
+    MethodDetail(
       PlainMethod,
-      ["IntervalA"],
       [0],
+      ["IntervalA"],
     ),
-    MethodDetails(
+    MethodDetail(
       CascadingMethod,
+      [0],
       ["IntervalA", "PointsToA"],
-      [0]
     ),
-    MethodDetails(
+    MethodDetail(
       LernerMethod,
+      [0],
       ["IntervalA", "PointsToA"],
-      [0]
     ),
-    MethodDetails(
+    MethodDetail(
       SpanMethod,
+      [0],
       ["IntervalA", "PointsToA"],
-      [0]
     ),
   ]
+  """Holds a sequence of `MethodDetail`.
+  
+  See `span.sys.diagnosis` module on how this list is used.
+  """
 
 
-  def __init__(self):
-    super().__init__()
+  def __init__(self, name: str, category: str, tUnit: TranslationUnit):
+    self.name = name
+    self.category = category
+    self.tUnit = tUnit
+
+
+  def computeDfvs(self,
+      method: MethodDetail,
+      config: int,
+      anClassMap: Dict[AnNameT, Type[AnalysisAT]],
+  ) -> Opt[Dict[FuncNameT, Dict[AnNameT, AnResult]]]:
+    """Compute the DFVs of various analysis using a desired method.
+
+    Override this function to run any desired method with a desired config."""
+    raise NotImplementedError()
 
 
   def computeResults(self,
-      method: MethodT,
+      method: MethodDetail,
       config: int,
-      anClassMap: Dict[AnNameT, Type[AnalysisClassT]],
-  ) -> Dict[FuncNameT, Dict[AnNameT, AnResult]]:
-    """Override this function to run any desired method with a desired config."""
+      dfvs: Dict[FuncNameT, Dict[AnNameT, AnResult]],
+      anClassMap: Dict[AnNameT, Type[AnalysisAT]],
+  ) -> Any:
+    """Compute the desired result using the computed DFVs of analyses,
+    in `DiagnosisRT.computeDfvs` method."""
     raise NotImplementedError()
 
 
   def handleResults(self,
-      results: Dict[FuncNameT, Dict[AnNameT, AnResult]],
-      anClassMap: Dict[AnNameT, Type[AnalysisClassT]],
-  ) -> Opt[List[Report]]:
-    """
+      method: MethodDetail,
+      config: int,
+      result: Any, # Any type that a particular implementation needs.
+      dfvs: Dict[FuncNameT, Dict[AnNameT, AnResult]],
+      anClassMap: Dict[AnNameT, Type[AnalysisAT]],
+  ) -> None:
+    """Process the results computed by `DiagnosisRT.computeResults`.
+
+    Operations like dumping the results to a file or printing it,
+    can be done here.
+
     Analyze the analysis results and produce reports.
 
     Args:
-      results: dictionary of analysis results for each analysis.
-               The analyses in the dict are the ones requested in,
-               Needs and OptionalNeeds class member variables.
-      func: the Func object the diagnosis is to run on
+      result: A custom object of results.
+      dfvs: The DFVs that were computed by running analyses.
+      anClassMap: Analyses names mapped to their classes.
 
     Returns:
-      List of reports that are to be delivered to Clang.
+      Nothing.
     """
     raise NotImplementedError()
 
 
-def dumpReports(sourceFileName: str,  # e.g. "hello.c"
-    reports: Opt[List[Report]],
-) -> None:
-  """Write reports to a `.spanreport` file.
+DiagnosisRClassT = TypeVar('DiagnosisRClassT', bound=DiagnosisRT)
 
-  E.g. for `hello.c`, `hello.c.spanreport` is generated.
+
+def dumpClangReports(sourceFileName: str,  # e.g. "hello.c"
+    reports: Opt[List[ClangReport]],
+) -> None:
+  """Write Clang reports to a `.clangreport` file.
+
+  E.g. for `hello.c`, `hello.c.clangreport` is generated.
   It creates an empty file if there are no reports given.
   """
-  destFileName = sourceFileName + ".spanreport"
+  destFileName = sourceFileName + ".clangreport"
 
   if not reports:
     util.writeToFile(destFileName, "")

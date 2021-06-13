@@ -3,7 +3,8 @@
 # MIT License
 # Copyright (C) 2021 Anshuman Dhuliya
 
-"""The diagnoses that take results of one or more analyses
-and generate CLANG bug reports."""
+"""The diagnoses that compute the desired DFVs and process it.
 
-# __all__ = ["deadstore", "nullderef", "register"]
+These diagnoses may print the result, generate Clang bug reports etc.
+"""
+

@@ -12,7 +12,7 @@ LDB, LWR, LER = LOG.debug, LOG.warning, LOG.error
 from span.ir.tunit import TranslationUnit
 from span.util import ff
 
-from typing import List, Tuple, Set, Dict, Any, Type, Callable, cast
+from typing import List, Tuple, Set, Dict, Any, Type, Callable, cast, TypeVar
 from typing import Optional as Opt
 import io
 
@@ -1781,6 +1781,8 @@ class AnalysisAT:
   # BOUND END  : sim_related 2/3
   ################################################
 
+AnalysisAClassT = TypeVar('AnalysisAClassT', bound=AnalysisAT)
+
 ################################################
 # BOUND END  : AnalysisAT_The_Base_Class.
 ################################################
@@ -2264,7 +2266,7 @@ class ValueAnalysisAT(AnalysisAT):
       e: expr.ExprET,
       dfvIn: dfv.OverallL,
       calleeBi: Opt[DfvPairL] = None,  #IPA
-      nodeId: NodeIdT = 0,
+      nodeId: NodeIdT = 0,  # This parameter is used by the subclasses
   ) -> dfv.ComponentL:
     """Returns the effective component dfv of the rhs.
 

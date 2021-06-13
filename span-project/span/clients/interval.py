@@ -279,6 +279,14 @@ class ComponentL(dfv.ComponentL):
     return self.val[0] <= value <= self.val[1]
 
 
+  def inIndexRange(self, value: float) -> bool:
+    """"Returns true if the range is within [0, value]."""
+    if self.top: return False
+    if self.bot: return False
+    assert self.val, f"{self}"
+    return 0 <= self.val[0] and self.val[1] <= value
+
+
   def isConstant(self):
     return self.val and self.val[0] == self.val[1]
 

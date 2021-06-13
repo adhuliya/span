@@ -17,9 +17,13 @@ import io
 import span.util.util as util
 from span.util.util import LS
 
-import span.api.analysis as analysis
-import span.api.dfv as dfv
-import span.ir.types as types
+from span.api.analysis import (
+  AnalysisAClassT,
+)
+from span.api.dfv import DfvPairL
+from span.ir.types import (
+  AnNameT, NodeIdT, FileNameT,
+)
 import span.ir.tunit as irTUnit
 from span.ir.constructs import Func
 
@@ -27,12 +31,12 @@ import span.sys.host as host
 
 import span.diagnoses.register as register
 from span.api.diagnosis import (
-  MethodT, DiagnosisNameT, DiagnosisClassT, DiagnosisRT, Report,
+  MethodT, DiagnosisNameT, DiagnosisRClassT, DiagnosisRT, ClangReport, UseAllMethods,
 )
 
 AnalysisClassT = type
 
-allDiagnoses: Dict[DiagnosisNameT, DiagnosisClassT] = {}
+allDiagnoses: Dict[DiagnosisNameT, Type[DiagnosisRClassT]] = {}
 
 
 # mainentry for this module
@@ -50,7 +54,7 @@ def runDiagnosis(diName: DiagnosisNameT,
     func: Func,
     cascade: bool = False,
     lerner: bool = False,
-) -> Opt[List[Report]]:
+) -> Opt[List[ClangReport]]:
   """Runs the given dianosis and returns a list of reports.
   The reports can be read in by a clang checker developed for this purpose.
   To view the checkers in clang see:
@@ -67,7 +71,7 @@ def runDiagnosis(diName: DiagnosisNameT,
 
   diObj: DiagnosisRT = DiClass()
 
-  anName: analysis.AnalysisNameT = diObj.Needs[0].__name__
+  anName: AnNameT = diObj.Needs[0].__name__
 
   if cascade:
     syn1 = host.Host(func, analysisSeq=diObj.AnalysesSeqCascading)
@@ -79,8 +83,7 @@ def runDiagnosis(diName: DiagnosisNameT,
   syn1.analyze()  # do the analysis
   # AD syn1.printResult() # print the result of each analysis
 
-  results: Dict[analysis.AnalysisNameT,
-                Dict[types.NodeIdT, dfv.DfvPairL]] = {}
+  results: Dict[AnNameT, Dict[NodeIdT, DfvPairL]] = {}
 
   anResults = syn1.getAnalysisResults(anName).anResult.result
   assert anResults, f"{anName}"
@@ -98,9 +101,11 @@ def runDiagnosis(diName: DiagnosisNameT,
 
 def runDiagnosisNew(
     diName: DiagnosisNameT,
-    func: Func,
-    methodName: Opt[MethodT],
-) -> Opt[List[Report]]:
+    diMethod: MethodT,
+    configId: int,
+    fileName: FileNameT,
+    tUnit: irTUnit.TranslationUnit,
+) -> None:
   """Runs the given dianosis and returns a list of reports.
   The reports can be read in by a clang checker developed for this purpose.
   To view the checkers in clang see:
@@ -111,35 +116,48 @@ def runDiagnosisNew(
     source llvm directory then view Checkers.td as follows:
       vi "$(dirname $(which clang))/../../llvm/tools/clang/include/clang/StaticAnalyzer/Checkers/Checkers.td"
   """
-  if LS: LOG.debug("DiagnosingFunction: %s", func.name)
+  if LS: LOG.debug("RunningDiagnosis: DiName: %s, DiMethod: %s,"
+                   "configId: %s, fileName: %s",
+                   diName, diMethod, configId, fileName)
 
   DiClass = allDiagnoses[diName] # get the diagnosis class
 
-  diObj: DiagnosisRT = DiClass()
+  diObj: DiagnosisRT = DiClass(tUnit)
 
-  for methodDetails in diObj.MethodSequence: # run each method
-    if methodName and methodDetails.methodName != methodName:
+  #STEP 1: Iterate over each method.
+  for mDetails in diObj.MethodSequence: # run each method
+    if (diMethod
+        and diMethod != mDetails.name
+        and diMethod != UseAllMethods
+    ):
       continue
 
+    #STEP 1.5: Load analyses. Don't proceed if analyses not present.
     try: # try loading the analyses
-      anClassMap = loadAnalyses(methodDetails.anNames)
+      anClassMap = loadAnalyses(mDetails.anNames)
     except ValueError: # failed? Then don't proceed.
       continue
 
-    for config in methodDetails.configSeq: # run each config of the method
-      res = diObj.computeResults(methodDetails.methodName, config, anClassMap)
-      diObj.handleResults(res, anClassMap)
+    #STEP 2: Iterate over each config of the method.
+    for config in mDetails.configSeq: # run each config of the method
+      #STEP 3: COMPUTE.
+      dfvs = diObj.computeDfvs(mDetails, config, anClassMap)
+      if dfvs: # could be None
+        res = diObj.computeResults(mDetails, config, dfvs, anClassMap)
+        diObj.handleResults(mDetails, config, res, dfvs, anClassMap)
 
 
-def loadAnalyses(anNames: List[types.AnNameT]):
+def loadAnalyses(
+    anNames: List[AnNameT]
+) -> Dict[AnNameT, Type[AnalysisAClassT]]:
   """Loads the class of the given analysis names.
 
-  It throws ValueError, if the Analysis Name is not found.
+  It throws ValueError, if an Analysis' Name is not found.
   """
-  anClassMap: Dict[types.AnNameT, Type[AnalysisClassT]] = {}
+  anClassMap: Dict[AnNameT, Type[AnalysisAClassT]] = {}
 
   for anName in anNames:
-    anClass = clients.getAnClass(anName) # may throw ValueError
+    anClass = clients.getAnClass(anName) #NOTE: May throw ValueError.
     anClassMap[anName] = anClass
 
   return anClassMap

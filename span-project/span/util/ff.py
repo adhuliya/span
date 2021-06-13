@@ -16,6 +16,9 @@ _LOG = logging.getLogger(__name__)
 
 import io
 
+LARGE_INT_VAL = 0x7FFFFFFF
+"""Used for min value computations etc."""
+
 ################################################################################
 ## BLOCK START: GLOBAL_FEATURE_FLAGS_AND_VALUES
 ################################################################################

@@ -23,7 +23,7 @@ import span.ir.tunit as irTUnit
 import span.ir.constructs as obj
 import span.ir.ir as ir
 
-from span.api.diagnosis import Report, Message
+from span.api.diagnosis import ClangReport, ClangMessage
 
 # import the analysis classes
 from span.clients.stronglive import StrongLiveVarsA
@@ -54,8 +54,8 @@ class ConstantsCountR(diagnosis.DiagnosisRT):
       results: Opt[Dict[analysis.AnalysisNameT,
                              Dict[types.NodeIdT, dfv.DfvPairL]]],
       func: obj.Func,
-  ) -> Opt[List[Report]]:
-    reports: List[Report] = []
+  ) -> Opt[List[ClangReport]]:
+    reports: List[ClangReport] = []
 
     assert results, f"{func}: {results}"
     constVars = results[const.ConstA.__name__]
