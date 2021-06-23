@@ -31,14 +31,15 @@ from span.ir import cfg, expr, types, op
 import span.ir.conv as conv
 from span.ir.conv import (GLOBAL_INITS_FUNC_NAME,
                           Forward, Backward, GLOBAL_INITS_FUNC_ID,
-                          genFuncNodeId)
-from span.ir.types import FuncNameT, NodeSiteT, NodeIdT
+                          genGlobalNodeId)
+from span.ir.types import FuncNameT, GlobalNodeIdT, NodeIdT
 from span.ir.tunit import TranslationUnit
 from span.api.analysis import AnalysisNameT as AnNameT, DirectionDT, AnalysisAT, SimFailed
 from span.api.dfv import DfvPairL, OverallL
 
 from span.sys.host import Host
-from span.sys.common import CallSitePair, DfvDict, AnResult
+from span.sys.common import CallSitePair, AnDfvPairDict
+from span.api.dfv import AnResult # replacing span.sys.common.AnResult
 import span.util.ff as ff
 import span.util.util as util
 
@@ -59,10 +60,10 @@ class ValueContext:
 
   def __init__(self,
       funcName: FuncNameT,
-      dfvDict: Opt[DfvDict] = None
+      dfvDict: Opt[AnDfvPairDict] = None
   ):
     self.funcName = funcName
-    self.dfvDict = dfvDict if dfvDict is not None else DfvDict()
+    self.dfvDict = dfvDict if dfvDict is not None else AnDfvPairDict()
 
 
   def getCopy(self):
@@ -119,10 +120,10 @@ class HostSitesPair:
 
   def __init__(self,
       host: Host,
-      callSites: Opt[Set[NodeSiteT]] = None,
+      callSites: Opt[Set[GlobalNodeIdT]] = None,
   ):
     self.host =  host
-    self.callSites: Set[NodeSiteT] = callSites if callSites else set()
+    self.callSites: Set[GlobalNodeIdT] = callSites if callSites else set()
 
 
   def hasCallSites(self) -> bool:
@@ -171,7 +172,7 @@ class ValueContextInfo:
     # The stack used to store value contexts in a stack of invocations.
     # This is used in termination of value contexts.
     # Note: The recursive function invocations track the order of CallSitePair.
-    self.callSiteContextMapStack: Dict[CallSitePair, DfvDict] = {}
+    self.callSiteContextMapStack: Dict[CallSitePair, AnDfvPairDict] = {}
 
     self.finalResult: Dict[FuncNameT, Dict[AnNameT, AnResult]] = {}
 
@@ -224,7 +225,7 @@ class ValueContextInfo:
 
   def removeCtxSite(self,
       vContext: ValueContext,
-      callSite: NodeSiteT,
+      callSite: GlobalNodeIdT,
   ) -> None:
     """Removes a call site from the HostSitePair instance
     for the given context."""
@@ -298,13 +299,13 @@ class ValueContextInfo:
         del self.callSiteContextMapStack[callSitePair]
 
 
-  def getCallStackCtx(self, callSitePair) -> Opt[DfvDict]:
+  def getCallStackCtx(self, callSitePair) -> Opt[AnDfvPairDict]:
     if callSitePair in self.callSiteContextMapStack:
       return self.callSiteContextMapStack[callSitePair]
     return None
 
 
-  def setCallStackCtx(self, callSitePair, dfvDict: DfvDict):
+  def setCallStackCtx(self, callSitePair, dfvDict: AnDfvPairDict):
     self.callSiteContextMapStack[callSitePair] = dfvDict
 
 
@@ -319,6 +320,7 @@ class IpaHost:
       supportAnalyses: Opt[List[AnNameT]] = None,
       avoidAnalyses: Opt[List[AnNameT]] = None,
       maxNumOfAnalyses: int = ff.MAX_ANALYSES,
+      inputAnResults: Opt[Dict[FuncNameT, Dict[AnNameT, AnResult]]] = None,
       disableAllSim: bool = False,
       useTransformation: bool = False,
       useDdm: bool = False,
@@ -335,6 +337,7 @@ class IpaHost:
     self.supportAnalyses = supportAnalyses  # TODO: pass it to span.sys.host.Host
     self.avoidAnalyses = avoidAnalyses
     self.maxNumOfAnalyses = maxNumOfAnalyses
+    self.inputAnResults = inputAnResults
     self.disableAllSim = disableAllSim
     self.useTransformation = useTransformation
     self.useDdm = useDdm
@@ -350,8 +353,11 @@ class IpaHost:
     self.logUsefulInfo()
 
 
-  def analyze(self) -> None:
-    """Call this function to start the IPA analysis."""
+  def analyze(self) -> Dict[FuncNameT, Dict[AnNameT, AnResult]]:
+    """Call this function to start the IPA analysis.
+
+    It returns the final results computed.
+    """
     if util.LL1: LIN("\n\nIpaHost_Analyze: Start #####################")
 
     # STEP 1: Analyze the global inits and extract its BI
@@ -369,7 +375,7 @@ class IpaHost:
 
     # STEP 2: start analyzing from the entry function
     callSitePair = CallSitePair(self.entryFuncName,
-                                genFuncNodeId(GLOBAL_INITS_FUNC_ID, 0))
+                                genGlobalNodeId(GLOBAL_INITS_FUNC_ID, 0))
     mainBi = self.prepareEntryFuncBi(self.entryFuncName, globalBi)
     self.analyzeFunc(callSitePair, mainBi, GLOBAL_INITS_FUNC_NAME)
 
@@ -379,14 +385,16 @@ class IpaHost:
 
     if util.LL1: LIN("\n\nIpaHost_Analyze: End #####################")
 
+    return self.vci.finalResult
+
 
   def analyzeFunc(self,
       callSitePair: CallSitePair, # location of the call (has callee name too)
-      ipaFuncBi: DfvDict, # the boundary info (value context)
+      ipaFuncBi: AnDfvPairDict, # the boundary info (value context)
       parentName: FuncNameT, # i.e. caller name
       rDepth: int = 0, # recursion depth, start with 0
       parentInvocationId: InvocationIdT = 0, # start with 0
-  ) -> DfvDict:
+  ) -> AnDfvPairDict:
     thisInvocationId, vci = self.getNewInvocationId(), self.vci
     currFuncName, callSite = callSitePair.tuple()
     if util.LL1: LIN("AnalyzingFunction(IpaHost:START):"
@@ -465,8 +473,8 @@ class IpaHost:
 
   def widenTheValueContext(self, #widen
       callSitePair: CallSitePair,
-      currDfvDict: DfvDict,
-  ) -> DfvDict:
+      currDfvDict: AnDfvPairDict,
+  ) -> AnDfvPairDict:
     assert self.widen
     wideDfvDict, vci = None, self.vci
     prevStackCtx = vci.getCallStackCtx(callSitePair)
@@ -478,7 +486,7 @@ class IpaHost:
         for anName, prevNdfv in prevStackCtx.dfvs.items():
           currNdfv = currDfvDict[anName]
           widenedBi[anName], _ = prevNdfv.widen(currNdfv) #widen here
-        wideDfvDict = DfvDict(widenedBi, 1) # initial depth=1
+        wideDfvDict = AnDfvPairDict(widenedBi, 1) # initial depth=1
       else:
         currDfvDict.setIncDepth(prevStackCtx) #IMPORTANT
 
@@ -509,16 +517,16 @@ class IpaHost:
 
   def checkInvariants1(self,
       funcName: FuncNameT,
-      nodeDfvs: DfvDict,
+      nodeDfvs: AnDfvPairDict,
   ) -> None:
     pass
 
 
   def analyzeFuncFinal(self,
       callSitePair: CallSitePair,
-      funcBi: DfvDict,
+      funcBi: AnDfvPairDict,
       recursionDepth: int,
-  ) -> DfvDict:
+  ) -> AnDfvPairDict:
     """
     For problems where Value Context may not terminate,
     finally fail/terminate at this function.
@@ -613,9 +621,9 @@ class IpaHost:
 
   def prepareEntryFuncBi(self,
       funcName: FuncNameT,
-      bi: DfvDict,
-  ) -> DfvDict:
-    func, newBi = self.tUnit.getFuncObj(funcName), DfvDict()
+      bi: AnDfvPairDict,
+  ) -> AnDfvPairDict:
+    func, newBi = self.tUnit.getFuncObj(funcName), AnDfvPairDict()
 
     for anName, nDfv in bi:
       AnalysisClass = clients.analyses[anName]
@@ -632,7 +640,7 @@ class IpaHost:
     return newBi
 
 
-  def swapGlobalBiInOut(self, globalBi: DfvDict) -> DfvDict:
+  def swapGlobalBiInOut(self, globalBi: AnDfvPairDict) -> AnDfvPairDict:
     """Swaps IN and OUT, because the OUT of the end node in
     the global function is the IN of the main() function."""
     for anName, nDfv in globalBi:
@@ -644,7 +652,7 @@ class IpaHost:
   def createHostInstance(self,
       funcName: FuncNameT,
       ipa: bool = True,
-      biDfv: Opt[DfvDict] = None,
+      biDfv: Opt[AnDfvPairDict] = None,
       useDdm: bool = False,  #DDM
   ) -> Host:
     """Create an instance of Host for the given function"""
@@ -657,6 +665,7 @@ class IpaHost:
       otherAnalyses=self.otherAnalyses,
       avoidAnalyses=self.avoidAnalyses,
       maxNumOfAnalyses=self.maxNumOfAnalyses,
+      inputAnResults=self.inputAnResults,
       disableSim=self.disableAllSim,
       biDfv=biDfv,
       ipaEnabled=ipa,
@@ -733,9 +742,9 @@ class IpaHost:
         host = hostSitesPair.host
         if valContext.funcName == funcName:
           assert host.func.name == funcName, f"{funcName}, {host.func.name}"
-          allAnalysisNames = host.getParticipatingAnalyses()
+          allAnalysisNames = host.getAllAnalysesUsed()
           for anName in allAnalysisNames:
-            currRes = host.getAnalysisResults(anName).anResult
+            currRes = host.getAnalysisResults(anName)
             if anName not in funcResult:
               funcResult[anName] = currRes
             else:
@@ -829,6 +838,52 @@ class IpaHost:
     self.invocationId += 1
     return self.invocationId
 
+
+def ipaAnalyzeCascade(
+    tUnit: TranslationUnit,
+    anSequence: List[List[AnNameT]],
+) -> Dict[FuncNameT, Dict[AnNameT, AnResult]]:
+  """
+  Runs Inter-Procedural technique for Cascading.
+
+  The results of each step are fed into the next step.
+
+  Args:
+    tUnit: The translation unit.
+    anSequence: Sequence of a sequence of analyses names. Each sequence,
+           in the sequence, forms one step of Cascading which is run
+           using Lerner's approach. To run pure Cascading, specify
+           only one analysis name in each subsequence. For example,
+           `[["IntervaA"],["PointsToA"]]` runs pure cascading of the
+           two analyses, and `[["IntervalA","EvenOddA"],["PointsToA"]]`
+           runs two cascaded steps and in the first step runs the two
+           analyses IntervalA and EvenOddA together with Lerner's approach.
+
+  Returns:
+    The results computed in each function, for each analysis.
+  """
+  assert isinstance(anSequence, list), f"({tUnit.name}): {anSequence}"
+
+  res, ipaHost = None, None
+  for seq in anSequence:
+    assert isinstance(seq, (str, list)), f"'{seq}' in '{anSequence}'"
+
+    # In case the list is like `["IntervalA", "PointsToA"]`:
+    anSeq: List[AnNameT] = seq if isinstance(seq, list) else [seq]
+
+    ipaHost = IpaHost(
+      tUnit=tUnit,
+      mainAnName=anSeq[0],
+      otherAnalyses=anSeq[1:],
+      maxNumOfAnalyses=len(anSeq),
+      inputAnResults=res,
+      useTransformation=True,
+    )
+    res = ipaHost.analyze()
+
+  # do something with the final ipaHost object if needed, here
+
+  return res
 
 
 def diagnoseInterval(tUnit: TranslationUnit):

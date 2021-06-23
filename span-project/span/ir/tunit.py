@@ -47,7 +47,7 @@ from span.ir.conv import (
   NULL_OBJ_NAME, NULL_OBJ_TYPE, NULL_OBJ_PTR_TYPE,
   PPMS_VAR_REGEX, DUMMY_VAR_NAME,
   START_END_BBIDS, COND_TMPVAR_GEN_STR,
-  getSuffixes, setNodeSiteBits, isFuncName, extractFuncName,
+  getSuffixes, setGlobalNodeIdBits, isFuncName, extractFuncName,
   getPrefixShortest, extractPureFuncName, isStringLitName, isTmpVar,
   simplifyName, isNormalTmpVar, isCondTmpVar, isGlobalName,
   GLOBAL_INITS_FUNC_NAME, GLOBAL_INITS_FUNC_ID,
@@ -273,7 +273,7 @@ class TranslationUnit:
     assert funcList, f"{funcList}"
     totalFuncs = len(funcList)
     maxCfgNodes = self.maxCfgNodesInAFunction()
-    setNodeSiteBits(totalFuncs, maxCfgNodes)
+    setGlobalNodeIdBits(totalFuncs, maxCfgNodes)
 
 
   def maxCfgNodesInAFunction(self):

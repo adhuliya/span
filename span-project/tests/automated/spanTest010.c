@@ -1,21 +1,13 @@
-int cond;
-int main() {
-  int a, *u, tmp, b;
-  a = 11;
-  b = 13;
-  cond = 10;
-  u = &a;
+// Test CFG: switch cases
 
-  while(cond > 1) {
-    tmp = *u;
-    b = tmp % 2;
-    if(b) {
-      b = 15;
-    } else {
-      b = 16; // unreachable
-    }
-    u = &b;
-    cond += 1;
+int main(int argc, char **argv) {
+  int x = 4;
+  switch(argc) {
+    case 1:
+      x = x + 1;
+    default:
+      x = x + 2;
   }
-  return b; // b is 15 here
+  return x;
 }
+

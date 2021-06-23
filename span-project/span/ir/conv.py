@@ -12,9 +12,10 @@ Hence, except `span.ir.types` module all other modules can import this module.
 
 import logging
 LOG = logging.getLogger(__name__)
+LDB, LIN, LWR = LOG.debug, LOG.info, LOG.warning
 
 from typing import Optional as Opt, Set, Tuple
-from span.util.util import LS
+import span.util.util as util
 import re
 import functools
 
@@ -367,37 +368,38 @@ def genGlobalName(varName: str):
   return f"g:{varName}"
 
 
-def setNodeSiteBits(totalFuncs: int, maxCfgNodesInAFunction: int):
+def setGlobalNodeIdBits(totalFuncs: int, maxCfgNodesInAFunction: int):
+  """Calculates the bit length needed for func id and node id in a `types.GlobalNodeIdT`."""
   global NodeSiteTotalBitLen, NodeSiteFuncIdBitLen, NodeSiteNodeIdBitLen
   NodeSiteFuncIdBitLen = totalFuncs.bit_length()
   # add some room for nodeid bits (might help when adding nodes)
   NodeSiteNodeIdBitLen = maxCfgNodesInAFunction.bit_length() + 2 # extra bits
   NodeSiteTotalBitLen = NodeSiteFuncIdBitLen + NodeSiteNodeIdBitLen
-  if LS and NodeSiteTotalBitLen > 32:
-    LOG.info("WARN: NodeSiteTotalBitLen > 32 bits: %s bits.",
-             NodeSiteTotalBitLen)
+  if util.LL0 and NodeSiteTotalBitLen > 32:
+    LWR("WARN: NodeSiteTotalBitLen > 32 bits: %s bits.", NodeSiteTotalBitLen)
 
 
 #@functools.lru_cache(500)
-def genFuncNodeId(
+def genGlobalNodeId(
     funcId: types.FuncIdT,
     nid: types.NodeIdT,
-) -> types.NodeSiteT:
+) -> types.GlobalNodeIdT:
+  """Returns the globally unique id of a node in the Translation Unit."""
   assert funcId.bit_length() <= NodeSiteFuncIdBitLen, f"{nid}, {NodeSiteFuncIdBitLen}"
   assert nid.bit_length() <= NodeSiteNodeIdBitLen, f"{nid}, {NodeSiteNodeIdBitLen}"
   return (funcId << NodeSiteNodeIdBitLen) | nid
 
 
-def getFuncId(funcNodeId: types.NodeSiteT):
+def getFuncId(funcNodeId: types.GlobalNodeIdT):
   return funcNodeId >> NodeSiteNodeIdBitLen
 
 
-def getNodeId(funcNodeId: types.NodeSiteT):
+def getNodeId(funcNodeId: types.GlobalNodeIdT):
   return funcNodeId & ((1 << NodeSiteNodeIdBitLen) - 1)
 
 
-def getFuncNodeIdStr(
-    fNid: types.NodeSiteT,
+def getGlobalNodeIdStr(
+    fNid: types.GlobalNodeIdT,
 ) -> str:
   return f"({getFuncId(fNid)}, {getNodeId(fNid)})"
 

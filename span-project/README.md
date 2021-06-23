@@ -269,7 +269,7 @@ See the list of checkers available:
 * Run group of analyses and check correctness.
 * Compare Span vs Lerner vs Single Analysis.
 * Add Cascading and also compare Cascading's result.
-* Add new test cases if bugs are found on benchmark.
+* Add new test cases if bugs are found in benchmark programs.
 
 * (optional) : Handle aggregate assignment.
 * (optional) : convert `?:` operator to `if-then-else`

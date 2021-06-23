@@ -57,8 +57,8 @@ LitT = TypingUnion[int, float, str]
 NodeIdT = int  # Node id (CFG) (18 bit) (>=0,<2^18)
 FuncIdT = int  # Function id (14 bit) (>=0,<2^14)
 
-NodeSiteT = int
-"""NodeSiteT is a (FuncId || NodeId) (32 bit) unsigned integer.
+GlobalNodeIdT = int
+"""A (FuncId || NodeId) (32 bit) unsigned integer.
 
 It uniquely identifies a node, and is also used to track a callsite."""
 

@@ -15,13 +15,13 @@ import io
 import span.util.util as util
 from span.ir.types import (StructNameT, UnionNameT, MemberNameT, FuncNameT, VarNameT,
                            EdgeLabelT, BasicBlockIdT, Void, ConstructT,
-                           Type, FuncSig, Info, Loc, LabelNameT, FuncIdT, )
+                           Type, FuncSig, Info, Loc, LabelNameT, FuncIdT, NodeIdT, )
 import span.ir.instr as instr
 from span.ir.instr import InstrIT, LabelI, GotoI, CondI, NopI, ReturnI
 from span.ir.conv import \
   (FalseEdge, TrueEdge, UnCondEdge, GLOBAL_INITS_FUNC_NAME,
-   START_END_BBIDS, START_BB_ID, END_BB_ID, extractFuncName)
-from span.ir.types import BasicBlockIdT, InstrIndexT, NodeSiteT
+   START_END_BBIDS, START_BB_ID, END_BB_ID, extractFuncName, genGlobalNodeId, )
+from span.ir.types import BasicBlockIdT, InstrIndexT, GlobalNodeIdT
 import span.ir.expr as expr
 import span.ir.cfg as cfg
 
@@ -63,7 +63,7 @@ class Func(ConstructT):
     self.info = info
     self.cfg: Opt[cfg.Cfg] = None  # initialized in TUnit class
     self.tUnit = None  # initialized to TranslationUnit object in span.ir.tunit
-    self.id: NodeSiteT = id # it is assigned a unique id
+    self.id: FuncIdT = id # it is assigned a unique id
 
     if self.instrSeq:
       self.basicBlocks, self.bbEdges = self.genBasicBlocks(self.instrSeq)
@@ -149,6 +149,13 @@ class Func(ConstructT):
     if self.isLocalName(varName):
       return varName in self.paramNames
     return False
+
+
+  def genGlobalNodeId(self,
+      nid: NodeIdT,
+  ) -> GlobalNodeIdT:
+    """Returns the globally unique id of a node in the Translation Unit."""
+    return genGlobalNodeId(self.id, nid)
 
 
   @staticmethod

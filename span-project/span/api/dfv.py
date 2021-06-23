@@ -686,7 +686,7 @@ class AnResult:
     return len(self.result)
 
 
-  def get(self, nid: types.NodeIdT, default=None):
+  def get(self, nid: types.NodeIdT, default=None) -> Opt[DfvPairL]:
     return self.result.get(nid, default)
 
 
@@ -700,10 +700,6 @@ class AnResult:
 
   def items(self):
     return self.result.items()
-
-
-  def get(self, nid: types.NodeIdT, default=None):
-    return self.result.get(nid, default)
 
 
   def __getitem__(self, nid: types.NodeIdT):

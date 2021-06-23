@@ -1,0 +1,29 @@
+
+Mon Jun 21 10:20:03 IST 2021
+----------------------------------------------------------------
+Method: MethodDetail(plain, [0], ['IntervalA'])
+  Total      : 507
+  InRange    : 213
+  OutOfRange : 20
+  Unknown    : 274
+Method: MethodDetail(span, [0], ['IntervalA', 'PointsToA'])
+  Total      : 507
+  InRange    : 218
+  OutOfRange : 29
+  Unknown    : 260
+TimeElapsed(TotalTimeTaken): 319718.6875343323 ms (Starts: 1, Stops: 1)
+----------------------------------------------------------------
+
+----------------------------------------------------------------
+AnalysisType: AvgDerefR
+Method: MethodDetail(plain, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 3888
+  TotalPointees      : 224986
+  AvgDerefs          : 57.866769547325106
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 3888
+  TotalPointees      : 191594
+  AvgDerefs          : 49.27829218106996
+TimeElapsed(TotalTimeTaken): 93394.0818309784 ms (Starts: 1, Stops: 1)
+----------------------------------------------------------------

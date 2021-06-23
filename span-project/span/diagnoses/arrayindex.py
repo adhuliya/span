@@ -3,18 +3,17 @@
 # MIT License
 # Copyright (c) 2021 Anshuman Dhuliya
 
-"""The number of array index out of bounds detected."""
+"""The number of array index out-of-bounds or in-bounds detected."""
 
 import logging
+LOG = logging.getLogger(__name__)
+LDB = LOG.debug
 
 from span.api import dfv
 from span.ir import instr
 from span.ir.expr import ExprET, ArrayE
 from span.ir.tunit import TranslationUnit
-from span.sys.ipa import IpaHost
-
-LOG = logging.getLogger(__name__)
-LDB = LOG.debug
+from span.sys.ipa import IpaHost, ipaAnalyzeCascade
 
 from typing import (
   Optional as Opt, Dict, List, Type, Any, cast,
@@ -28,7 +27,7 @@ from span.ir.constructs import Func
 from span.ir.types import (
   NodeIdT, AnNameT, FuncNameT, Type as SpanType, ConstSizeArray, Ptr,
 )
-from span.sys.common import AnResult
+from span.api.dfv import AnResult # replacing span.sys.common.AnResult
 
 from span.api.diagnosis import (
   DiagnosisRT, ClangReport,
@@ -38,7 +37,7 @@ from span.api.diagnosis import (
 
 
 class ArrayIndexOutOfBoundsR(DiagnosisRT):
-  """Finds array indexes that may go out of bounds."""
+  """The number of array index out-of-bounds or in-bounds detected."""
 
   MethodSequence: List[MethodDetail] = [
     MethodDetail(
@@ -79,10 +78,10 @@ class ArrayIndexOutOfBoundsR(DiagnosisRT):
     res = None
     if method.name == PlainMethod:
       res = self.computeDfvsUsingPlainMethod(method, config, anClassMap)
-    # elif method == CascadingMethod:
-    #   res = self.computeDfvsUsingCascadingMethod(method, config, anClassMap)
-    # elif method == LernerMethod:
-    #   res = self.computeDfvsUsingLernerMethod(method, config, anClassMap)
+    elif method == CascadingMethod:
+      res = self.computeDfvsUsingCascadingMethod(method, config, anClassMap)
+    elif method == LernerMethod:
+      res = self.computeDfvsUsingLernerMethod(method, config, anClassMap)
     elif method.name == SpanMethod:
       res = self.computeDfvsUsingSpanMethod(method, config, anClassMap)
 
@@ -99,6 +98,7 @@ class ArrayIndexOutOfBoundsR(DiagnosisRT):
     if method.name == PlainMethod:
       return self.computeResultsUsingPlainMethod(method, config, dfvs, anClassMap)
 
+    # Logic for all the methods is here (except the PlainMethod)
     anName1, anName2  = "IntervalA", "PointsToA"
     anClass1, anClass2 = anClassMap[anName1], anClassMap[anName2]
 
@@ -113,26 +113,28 @@ class ArrayIndexOutOfBoundsR(DiagnosisRT):
       anObj2 = cast(ValueAnalysisAT, anClass2(func))
 
       for nid, insn in func.yieldNodeIdInstrTupleSeq():
-        arrayE = instr.extractArrayE(insn)
+        arrayE = instr.getArrayE(insn)
 
         if not arrayE: continue   # goto next instruction in sequence
         total += 1
 
-        arrType, arrIndex = arrayE.of.type, arrayE.index
+        indexDfv, arrType, arrIndex = None, arrayE.of.type, arrayE.index
 
         size = self.getArraySize(arrayE, nid, anResMap[anName2], anObj2)
-        if not size:
-          unknownTotal += 1
-          continue                # goto next instruction in sequence
-
         indexDfv = self.getExprDfv(arrIndex, nid, anResMap[anName1], anObj1)
 
-        if (not indexDfv.bot) and indexDfv.inIndexRange(size):
-          inRangeTotal += 1
-        elif (not indexDfv.top) and (not indexDfv.inIndexRange(size)):
-          outOfRangeTotal += 1
-        else:
+        if not size or indexDfv.bot:
           unknownTotal += 1
+          self.printDebugInfo(nid, arrayE, size, indexDfv, func.name, "Unknown")
+        elif indexDfv.top:
+          inRangeTotal += 1 # top because of unreachable code, thus any range okay
+        else:
+          if indexDfv.inIndexRange(size):
+            inRangeTotal += 1
+            self.printDebugInfo(nid, arrayE, size, indexDfv, func.name, "InRange")
+          else:
+            outOfRangeTotal += 1
+            self.printDebugInfo(nid, arrayE, size, indexDfv, func.name, "OutOfRange")
 
     return total, inRangeTotal, outOfRangeTotal, unknownTotal
 
@@ -144,6 +146,7 @@ class ArrayIndexOutOfBoundsR(DiagnosisRT):
       dfvs: Dict[FuncNameT, Dict[AnNameT, AnResult]],
       anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
   ) -> None:
+    print(f"AnalysisType: {self.__class__.__name__}")
     print(f"Method: {method}")
     print(f"  Total      : {result[0]}")
     print(f"  InRange    : {result[1]}")
@@ -174,28 +177,31 @@ class ArrayIndexOutOfBoundsR(DiagnosisRT):
       anObj1 = cast(ValueAnalysisAT, anClass1(func))
 
       for nid, insn in func.yieldNodeIdInstrTupleSeq():
-        arrayE = instr.extractArrayE(insn)
+        arrayE = instr.getArrayE(insn)
 
         if not arrayE: continue   # goto next instruction in sequence
         total += 1
 
-        arrType, arrIndex = arrayE.of.type, arrayE.index
+        indexDfv, arrType, arrIndex = None, arrayE.of.type, arrayE.index
 
         size = self.getArraySize(arrayE, nid)
-        if not size:
-          unknownTotal += 1
-          continue                # goto next instruction in sequence
-
         indexDfv = self.getExprDfv(arrIndex, nid, anResMap[anName1], anObj1)
 
-        if (not indexDfv.bot) and indexDfv.inIndexRange(size):
-          inRangeTotal += 1
-        elif (not indexDfv.top) and (not indexDfv.inIndexRange(size)):
-          outOfRangeTotal += 1
-        else:
+        if not size or indexDfv.bot:
           unknownTotal += 1
+          self.printDebugInfo(nid, arrayE, size, indexDfv, func.name, "Unknown")
+        elif indexDfv.top:
+          inRangeTotal += 1 # top because of unreachable code, thus any range okay
+        else:
+          if indexDfv.inIndexRange(size):
+            inRangeTotal += 1
+            self.printDebugInfo(nid, arrayE, size, indexDfv, func.name, "InRange")
+          else:
+            outOfRangeTotal += 1
+            self.printDebugInfo(nid, arrayE, size, indexDfv, func.name, "OutOfRange")
 
     return total, inRangeTotal, outOfRangeTotal, unknownTotal
+
 
   def getArraySize(self,
       arrayE: ArrayE,
@@ -268,6 +274,51 @@ class ArrayIndexOutOfBoundsR(DiagnosisRT):
       otherAnalyses=method.anNames[1:],
       maxNumOfAnalyses=len(method.anNames),
     )
-    ipaHost.analyze()
+    res = ipaHost.analyze()
 
-    return ipaHost.vci.finalResult
+    return res
+
+
+  def computeDfvsUsingLernerMethod(self,
+      method: MethodDetail,
+      config: int,
+      anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
+  ) -> Dict[FuncNameT, Dict[AnNameT, AnResult]]:
+    assert len(anClassMap) == 2, f"{anClassMap}, {config}"
+
+    mainAnalysis = method.anNames[0]
+    ipaHost = IpaHost(
+      self.tUnit,
+      mainAnName=mainAnalysis,
+      otherAnalyses=method.anNames[1:],
+      maxNumOfAnalyses=len(method.anNames),
+      useTransformation=True, # this induces lerner's method
+    )
+    res = ipaHost.analyze()
+
+    return res
+
+
+  def computeDfvsUsingCascadingMethod(self,
+      method: MethodDetail,
+      config: int,
+      anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
+  ) -> Dict[FuncNameT, Dict[AnNameT, AnResult]]:
+    assert len(anClassMap) == 2, f"{anClassMap}, {config}"
+
+    res = ipaAnalyzeCascade(self.tUnit, method.anNames)
+    return res
+
+
+  def printDebugInfo(self,
+      nid: NodeIdT,
+      arrayE: ArrayE,
+      size: int,
+      indexDfv: Opt[dfv.ComponentL],
+      funcName: FuncNameT,
+      msg: str,
+  ) -> None:
+    print(f"  {msg}({nid}): {indexDfv},"
+          f" {arrayE} (size:{size}, {arrayE.info}), {funcName}.")
+
+

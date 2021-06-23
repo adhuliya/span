@@ -22,7 +22,7 @@ from span.util.util import LS, AS, GD
 import span.util.ff as ff
 
 from span.ir.types import NodeIdT, VarNameT, FuncNameT, DirectionT
-from span.ir.conv import FalseEdge, TrueEdge, genFuncNodeId, NULL_OBJ_SINGLETON_SET
+from span.ir.conv import FalseEdge, TrueEdge, genGlobalNodeId, NULL_OBJ_SINGLETON_SET
 from span.ir.conv import Forward, Backward, ForwBack, NULL_OBJ_NAME
 
 from span.ir.instr import (
@@ -54,7 +54,8 @@ import span.sys.clients as clients
 import span.sys.ddm as ddm
 from span.sys.stats import HostStats, GST, GlobalStats
 from span.sys.sim import SimRecord
-from span.sys.common import CallSitePair, DfvDict
+from span.sys.common import CallSitePair, AnDfvPairDict
+from span.api.dfv import AnResult # replacing span.sys.common.AnResult
 import span.ir.cfg as cfg
 import span.ir.tunit as irTUnit
 import span.ir.constructs as constructs
@@ -333,13 +334,13 @@ class Host:
       supportAnalyses: Opt[List[AnNameT]] = None, # analyses that are optional
       avoidAnalyses: Opt[List[AnNameT]] = None, # these are always avoided
       maxNumOfAnalyses: int = ff.MAX_ANALYSES, # max (participating) analyses at a time
-      anDfvs: Opt[Dict[AnNameT, DirectionDT]] = None, # pre-computed dfvs of some analyses
+      inputAnResults: Opt[Dict[AnNameT, AnResult]] = None, # pre-computed results of some analyses
       useTransformation: bool = False, # transform mode (for Cascading/Lerners)
-      biDfv: Opt[DfvDict] = None,  # custom boundary info
+      biDfv: Opt[AnDfvPairDict] = None,  # custom boundary info
       ipaEnabled: bool = False,
       useDdm: bool = False,  # use demand driven approach
       disableSim: bool = False, # by default sims are enabled
-      simFpCalls: bool = True, # sim func pointer calls
+      simFpCalls: bool = True, # reduce func pointer calls
   ) -> None:
     timer = util.Timer("HostSetup")
 
@@ -371,7 +372,7 @@ class Host:
              Set[ddm.AtomicDemand]] = dict()
 
     #IPA inter-procedural analysis?
-    self.biDfv: Opt[DfvDict] = biDfv  #IPA
+    self.biDfv: Opt[AnDfvPairDict] = biDfv  #IPA
     self.ipaEnabled: bool = ipaEnabled #IPA
     if self.ipaEnabled: assert biDfv, f"{biDfv}"  #IPA
 
@@ -392,7 +393,7 @@ class Host:
     if otherAnalyses:    tmpList.extend(otherAnalyses)
     if supportAnalyses:  tmpList.extend(supportAnalyses)
     if avoidAnalyses:    tmpList.extend(avoidAnalyses)
-    if anDfvs:           tmpList.extend(anDfvs.keys())
+    if inputAnResults:   tmpList.extend(inputAnResults.keys())
 
     assert tmpList
     for anName in tmpList:
@@ -443,11 +444,11 @@ class Host:
     # If anDfvs contains the analysis also given as one of the
     # analyses to participate. The results of the 'participating'
     # version is given preference.
-    self.anDfvs: Opt[Dict[AnNameT, DirectionDT]] = anDfvs
-    self.anDfvsAnObj: Opt[Dict[AnNameT, AnalysisAT]] = {}
-    if self.anDfvs:
-      for anName in self.anDfvs:
-        self.anDfvsAnObj[anName] = clients.analyses[anName](self.func)
+    self.inputAnResults: Opt[Dict[AnNameT, AnResult]] = inputAnResults
+    self.inputAnObjs: Opt[Dict[AnNameT, AnalysisAT]] = {}
+    if self.inputAnResults:
+      for anName in self.inputAnResults:
+        self.inputAnObjs[anName] = clients.analyses[anName](self.func)
 
     # map of (nid, simName, expr) --to-> set of analyses affected
     self.nodeInstrSimDep:\
@@ -512,9 +513,9 @@ class Host:
     if util.LL4: LDB(f"AddingParticipantAnalyses(HostSetup) END.")
 
     # Host writes to this map, IpaHost reads from this map
-    self.callSiteDfvMap: Dict[CallSitePair, DfvDict] = dict()
+    self.callSiteDfvMap: Dict[CallSitePair, AnDfvPairDict] = dict()
     # IpaHost writes to this map, Host reads from this map
-    self.callSiteDfvMapIpaHost: Dict[CallSitePair, DfvDict] = dict()
+    self.callSiteDfvMapIpaHost: Dict[CallSitePair, AnDfvPairDict] = dict()
 
     # add nodes that have one or more feasible pred edge
     if util.LL4: LDB(f"AddingFeasibleNodes(HostSetup) START.")
@@ -1109,7 +1110,7 @@ class Host:
       raise ValueError(f"{self.activeAnDirn}")
 
     if util.LL4:
-      callSitePair = CallSitePair(funcName, genFuncNodeId(self.func.id, node.id))
+      callSitePair = CallSitePair(funcName, genGlobalNodeId(self.func.id, node.id))
       LDB("CalleeCallSiteDfv(AfterParams): (%s): %s", callSitePair, nextNodeDfv)
 
     return nextNodeDfv
@@ -1829,7 +1830,7 @@ class Host:
     okToAdd = False  # by default don't add
     if self.canAddToParticipate(anName):
       okToAdd = True
-    elif self.anDfvs and anName in self.anDfvs:
+    elif self.inputAnResults and anName in self.inputAnResults:
       okToAdd = True
     if util.LL4: LDB("  CanAddAnalysis ToSimplify   (%s): %s", anName, okToAdd)
     return okToAdd
@@ -1916,8 +1917,8 @@ class Host:
       anObj = self.anParticipating[simAnName]
       nDfv = self.anWorkDict[simAnName].getDfv(nid)
     else:
-      anObj = self.anDfvsAnObj[simAnName]
-      nDfv = self.anDfvs[simAnName].getDfv(nid)
+      anObj = self.inputAnObjs[simAnName]
+      nDfv = self.inputAnResults[simAnName].get(nid)
 
     assert hasattr(anObj, simName), f"{simAnName}, {simName}"
     simFunction = getattr(anObj, simName)
@@ -2184,7 +2185,7 @@ class Host:
 
 
   def setBoundaryResult(self,
-      boundaryInfo: DfvDict,
+      boundaryInfo: AnDfvPairDict,
   ) -> bool:
     """
     Update the results at the boundary.
@@ -2213,13 +2214,13 @@ class Host:
     return restart
 
 
-  def getBoundaryResult(self) -> DfvDict:
+  def getBoundaryResult(self) -> AnDfvPairDict:
     """
     Returns the boundary result for all the analyses that participated.
     It returns the IN of start node, and OUT of end node for each analysis.
     User should extract the relevant value as per analysis' directionality.
     """
-    results = DfvDict()
+    results = AnDfvPairDict()
     assert self.funcCfg.start and self.funcCfg.end, f"{self.funcCfg}"
 
     startId = self.funcCfg.start.id
@@ -2242,9 +2243,9 @@ class Host:
     Update the results for the call site.
     This method is only called by the Host.
     """
-    callSitePair = CallSitePair(calleeName, genFuncNodeId(self.func.id, nodeId))
+    callSitePair = CallSitePair(calleeName, genGlobalNodeId(self.func.id, nodeId))
     if callSitePair not in self.callSiteDfvMap:
-      dfvDict = self.callSiteDfvMap[callSitePair] = DfvDict()
+      dfvDict = self.callSiteDfvMap[callSitePair] = AnDfvPairDict()
     else:
       dfvDict = self.callSiteDfvMap[callSitePair]
 
@@ -2267,7 +2268,7 @@ class Host:
     This method is only called by the Host.
     """
     if not calleeName: return None # can happen in case of #INTRA analysis
-    callSitePair = CallSitePair(calleeName, genFuncNodeId(self.func.id, nodeId))
+    callSitePair = CallSitePair(calleeName, genGlobalNodeId(self.func.id, nodeId))
     if callSitePair not in self.callSiteDfvMapIpaHost:
       return None
     else:
@@ -2276,7 +2277,7 @@ class Host:
 
   def setCallSiteDfvsIpaHost(self, #IPA
       callSitePair: CallSitePair,
-      newResults: DfvDict,
+      newResults: AnDfvPairDict,
   ) -> bool:
     """
     Update the results for the call site.
@@ -2286,7 +2287,7 @@ class Host:
     restart, node = False, self.funcCfg.nodeMap[callSitePair.getNodeId()]
 
     if callSitePair not in self.callSiteDfvMapIpaHost:
-      oldResults = self.callSiteDfvMapIpaHost[callSitePair] = DfvDict()
+      oldResults = self.callSiteDfvMapIpaHost[callSitePair] = AnDfvPairDict()
       restart = True
     else:
       oldResults = self.callSiteDfvMapIpaHost[callSitePair]
@@ -2308,7 +2309,7 @@ class Host:
 
 
   def getCallSiteDfvsIpaHost(self,
-  ) -> Dict[CallSitePair, DfvDict]:
+  ) -> Dict[CallSitePair, AnDfvPairDict]:
     """
     Returns the NodeDfvL objects for each analysis at the call site nodes.
     """
@@ -2319,7 +2320,16 @@ class Host:
 
 
   def getParticipatingAnalyses(self) -> Set[AnNameT]:
+    """Returns all participating analyses only."""
     return set(self.anParticipating.keys())
+
+
+  def getAllAnalysesUsed(self) -> Set[AnNameT]:
+    """Returns all participating analyses as well as input analyses."""
+    anNames = self.getParticipatingAnalyses()
+    if self.inputAnResults:
+      anNames |= set(self.inputAnResults.keys())
+    return anNames
 
 
   def getAnIterationDotString(self) -> str:
@@ -2331,18 +2341,20 @@ class Host:
 
   def getAnalysisResults(self,
       anName: AnNameT,
-  ) -> DirectionDT:
+  ) -> AnResult:
     """Returns the analysis results of the given analysis.
 
-    Returns None if no information present.
+    Returns input results for an input analysis which is not a participant.
     """
     if anName in self.anWorkDict:
-      return self.anWorkDict[anName]
+      return self.anWorkDict[anName].anResult
+    elif anName in self.inputAnResults:
+      return self.inputAnResults[anName].result
     raise ValueError("f{anName}")
 
 
   def getResults(self):
-    return self.anWorkDict
+    return {anName: res.anResult for anName, res in self.anWorkDict.items()}
 
 
   def generateDot(self):

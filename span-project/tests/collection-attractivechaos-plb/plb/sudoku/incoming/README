@@ -1,0 +1,49 @@
+Programs
+--------
+
+bb_sudoku.c     http://www.setbb.com/phpbb/viewtopic.php?p=11786   Modified BB Sudoku solver
+                http://www.setbb.com/phpbb/viewtopic.php?t=1824    Brian's famous BB Sudoku v1.0
+fast_solv_9r2.c http://www.setbb.com/sudoku/viewtopic.php?t=1586   Ignacio Zelaya's fast_solv (DLX)
+fsss.cc         http://sites.google.com/site/dobrichev/fsss/       Mladen Dobrichev's solver (8.6)
+JSolve*         http://www.enjoysudoku.com/JSolve12.zip            Jason T. Linhart's solver (12)
+kudoku.c        ../sudoku_v1.c                                     Attractive Chaos' solver
+kudoku.js       https://attractivechaos.github.io/plb/kudoku.html  AC's solver ported to javascript
+sudocoo.c       http://www2.research.att.com/~gsf/                 Glenn Fowler's sudocoo
+sudoku-gh.js    http://hewgill.com/sudoku/                         Greg Hewgill's solver
+sudoku-pd.rb    https://gist.github.com/1013790                    Preetam D'Souza's Ruby solver
+sudoku-pn.py    http://norvig.com/sudoku.py                        Peter Norvig's solver (Python)
+sudoku_solver.c http://www.techfinesse.com/game/sudoku_solver.php  Bill DuPree's solver
+sudokusolver.rb http://rubyforge.org/frs/?group_id=3447            Martin-Louis Bright's solver (Ruby-1.8)
+suexk.c         http://magictour.free.fr/sudoku.htm                Guenter Stertenbrink's suexk
+zerodoku_v2.c   http://www.setbb.com/sudoku/viewtopic.php?t=1663   Jim Schirle's zerodoku (v2)
+
+
+Data sets
+---------
+
+Hard 20         https://github.com/attractivechaos/plb/blob/master/sudoku/sudoku.txt
+Top 87          http://magictour.free.fr/topn87
+Top 1465        http://magictour.free.fr/top1465
+Top 50000       https://github.com/attractivechaos/plb/releases/download/v0/sudoku.top50k.gz
+17-clue         https://github.com/attractivechaos/plb/releases/download/v0/sudoku17.txt.gz
+Gen 500,000     http://www.enjoysudoku.com/gen_puzzles.zip (dead link)
+
+
+Results
+-------
+
+Machine:  Mac OS X 10.6 laptop, 2.53GHz
+Compiler: gcc-4.2.1 for OS X (-O3)
+
+===================================================
+ Program          top50000  sudoku17   CMD options
+---------------------------------------------------
+ fast_solv_9r2         4.0       3.5   -s2
+ fsss                  0.9       0.6   *
+ JSolve                0.8       0.6   N/A (multi)
+ kudoku                3.0       2.8   N/A (all)
+ sudocoo               2.0      96.1   -s2
+ sudoku_solver        10.1       5.4   (all)
+ suexk                10.4       9.3   s2
+ zerodoku_v2           2.2       2.4   -s2
+===================================================

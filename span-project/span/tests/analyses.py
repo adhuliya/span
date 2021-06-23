@@ -101,7 +101,7 @@ class SpanAnalysisTests(unittest.TestCase):
     for anName, funcResMap in anRes.items():
       for funcName, correctAnRes in funcResMap.items():
         resHost: host.Host = resultsDict[funcName]
-        computedAnRes = resHost.getAnalysisResults(anName).anResult.result
+        computedAnRes = resHost.getAnalysisResults(anName).result
         if self.compareAnResults(anName, computedAnRes, correctAnRes, cFileName):
           print(f"    {anName} on {funcName} is correct.")
 

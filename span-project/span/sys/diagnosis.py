@@ -85,12 +85,12 @@ def runDiagnosis(diName: DiagnosisNameT,
 
   results: Dict[AnNameT, Dict[NodeIdT, DfvPairL]] = {}
 
-  anResults = syn1.getAnalysisResults(anName).anResult.result
+  anResults = syn1.getAnalysisResults(anName).result
   assert anResults, f"{anName}"
   results[anName] = anResults
   if diObj.OptionalNeeds:
     for an in diObj.OptionalNeeds:
-      anResults = syn1.getAnalysisResults(an.__name__).anResult.result
+      anResults = syn1.getAnalysisResults(an.__name__).result
       assert anResults, f"{anName}"
       results[an.__name__] = anResults
 
@@ -141,10 +141,12 @@ def runDiagnosisNew(
     #STEP 2: Iterate over each config of the method.
     for config in mDetails.configSeq: # run each config of the method
       #STEP 3: COMPUTE.
+      diObj.init(mDetails, config, anClassMap)
       dfvs = diObj.computeDfvs(mDetails, config, anClassMap)
       if dfvs: # could be None
         res = diObj.computeResults(mDetails, config, dfvs, anClassMap)
         diObj.handleResults(mDetails, config, res, dfvs, anClassMap)
+      diObj.finish(mDetails, config, anClassMap)
 
 
 def loadAnalyses(

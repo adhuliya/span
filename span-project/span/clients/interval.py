@@ -7,6 +7,7 @@
 
 import logging
 LOG = logging.getLogger(__name__)
+LDB, LER = LOG.debug, LOG.error
 
 from typing import Tuple, Dict, Set, List, Optional as Opt, cast, Callable, Type
 
@@ -91,8 +92,8 @@ class ComponentL(dfv.ComponentL):
         return self.meet(other)
       else:
         wide = ComponentL(self.func, bot=True)
-        if LS and util.VV3: LOG.debug(" Widened: %s (w.r.t. %s) to %s ",
-                                      self, other, wide)
+        if LS and util.VV3: LDB(" Widened: %s (w.r.t. %s) to %s ",
+                                self, other, wide)
         return wide, Changed
     else:                 # no widening needed
       return self, not Changed
@@ -606,9 +607,9 @@ class IntervalA(analysis.ValueAnalysisAT):
 
     # STEP 4: If here, eval the expression
     exprVal = cast(ComponentL, self.getExprDfvBinaryE(e, dfvIn))
-    if util.LL5: LOG.debug(f"EXPR_VAL: {e} ({e.info}): {exprVal},"
-                           f"arg1: {self.getExprDfv(e.arg1, dfvIn)}, "
-                           f"arg2: {self.getExprDfv(e.arg2, dfvIn)}")
+    if util.LL5: LDB(f"EXPR_VAL: {e} ({e.info}): {exprVal},"
+                     f"arg1: {self.getExprDfv(e.arg1, dfvIn)}, "
+                     f"arg2: {self.getExprDfv(e.arg2, dfvIn)}")
     if exprVal.top: return SimPending  # can be evaluated, needs more info
     if exprVal.bot: return SimFailed  # cannot be evaluated
     simVals = exprVal.getValuesSet(e.type.isInteger()) # type: ignore
@@ -746,7 +747,9 @@ class IntervalA(analysis.ValueAnalysisAT):
       if rhsOpCode == op.UO_MINUS_OC:
         value = value.getNegatedRange()  # not NoneType... pylint: disable=E
       elif rhsOpCode == op.UO_BIT_NOT_OC:
-        assert isinstance(value.val, int), f"{value}"
+        if util.LL1 and (isinstance(value.val[0], float)
+                         or isinstance(value.val[1], float)):
+          LER(f"{value}, {type(value.val)}")
         value = value.bitNotRange()  # not NoneType... pylint: disable=E
       elif rhsOpCode == op.UO_LNOT_OC:
         value = value.logicalNotRange()
@@ -768,7 +771,11 @@ class IntervalA(analysis.ValueAnalysisAT):
     if val1.isConstant() and val2.isConstant():
       newExpr: expr.LitE = expr.evalExpr(
         expr.BinaryE(expr.LitE(val1.val[0]), opr, expr.LitE(val2.val[0])))
+      # try: #delit
       return ComponentL(self.func, val=(newExpr.val, newExpr.val))
+      # except Exception as ex: #delit
+      #   print(f"SPAN: BinaryE: {e}, {opr}") #delit
+      #   raise ex #delit
     if val1.top or val2.top:
       return self.componentTop
     elif rhsOpCode == op.BO_MOD_OC:

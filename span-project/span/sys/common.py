@@ -14,8 +14,8 @@ from typing import Dict, Tuple, Set, List, cast, Optional as Opt
 
 from span.ir.constructs import Func
 import span.sys.clients as clients
-from span.ir.conv import Forward, Backward, getFuncNodeIdStr, getNodeId, getFuncId
-from span.ir.types import FuncNameT, NodeSiteT, NodeIdT, FuncIdT
+from span.ir.conv import Forward, Backward, getGlobalNodeIdStr, getNodeId, getFuncId
+from span.ir.types import FuncNameT, GlobalNodeIdT, NodeIdT, FuncIdT
 from span.api.analysis import AnalysisNameT as AnNameT
 from span.api.dfv import DfvPairL
 
@@ -33,7 +33,7 @@ class CallSitePair:
 
   def __init__(self,
       funcName: FuncNameT, # callee name called from the call site
-      callSite: NodeSiteT,
+      callSite: GlobalNodeIdT,
   ) -> None:
     self.funcName = funcName
     self.callSite = callSite
@@ -47,7 +47,7 @@ class CallSitePair:
     return getNodeId(self.callSite)
 
 
-  def tuple(self) -> Tuple[FuncNameT, NodeSiteT]:
+  def tuple(self) -> Tuple[FuncNameT, GlobalNodeIdT]:
     return self.funcName, self.callSite
 
 
@@ -79,14 +79,15 @@ class CallSitePair:
 
 
   def __str__(self):
-    return f"Site({self.funcName}, {getFuncNodeIdStr(self.callSite)})"
+    return f"Site({self.funcName}, {getGlobalNodeIdStr(self.callSite)})"
 
 
   def __repr__(self): return self.__str__()
 
 
-class DfvDict:
-  """A dictionary to store the: Dict[AnNameT, NodeDfvL] info.
+class AnDfvPairDict:
+  """A dictionary to store the: Dict[AnNameT, DfvPairL] info.
+
   Along with many convenience functions to operate on the dict.
   """
 
@@ -100,7 +101,7 @@ class DfvDict:
     self.depth = depth
 
 
-  def setIncDepth(self, other: 'DfvDict'):
+  def setIncDepth(self, other: 'AnDfvPairDict'):
     """Set depth one more that the other's depth (prev value's depth)."""
     self.depth = other.depth + 1
 
@@ -119,11 +120,11 @@ class DfvDict:
 
 
   def getCopy(self):
-    return DfvDict({k: v.getCopy() for k, v in self.dfvs.items()}, self.depth)
+    return AnDfvPairDict({k: v.getCopy() for k, v in self.dfvs.items()}, self.depth)
 
 
   def getCopyShallow(self):
-    return DfvDict(self.dfvs.copy(), self.depth)
+    return AnDfvPairDict(self.dfvs.copy(), self.depth)
 
 
   def __contains__(self, anName: AnNameT):
@@ -145,7 +146,7 @@ class DfvDict:
   def __eq__(self, other):
     if self is other: return True
     equal = True
-    if not isinstance(other, DfvDict):
+    if not isinstance(other, AnDfvPairDict):
       equal = False
     elif not self.depth == other.depth:
       equal = False
@@ -200,7 +201,10 @@ class DfvDict:
 
 class AnResult:
   """This class stores the result of an analysis corresponding
-  to each node (single instruction) in the CFG."""
+  to each node (single instruction) in the CFG.
+
+  TODO: Delete this class. Use `span.api.dfv.AnResult` instead.
+  """
 
 
   def __init__(self,

@@ -1566,6 +1566,24 @@ def getDerefExpr(e: ExprET) -> Opt[ExprET]:
   return None
 
 
+def getDereferencedVar(e: ExprET) -> VarE:
+  """Returns the variable de-referenced in the given expression."""
+  assert e.hasDereference(), f"{e}"
+
+  varE = None
+  if isinstance(e, DerefE):
+    varE = e.arg
+  elif isinstance(e, ArrayE):
+    varE = e.of
+  elif isinstance(e, MemberE):
+    varE = e.of
+  elif isinstance(e, CallE):
+    varE = e.callee
+
+  assert varE and isinstance(varE, VarE), f"{e}, {varE}"
+  return varE
+
+
 def getVarExprs(e: ExprET) -> List[VarE]:
   """Returns the list of VarE in the given expression."""
   if isinstance(e, LitE):
@@ -1665,6 +1683,15 @@ def evalExpr(e: ExprET) -> LitE:
         newExpr = LitE(int(arg1.val >= arg2.val), info=arg1.info)  # type: ignore
       elif opCode == op.BO_GT_OC:
         newExpr = LitE(int(arg1.val > arg2.val), info=arg1.info)  # type: ignore
+
+      elif opCode == op.BO_BIT_OR_OC:
+        newExpr = LitE(int(arg1.val | arg2.val), info=arg1.info)  # type: ignore
+      elif opCode == op.BO_BIT_AND_OC:
+        newExpr = LitE(int(arg1.val & arg2.val), info=arg1.info)  # type: ignore
+      elif opCode == op.BO_RSHIFT_OC:
+        newExpr = LitE(int(arg1.val >> arg2.val), info=arg1.info)  # type: ignore
+      elif opCode == op.BO_LSHIFT_OC:
+        newExpr = LitE(int(arg1.val << arg2.val), info=arg1.info)  # type: ignore
 
   elif isinstance(e, UnaryE):
     arg, opCode = e.arg, e.opr.opCode

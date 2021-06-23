@@ -1,19 +1,20 @@
 int main(int argc, char **argv) {
-  int a, *u, tmp, b;
-  a = 11;
-  b = 13;
-  u = &a;
-
-  while(argc > 0) {
-    tmp = *u;
-    b = tmp % 2;
-    if(b) {
-      b = 15;
-    } else {
-      b = 16; // unreachable
-    }
-    u = &b;
-    argc -= 1;
+  if (argc > 1) goto caseone;
+  switch(argc) {
+    case 6:
+      argc = 6;
+    default:
+      argc = 30;
+caseone:
+    case 1:
+      argc = 1;
+    case 2:
+      return 2;
+    case 3:
+      argc = 3;
+      break;
+    case 4:
+      argc = 4;
   }
-  return b; // b is 15 here
+  return 10;
 }

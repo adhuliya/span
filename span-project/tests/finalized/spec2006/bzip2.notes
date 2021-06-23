@@ -1,0 +1,95 @@
+Query Results on translation unit 'bzip2_comb.c'
+Records: 8
+
+Functions: 118
+Functions(WithDef): 101
+Functions(WithoutDef): 17
+Functions(Variadic): 0
+Functions(PtrReturnType): 8
+Functions(RecordReturnType): 0
+Functions(VoidReturnType): 49
+Functions(VoidPtrReturnType): 6
+
+FuncCalls(All): 422
+FuncCalls(Non-Ptr): 402
+FuncCalls(Ptr): 20
+
+Nodes(total): 14897
+Nodes(maxInAFunc): 3812
+
+DerefsUsed(all): 4717
+DerefsUsed(Lhs): 1091
+DerefsUsed(Rhs): 3626
+DerefsUsed(Num:Lhs): 171
+DerefsUsed(Num:Rhs): 586
+DerefsUsed(Num:RhsNonChar): 396
+DerefsUsed(Num:All): 757
+DerefsUsed(all): 4717
+
+DivisionOps: 19
+ArrayExpr: 1902
+
+TotalModOperations: 6
+TotalModByTwoOperations: 1
+TotalFuncWithModByTwoOperations: 1
+
+TotalMemAllocations: 5
+TotalMemAllocationsPseudoVar: 5
+TotalMemAllocationsWithoutPseudoVar: 0
+TotalFuncWithMemAllocations: ['f:BZ2_bzReadOpen', 'f:BZ2_bzWriteOpen', 'f:default_bzalloc', 'f:main', 'f:spec_init']
+
+TotalIfCondWithConstComparison: 610
+TotalIfCondWithComparison: 1009
+TotalIfCond: 1210
+
+TotalRelationalExprs: 1076
+
+START: Strongly_Connected_Components:
+END  : Strongly_Connected_Components.
+
+TimeElapsed(TotalTimeTaken): 1195.702314376831 ms (Starts: 1, Stops: 1)
+
+
+
+Mon Jun 21 10:04:06 IST 2021
+----------------------------------------------------------------
+
+Method: MethodDetail(plain, [0], ['IntervalA'])
+  Total      : 1064
+  InRange    : 121
+  OutOfRange : 201
+  Unknown    : 742
+NullDerefEncountered (bad user program)(f:BZ2_bzWriteOpen,15), bzf, Info(Loc(6150,5),0)
+NullDerefEncountered (bad user program)(f:BZ2_bzWriteOpen,45), bzf, Info(Loc(6193,7),0)
+NullDerefEncountered (bad user program)(f:BZ2_bzReadOpen,15), bzf, Info(Loc(6635,5),0)
+NullDerefEncountered (bad user program)(f:BZ2_bzReadOpen,57), bzf, Info(Loc(6694,9),0)
+NullDerefEncountered (bad user program)(f:BZ2_bzWriteOpen,15), bzf, Info(Loc(6150,5),0)
+NullDerefEncountered (bad user program)(f:BZ2_bzWriteOpen,45), bzf, Info(Loc(6193,7),0)
+NullDerefEncountered (bad user program)(f:BZ2_bzReadOpen,15), bzf, Info(Loc(6635,5),0)
+NullDerefEncountered (bad user program)(f:BZ2_bzReadOpen,57), bzf, Info(Loc(6694,9),0)
+NullDerefEncountered (bad user program)(f:BZ2_bzWriteOpen,15), bzf, Info(Loc(6150,5),0)
+NullDerefEncountered (bad user program)(f:BZ2_bzWriteOpen,45), bzf, Info(Loc(6193,7),0)
+Method: MethodDetail(span, [0], ['IntervalA', 'PointsToA'])
+  Total      : 201
+  InRange    : 49
+  OutOfRange : 20
+  Unknown    : 132
+TimeElapsed(TotalTimeTaken): 744593.3041572571 ms (Starts: 1, Stops: 1)
+
+----------------------------------------------------------------
+
+
+
+----------------------------------------------------------------
+AnalysisType: AvgDerefR
+Method: MethodDetail(plain, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 4654
+  TotalPointees      : 97045
+  AvgDerefs          : 20.85195530726257
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 4654
+  TotalPointees      : 8378
+  AvgDerefs          : 1.8001718951439623
+TimeElapsed(TotalTimeTaken): 106002.24995613098 ms (Starts: 1, Stops: 1)
+----------------------------------------------------------------

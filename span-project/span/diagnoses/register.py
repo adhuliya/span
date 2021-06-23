@@ -18,6 +18,7 @@
 # from span.diagnoses.nullderef import NullDerefR
 # from span.diagnoses.constants import ConstantsCountR
 from span.diagnoses.arrayindex import ArrayIndexOutOfBoundsR
+from span.diagnoses.avgderef import AvgDerefR
 
 ################################################
 # BOUND END  : import_the_diagnosis_class_here

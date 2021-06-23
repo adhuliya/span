@@ -1120,7 +1120,7 @@ def getCallExpr(insn: InstrIT) -> Opt[expr.CallE]:
   return None
 
 
-def extractArrayE(insn: InstrIT) -> Opt[expr.ArrayE]:
+def getArrayE(insn: InstrIT) -> Opt[expr.ArrayE]:
   """Extract ArrayE if present in the given instruction."""
   if isinstance(insn, AssignI):
     lhs, rhs = insn.lhs, insn.rhs
@@ -1141,9 +1141,18 @@ def getCalleeFuncName(insn: InstrIT) -> Opt[types.FuncNameT]:
 
 
 def getDerefExpr(insn: InstrIT) -> Opt[expr.ExprET]:
+  """Returns the expr containing dereference in the instruction (if any)."""
   if not isinstance(insn, AssignI):
     return None  # DerefE can occur only in AssignI instructions
   return expr.getDerefExpr(insn.lhs) or expr.getDerefExpr(insn.rhs)
+
+
+def getDereferencedVar(insn: InstrIT) -> Opt[expr.VarE]:
+  """Returns the variable dereferenced in the instruction (if any)."""
+  de = getDerefExpr(insn)
+  if de is not None:
+    return expr.getDereferencedVar(de)
+  return None
 
 
 @functools.lru_cache(512)

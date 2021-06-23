@@ -1,17 +1,13 @@
 SPAN TEST CASES
 ====================
 
-Note
---------------
-Run `./clean` to clean temporary files created during testing.
-
 Test Cases
 --------------
-This folder contains test cases:
+This folder contains test cases used for automated SPAN test.
 
 `spanTestXXX.c` is a test C program and its corresponding `spanTestXXX.c.results.py`
 contains a list of specially defined python objects that
-describe the correct result on a particular action (like 'analyze' or 'c2spanir')
+describe the correct result on a particular action (like 'analyze')
 SPAN should have when run on `spanTestXXX.c`.
 
 1. `spanTest001.c` to `spanTest0049.c`
@@ -51,4 +47,6 @@ NOTES
 `clang -O3 spanTest010.c` produces a wrong binary. It converts a terminating
 loop into an infinite loop. See `spanTest010.s` generated from 
 `clang -O3 -S spanTest010.c`.
+
+Run `./clean` to clean temporary files created during testing.
 

@@ -158,7 +158,7 @@ def c2spanirArgParse(args: argparse.Namespace) -> int:
 
 def c2spanir(cFileName: str = None) -> int:
   """
-  Converts the C file to SPAN IR
+  Converts the C file to SPAN IR.
   e.g. takes hello.c and produces hello.c.spanir
   """
   if not cFileName:
@@ -166,18 +166,42 @@ def c2spanir(cFileName: str = None) -> int:
 
   util.exitIfProgramDoesnotExist("clang")
 
-  cmd = f"clang --analyze -Xanalyzer -analyzer-checker=core.span.SlangGenAst" \
-        f" {cFileName} 2> {cFileName}.clang.log"
+  cmd = consts.CMD_F_GEN_SPANIR.format(cFileName=cFileName)
+  outLogFile = f"{cFileName}.clang.log"
+  cmd = f"/bin/bash -c '{cmd} &> {outLogFile}'"
 
   if util.VV1: print("running> ", cmd)
-  completed = subp.run(cmd, shell=True)
-  if util.VV1: print("SPAN: clang return code:", completed.returncode)
-  if completed.returncode != 0:
-    print("SPAN: ERROR.")
-    print("Maybe an invalid C program!")
-    print("Try compiling the input program first, to check its validity.")
-    return completed.returncode
+  returncode = os.system(cmd)
+  # completed = subp.run(cmd, shell=True)
+  if util.VV1: print("SPAN: ReturnCode:", returncode)
+  if returncode != 0:
+    print(f"SPAN: ERROR: See log file '{outLogFile}'")
+    return returncode
+  else: # else check the files for silent errors
+    checkC2SpanirFiles(f"{cFileName}.spanir", outLogFile)
   return 0
+
+
+def checkC2SpanirFiles(
+    spanIrFileName: types.FileNameT,
+    outLogFile: types.FileNameT
+) -> None:
+  """
+  Reports silent errors which creep into the conversion files.
+  """
+  with open(outLogFile) as f:
+    for lineNum, line in enumerate(f):
+      if "ERROR" in line:
+        if ".spanreport" in line:
+          continue
+        print(f"SPAN: ERROR: In file {outLogFile}. Check it for 'ERROR'")
+        print(f"SPAN: LINE({lineNum+1}): {line}")
+
+  with open(spanIrFileName) as f:
+    for lineNum, line in enumerate(f):
+      if "ERROR" in line:
+        print(f"SPAN: ERROR: In file {spanIrFileName}. Check it for 'ERROR'")
+        print(f"SPAN: LINE({lineNum+1}): {line}")
 
 
 def ipaDiagnoseSpanIr(args: argparse.Namespace) -> None:

@@ -24,7 +24,7 @@ from span.util.util import LS, AS
 from span.ir.tunit import TranslationUnit
 import span.ir.ir as ir
 from span.ir.types import (
-  VarNameT, NodeIdT, NodeSiteT, RecordT, DirectionT,
+  VarNameT, NodeIdT, GlobalNodeIdT, RecordT, DirectionT,
   Type as SpanType, MemberNameT,
 )
 import span.ir.expr as expr
@@ -40,12 +40,12 @@ from span.api.dfv import (
 
 from span.api.analysis import AnalysisAT, ValueAnalysisAT
 from span.ir.conv import (
-  simplifyName, isCorrectNameFormat, genFuncNodeId, getNodeId,
-  GLOBAL_INITS_FUNC_ID, isGlobalName, getFuncNodeIdStr,
+  simplifyName, isCorrectNameFormat, genGlobalNodeId, getNodeId,
+  GLOBAL_INITS_FUNC_ID, isGlobalName, getGlobalNodeIdStr,
   getFuncId, Forward, nameHasPpmsVar,
 )
 
-GLOBAL_INITS_FNID = genFuncNodeId(GLOBAL_INITS_FUNC_ID, 1)  # initialized global
+GLOBAL_INITS_FNID = genGlobalNodeId(GLOBAL_INITS_FUNC_ID, 1)  # initialized global
 
 ################################################
 # BOUND START: ReachingDef lattice.
@@ -56,7 +56,7 @@ class ComponentL(DataLT):
 
   def __init__(self,
       func: constructs.Func,
-      val: Opt[Set[NodeSiteT]] = None,
+      val: Opt[Set[GlobalNodeIdT]] = None,
       top: bool = False,
       bot: bool = False
   ) -> None:
@@ -96,20 +96,20 @@ class ComponentL(DataLT):
     return len(self.val)
 
 
-  def __contains__(self, fNid: NodeSiteT):
+  def __contains__(self, fNid: GlobalNodeIdT):
     if self.top: return False
     if self.bot: return True
     return fNid in self.val
 
 
-  def addVal(self, fNid: NodeSiteT) -> None:
+  def addVal(self, fNid: GlobalNodeIdT) -> None:
     if self.top:
       self.val = set()
       self.top = False
     self.val.add(fNid)
 
 
-  def delVal(self, fNid: NodeSiteT) -> None:
+  def delVal(self, fNid: GlobalNodeIdT) -> None:
     if self.top:
       return None
 
@@ -144,7 +144,7 @@ class ComponentL(DataLT):
       if getFuncId(val) == funcId:
         string.write(f"{prefix}{getNodeId(val)}")
       else:
-        string.write(f"{prefix}{getFuncNodeIdStr(val)}")
+        string.write(f"{prefix}{getGlobalNodeIdStr(val)}")
       if not prefix: prefix = ", "
     string.write("}")
     return string.getvalue()
@@ -178,9 +178,9 @@ class OverallL(dfv.OverallL):
       # this default value is only used in intra-procedural analysis
       # in inter-procedural analysis, params are defined in the caller,
       # and only in case of main() function this is useful.
-      fNid = genFuncNodeId(func.id, 1)  # as node 1 is always NopI()
+      fNid = genGlobalNodeId(func.id, 1)  # as node 1 is always NopI()
     elif func.isLocalName(varName):
-      fNid = genFuncNodeId(func.id, 0)  # i.e. uninitialized
+      fNid = genGlobalNodeId(func.id, 0)  # i.e. uninitialized
     elif isGlobalName(varName):
       fNid = GLOBAL_INITS_FNID
     else: # assume an address taken global
@@ -266,7 +266,7 @@ class ReachingDefA(ValueAnalysisAT):
     func = self.func
     newOut = dfvIn = cast(OverallL, nodeDfv.dfvIn)
 
-    fNid = genFuncNodeId(func.id, nodeId)
+    fNid = genGlobalNodeId(func.id, nodeId)
     val, varName = ComponentL(func, val={fNid}), insn.lhsName
 
     if val != dfvIn.getVal(varName):
@@ -315,7 +315,7 @@ class ReachingDefA(ValueAnalysisAT):
       assert len(lhsVarNames) >= 1, f"{lhs}: {lhsVarNames}"
       mustUpdate = len(lhsVarNames) == 1
 
-      rhsDfv = ComponentL(func, val={genFuncNodeId(func.id, nodeId)})
+      rhsDfv = ComponentL(func, val={genGlobalNodeId(func.id, nodeId)})
       if LS: LOG.debug("RhsDfvOfExpr: '%s' is %s, lhsVarNames are %s",
                        rhs, rhsDfv, lhsVarNames)
 
@@ -348,7 +348,7 @@ class ReachingDefA(ValueAnalysisAT):
     assert len(lhsVarNames) >= 1, f"{lhs}: {lhsVarNames}"
     mustUpdate: bool = len(lhsVarNames) == 1
 
-    val = ComponentL(func, val={genFuncNodeId(func.id, nodeId)})
+    val = ComponentL(func, val={genGlobalNodeId(func.id, nodeId)})
 
     outDfvValues: Dict[VarNameT, dfv.ComponentL] = {}
     for memberInfo in allMemberInfo:
@@ -371,7 +371,7 @@ class ReachingDefA(ValueAnalysisAT):
       calleeBi: Opt[DfvPairL] = None,  #IPA
       nodeId: NodeIdT = 0,
   ) -> dfv.ComponentL:
-    return ComponentL(self.func, val={genFuncNodeId(self.func.id, nodeId)})
+    return ComponentL(self.func, val={genGlobalNodeId(self.func.id, nodeId)})
 
 
   def computeLhsDfvFromRhs(self,
@@ -405,7 +405,7 @@ class ReachingDefA(ValueAnalysisAT):
   ) -> Opt[dfv.ComponentL]:
     dfvInGetVal: Callable[[VarNameT], dfv.ComponentL] = dfvIn.getVal
 
-    rhsDfv = ComponentL(self.func, val={genFuncNodeId(self.func.id, nodeId)})
+    rhsDfv = ComponentL(self.func, val={genGlobalNodeId(self.func.id, nodeId)})
 
     oldLhsDfv = dfvInGetVal(fullLhsVarName)
     if (not mustUpdate
@@ -440,7 +440,7 @@ class ReachingDefA(ValueAnalysisAT):
 
     if util.LL5: LDB(" OverApproximating: %s", list(sorted(names)))
 
-    newVal = ComponentL(self.func, val={genFuncNodeId(self.func.id, nodeId)})
+    newVal = ComponentL(self.func, val={genGlobalNodeId(self.func.id, nodeId)})
     dfvInGetVal = dfvIn.getVal
     outDfvValues: Dict[VarNameT, dfv.ComponentL] = {
       name: dfvInGetVal(name).meet(newVal)[0]

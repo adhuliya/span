@@ -15,7 +15,7 @@ from typing import List, Optional as Opt, Dict, Type, Set, Any, TypeVar
 import io
 
 import span.util.util as util
-from span.sys.common import AnResult
+from span.api.dfv import AnResult # replacing span.sys.common.AnResult
 
 from span.api.analysis import (AnalysisNameT, AnalysisAT, )
 from span.api.dfv import (DfvPairL,)
@@ -27,16 +27,24 @@ DiagnosisNameT = str
 
 MethodT = str
 PlainMethod: MethodT = "plain"
+"""Run analyses using a 'Plain' Method (whatever the user intends)."""
 CascadingMethod: MethodT = "cascading"
+"""Run analyses using Cascading Method."""
 LernerMethod: MethodT = "lerner"
+"""Run analyses using Lerner's Method."""
 SpanMethod: MethodT = "span"
+"""Run analyses using Span Method."""
+CompareAll: MethodT = "compareall"
+"""Special method to denote a comparison of results of all the given methods."""
 UseAllMethods: MethodT = "all"
+"""A special method to invoke all given methods."""
 
 AllMethods: Set[MethodT] = {
   PlainMethod,
   CascadingMethod,
   LernerMethod,
   SpanMethod,
+  CompareAll,
   UseAllMethods,
 }
 
@@ -165,6 +173,15 @@ class DiagnosisRT:
     self.tUnit = tUnit
 
 
+  def init(self,
+      method: MethodDetail,
+      config: int,
+      anClassMap: Dict[AnNameT, Type[AnalysisAT]],
+  ) -> None:
+    """Override this method to do some initialization."""
+    pass
+
+
   def computeDfvs(self,
       method: MethodDetail,
       config: int,
@@ -210,6 +227,16 @@ class DiagnosisRT:
       Nothing.
     """
     raise NotImplementedError()
+
+
+  def finish(self,
+      method: MethodDetail,
+      config: int,
+      anClassMap: Dict[AnNameT, Type[AnalysisAT]],
+  ) -> None:
+    """Override this method to do some work after all operations finish."""
+    pass
+
 
 
 DiagnosisRClassT = TypeVar('DiagnosisRClassT', bound=DiagnosisRT)
