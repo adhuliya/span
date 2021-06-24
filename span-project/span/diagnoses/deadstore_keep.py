@@ -3,7 +3,12 @@
 # MIT License
 # Copyright (C) 2021 Anshuman Dhuliya
 
-"""The dead code diagnosis reporter."""
+"""The dead code diagnosis reporter.
+
+Although this module is not used currently,
+keep it for reference on how to use the clang's
+bug reporting system.
+"""
 
 import logging
 

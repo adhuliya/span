@@ -1140,16 +1140,21 @@ def getCalleeFuncName(insn: InstrIT) -> Opt[types.FuncNameT]:
   return callE.getFuncName() if callE else None
 
 
-def getDerefExpr(insn: InstrIT) -> Opt[expr.ExprET]:
-  """Returns the expr containing dereference in the instruction (if any)."""
-  if not isinstance(insn, AssignI):
-    return None  # DerefE can occur only in AssignI instructions
-  return expr.getDerefExpr(insn.lhs) or expr.getDerefExpr(insn.rhs)
+def getDerefExpr(insn: InstrIT, includeLhs: bool=True) -> Opt[expr.ExprET]:
+  """Returns the expr containing dereference in the instruction (if any).
+  TODO: dereference in a call instruction?
+  """
+  if isinstance(insn, AssignI):
+    if includeLhs:
+      return expr.getDerefExpr(insn.lhs) or expr.getDerefExpr(insn.rhs)
+    else:
+      return expr.getDerefExpr(insn.rhs)
+  return None  # DerefE can occur only in AssignI instructions
 
 
-def getDereferencedVar(insn: InstrIT) -> Opt[expr.VarE]:
+def getDereferencedVar(insn: InstrIT, includeLhs: bool = True) -> Opt[expr.VarE]:
   """Returns the variable dereferenced in the instruction (if any)."""
-  de = getDerefExpr(insn)
+  de = getDerefExpr(insn, includeLhs=includeLhs)
   if de is not None:
     return expr.getDereferencedVar(de)
   return None
@@ -1158,5 +1163,29 @@ def getDereferencedVar(insn: InstrIT) -> Opt[expr.VarE]:
 @functools.lru_cache(512)
 def getFormalInstrStr(insn: InstrIT) -> types.FormalStrT:
   return f"{insn.getFormalStr()}_Instr"
+
+
+def getNamesUsedInInstrSyntactically(
+    insn: InstrIT,
+    forLiveness=True,
+) -> Set[types.VarNameT]:
+  """Returns the names syntactically present in the expression.
+
+  See `expr.getNamesUsedInExprSyntactically` for the meaning
+  of `forLiveness`.
+  """
+  names = set()
+  if isinstance(insn, AssignI):
+    names |= expr.getNamesUsedInExprSyntactically(insn.lhs, forLiveness)
+    names |= expr.getNamesUsedInExprSyntactically(insn.rhs, forLiveness)
+  elif isinstance(insn, CallI):
+    names |= expr.getNamesUsedInExprSyntactically(insn.arg, forLiveness)
+  elif isinstance(insn, CondI):
+    names |= expr.getNamesUsedInExprSyntactically(insn.arg, forLiveness)
+  elif isinstance(insn, ReturnI):
+    names |= expr.getNamesUsedInExprSyntactically(insn.arg, forLiveness)
+  elif isinstance(insn, UseI):
+    names |= expr.getNamesUsedInExprSyntactically(insn.arg, forLiveness)
+  return names
 
 

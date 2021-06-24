@@ -6,10 +6,12 @@
 """Program diagnosis tools and interface."""
 
 import logging
+LOG = logging.getLogger(__name__)
+LDB = LOG.debug
 
 from span.ir.tunit import TranslationUnit
+from span.sys.ipa import IpaHost, ipaAnalyzeCascade
 
-LOG = logging.getLogger(__name__)
 
 from typing import List, Optional as Opt, Dict, Type, Set, Any, TypeVar
 import io
@@ -17,7 +19,7 @@ import io
 import span.util.util as util
 from span.api.dfv import AnResult # replacing span.sys.common.AnResult
 
-from span.api.analysis import (AnalysisNameT, AnalysisAT, )
+from span.api.analysis import (AnalysisNameT, AnalysisAT, AnalysisAClassT, )
 from span.api.dfv import (DfvPairL,)
 from span.ir.types import (Loc, NodeIdT, FuncNameT, AnNameT, )
 
@@ -184,13 +186,27 @@ class DiagnosisRT:
 
   def computeDfvs(self,
       method: MethodDetail,
-      config: int,
+      config: int, #IMPORTANT
       anClassMap: Dict[AnNameT, Type[AnalysisAT]],
   ) -> Opt[Dict[FuncNameT, Dict[AnNameT, AnResult]]]:
     """Compute the DFVs of various analysis using a desired method.
 
-    Override this function to run any desired method with a desired config."""
-    raise NotImplementedError()
+    Override this function to run any desired method with a desired config.
+    This is a default implementation. Please Override if needed.
+    """
+    if util.LL0: LDB("ComputeDFVs: Method=%s, Config=%s", method, config)
+
+    res = None
+    if method.name == PlainMethod:
+      res = self.computeDfvsUsingPlainMethod(method, config, anClassMap)
+    elif method.name == CascadingMethod:
+      res = self.computeDfvsUsingCascadingMethod(method, config, anClassMap)
+    elif method.name == LernerMethod:
+      res = self.computeDfvsUsingLernerMethod(method, config, anClassMap)
+    elif method.name == SpanMethod:
+      res = self.computeDfvsUsingSpanMethod(method, config, anClassMap)
+
+    return res
 
 
   def computeResults(self,
@@ -236,6 +252,77 @@ class DiagnosisRT:
   ) -> None:
     """Override this method to do some work after all operations finish."""
     pass
+
+  def computeDfvsUsingPlainMethod(self,
+      method: MethodDetail,
+      config: int,
+      anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
+  ) -> Opt[Dict[FuncNameT, Dict[AnNameT, AnResult]]]:
+    """A default implementation. Please Override."""
+    assert len(anClassMap) == 1, f"{anClassMap}, {config}"
+
+    mainAnalysis = method.anNames[0]
+    ipaHost = IpaHost(
+      self.tUnit,
+      mainAnName=mainAnalysis,
+      maxNumOfAnalyses=1,
+    )
+    res = ipaHost.analyze()
+
+    return res
+
+
+  def computeDfvsUsingSpanMethod(self,
+      method: MethodDetail,
+      config: int,
+      anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
+  ) -> Dict[FuncNameT, Dict[AnNameT, AnResult]]:
+    """A default implementation. Please Override."""
+    assert len(anClassMap) == 2, f"{anClassMap}, {config}"
+
+    mainAnalysis = method.anNames[0]
+    ipaHost = IpaHost(
+      self.tUnit,
+      mainAnName=mainAnalysis,
+      otherAnalyses=method.anNames[1:],
+      maxNumOfAnalyses=len(method.anNames),
+    )
+    res = ipaHost.analyze()
+
+    return res
+
+
+  def computeDfvsUsingLernerMethod(self,
+      method: MethodDetail,
+      config: int,
+      anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
+  ) -> Dict[FuncNameT, Dict[AnNameT, AnResult]]:
+    """A default implementation. Please Override."""
+    assert len(anClassMap) == 2, f"{anClassMap}, {config}"
+
+    mainAnalysis = method.anNames[0]
+    ipaHost = IpaHost(
+      self.tUnit,
+      mainAnName=mainAnalysis,
+      otherAnalyses=method.anNames[1:],
+      maxNumOfAnalyses=len(method.anNames),
+      useTransformation=True, # this induces lerner's method
+    )
+    res = ipaHost.analyze()
+
+    return res
+
+
+  def computeDfvsUsingCascadingMethod(self,
+      method: MethodDetail,
+      config: int,
+      anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
+  ) -> Dict[FuncNameT, Dict[AnNameT, AnResult]]:
+    """A default implementation. Please Override."""
+    assert len(anClassMap) == 2, f"{anClassMap}, {config}"
+
+    res = ipaAnalyzeCascade(self.tUnit, method.anNames)
+    return res
 
 
 

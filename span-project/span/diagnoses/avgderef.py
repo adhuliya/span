@@ -50,6 +50,11 @@ class AvgDerefR(DiagnosisRT):
       [0],
       ["PointsToA"],
     ),
+    MethodDetail(
+      SpanMethod,
+      [1],
+      ["PointsToA", "IntervalA"],
+    ),
   ]
 
 

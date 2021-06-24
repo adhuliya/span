@@ -465,6 +465,14 @@ class OverallL(dfv.OverallL):
     return sum(1 for v in self.val.values() if v.isConstant())  # type: ignore
 
 
+  def getNamesWithConstValue(self) -> Set[types.VarNameT]:
+    """Gives the variable names which are known to be constant."""
+    if self.top or self.bot: return set()
+    assert self.val, f"{self}"
+    return set(vName for vName, val in self.val.items()
+               if val.isConstant()) # ok val.isConst..
+
+
   def widen(self,
       other: Opt['OverallL'] = None,
       ipa: bool = False,  # special case #IPA

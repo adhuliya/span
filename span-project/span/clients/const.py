@@ -132,8 +132,16 @@ class OverallL(dfv.OverallL):
     """Gives the count of number of constant in the data flow value."""
     if self.top or self.bot: return 0
     assert self.val, f"{self}"
-    return sum(1 for val in self.val.values() if val.isConstant()) # ok val.isConst..
+    return sum(1 for val in self.val.values()
+               if val.isConstant()) # ok val.isConst..
 
+
+  def getNamesWithConstValue(self) -> Set[types.VarNameT]:
+    """Gives the variable names which are known to be constant."""
+    if self.top or self.bot: return set()
+    assert self.val, f"{self}"
+    return set(vName for vName, val in self.val.items()
+                if val.isConstant()) # ok val.isConst..
 
 ################################################
 # BOUND END  : Const_lattice

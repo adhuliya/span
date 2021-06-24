@@ -1,128 +1,314 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (C) 2021 Anshuman Dhuliya
+# Copyright (c) 2021 Anshuman Dhuliya
 
-"""Detect possible null dereferences"""
+"""Detect possible null dereferences."""
 
 import logging
 LOG = logging.getLogger(__name__)
+LDB = LOG.debug
 
-from typing import List, Optional as Opt, Dict, Set, cast
-import io
+from span.api import dfv
+from span.ir import instr, conv
+from span.ir.expr import ExprET, ArrayE
+from span.ir.tunit import TranslationUnit
+from span.sys.ipa import IpaHost, ipaAnalyzeCascade
 
-import span.api.analysis as analysis
-import span.api.dfv as dfv
-import span.api.diagnosis as diagnosis
+from typing import (
+  Optional as Opt, Dict, List, Type, Any, cast,
+)
 
-import span.ir.types as types
-import span.ir.conv as irConv
-import span.ir.op as op
-import span.ir.expr as expr
-import span.ir.instr as instr
-import span.ir.tunit as irTUnit
-import span.ir.constructs as obj
-import span.ir.ir as ir
+import span.util.ff as ff
+from span.util import util
+from span.api.analysis import AnalysisNameT, AnalysisAT, AnalysisAClassT, ValueAnalysisAT
+from span.api.dfv import DfvPairL
+from span.ir.constructs import Func
+from span.ir.types import (
+  NodeIdT, AnNameT, FuncNameT, Type as SpanType, ConstSizeArray, Ptr,
+)
+from span.api.dfv import AnResult # replacing span.sys.common.AnResult
 
-from span.util.util import LS
-from span.api.diagnosis import ClangReport, ClangMessage
-
-# import the analysis classes
-from span.clients.pointsto import PointsToA
-import span.clients.pointsto as pointsto
-
-
-class NullDerefR(diagnosis.DiagnosisRT):
-  """Reports the possible NULL dereferences."""
-  Needs = [PointsToA]
-  OptionalNeeds: List[type] = []
-  # AnalysesSeqCascading = [["ConstA"], ["PointsToA"], ["EvenOddA"]]
-  # AnalysesSeqLerner = [["LiveVarsA", "PointsToA"]]
-  AnalysesSeqCascading = [["ConstA"], ["PointsToA"],
-                          ["ConstA"], ["EvenOddA"], ["PointsToA"]]
-  AnalysesSeqLerner = [["ConstA", "PointsToA", "EvenOddA"]]
+from span.api.diagnosis import (
+  DiagnosisRT, ClangReport,
+  MethodT, PlainMethod, CascadingMethod, LernerMethod,
+  SpanMethod, UseAllMethods, AllMethods, MethodDetail,
+)
 
 
-  # AnalysesSeqLerner = [["ConstA", "PointsToA"]]
-  # AnalysesSeqLerner = [["PointsToA"]]
+class NullDerefR(DiagnosisRT):
+  """Computes the average number of pointees of deref expressions."""
 
-  def __init__(self):
-    self.name = "Null Deref"
-    self.category = "SPAN Ptr"
+  MethodSequence: List[MethodDetail] = [
+    MethodDetail(
+      PlainMethod,
+      [0],
+      ["PointsToA"],
+    ),
+    MethodDetail(
+      CascadingMethod,
+      [0],
+      ["IntervalA", "PointsToA"],
+    ),
+    MethodDetail(
+      LernerMethod,
+      [0],
+      ["IntervalA", "PointsToA"],
+    ),
+    MethodDetail(
+      SpanMethod,
+      [0],
+      ["IntervalA", "PointsToA"],
+    ),
+  ]
+
+
+  def __init__(self, tUnit: TranslationUnit):
+    super().__init__(name="IndexOutOfBounds", category="Count", tUnit=tUnit)
+    # holds the result, as it is used between methods
+    self.res = None
+
+
+  def computeDfvs(self,
+      method: MethodDetail,
+      config: int, #IMPORTANT
+      anClassMap: Dict[AnNameT, Type[AnalysisAT]],
+  ) -> Opt[Dict[FuncNameT, Dict[AnNameT, AnResult]]]:
+    """Compute the DFVs necessary to detect index out of bounds."""
+    if util.LL0: LDB("ComputeDFVs: Method=%s, Config=%s", method, config)
+
+    res = None
+    if method.name == PlainMethod:
+      res = self.computeDfvsUsingPlainMethod(method, config, anClassMap)
+    elif method.name == CascadingMethod:
+      res = self.computeDfvsUsingCascadingMethod(method, config, anClassMap)
+    elif method.name == LernerMethod:
+      res = self.computeDfvsUsingLernerMethod(method, config, anClassMap)
+    elif method.name == SpanMethod:
+      res = self.computeDfvsUsingSpanMethod(method, config, anClassMap)
+
+    return res
+
+
+  def computeResults(self,
+      method: MethodDetail,
+      config: int,
+      dfvs: Dict[FuncNameT, Dict[AnNameT, AnResult]],
+      anClassMap: Dict[AnNameT, Type[AnalysisAT]],
+  ) -> Any:
+    anName1 = "PointsToA"
+    anClass1 = anClassMap[anName1]
+
+    totalDerefs = 0
+    totalSafeDerefs = 0
+    totalBotDerefs = 0 # where pointees are bots
+
+    for fName, anResMap in dfvs.items():
+      func = self.tUnit.getFuncObj(fName)
+      # anObj1 = cast(ValueAnalysisAT, anClass1(func))
+
+      for nid, insn in func.yieldNodeIdInstrTupleSeq():
+        var = instr.getDereferencedVar(insn)
+
+        if not var:
+          continue   # goto next instruction in sequence
+
+        totalDerefs += 1
+
+        varDfv = anResMap[anName1].get(nid).dfvIn.getVal(var.name) # type is okay
+
+        if (
+            not varDfv
+            or varDfv.top
+        ): # may be None (if variable is an array then too it may be None)
+          totalSafeDerefs += 1
+        elif varDfv.bot:
+          totalBotDerefs += 1
+        elif not conv.NULL_OBJ_NAME in varDfv.val:
+          totalSafeDerefs += 1
+
+    return totalDerefs, totalSafeDerefs, totalBotDerefs
 
 
   def handleResults(self,
-      results: Dict[analysis.AnalysisNameT,
-                           Dict[types.NodeIdT, dfv.DfvPairL]],
-      func: obj.Func,
-  ) -> Opt[List[ClangReport]]:
-    reports: List[ClangReport] = []
-    if func.sig.variadic:  # SkipVariadicFunctions
-      if LS: LOG.info("SkippingVariadicFunction: %s", func.name)
-      return reports
+      method: MethodDetail,
+      config: int,
+      result: Any, # Any type that a particular implementation needs.
+      dfvs: Dict[FuncNameT, Dict[AnNameT, AnResult]],
+      anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
+  ) -> None:
+    print(f"AnalysisType: {self.__class__.__name__}")
+    print(f"Method: {method}")
+    print(f"  TotalDerefs    : {result[0]}")
+    print(f"  TotalSafeDerefs: {result[1]}")
+    print(f"  TotalBotDerefs : {result[2]}")
 
-    pointsTo = results[PointsToA.__name__]
 
-    assert func.cfg, f"{func}"
-    for nodeId, node in func.cfg.nodeMap.items():
-      insn = node.insn
-      message = ""
-      derefObjLoc = None
+  def computeResultsUsingPlainMethod(self,
+      method: MethodDetail,
+      config: int,
+      dfvs: Dict[FuncNameT, Dict[AnNameT, AnResult]],
+      anClassMap: Dict[AnNameT, Type[AnalysisAT]],
+  ) -> Any:
+    """Count array indexes, and count out-of-bounds indexes.
 
-      pointsToDfvIn = cast(pointsto.OverallL, pointsTo[nodeId].dfvIn)
-      if isinstance(insn, instr.AssignI):
-        lhs = insn.lhs
-        rhs = insn.rhs
+    It only uses IntervalA.
+    """
+    anName1 = "IntervalA"
+    anClass1 = anClassMap[anName1]
 
-        derefvarName = ""
-        derefObjLoc = None
-        litNames = None
+    total = 0
+    inRangeTotal = 0
+    outOfRangeTotal = 0
+    unknownTotal = 0 # couldn't determine
 
-        # if there is a dereference happening,
-        # fetch the name of the variable dereferenced.
-        if lhs.hasDereference() and not isinstance(rhs, expr.AddrOfE):
-          if isinstance(lhs, expr.ArrayE):
-            litNames = {lhs.of.name}
-          else:
-            litNames = ir.getNamesUsedInExprSyntactically(lhs)
-          assert lhs.info, f"{nodeId}: {insn}"
-          derefObjLoc = lhs.info.loc
-        elif rhs.hasDereference() and not isinstance(rhs, expr.AddrOfE):
-          if isinstance(rhs, expr.ArrayE):
-            litNames = {rhs.of.name}
-          else:
-            litNames = ir.getNamesUsedInExprSyntactically(rhs)
-          assert rhs.info, f"{nodeId}: {insn}"
-          derefObjLoc = rhs.info.loc
+    for fName, anResMap in dfvs.items():
+      func = self.tUnit.getFuncObj(fName)
+      anObj1 = cast(ValueAnalysisAT, anClass1(func))
 
-        if not litNames:
-          continue  # there is no dereference
+      for nid, insn in func.yieldNodeIdInstrTupleSeq():
+        arrayE = instr.getArrayE(insn)
 
-        assert len(litNames) == 1, f"{lhs}: {litNames}"  # sanity check
-        for name in litNames:  # loop runs only once
-          derefvarName = name
+        if not arrayE: continue   # goto next instruction in sequence
+        total += 1
 
-        # get dfv of the pointer
-        ptrVal = cast(pointsto.ComponentL, pointsToDfvIn.getVal(derefvarName))
+        indexDfv, arrType, arrIndex = None, arrayE.of.type, arrayE.index
 
-        if LS and derefvarName == "v:spec_random_load:8t":
-          LOG.info(f"ptrdfvInOf {node} = {ptrVal}")
+        size = self.getArraySize(arrayE, nid)
+        indexDfv = self.getExprDfv(arrIndex, nid, anResMap[anName1], anObj1)
 
-        if ptrVal.top:
-          pass  # nothing
-        elif ptrVal.bot:
-          message = f"{derefvarName} may be NULL (a minor possibility)"
+        if not size or indexDfv.bot:
+          unknownTotal += 1
+          self.printDebugInfo(nid, arrayE, size, indexDfv, func.name, "Unknown")
+        elif indexDfv.top:
+          inRangeTotal += 1 # top because of unreachable code, thus any range okay
         else:
-          assert ptrVal.val
-          if irConv.NULL_OBJ_NAME in ptrVal.val and len(ptrVal.val) == 1:
-            message = f"{derefvarName} is NULL"
-          elif irConv.NULL_OBJ_NAME in ptrVal.val:
-            message = f"{derefvarName} may be NULL"
+          if indexDfv.inIndexRange(size):
+            inRangeTotal += 1
+            self.printDebugInfo(nid, arrayE, size, indexDfv, func.name, "InRange")
+          else:
+            outOfRangeTotal += 1
+            self.printDebugInfo(nid, arrayE, size, indexDfv, func.name, "OutOfRange")
 
-      if message and derefObjLoc:
-        report = ClangReport(self.name, self.category)
-        messageObj = ClangMessage(msg=message, loc=derefObjLoc)
-        report.addMessage(messageObj)
-        reports.append(report)
+    return total, inRangeTotal, outOfRangeTotal, unknownTotal
 
-    return reports
+
+  def getArraySize(self,
+      arrayE: ArrayE,
+      nid: NodeIdT,
+      anResult: Opt[AnResult] = None,
+      anObj : Opt[ValueAnalysisAT] = None,
+  ) -> Opt[int]:
+    arrType, arrIndex = arrayE.of.type, arrayE.index
+
+    size = None
+    if isinstance(arrType, ConstSizeArray):
+      size = arrType.size
+    elif anResult and anObj and isinstance(arrType, Ptr):
+      pointeesDfv = self.getExprDfv(arrayE.of, nid, anResult, anObj)
+      if pointeesDfv and not pointeesDfv.bot and not pointeesDfv.top:
+        minSize = ff.LARGE_INT_VAL
+        for vName in pointeesDfv.val: # find minimum size
+          vType = self.tUnit.inferTypeOfVal(vName)
+          if isinstance(vType, ConstSizeArray):
+            minSize = vType.size if minSize > vType.size else minSize
+          else: # a pointee is not a ConstSizeArray, no benefit to continue
+            minSize = ff.LARGE_INT_VAL
+            break
+        if minSize != ff.LARGE_INT_VAL:
+          size = minSize
+
+    return size
+
+
+  def getExprDfv(self,
+      e: ExprET,
+      nid: NodeIdT,
+      anResult: AnResult,
+      anObj : ValueAnalysisAT,
+  ) -> Opt[dfv.ComponentL]:
+    dfvPair = anResult.get(nid)
+    if dfvPair:
+      return anObj.getExprDfv(e, cast(dfv.OverallL, dfvPair.dfvIn))
+
+
+  def computeDfvsUsingPlainMethod(self,
+      method: MethodDetail,
+      config: int,
+      anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
+  ) -> Opt[Dict[FuncNameT, Dict[AnNameT, AnResult]]]:
+    assert len(anClassMap) == 1, f"{anClassMap}, {config}"
+
+    mainAnalysis = method.anNames[0]
+    ipaHost = IpaHost(
+      self.tUnit,
+      mainAnName=mainAnalysis,
+      maxNumOfAnalyses=1,
+    )
+    ipaHost.analyze()
+
+    return ipaHost.vci.finalResult
+
+
+  def computeDfvsUsingSpanMethod(self,
+      method: MethodDetail,
+      config: int,
+      anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
+  ) -> Dict[FuncNameT, Dict[AnNameT, AnResult]]:
+    assert len(anClassMap) == 2, f"{anClassMap}, {config}"
+
+    mainAnalysis = method.anNames[0]
+    ipaHost = IpaHost(
+      self.tUnit,
+      mainAnName=mainAnalysis,
+      otherAnalyses=method.anNames[1:],
+      maxNumOfAnalyses=len(method.anNames),
+    )
+    res = ipaHost.analyze()
+
+    return res
+
+
+  def computeDfvsUsingLernerMethod(self,
+      method: MethodDetail,
+      config: int,
+      anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
+  ) -> Dict[FuncNameT, Dict[AnNameT, AnResult]]:
+    assert len(anClassMap) == 2, f"{anClassMap}, {config}"
+
+    mainAnalysis = method.anNames[0]
+    ipaHost = IpaHost(
+      self.tUnit,
+      mainAnName=mainAnalysis,
+      otherAnalyses=method.anNames[1:],
+      maxNumOfAnalyses=len(method.anNames),
+      useTransformation=True, # this induces lerner's method
+    )
+    res = ipaHost.analyze()
+
+    return res
+
+
+  def computeDfvsUsingCascadingMethod(self,
+      method: MethodDetail,
+      config: int,
+      anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
+  ) -> Dict[FuncNameT, Dict[AnNameT, AnResult]]:
+    assert len(anClassMap) == 2, f"{anClassMap}, {config}"
+
+    res = ipaAnalyzeCascade(self.tUnit, method.anNames)
+    return res
+
+
+  def printDebugInfo(self,
+      nid: NodeIdT,
+      arrayE: ArrayE,
+      size: int,
+      indexDfv: Opt[dfv.ComponentL],
+      funcName: FuncNameT,
+      msg: str,
+  ) -> None:
+    print(f"  {msg}({nid}): {indexDfv},"
+          f" {arrayE} (size:{size}, {arrayE.info}), {funcName}.")
+
+

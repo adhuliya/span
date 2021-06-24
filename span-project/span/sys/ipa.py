@@ -6,8 +6,6 @@
 """
 Inter-Procedural Analysis (IPA)
 Using the Value-Context Method.
-
-Note: All IR related processing for IPA is done in span.ir.ipa module.
 """
 import logging
 _LOG = logging.getLogger(__name__)

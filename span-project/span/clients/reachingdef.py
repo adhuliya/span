@@ -119,6 +119,19 @@ class ComponentL(DataLT):
       self.val = None
 
 
+  def isInitialized(self,
+      must: bool = False, # False=May uninitialized, True=Must uninitialized
+  ) -> bool:
+    gNid = genGlobalNodeId(0, 0)  # i.e. uninitialized def
+    if self.top: # only possible if code is unreachable
+      return True # assume initialized (since unreachable)
+    elif self.bot:
+      return not must
+    elif gNid in self.val:
+      return True if len(self.val) == 1 else not must
+    raise ValueError(f"{self.func.name}, {must}, {self}")
+
+
   def __eq__(self,
       other: 'ComponentL'
   ) -> bool:
@@ -178,14 +191,14 @@ class OverallL(dfv.OverallL):
       # this default value is only used in intra-procedural analysis
       # in inter-procedural analysis, params are defined in the caller,
       # and only in case of main() function this is useful.
-      fNid = genGlobalNodeId(func.id, 1)  # as node 1 is always NopI()
+      gNid = genGlobalNodeId(func.id, 1)  # as node 1 is always NopI()
     elif func.isLocalName(varName):
-      fNid = genGlobalNodeId(func.id, 0)  # i.e. uninitialized
+      gNid = genGlobalNodeId(0, 0)  # i.e. uninitialized
     elif isGlobalName(varName):
-      fNid = GLOBAL_INITS_FNID
+      gNid = GLOBAL_INITS_FNID
     else: # assume an address taken global
-      fNid = GLOBAL_INITS_FNID
-    return ComponentL(func, val={fNid})
+      gNid = GLOBAL_INITS_FNID
+    return ComponentL(func, val={gNid})
 
 
   @classmethod
@@ -195,6 +208,16 @@ class OverallL(dfv.OverallL):
   ) -> bool:
     return True # accepts all types
 
+
+  def isInitialized(self,
+      varName: VarNameT,
+      must: bool = False, # False=May uninitialized, True=Must uninitialized
+  ) -> bool:
+    varDfv = self.getVal(varName)
+    try:
+      return varDfv.isInitialized(must=must)
+    except ValueError as e:
+      raise ValueError(f"{varName}: {e}")
 
 ################################################
 # BOUND END  : ReachingDef lattice.

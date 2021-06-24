@@ -3,15 +3,15 @@
 # MIT License
 # Copyright (c) 2021 Anshuman Dhuliya
 
-"""The number of array index out-of-bounds or in-bounds detected."""
+"""The number divisions that are safe (i.e. no-div-by-zero)"""
 
 import logging
 LOG = logging.getLogger(__name__)
 LDB = LOG.debug
 
 from span.api import dfv
-from span.ir import instr
-from span.ir.expr import ExprET, ArrayE
+from span.ir import instr, op
+from span.ir.expr import ExprET, ArrayE, BinaryE
 from span.ir.tunit import TranslationUnit
 from span.sys.ipa import IpaHost, ipaAnalyzeCascade
 
@@ -36,8 +36,8 @@ from span.api.diagnosis import (
 )
 
 
-class ArrayIndexOutOfBoundsR(DiagnosisRT):
-  """The number of array index out-of-bounds or in-bounds detected."""
+class DivByZeroR(DiagnosisRT):
+  """The number divisions that are safe (i.e. no-div-by-zero)"""
 
   MethodSequence: List[MethodDetail] = [
     MethodDetail(
@@ -95,48 +95,45 @@ class ArrayIndexOutOfBoundsR(DiagnosisRT):
       anClassMap: Dict[AnNameT, Type[AnalysisAT]],
   ) -> Any:
     """Count array indexes, and count out-of-bounds indexes."""
-    if method.name == PlainMethod:
-      return self.computeResultsUsingPlainMethod(method, config, dfvs, anClassMap)
+    # if method.name == PlainMethod:
+    #   return self.computeResultsUsingPlainMethod(method, config, dfvs, anClassMap)
 
     # Logic for all the methods is here (except the PlainMethod)
-    anName1, anName2  = "IntervalA", "PointsToA"
-    anClass1, anClass2 = anClassMap[anName1], anClassMap[anName2]
+    anName1 = "IntervalA"
+    anClass1 = anClassMap[anName1]
 
-    total = 0
-    inRangeTotal = 0
-    outOfRangeTotal = 0
-    unknownTotal = 0 # couldn't determine
+    totalDivs = 0
+    totalSafeDivs = 0
+    totalBotDivs = 0  # the divisor's dfv is Bot
 
     for fName, anResMap in dfvs.items():
       func = self.tUnit.getFuncObj(fName)
       anObj1 = cast(ValueAnalysisAT, anClass1(func))
-      anObj2 = cast(ValueAnalysisAT, anClass2(func))
+      # anObj2 = cast(ValueAnalysisAT, anClass2(func))
 
       for nid, insn in func.yieldNodeIdInstrTupleSeq():
-        arrayE = instr.getArrayE(insn)
+        if not isinstance(insn, instr.AssignI):
+          continue
 
-        if not arrayE: continue   # goto next instruction in sequence
-        total += 1
+        rhs = insn.rhs
+        if not isinstance(rhs, BinaryE):
+          continue
+        if rhs.opr != op.BO_DIV:
+          continue
 
-        indexDfv, arrType, arrIndex = None, arrayE.of.type, arrayE.index
+        # if here, rhs is a binary expression with division
+        totalDivs += 1
+        divisorExpr = rhs.arg2
+        divisorDfv = self.getExprDfv(divisorExpr, nid, anResMap[anName1], anObj1)
 
-        size = self.getArraySize(arrayE, nid, anResMap[anName2], anObj2)
-        indexDfv = self.getExprDfv(arrIndex, nid, anResMap[anName1], anObj1)
+        if divisorDfv.bot:
+          totalBotDivs += 1
+        elif divisorDfv.top:
+          totalSafeDivs += 1 # unreachable code is assumed safe
+        elif not divisorDfv.inRange(0):
+          totalSafeDivs += 1
 
-        if not size or indexDfv.bot:
-          unknownTotal += 1
-          self.printDebugInfo(nid, arrayE, size, indexDfv, func.name, "Unknown")
-        elif indexDfv.top:
-          inRangeTotal += 1 # top because of unreachable code, thus any range okay
-        else:
-          if indexDfv.inIndexRange(size):
-            inRangeTotal += 1
-            self.printDebugInfo(nid, arrayE, size, indexDfv, func.name, "InRange")
-          else:
-            outOfRangeTotal += 1
-            self.printDebugInfo(nid, arrayE, size, indexDfv, func.name, "OutOfRange")
-
-    return total, inRangeTotal, outOfRangeTotal, unknownTotal
+    return totalDivs, totalSafeDivs, totalBotDivs
 
 
   def handleResults(self,
@@ -148,10 +145,9 @@ class ArrayIndexOutOfBoundsR(DiagnosisRT):
   ) -> None:
     print(f"AnalysisType: {self.__class__.__name__}")
     print(f"Method: {method}")
-    print(f"  Total      : {result[0]}")
-    print(f"  InRange    : {result[1]}")
-    print(f"  OutOfRange : {result[2]}")
-    print(f"  Unknown    : {result[3]}")
+    print(f"  TotalDivs    : {result[0]}")
+    print(f"  TotalSafeDivs: {result[1]}")
+    print(f"  TotalBotDivs : {result[2]}")
 
 
   def computeResultsUsingPlainMethod(self,
