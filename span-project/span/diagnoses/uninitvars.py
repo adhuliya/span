@@ -121,10 +121,10 @@ class UninitializedVarsR(DiagnosisRT):
   ) -> None:
     print(f"AnalysisType: {self.__class__.__name__}")
     print(f"Method: {method}")
-    print(f"  Total      : {result[0]}")
-    print(f"  InRange    : {result[1]}")
-    print(f"  OutOfRange : {result[2]}")
-    print(f"  Unknown    : {result[3]}")
+    print(f"  TotalUses          : {result[0]}")
+    print(f"  TotalUsesInitMust  : {result[1]}")
+    print(f"  TotalUsesUninitMust: {result[2]}")
+    print(f"  TotalUsesUnknown   : {result[0]-result[1]-result[2]}")
 
 
   def getVarNamesUsed(self,

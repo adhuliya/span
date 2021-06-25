@@ -448,9 +448,13 @@ class OverallL(DataLT):
     """Default value when a variable is not present in the map.
     Override this function if the default implementation is not suitable.
     """
+    if conv.isGlobalName(varName):
+      return self.getDefaultValForGlobal()
+
     func, anName = self.func, self.anName
     tUnit: TranslationUnit = func.tUnit
     topBot = False # i.e. Bot
+
     if varName:
       if nameHasPpmsVar(varName): # TODO: handle bot state
         topBot = True # i.e. Top
@@ -462,6 +466,10 @@ class OverallL(DataLT):
 
     defVal = getTopBotComp(func, anName, topBot, self.compL)
     return defVal
+
+
+  def getDefaultValForGlobal(self) -> ComponentL:
+    raise NotImplementedError()
 
 
   def isDefaultVal(self,

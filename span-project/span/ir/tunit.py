@@ -39,7 +39,7 @@ from span.ir.types import (
   ArrayT, ConstSizeArray, VarArray, IncompleteArray,
   Int, Float, Char, VarNameInfo,
   Int32, FLOAT16_TC, FLOAT128_TC, PTR_TC,
-  NumericAny, IntegerAny, PointerAny,
+  NumericAny, IntegerAny, PointerAny, Float64, Int64, UInt64,
 )
 
 from span.ir.conv import (
@@ -209,7 +209,7 @@ class TranslationUnit:
     self.collectGlobalVarNames() # MUST
 
     # STEP 4: Misc ending steps
-    self.fillGlobalInitsFunction() # MUST (HERE)
+    # self.fillGlobalInitsFunction() # MUST (HERE)
     self.collectMiscStats() # MUST
     self.genCfgs()  # MUST
     self.assignFunctionIds() # MUST
@@ -420,6 +420,9 @@ class TranslationUnit:
       assert isinstance(arg1, SimpleET) and isinstance(arg2, SimpleET),\
         f"{cond}, {arg1}, {arg2}"
       e.cond, e.arg1, e.arg2 = cond, arg1, arg2
+    elif isinstance(e, AllocE):
+      arg = self.findAndConvertExpr(e.arg, exprPredicate, convertExpr)
+      e.arg = arg
     else:
       assert False, f"{e} {type(e)}"
 
@@ -686,7 +689,10 @@ class TranslationUnit:
     """Fills type field of the instruction (and expressions in it)."""
     for func in self.yieldFunctionsWithBody():
       for insn in func.yieldInstrSeq():
-        self.inferTypeOfInstr(insn)
+        try:
+          self.inferTypeOfInstr(insn)
+        except Exception as e:
+          raise Exception(f"{insn}: {e}")
 
 
   ################################################
@@ -803,12 +809,15 @@ class TranslationUnit:
       if op.BO_NUM_START_OC <= opCode <= op.BO_NUM_END_OC:
         itype1 = self.inferTypeOfExpr(e.arg1)
         itype2 = self.inferTypeOfExpr(e.arg2)
-        # FIXME: conversion rules
-        if itype1.sizeInBits() >= itype2.sizeInBits():
-          if FLOAT16_TC <= itype2.typeCode <= FLOAT128_TC:
-            eType = itype2
-          else:
-            eType = itype1
+        # FIXME: conversion rules are too broad
+        if itype1.isFloat() or itype2.isFloat():
+          eType = Float64   # an over-approximation
+        elif itype1.isUnsigned() or itype2.isUnsigned():
+          eType = UInt64    # an over-approximation
+        elif itype1.isPointer():
+          eType = itype1
+        elif itype2.isPointer():
+          eType = itype2
         else:
           eType = itype1
 
@@ -1090,6 +1099,8 @@ class TranslationUnit:
         varNames.add(insn.lhs.name)
       elif isinstance(insn.lhs, ArrayE):
         varNames.add(insn.lhs.getFullName())
+      elif isinstance(insn.lhs, MemberE):
+        pass # TODO: see what to do?
       else:
         raise ValueError(f"{insn}")
 

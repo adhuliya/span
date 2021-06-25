@@ -18,7 +18,7 @@ import span.ir.expr as expr
 import span.ir.instr as instr
 import span.ir.constructs as constructs
 import span.ir.ir as ir
-from span.ir.conv import Forward
+from span.ir.conv import Forward, isGlobalName
 
 from span.api.lattice import \
   (ChangedT,
@@ -471,6 +471,10 @@ class OverallL(dfv.OverallL):
     assert self.val, f"{self}"
     return set(vName for vName, val in self.val.items()
                if val.isConstant()) # ok val.isConst..
+
+
+  def getDefaultValForGlobal(self) -> ComponentL:
+    return ComponentL(self.func, val=(0,0))
 
 
   def widen(self,

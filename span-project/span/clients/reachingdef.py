@@ -201,6 +201,10 @@ class OverallL(dfv.OverallL):
     return ComponentL(func, val={gNid})
 
 
+  def getDefaultValForGlobal(self) -> ComponentL:
+    return ComponentL(self.func, val={GLOBAL_INITS_FNID})
+
+
   @classmethod
   def isAcceptedType(cls,
       t: SpanType,

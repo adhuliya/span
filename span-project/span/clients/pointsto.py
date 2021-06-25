@@ -210,6 +210,10 @@ class OverallL(dfv.OverallL):
     return check1 and check2
 
 
+  def getDefaultValForGlobal(self) -> ComponentL:
+    return ComponentL(self.func, val=NULL_OBJ_SINGLETON_SET)
+
+
 #   @classmethod
 #   def getAllVars(cls, func: constructs.Func) -> Set[VarNameT]:
 #     """Returns all names which the points-to analysis is interested in.

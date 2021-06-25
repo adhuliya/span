@@ -1350,7 +1350,7 @@ class VarArray(ArrayT):
 
 
   def sizeInBits(self) -> int:
-    raise NotImplementedError()  # no size of a VarArray !!
+    raise NotImplementedError(f"{self}")  # no size of a VarArray !!
 
 
   def __eq__(self, other) -> bool:

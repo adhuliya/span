@@ -317,7 +317,6 @@ class VarE(SimpleET, LocationET):
         assert self.exprCode == FUNC_EXPR_EC, f"{self}"
 
 
-
   def hasFunctionName(self):
     return irConv.isFuncName(self.name)
 
@@ -373,7 +372,7 @@ class VarE(SimpleET, LocationET):
 
 
   def __str__(self):
-    name = self.name.split(":")[-1]
+    name = self.name if util.DD3 else self.name.split(":")[-1]
     return f"{name}"
 
 
