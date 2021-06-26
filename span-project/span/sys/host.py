@@ -440,15 +440,20 @@ class Host:
     # participants and their work result
     self.anWorkDict: Dict[AnNameT, DirectionDT] = dict()
 
+    # counts the net useful simplifications by an analysis
+    # If a 'support' analysis's count goes zero, it is not run anymore.
+    self.anSimSuccessCount: Dict[AnNameT, int] = dict()
+
     # Used by: #TRANSFORM (and possibly by anyone)
     # If anDfvs contains the analysis also given as one of the
     # analyses to participate. The results of the 'participating'
     # version is given preference.
     self.inputAnResults: Opt[Dict[AnNameT, AnResult]] = inputAnResults
     self.inputAnObjs: Opt[Dict[AnNameT, AnalysisAT]] = {}
-    if self.inputAnResults:
+    if self.inputAnResults: #CASCADING
       for anName in self.inputAnResults:
         self.inputAnObjs[anName] = clients.analyses[anName](self.func)
+        self.anSimSuccessCount[anName] = 1
 
     # map of (nid, simName, expr) --to-> set of analyses affected
     self.nodeInstrSimDep:\
@@ -472,10 +477,6 @@ class Host:
     # cache filtered sim sources
     self.filteredSimSrcs: \
       Dict[Tuple[SimNameT, ExprET, NodeIdT], Set[AnNameT]] = dict()
-
-    # counts the net useful simplifications by an analysis
-    # If a 'support' analysis's count goes zero, it is not run anymore.
-    self.anSimSuccessCount: Dict[AnNameT, int] = dict()
 
     # for support analyses that fail to simplify ALL needs
     self.activeAnIsUseful: bool = True  # becomes False if 'support' AN is not useful
@@ -689,6 +690,7 @@ class Host:
       self.anWorkDict[anName] = clients.getAnDirnClass(anName)(anName, self.func, top)
       self.addAnToWorklist(anName, neededBy, force=True, ipa=ipa)
       self.anSimSuccessCount[anName] = 1 if anName in self.mainAnalyses else 0
+
       added = True
 
       assert len(self.anParticipating) == len(self.anWorkDict)
@@ -715,7 +717,8 @@ class Host:
       self.anWorkList.add(anName, neededBy)
       return
     else:
-      if force or self.anSimSuccessCount[anName]:
+      if ((force or self.anSimSuccessCount[anName])
+          and anName not in self.inputAnResults): #CASCADING and condition...
         self.anWorkList.add(anName, neededBy)
         return
 
@@ -749,7 +752,12 @@ class Host:
     self.anRunSequence.append(anName)
     self.activeAnName = anName
     self.activeAnDirn = clients.getAnDirn(anName)
-    self.activeAnObj = self.anParticipating[anName]
+    try:
+      self.activeAnObj = self.anParticipating[anName]
+    except Exception as e:
+      print(f"{self.mainAnalyses} << {self.inputAnResults.keys()}, {self.maxNumOfAnalyses},"
+            f"Participants: {self.getParticipatingAnalyses()}, WrkList: {self.anWorkList}")
+      raise e
     self.activeAnTop = self.activeAnObj.overallTop
     self.activeAnSimNeeds = clients.simNeedMap[anName]
     self.activeAnIsSimAn = anName in clients.simAnalyses
@@ -909,7 +917,7 @@ class Host:
 
     self.stats.funcSelectionTimer.start()
     tFuncName = getFormalInstrStr(insn) # just for printing etc.
-    assert hasattr(AnalysisAT, tFuncName), f"{tFuncName}, {insn}"
+    assert hasattr(AnalysisAT, tFuncName), f"{tFuncName}, {insn}, {insn.info}"
     assert hasattr(activeAnObj, tFuncName), f"{tFuncName}, {insn}, {activeAnObj}"
     self.stats.funcSelectionTimer.stop()
 

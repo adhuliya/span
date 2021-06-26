@@ -1,0 +1,122 @@
+bzip2_comb.c.spanir
+
+AnalysisType: AvgDerefR
+Method: MethodDetail(plain, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 4654
+  TotalPointees      : 140220
+  AvgDerefs          : 30.128921357971638
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 4654
+  TotalPointees      : 66874
+  AvgDerefs          : 14.369144821658788
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [1], ['PointsToA', 'IntervalA']), Config: 1
+  TotalDereferences  : 4654
+  TotalPointees      : 66874
+  AvgDerefs          : 14.369144821658788
+TimeElapsed(TotalTimeTaken): 84667.55771636963 ms (Starts: 1, Stops: 1)
+hmmer_comb.c.spanir
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 258, in diagnoseSpanIr
+    currTUnit,
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/sys/diagnosis.py", line 145, in runDiagnosisNew
+    dfvs = diObj.computeDfvs(mDetails, config, anClassMap)
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/diagnoses/avgderef.py", line 76, in computeDfvs
+    self.res = self.computeDfvsUsingPlainMethod(method, config, anClassMap)
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/diagnoses/avgderef.py", line 159, in computeDfvsUsingPlainMethod
+    res = ipaHost.analyze()
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 378, in analyze
+    self.analyzeFunc(callSitePair, mainBi, GLOBAL_INITS_FUNC_NAME)
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 446, in analyzeFunc
+    thisInvocationId) #recurse
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 446, in analyzeFunc
+    thisInvocationId) #recurse
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 446, in analyzeFunc
+    thisInvocationId) #recurse
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 435, in analyzeFunc
+    host.analyze()  # RUN THE ANALYSIS.
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 811, in analyze
+    self._analyze()
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 850, in _analyze
+    nodeDfv = self.analyzeInstr(node, node.insn, nodeDfv, treatAsNop)
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 885, in analyzeInstr
+    return self._analyzeInstr(node, insn, nodeDfv)
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 1020, in _analyzeInstr
+    nDfv = self.processInstrWithCall(node, insn, nodeDfv, tFuncName)
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 1058, in processInstrWithCall
+    newCalleeBi = self.activeAnObj.getLocalizedCalleeBi(nid, insn, callDfv, calleeBi)
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/api/analysis.py", line 1937, in getLocalizedCalleeBi
+    newDfvIn = nodeDfv.dfvIn.localize(calleeFuncObj, keepParams=True)
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/api/dfv.py", line 581, in localize
+    localizedDfv.updateFuncObj(forFunc)
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/api/dfv.py", line 590, in updateFuncObj
+    newVal = selfVal[vName].getCopy()
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/clients/pointsto.py", line 85, in getCopy
+    if self.top: return ComponentL(self.func, top=True)
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/clients/pointsto.py", line 67, in __init__
+    super().__init__(func, val, top, bot)
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/api/dfv.py", line 318, in __init__
+    super().__init__(func, val, top, bot)
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/api/lattice.py", line 131, in __init__
+    super().__init__(top, bot)
+  File "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/span/api/lattice.py", line 32, in __init__
+    def __init__(self,
+KeyboardInterrupt
+lbm_comb.c.spanir
+
+AnalysisType: AvgDerefR
+Method: MethodDetail(plain, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 642
+  TotalPointees      : 185834
+  AvgDerefs          : 289.46105919003116
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 642
+  TotalPointees      : 185803
+  AvgDerefs          : 289.41277258566976
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [1], ['PointsToA', 'IntervalA']), Config: 1
+  TotalDereferences  : 642
+  TotalPointees      : 185803
+  AvgDerefs          : 289.41277258566976
+TimeElapsed(TotalTimeTaken): 1588.315486907959 ms (Starts: 1, Stops: 1)
+mcf_comb.c.spanir
+
+AnalysisType: AvgDerefR
+Method: MethodDetail(plain, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 605
+  TotalPointees      : 1730
+  AvgDerefs          : 2.8595041322314048
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 605
+  TotalPointees      : 1698
+  AvgDerefs          : 2.806611570247934
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [1], ['PointsToA', 'IntervalA']), Config: 1
+  TotalDereferences  : 605
+  TotalPointees      : 1698
+  AvgDerefs          : 2.806611570247934
+TimeElapsed(TotalTimeTaken): 1640.0806903839111 ms (Starts: 1, Stops: 1)
+milc_comb.c.spanir
+
+AnalysisType: AvgDerefR
+Method: MethodDetail(plain, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 3888
+  TotalPointees      : 232898
+  AvgDerefs          : 59.90174897119341
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 3888
+  TotalPointees      : 191736
+  AvgDerefs          : 49.31481481481482
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [1], ['PointsToA', 'IntervalA']), Config: 1
+  TotalDereferences  : 3888
+  TotalPointees      : 191736
+  AvgDerefs          : 49.31481481481482
+TimeElapsed(TotalTimeTaken): 168997.15042114258 ms (Starts: 1, Stops: 1)

@@ -1,0 +1,293 @@
+
+cut.c.e.c.spanir
+
+AnalysisType: AvgDerefR
+Method: MethodDetail(plain, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 90
+  TotalPointees      : 327
+  AvgDerefs          : 3.6333333333333333
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 90
+  TotalPointees      : 283
+  AvgDerefs          : 3.1444444444444444
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [1], ['PointsToA', 'IntervalA']), Config: 1
+  TotalDereferences  : 90
+  TotalPointees      : 283
+  AvgDerefs          : 3.1444444444444444
+TimeElapsed(TotalTimeTaken): 1142.3237323760986 ms (Starts: 1, Stops: 1)
+
+
+dd.c.e.c.spanir
+
+AnalysisType: AvgDerefR
+Method: MethodDetail(plain, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 137
+  TotalPointees      : 4436
+  AvgDerefs          : 32.37956204379562
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 137
+  TotalPointees      : 3865
+  AvgDerefs          : 28.21167883211679
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [1], ['PointsToA', 'IntervalA']), Config: 1
+  TotalDereferences  : 137
+  TotalPointees      : 3865
+  AvgDerefs          : 28.21167883211679
+TimeElapsed(TotalTimeTaken): 2726.494073867798 ms (Starts: 1, Stops: 1)
+
+
+head.c.e.c.spanir
+
+AnalysisType: AvgDerefR
+Method: MethodDetail(plain, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 149
+  TotalPointees      : 1666
+  AvgDerefs          : 11.181208053691275
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 149
+  TotalPointees      : 1567
+  AvgDerefs          : 10.516778523489933
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [1], ['PointsToA', 'IntervalA']), Config: 1
+  TotalDereferences  : 149
+  TotalPointees      : 1567
+  AvgDerefs          : 10.516778523489933
+TimeElapsed(TotalTimeTaken): 689.3572807312012 ms (Starts: 1, Stops: 1)
+
+
+join.c.e.c.spanir
+
+AnalysisType: AvgDerefR
+Method: MethodDetail(plain, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 235
+  TotalPointees      : 2076
+  AvgDerefs          : 8.83404255319149
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 235
+  TotalPointees      : 1913
+  AvgDerefs          : 8.140425531914893
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [1], ['PointsToA', 'IntervalA']), Config: 1
+  TotalDereferences  : 235
+  TotalPointees      : 1913
+  AvgDerefs          : 8.140425531914893
+TimeElapsed(TotalTimeTaken): 3054.8744201660156 ms (Starts: 1, Stops: 1)
+
+
+lbracket.c.e.c.spanir
+
+AnalysisType: AvgDerefR
+Method: MethodDetail(plain, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 138
+  TotalPointees      : 4068
+  AvgDerefs          : 29.47826086956522
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 138
+  TotalPointees      : 3883
+  AvgDerefs          : 28.13768115942029
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [1], ['PointsToA', 'IntervalA']), Config: 1
+  TotalDereferences  : 138
+  TotalPointees      : 3883
+  AvgDerefs          : 28.13768115942029
+TimeElapsed(TotalTimeTaken): 455.25288581848145 ms (Starts: 1, Stops: 1)
+
+
+ls.c.e.c.spanir
+
+AnalysisType: AvgDerefR
+Method: MethodDetail(plain, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 552
+  TotalPointees      : 6514
+  AvgDerefs          : 11.80072463768116
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 552
+  TotalPointees      : 6163
+  AvgDerefs          : 11.164855072463768
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [1], ['PointsToA', 'IntervalA']), Config: 1
+  TotalDereferences  : 552
+  TotalPointees      : 6163
+  AvgDerefs          : 11.164855072463768
+TimeElapsed(TotalTimeTaken): 20655.800580978394 ms (Starts: 1, Stops: 1)
+
+
+nl.c.e.c.spanir
+
+AnalysisType: AvgDerefR
+Method: MethodDetail(plain, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 34
+  TotalPointees      : 374
+  AvgDerefs          : 11.0
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 34
+  TotalPointees      : 297
+  AvgDerefs          : 8.735294117647058
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [1], ['PointsToA', 'IntervalA']), Config: 1
+  TotalDereferences  : 34
+  TotalPointees      : 297
+  AvgDerefs          : 8.735294117647058
+TimeElapsed(TotalTimeTaken): 1043.1809425354004 ms (Starts: 1, Stops: 1)
+
+
+paste.c.e.c.spanir
+
+AnalysisType: AvgDerefR
+Method: MethodDetail(plain, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 79
+  TotalPointees      : 1257
+  AvgDerefs          : 15.91139240506329
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 79
+  TotalPointees      : 1222
+  AvgDerefs          : 15.468354430379748
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [1], ['PointsToA', 'IntervalA']), Config: 1
+  TotalDereferences  : 79
+  TotalPointees      : 1222
+  AvgDerefs          : 15.468354430379748
+TimeElapsed(TotalTimeTaken): 320.6439018249512 ms (Starts: 1, Stops: 1)
+
+
+pr.c.e.c.spanir
+
+NullDerefEncountered (bad user program)(f:add_line_number,14), 4t, Info(Loc(9648,6),0)
+NullDerefEncountered (bad user program)(f:add_line_number,27), 12t, Info(Loc(9659,14),0)
+NullDerefEncountered (bad user program)(f:add_line_number,29), 13t, Info(Loc(9662,10),0)
+NullDerefEncountered (bad user program)(f:add_line_number,31), 14t, Info(Loc(9669,8),0)
+NullDerefEncountered (bad user program)(f:add_line_number,14), 4t, Info(Loc(9648,6),0)
+NullDerefEncountered (bad user program)(f:add_line_number,27), 12t, Info(Loc(9659,14),0)
+NullDerefEncountered (bad user program)(f:add_line_number,29), 13t, Info(Loc(9662,10),0)
+NullDerefEncountered (bad user program)(f:add_line_number,31), 14t, Info(Loc(9669,8),0)
+NullDerefEncountered (bad user program)(f:print_clump,9), 2t, Info(Loc(9888,6),0)
+NullDerefEncountered (bad user program)(f:print_page,45), 13t, Info(Loc(9457,21),0)
+NullDerefEncountered (bad user program)(f:print_page,45), 13t, Info(Loc(9457,21),0)
+AnalysisType: AvgDerefR
+Method: MethodDetail(plain, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 180
+  TotalPointees      : 1197
+  AvgDerefs          : 6.65
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 180
+  TotalPointees      : 1163
+  AvgDerefs          : 6.461111111111111
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [1], ['PointsToA', 'IntervalA']), Config: 1
+  TotalDereferences  : 180
+  TotalPointees      : 1163
+  AvgDerefs          : 6.461111111111111
+TimeElapsed(TotalTimeTaken): 3004.3601989746094 ms (Starts: 1, Stops: 1)
+
+
+stat.c.e.c.spanir
+
+AnalysisType: AvgDerefR
+Method: MethodDetail(plain, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 135
+  TotalPointees      : 1924
+  AvgDerefs          : 14.251851851851852
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 135
+  TotalPointees      : 1920
+  AvgDerefs          : 14.222222222222221
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [1], ['PointsToA', 'IntervalA']), Config: 1
+  TotalDereferences  : 135
+  TotalPointees      : 1920
+  AvgDerefs          : 14.222222222222221
+TimeElapsed(TotalTimeTaken): 1814.685583114624 ms (Starts: 1, Stops: 1)
+
+
+stty.c.e.c.spanir
+
+AnalysisType: AvgDerefR
+Method: MethodDetail(plain, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 362
+  TotalPointees      : 2856
+  AvgDerefs          : 7.889502762430939
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 362
+  TotalPointees      : 2326
+  AvgDerefs          : 6.425414364640884
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [1], ['PointsToA', 'IntervalA']), Config: 1
+  TotalDereferences  : 362
+  TotalPointees      : 2326
+  AvgDerefs          : 6.425414364640884
+TimeElapsed(TotalTimeTaken): 2523.9531993865967 ms (Starts: 1, Stops: 1)
+
+
+tee.c.e.c.spanir
+
+AnalysisType: AvgDerefR
+Method: MethodDetail(plain, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 45
+  TotalPointees      : 870
+  AvgDerefs          : 19.333333333333332
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 45
+  TotalPointees      : 800
+  AvgDerefs          : 17.77777777777778
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [1], ['PointsToA', 'IntervalA']), Config: 1
+  TotalDereferences  : 45
+  TotalPointees      : 800
+  AvgDerefs          : 17.77777777777778
+TimeElapsed(TotalTimeTaken): 154.2661190032959 ms (Starts: 1, Stops: 1)
+
+
+test.c.e.c.spanir
+
+AnalysisType: AvgDerefR
+Method: MethodDetail(plain, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 138
+  TotalPointees      : 4068
+  AvgDerefs          : 29.47826086956522
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 138
+  TotalPointees      : 3883
+  AvgDerefs          : 28.13768115942029
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [1], ['PointsToA', 'IntervalA']), Config: 1
+  TotalDereferences  : 138
+  TotalPointees      : 3883
+  AvgDerefs          : 28.13768115942029
+TimeElapsed(TotalTimeTaken): 497.7409839630127 ms (Starts: 1, Stops: 1)
+
+
+
+uniq.c.e.c.spanir
+
+AnalysisType: AvgDerefR
+Method: MethodDetail(plain, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 53
+  TotalPointees      : 360
+  AvgDerefs          : 6.7924528301886795
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 53
+  TotalPointees      : 348
+  AvgDerefs          : 6.566037735849057
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [1], ['PointsToA', 'IntervalA']), Config: 1
+  TotalDereferences  : 53
+  TotalPointees      : 348
+  AvgDerefs          : 6.566037735849057
+TimeElapsed(TotalTimeTaken): 733.0057621002197 ms (Starts: 1, Stops: 1)
+
+

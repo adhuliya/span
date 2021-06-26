@@ -377,33 +377,33 @@ class TranslationUnit:
     if isinstance(e, BinaryE):
       arg1 = self.findAndConvertExpr(e.arg1, exprPredicate, convertExpr)
       arg2 = self.findAndConvertExpr(e.arg2, exprPredicate, convertExpr)
-      assert isinstance(arg1, SimpleET) and isinstance(arg2, SimpleET)
+      assert isinstance(arg1, SimpleET) and isinstance(arg2, SimpleET), f"{e}"
       e.arg1, e.arg2 = arg1, arg2
     elif isinstance(e, DerefE):
       arg = self.findAndConvertExpr(e.arg, exprPredicate, convertExpr)
-      assert isinstance(arg, VarE)
+      assert isinstance(arg, VarE), f"{e}"
       e.arg = arg
     elif isinstance(e, AddrOfE):
       arg = self.findAndConvertExpr(e.arg, exprPredicate, convertExpr)
-      assert isinstance(arg, LocationET)
+      assert isinstance(arg, LocationET), f"{e}"
       e.arg = arg
     elif isinstance(e, MemberE):
       of = self.findAndConvertExpr(e.of, exprPredicate, convertExpr)
-      assert isinstance(of, VarE)
+      assert isinstance(of, VarE), f"{e}"
       e.of = of
     elif isinstance(e, CallE):
       callee = self.findAndConvertExpr(e.callee, exprPredicate, convertExpr)
-      assert isinstance(callee, VarE)
+      assert isinstance(callee, VarE), f"{e}: {callee}"
       e.callee = callee
       newArgs: List[SimpleET] = []
       for arg in e.args:
         newArg = self.findAndConvertExpr(arg, exprPredicate, convertExpr)
-        assert isinstance(newArg, SimpleET)
+        assert isinstance(newArg, SimpleET), f"{e}: {arg}"
         newArgs.append(newArg)
       e.args = newArgs
     elif isinstance(e, UnaryE):
       arg = self.findAndConvertExpr(e.arg, exprPredicate, convertExpr)
-      assert isinstance(arg, SimpleET)
+      assert isinstance(arg, SimpleET), f"{e}"
       e.arg = arg
     elif isinstance(e, CastE):
       arg = self.findAndConvertExpr(e.arg, exprPredicate, convertExpr)
@@ -411,7 +411,7 @@ class TranslationUnit:
     elif isinstance(e, ArrayE):
       of = self.findAndConvertExpr(e.of, exprPredicate, convertExpr)
       index = self.findAndConvertExpr(e.index, exprPredicate, convertExpr)
-      assert isinstance(of, LocationET) and isinstance(index, SimpleET)
+      assert isinstance(of, LocationET) and isinstance(index, SimpleET), f"{e}"
       e.of, e.index = of, index
     elif isinstance(e, SelectE):
       cond = self.findAndConvertExpr(e.cond, exprPredicate, convertExpr)
@@ -1036,7 +1036,7 @@ class TranslationUnit:
   def canonicalize(self) -> None:
     """Transforms SPAN IR to a canonical form."""
     self.replaceMemAllocations()
-    self.replaceZeroWithNullPtr()  # FIXME: should be used?
+    # self.replaceZeroWithNullPtr()  # FIXME: should be used?
 
     self.removeNopInsns()  # (OPTIONAL)
     for func in self.yieldFunctionsWithBody():
@@ -1459,6 +1459,8 @@ class TranslationUnit:
     if shortestPrefix in nim:
       varType = nim[shortestPrefix]
       return varType.hasArray
+    elif shortestPrefix == NULL_OBJ_NAME: #FIXME: why is this needed?
+      return True
     raise ValueError(f"{name}, {shortestPrefix}, {varType}, {nim}")
 
 

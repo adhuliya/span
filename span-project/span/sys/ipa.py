@@ -656,6 +656,8 @@ class IpaHost:
     """Create an instance of Host for the given function"""
 
     func = self.tUnit.getFuncObj(funcName)
+    inputAnResults = self.inputAnResults.get(func.name, None)\
+      if self.inputAnResults else None
 
     return Host(
       func=func,
@@ -663,7 +665,7 @@ class IpaHost:
       otherAnalyses=self.otherAnalyses,
       avoidAnalyses=self.avoidAnalyses,
       maxNumOfAnalyses=self.maxNumOfAnalyses,
-      inputAnResults=self.inputAnResults,
+      inputAnResults=inputAnResults,
       disableSim=self.disableAllSim,
       biDfv=biDfv,
       ipaEnabled=ipa,

@@ -49,7 +49,7 @@ It works only when `IPA_VC_WIDEN_VALUE_CONTEXT` is True."""
 IPA_VC_REMOVE_UNUSED_VC = True
 """Remove value contexts not needed by any call site."""
 
-RECURSION_LIMIT = max(IPA_VC_RECURSION_LIMIT, 5000)
+RECURSION_LIMIT = max(IPA_VC_RECURSION_LIMIT, 10000)
 """Set global recursion limit."""
 
 ################################################################################

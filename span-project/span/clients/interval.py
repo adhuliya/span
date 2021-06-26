@@ -720,8 +720,10 @@ class IntervalA(analysis.ValueAnalysisAT):
       dfvInGetVal: Callable[[types.VarNameT], dfv.ComponentL],
   ) -> dfv.ComponentL:
     """A default implementation for Constant Propagation."""
-    assert isinstance(e.val, (int, float)), f"{e}"
-    return ComponentL(self.func, val=(e.val, e.val))
+    if isinstance(e.val, (int, float)):
+      return ComponentL(self.func, val=(e.val, e.val))
+    else: # a string literal if assigned to a char array
+      return ComponentL(self.func, val=(0, 255))
 
 
   def getExprDfvCastE(self,

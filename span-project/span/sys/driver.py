@@ -530,6 +530,7 @@ def viewDotFile(args: argparse.Namespace):
   else:
     currTUnit = parseTUnitObject(fileName, ipa=(graphType=="ipa-cfg"))
 
+    graphGenerated = False
     for func in currTUnit.yieldFunctionsWithBody():
       if funcName and not func.name == funcName:
         continue
@@ -543,6 +544,12 @@ def viewDotFile(args: argparse.Namespace):
       dotFileName = f"{fileName}.{irConv.simplifyName(func.name)}.{graphType}.dot"
       util.writeToFile(dotFileName, callGraphDot)
       showDotGraph(dotFileName)
+      graphGenerated = True
+
+    if not graphGenerated:
+      print(f"No graph generated: Given specific func if any: {funcName}")
+
+
 
 
 def showDotGraph(dotFileName: str) -> bool:
