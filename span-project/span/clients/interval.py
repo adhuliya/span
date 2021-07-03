@@ -263,6 +263,17 @@ class ComponentL(dfv.ComponentL):
     return self.val and self.val[1] <= 0
 
 
+  def isFinite(self) -> bool:
+    """Returns True if the range is finite."""
+    if self.bot:
+      return False
+    elif self.top:
+      return True
+    elif self.val[0] != float("-inf") and self.val[1] != float("+inf"):
+      return True
+    return False
+
+
   def overlaps(self, other: 'ComponentL') -> bool:
     if self.top or other.top: return False
     if self.bot or other.bot: return True

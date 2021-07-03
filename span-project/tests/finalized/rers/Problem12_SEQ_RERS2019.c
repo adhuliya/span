@@ -2008,8 +2008,10 @@ int main()
     while(1)
     {
         // read input
-        int input;
-        scanf("%d", &input);        
+        //AD int input;
+        //AD scanf("%d", &input);        
+	      int inputs[] = {2,9,4,10,5,1,6,8,7,3}; //AD
+        int input = inputs[3]; //AD
         // operate eca engine
         if((input != 2) && (input != 9) && (input != 4) && (input != 10) && (input != 5) && (input != 1) && (input != 6) && (input != 8) && (input != 7) && (input != 3))
           return -2;

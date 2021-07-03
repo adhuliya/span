@@ -19,7 +19,7 @@ from span.ir.tunit import TranslationUnit
 from span.sys.ipa import IpaHost, ipaAnalyzeCascade
 
 from typing import (
-  Optional as Opt, Dict, List, Type, Any, cast, Set,
+  Optional as Opt, Dict, List, Type, Any, cast, Set, Tuple,
 )
 
 import span.util.ff as ff
@@ -76,11 +76,12 @@ class UninitializedVarsR(DiagnosisRT):
     # anClass1, anClass2 = anClassMap[anName1], anClassMap[anName2]
 
     totalNodes = 0
-    totalUses = 0 # total use points
+    totalUsesDirect = 0 # total use points
+    totalUsesIndirect = 0 # total use points
     totalUsesInitUnreachMust = 0 # total uninit uses (must)
     totalUsesUninitMust = 0 # total uninit uses (must)
     totalUsesInitMust = 0 # total init uses (must)
-    totalUsesInitMay = 0 # total may uninitialized uses (may)
+    #totalUsesInitMay = 0 # total may uninitialized uses (may)
 
     for fName in sorted(dfvs.keys()):
       print(f"{fName}")
@@ -93,27 +94,46 @@ class UninitializedVarsR(DiagnosisRT):
         totalNodes += 1
         ptsAnResult = None if method.name == PlainMethod else anResMap[anName2]
 
-        varNamesUsed = self.getVarNamesUsed(func, nid, insn, ptsAnResult)
+        directUse, indirectUse = self.getVarNamesUsed(func, nid, insn, ptsAnResult)
 
-        if not varNamesUsed:
+        if not (directUse or indirectUse):
           continue # no variable used, goto next insn
 
-        varDefsDfvMap = self.getVarDefsDfvMap(nid, varNamesUsed, anResMap[anName1])
+        directDfvMap = self.getVarDefsDfvMap(nid, directUse, anResMap[anName1])
+        indirectDfvMap = self.getVarDefsDfvMap(nid, indirectUse, anResMap[anName1])
 
-        totalUses += len(varNamesUsed)
+        totalUsesDirect += len(directDfvMap)
+        totalUsesIndirect += len(indirectDfvMap)
 
-        for vName, dfv in varDefsDfvMap.items():
+        for vName, dfv in directDfvMap.items():
           if dfv is None: # None if nid is unreachable
             totalUsesInitUnreachMust += 1 # unreachable code is assumed initialized
           elif dfv.isInitialized(must=True):
             totalUsesInitMust += 1
-          elif not dfv.isInitialized(must=False):
+          elif dfv.isUnInitialized(must=True):
+            print(f"  UNINIT_MUST1: {insn}, {vName}:{dfv}, ({insn.info})")
             totalUsesUninitMust += 1
-          elif dfv.isInitialized(must=False):
-            totalUsesInitMay += 1 # may uninitialized (excluded must)
+          # elif dfv.isInitialized(must=False):
+          #   totalUsesInitMay += 1 # may uninitialized (excluded must)
 
-    return totalNodes, totalUses, totalUsesInitMust, totalUsesUninitMust,\
-           totalUsesInitMay, totalUsesInitUnreachMust
+        mustInit = mustUninit = True
+        for vName, dfv in indirectDfvMap.items():
+          if dfv is None: # None if nid is unreachable
+            print(f"  INIT_NONE: {insn}, {vName}:{dfv} ({func.name}, {insn.info}")
+            continue
+          if not dfv.isInitialized(must=True):
+            mustInit = False
+          if not dfv.isUnInitialized(must=True):
+            mustUninit = False
+
+        if mustInit:
+          totalUsesInitMust += 1
+        elif mustUninit:
+          print(f"  UNINIT_MUST2: {insn}, {indirectUse}, ({func.name}, {insn.info})")
+          totalUsesUninitMust += 1
+
+    return totalNodes, totalUsesDirect, totalUsesIndirect, totalUsesInitMust,\
+           totalUsesUninitMust, 0, totalUsesInitUnreachMust
 
 
   def handleResults(self,
@@ -125,11 +145,12 @@ class UninitializedVarsR(DiagnosisRT):
     print(f"AnalysisType: {self.__class__.__name__}")
     print(f"Method: {method}")
     print(f"  TotalNodes              : {result[0]}")
-    print(f"  TotalUses               : {result[1]}")
-    print(f"  TotalUsesInitMust       : {result[2]}")
-    print(f"  TotalUsesUninitMust     : {result[3]}")
-    print(f"  TotalUsesInitMay        : {result[4]} (does not include must init)")
-    print(f"  TotalUsesInitUnreachMust: {result[5]}")
+    print(f"  TotalUsesDirect         : {result[1]}")
+    print(f"  TotalUsesIndirect       : {result[2]}")
+    print(f"  TotalUsesInitMust       : {result[3]}")
+    print(f"  TotalUsesUninitMust     : {result[4]}")
+    # print(f"  TotalUsesInitMay        : {result[5]} (does not include must init)")
+    print(f"  TotalUsesInitUnreachMust: {result[6]}")
 
 
   def getVarNamesUsed(self,
@@ -137,17 +158,17 @@ class UninitializedVarsR(DiagnosisRT):
       nid: NodeIdT,
       insn: InstrIT,
       ptsAnResult: Opt[AnResult] = None,
-  ) -> Set[VarNameT]:
+  ) -> Tuple[Set[VarNameT], Set[VarNameT]]:
     """Returns var names possibly used in an expression."""
-    names = instr.getNamesUsedInInstrSyntactically(insn)
+    names = instr.getNamesUsedInInstrSyntactically(insn, True, False)
     de = instr.getDerefExpr(insn, includeLhs=False)
 
     if not de:
-      return names
+      return names, set()
 
     # if here, there is a deref expression as rvalue
     if not ptsAnResult: # in case of plain method
-      return names | self.tUnit.getNamesEnv(func, de.type)
+      return names, self.tUnit.getNamesEnv(func, de.type)
     else:
       derefVar = expr.getDereferencedVar(de)
       dfv, ptsRes = None, ptsAnResult.get(nid)
@@ -155,11 +176,11 @@ class UninitializedVarsR(DiagnosisRT):
         dfv = ptsRes.dfvIn.getVal(derefVar.name)
 
       if not dfv or dfv.bot:
-        return names | self.tUnit.getNamesEnv(func, de.type)
+        return names, self.tUnit.getNamesEnv(func, de.type)
       elif dfv.top:
-        return names
+        return names, set()
       else:
-        return names | dfv.val
+        return names, dfv.val
 
 
   def getVarDefsDfvMap(self,
@@ -167,6 +188,9 @@ class UninitializedVarsR(DiagnosisRT):
       varNamesUsed: Set[VarNameT],
       anResult: AnResult,
   ) -> Dict[VarNameT, ComponentL]:
+    if not varNamesUsed:
+      return dict()
+
     resMap, nidRes = {}, anResult.get(nid)
     for vName in varNamesUsed:
       resMap[vName] = None if nidRes is None else nidRes.dfvIn.getVal(vName)

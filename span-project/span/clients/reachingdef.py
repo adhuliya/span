@@ -106,6 +106,7 @@ class ComponentL(DataLT):
     if self.top:
       self.val = set()
       self.top = False
+    if fNid == (0,0): raise ValueError() # delit
     self.val.add(fNid)
 
 
@@ -120,7 +121,7 @@ class ComponentL(DataLT):
 
 
   def isInitialized(self,
-      must: bool = False, # False=May uninitialized, True=Must uninitialized
+      must: bool = False, # False=May initialized, True=Must initialized
   ) -> bool:
     gNid = genGlobalNodeId(0, 0)  # i.e. uninitialized def
     if self.top: # only possible if code is unreachable
@@ -131,6 +132,20 @@ class ComponentL(DataLT):
       return False if len(self.val) == 1 else not must
     else:
       return True  # a must initialized value
+
+
+  def isUnInitialized(self,
+      must: bool = False, # False=May uninitialized, True=Must uninitialized
+  ) -> bool:
+    gNid = genGlobalNodeId(0, 0)  # i.e. uninitialized def
+    if self.top: # only possible if code is unreachable
+      return False # assume must initialized (since unreachable)
+    elif self.bot:
+      return not must
+    elif gNid in self.val:
+      return True if len(self.val) == 1 else not must
+    else:
+      return False  # a must uninitialized value
 
 
   def __eq__(self,
@@ -221,6 +236,17 @@ class OverallL(dfv.OverallL):
     varDfv = self.getVal(varName)
     try:
       return varDfv.isInitialized(must=must)
+    except ValueError as e:
+      raise ValueError(f"{varName}: {e}")
+
+
+  def isUnInitialized(self,
+      varName: VarNameT,
+      must: bool = False, # False=May uninitialized, True=Must uninitialized
+  ) -> bool:
+    varDfv = self.getVal(varName)
+    try:
+      return varDfv.isUnInitialized(must=must)
     except ValueError as e:
       raise ValueError(f"{varName}: {e}")
 

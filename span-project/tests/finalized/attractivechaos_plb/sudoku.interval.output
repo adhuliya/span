@@ -1,0 +1,124 @@
+------------------------------------------------
+  TOP_VAL: 1t = fgets(buf,1024,stdin); Ptr(INT8, 1), (v:main:buf:'Top'), (f:main,Info(Loc(183,9),0))
+  TOP_VAL: if (2if) BB2 BB5; VOID, (v:main:2if:'Top'), (f:main,Info(Loc(183,9),0))
+  TOP_VAL: 3t = strlen(buf); UINT64, (v:main:buf:'Top'), (f:main,Info(Loc(184,7),0))
+  TOP_VAL: 4if = 3t < 81; INT32, (v:main:3t:'Top'), (f:main,Info(Loc(184,7),0))
+  TOP_VAL: if (4if) BB3 BB4; VOID, (v:main:4if:'Top'), (f:main,Info(Loc(184,3),0))
+  TOP_VAL: sd_solve(a,buf); INT32, (v:main:buf:'Top'), (f:main,Info(Loc(185,3),0))
+  FINITE: v:sd_genmat:1if, (0, 1), (if (1if) BB2 BB9; VOID, f:sd_genmat, Info(Loc(92,18),0))
+  FINITE: v:sd_genmat:2if, (0, 1), (if (2if) BB4 BB8; VOID, f:sd_genmat, Info(Loc(93,15),0))
+  FINITE: v:sd_genmat:3if, (0, 1), (if (3if) BB6 BB7; VOID, f:sd_genmat, Info(Loc(94,16),0))
+  FINITE: v:sd_genmat:34if, (0, 1), (if (34if) BB11 BB12; VOID, f:sd_genmat, Info(Loc(100,14),0))
+  FINITE: v:sd_genmat:36if, (0, 1), (if (36if) BB14 BB18; VOID, f:sd_genmat, Info(Loc(101,14),0))
+  FINITE: v:sd_genmat:37if, (0, 1), (if (37if) BB16 BB17; VOID, f:sd_genmat, Info(Loc(102,16),0))
+AnalysisType: IntervalR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 92
+  TotalNumericNames     : 77
+  TotalConstantValues   : 2
+  TotalFiniteRange      : 6
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 44
+------------------------------------------------
+TimeElapsed(cascading:cascading): 319.52834129333496 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+  TOP_VAL: 1t = fgets(buf,1024,stdin); Ptr(INT8, 1), (v:main:buf:'Top'), (f:main,Info(Loc(183,9),0))
+  TOP_VAL: if (2if) BB2 BB5; VOID, (v:main:2if:'Top'), (f:main,Info(Loc(183,9),0))
+  TOP_VAL: 3t = strlen(buf); UINT64, (v:main:buf:'Top'), (f:main,Info(Loc(184,7),0))
+  TOP_VAL: 4if = 3t < 81; INT32, (v:main:3t:'Top'), (f:main,Info(Loc(184,7),0))
+  TOP_VAL: if (4if) BB3 BB4; VOID, (v:main:4if:'Top'), (f:main,Info(Loc(184,3),0))
+  TOP_VAL: sd_solve(a,buf); INT32, (v:main:buf:'Top'), (f:main,Info(Loc(185,3),0))
+  FINITE: v:sd_genmat:1if, (0, 1), (if (1if) BB2 BB9; VOID, f:sd_genmat, Info(Loc(92,18),0))
+  FINITE: v:sd_genmat:2if, (0, 1), (if (2if) BB4 BB8; VOID, f:sd_genmat, Info(Loc(93,15),0))
+  FINITE: v:sd_genmat:3if, (0, 1), (if (3if) BB6 BB7; VOID, f:sd_genmat, Info(Loc(94,16),0))
+  FINITE: v:sd_genmat:34if, (0, 1), (if (34if) BB11 BB12; VOID, f:sd_genmat, Info(Loc(100,14),0))
+  FINITE: v:sd_genmat:36if, (0, 1), (if (36if) BB14 BB18; VOID, f:sd_genmat, Info(Loc(101,14),0))
+  FINITE: v:sd_genmat:37if, (0, 1), (if (37if) BB16 BB17; VOID, f:sd_genmat, Info(Loc(102,16),0))
+AnalysisType: IntervalR
+Method: MethodDetail(plain, plain, ['IntervalA'], 'No Description')
+  TotalNodes            : 92
+  TotalNumericNames     : 77
+  TotalConstantValues   : 2
+  TotalFiniteRange      : 6
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 44
+------------------------------------------------
+TimeElapsed(plain:plain): 222.41592407226562 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+  TOP_VAL: 1t = fgets(buf,1024,stdin); Ptr(INT8, 1), (v:main:buf:'Top'), (f:main,Info(Loc(183,9),0))
+  TOP_VAL: if (2if) BB2 BB5; VOID, (v:main:2if:'Top'), (f:main,Info(Loc(183,9),0))
+  TOP_VAL: 3t = strlen(buf); UINT64, (v:main:buf:'Top'), (f:main,Info(Loc(184,7),0))
+  TOP_VAL: 4if = 3t < 81; INT32, (v:main:3t:'Top'), (f:main,Info(Loc(184,7),0))
+  TOP_VAL: if (4if) BB3 BB4; VOID, (v:main:4if:'Top'), (f:main,Info(Loc(184,3),0))
+  TOP_VAL: sd_solve(a,buf); INT32, (v:main:buf:'Top'), (f:main,Info(Loc(185,3),0))
+  FINITE: v:sd_genmat:1if, (0, 1), (if (1if) BB2 BB9; VOID, f:sd_genmat, Info(Loc(92,18),0))
+  FINITE: v:sd_genmat:2if, (0, 1), (if (2if) BB4 BB8; VOID, f:sd_genmat, Info(Loc(93,15),0))
+  FINITE: v:sd_genmat:3if, (0, 1), (if (3if) BB6 BB7; VOID, f:sd_genmat, Info(Loc(94,16),0))
+  FINITE: v:sd_genmat:34if, (0, 1), (if (34if) BB11 BB12; VOID, f:sd_genmat, Info(Loc(100,14),0))
+  FINITE: v:sd_genmat:36if, (0, 1), (if (36if) BB14 BB18; VOID, f:sd_genmat, Info(Loc(101,14),0))
+  FINITE: v:sd_genmat:37if, (0, 1), (if (37if) BB16 BB17; VOID, f:sd_genmat, Info(Loc(102,16),0))
+AnalysisType: IntervalR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 92
+  TotalNumericNames     : 77
+  TotalConstantValues   : 2
+  TotalFiniteRange      : 6
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 44
+------------------------------------------------
+TimeElapsed(cascading:cascading): 213.55009078979492 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+  TOP_VAL: 1t = fgets(buf,1024,stdin); Ptr(INT8, 1), (v:main:buf:'Top'), (f:main,Info(Loc(183,9),0))
+  TOP_VAL: if (2if) BB2 BB5; VOID, (v:main:2if:'Top'), (f:main,Info(Loc(183,9),0))
+  TOP_VAL: 3t = strlen(buf); UINT64, (v:main:buf:'Top'), (f:main,Info(Loc(184,7),0))
+  TOP_VAL: 4if = 3t < 81; INT32, (v:main:3t:'Top'), (f:main,Info(Loc(184,7),0))
+  TOP_VAL: if (4if) BB3 BB4; VOID, (v:main:4if:'Top'), (f:main,Info(Loc(184,3),0))
+  TOP_VAL: sd_solve(a,buf); INT32, (v:main:buf:'Top'), (f:main,Info(Loc(185,3),0))
+  FINITE: v:sd_genmat:1if, (0, 1), (if (1if) BB2 BB9; VOID, f:sd_genmat, Info(Loc(92,18),0))
+  FINITE: v:sd_genmat:2if, (0, 1), (if (2if) BB4 BB8; VOID, f:sd_genmat, Info(Loc(93,15),0))
+  FINITE: v:sd_genmat:3if, (0, 1), (if (3if) BB6 BB7; VOID, f:sd_genmat, Info(Loc(94,16),0))
+  FINITE: v:sd_genmat:34if, (0, 1), (if (34if) BB11 BB12; VOID, f:sd_genmat, Info(Loc(100,14),0))
+  FINITE: v:sd_genmat:36if, (0, 1), (if (36if) BB14 BB18; VOID, f:sd_genmat, Info(Loc(101,14),0))
+  FINITE: v:sd_genmat:37if, (0, 1), (if (37if) BB16 BB17; VOID, f:sd_genmat, Info(Loc(102,16),0))
+AnalysisType: IntervalR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 92
+  TotalNumericNames     : 77
+  TotalConstantValues   : 2
+  TotalFiniteRange      : 6
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 44
+------------------------------------------------
+TimeElapsed(lerner:lerner): 206.95161819458008 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+  TOP_VAL: 1t = fgets(buf,1024,stdin); Ptr(INT8, 1), (v:main:buf:'Top'), (f:main,Info(Loc(183,9),0))
+  TOP_VAL: if (2if) BB2 BB5; VOID, (v:main:2if:'Top'), (f:main,Info(Loc(183,9),0))
+  TOP_VAL: 3t = strlen(buf); UINT64, (v:main:buf:'Top'), (f:main,Info(Loc(184,7),0))
+  TOP_VAL: 4if = 3t < 81; INT32, (v:main:3t:'Top'), (f:main,Info(Loc(184,7),0))
+  TOP_VAL: if (4if) BB3 BB4; VOID, (v:main:4if:'Top'), (f:main,Info(Loc(184,3),0))
+  TOP_VAL: sd_solve(a,buf); INT32, (v:main:buf:'Top'), (f:main,Info(Loc(185,3),0))
+  FINITE: v:sd_genmat:1if, (0, 1), (if (1if) BB2 BB9; VOID, f:sd_genmat, Info(Loc(92,18),0))
+  FINITE: v:sd_genmat:2if, (0, 1), (if (2if) BB4 BB8; VOID, f:sd_genmat, Info(Loc(93,15),0))
+  FINITE: v:sd_genmat:3if, (0, 1), (if (3if) BB6 BB7; VOID, f:sd_genmat, Info(Loc(94,16),0))
+  FINITE: v:sd_genmat:34if, (0, 1), (if (34if) BB11 BB12; VOID, f:sd_genmat, Info(Loc(100,14),0))
+  FINITE: v:sd_genmat:36if, (0, 1), (if (36if) BB14 BB18; VOID, f:sd_genmat, Info(Loc(101,14),0))
+  FINITE: v:sd_genmat:37if, (0, 1), (if (37if) BB16 BB17; VOID, f:sd_genmat, Info(Loc(102,16),0))
+AnalysisType: IntervalR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 92
+  TotalNumericNames     : 77
+  TotalConstantValues   : 2
+  TotalFiniteRange      : 6
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 44
+------------------------------------------------
+TimeElapsed(span:span): 310.3914260864258 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+------------------------------------------------
+TimeElapsed(compareall:compareall): 0.11968612670898438 ms (Starts: 1, Stops: 1)
+TimeElapsed(TotalTimeTaken): 1348.6523628234863 ms (Starts: 1, Stops: 1)

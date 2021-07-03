@@ -11,6 +11,9 @@ This (and every) analysis subclasses,
 """
 
 import logging
+
+from span.ir.conv import isPpmsVar
+
 LOG = logging.getLogger(__name__)
 LDB, LIN, LER, LWA = LOG.debug, LOG.info, LOG.error, LOG.warning
 
@@ -148,6 +151,9 @@ class ComponentL(dfv.ComponentL):
       if len(selfVal) == 1 and NULL_OBJ_NAME in selfVal:
         return True, True # its zero
       elif NULL_OBJ_NAME not in selfVal:
+        for name in selfVal:
+          if isPpmsVar(name):
+            return False, False # can't say
         return False, True # its never zero
     return False, False # in all other cases it can't say
 

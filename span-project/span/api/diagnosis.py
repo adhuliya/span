@@ -146,20 +146,20 @@ class DiagnosisRT:
   #NOTE: A default init for reference only. Must Override.
   MethodSequence: List[MethodDetail] = [
     MethodDetail(
-      PlainMethod,
-      ["IntervalA"],
+      name=PlainMethod,
+      anNames=["IntervalA"],
     ),
     MethodDetail(
-      CascadingMethod,
-      ["IntervalA", "PointsToA"],
+      name=CascadingMethod,
+      anNames=["IntervalA", "PointsToA"],
     ),
     MethodDetail(
-      LernerMethod,
-      ["IntervalA", "PointsToA"],
+      name=LernerMethod,
+      anNames=["IntervalA", "PointsToA"],
     ),
     MethodDetail(
-      SpanMethod,
-      ["IntervalA", "PointsToA"],
+      name=SpanMethod,
+      anNames=["IntervalA", "PointsToA"],
     ),
   ]
   """Holds a sequence of `MethodDetail`.
@@ -179,7 +179,7 @@ class DiagnosisRT:
       anClassMap: Dict[AnNameT, Type[AnalysisAT]],
   ) -> None:
     """Override this method to do some initialization."""
-    pass
+    print("-" * 48) # a pretty printing
 
 
   def computeDfvs(self,
@@ -202,9 +202,10 @@ class DiagnosisRT:
       res = self.computeDfvsUsingLernerMethod(method, anClassMap)
     elif method.name == SpanMethod:
       res = self.computeDfvsUsingSpanMethod(method, anClassMap)
+    elif method.name == CompareAll:
+      res = self.compareAll(method, anClassMap)
 
     return res
-
 
   def computeResults(self,
       method: MethodDetail,
@@ -245,7 +246,7 @@ class DiagnosisRT:
       anClassMap: Dict[AnNameT, Type[AnalysisAT]],
   ) -> None:
     """Override this method to do some work after all operations finish."""
-    pass
+    print("-" * 48) # a pretty printing
 
 
   def computeDfvsUsingPlainMethod(self,
@@ -315,6 +316,13 @@ class DiagnosisRT:
     res = ipaAnalyzeCascade(self.tUnit, method.anNames)
     return res
 
+
+  def compareAll(self,
+      method: MethodDetail,
+      anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
+  ) -> None:
+    """Compares the results already computed using other methods."""
+    pass
 
 
 DiagnosisRClassT = TypeVar('DiagnosisRClassT', bound=DiagnosisRT)

@@ -1168,6 +1168,7 @@ def getFormalInstrStr(insn: InstrIT) -> types.FormalStrT:
 def getNamesUsedInInstrSyntactically(
     insn: InstrIT,
     forLiveness=True,
+    addLValue=True,
 ) -> Set[types.VarNameT]:
   """Returns the names syntactically present in the expression.
 
@@ -1176,7 +1177,7 @@ def getNamesUsedInInstrSyntactically(
   """
   names = set()
   if isinstance(insn, AssignI):
-    names |= expr.getNamesUsedInExprSyntactically(insn.lhs, forLiveness)
+    names |= expr.getNamesUsedInExprSyntactically(insn.lhs, forLiveness, addLValue)
     names |= expr.getNamesUsedInExprSyntactically(insn.rhs, forLiveness)
   elif isinstance(insn, CallI):
     names |= expr.getNamesUsedInExprSyntactically(insn.arg, forLiveness)

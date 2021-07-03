@@ -60,7 +60,7 @@ class NullDerefR(DiagnosisRT):
 
 
   def __init__(self, tUnit: TranslationUnit):
-    super().__init__(name="IndexOutOfBounds", category="Count", tUnit=tUnit)
+    super().__init__(name="NullDeref", category="Count", tUnit=tUnit)
     # holds the result, as it is used between methods
     self.res = None
 
@@ -76,6 +76,7 @@ class NullDerefR(DiagnosisRT):
     totalDerefs = 0
     totalSafeDerefs = 0
     totalBotDerefs = 0 # where pointees are bots
+    totalNullDeref = 0
 
     for fName, anResMap in dfvs.items():
       func = self.tUnit.getFuncObj(fName)
@@ -100,8 +101,10 @@ class NullDerefR(DiagnosisRT):
           totalBotDerefs += 1
         elif not conv.NULL_OBJ_NAME in varDfv.val:
           totalSafeDerefs += 1
+        elif conv.NULL_OBJ_NAME in varDfv.val and len(varDfv.val) == 1:
+          totalNullDeref += 1
 
-    return totalDerefs, totalSafeDerefs, totalBotDerefs
+    return totalDerefs, totalSafeDerefs, totalBotDerefs, totalNullDeref
 
 
   def handleResults(self,
@@ -115,56 +118,4 @@ class NullDerefR(DiagnosisRT):
     print(f"  TotalDerefs    : {result[0]}")
     print(f"  TotalSafeDerefs: {result[1]}")
     print(f"  TotalBotDerefs : {result[2]}")
-
-
-  def getArraySize(self,
-      arrayE: ArrayE,
-      nid: NodeIdT,
-      anResult: Opt[AnResult] = None,
-      anObj : Opt[ValueAnalysisAT] = None,
-  ) -> Opt[int]:
-    arrType, arrIndex = arrayE.of.type, arrayE.index
-
-    size = None
-    if isinstance(arrType, ConstSizeArray):
-      size = arrType.size
-    elif anResult and anObj and isinstance(arrType, Ptr):
-      pointeesDfv = self.getExprDfv(arrayE.of, nid, anResult, anObj)
-      if pointeesDfv and not pointeesDfv.bot and not pointeesDfv.top:
-        minSize = ff.LARGE_INT_VAL
-        for vName in pointeesDfv.val: # find minimum size
-          vType = self.tUnit.inferTypeOfVal(vName)
-          if isinstance(vType, ConstSizeArray):
-            minSize = vType.size if minSize > vType.size else minSize
-          else: # a pointee is not a ConstSizeArray, no benefit to continue
-            minSize = ff.LARGE_INT_VAL
-            break
-        if minSize != ff.LARGE_INT_VAL:
-          size = minSize
-
-    return size
-
-
-  def getExprDfv(self,
-      e: ExprET,
-      nid: NodeIdT,
-      anResult: AnResult,
-      anObj : ValueAnalysisAT,
-  ) -> Opt[dfv.ComponentL]:
-    dfvPair = anResult.get(nid)
-    if dfvPair:
-      return anObj.getExprDfv(e, cast(dfv.OverallL, dfvPair.dfvIn))
-
-
-  def printDebugInfo(self,
-      nid: NodeIdT,
-      arrayE: ArrayE,
-      size: int,
-      indexDfv: Opt[dfv.ComponentL],
-      funcName: FuncNameT,
-      msg: str,
-  ) -> None:
-    print(f"  {msg}({nid}): {indexDfv},"
-          f" {arrayE} (size:{size}, {arrayE.info}), {funcName}.")
-
-
+    print(f"  TotalNullDerefs: {result[3]}")

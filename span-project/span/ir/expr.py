@@ -1609,6 +1609,7 @@ def getVarExprs(e: ExprET) -> List[VarE]:
 def getNamesUsedInExprSyntactically(
     e: ExprET,
     forLiveness=True,
+    addLValue=True,
 ) -> Set[types.VarNameT]:
   """Returns the names syntactically present in the expression.
   If forLiveness is False, the return set will also include,
@@ -1620,7 +1621,7 @@ def getNamesUsedInExprSyntactically(
   if isinstance(e, LitE):
     return set()
   if isinstance(e, VarE):  # covers PseudoVarE too
-    return {e.name}
+    return {e.name} if addLValue else set()
 
   if isinstance(e, (DerefE, UnaryE, CastE, SizeOfE, AllocE)):
     return thisFunction(e.arg, forLiveness)

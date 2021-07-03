@@ -1,0 +1,2464 @@
+
+
+
+
+base64.c.e.c.spanir
+
+
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(plain, plain, ['PointsToA'], 'No Description')
+  TotalDerefs    : 37
+  TotalSafeDerefs: 24
+  TotalBotDerefs : 13
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(plain:plain): 302.0615577697754 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 30
+  TotalSafeDerefs: 25
+  TotalBotDerefs : 5
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(cascading:cascading): 440.62352180480957 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 30
+  TotalSafeDerefs: 25
+  TotalBotDerefs : 5
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(lerner:lerner): 456.8195343017578 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 30
+  TotalSafeDerefs: 25
+  TotalBotDerefs : 5
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(span:span): 450.14309883117676 ms (Starts: 1, Stops: 1)
+TimeElapsed(TotalTimeTaken): 1816.0319328308105 ms (Starts: 1, Stops: 1)
+
+
+
+
+basename.c.e.c.spanir
+
+
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(plain, plain, ['PointsToA'], 'No Description')
+  TotalDerefs    : 27
+  TotalSafeDerefs: 18
+  TotalBotDerefs : 9
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(plain:plain): 220.65472602844238 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 27
+  TotalSafeDerefs: 21
+  TotalBotDerefs : 6
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(cascading:cascading): 465.1815891265869 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 27
+  TotalSafeDerefs: 21
+  TotalBotDerefs : 6
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(lerner:lerner): 394.78015899658203 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 27
+  TotalSafeDerefs: 21
+  TotalBotDerefs : 6
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(span:span): 413.1431579589844 ms (Starts: 1, Stops: 1)
+TimeElapsed(TotalTimeTaken): 1614.619255065918 ms (Starts: 1, Stops: 1)
+
+
+
+
+cat.c.e.c.spanir
+
+
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(plain, plain, ['PointsToA'], 'No Description')
+  TotalDerefs    : 67
+  TotalSafeDerefs: 20
+  TotalBotDerefs : 46
+  TotalNullDerefs: 1
+------------------------------------------------
+TimeElapsed(plain:plain): 712.4075889587402 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 25
+  TotalSafeDerefs: 23
+  TotalBotDerefs : 2
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(cascading:cascading): 577.054500579834 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 25
+  TotalSafeDerefs: 23
+  TotalBotDerefs : 2
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(lerner:lerner): 430.2248954772949 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 25
+  TotalSafeDerefs: 23
+  TotalBotDerefs : 2
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(span:span): 426.27978324890137 ms (Starts: 1, Stops: 1)
+TimeElapsed(TotalTimeTaken): 2403.7070274353027 ms (Starts: 1, Stops: 1)
+
+
+
+
+chcon.c.e.c.spanir
+
+
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(plain, plain, ['PointsToA'], 'No Description')
+  TotalDerefs    : 70
+  TotalSafeDerefs: 28
+  TotalBotDerefs : 38
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(plain:plain): 603.0972003936768 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 27
+  TotalSafeDerefs: 23
+  TotalBotDerefs : 4
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(cascading:cascading): 972.545862197876 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 27
+  TotalSafeDerefs: 23
+  TotalBotDerefs : 4
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(lerner:lerner): 667.4635410308838 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 27
+  TotalSafeDerefs: 23
+  TotalBotDerefs : 4
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(span:span): 612.7414703369141 ms (Starts: 1, Stops: 1)
+TimeElapsed(TotalTimeTaken): 3119.46964263916 ms (Starts: 1, Stops: 1)
+
+
+
+
+chgrp.c.e.c.spanir
+
+
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(plain, plain, ['PointsToA'], 'No Description')
+  TotalDerefs    : 26
+  TotalSafeDerefs: 19
+  TotalBotDerefs : 7
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(plain:plain): 226.64761543273926 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 26
+  TotalSafeDerefs: 20
+  TotalBotDerefs : 6
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(cascading:cascading): 674.8652458190918 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 26
+  TotalSafeDerefs: 20
+  TotalBotDerefs : 6
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(lerner:lerner): 564.598798751831 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 26
+  TotalSafeDerefs: 20
+  TotalBotDerefs : 6
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(span:span): 546.2431907653809 ms (Starts: 1, Stops: 1)
+TimeElapsed(TotalTimeTaken): 2175.316333770752 ms (Starts: 1, Stops: 1)
+
+
+
+
+chmod.c.e.c.spanir
+
+
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(plain, plain, ['PointsToA'], 'No Description')
+  TotalDerefs    : 60
+  TotalSafeDerefs: 32
+  TotalBotDerefs : 26
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(plain:plain): 412.3120307922363 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 29
+  TotalSafeDerefs: 24
+  TotalBotDerefs : 5
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(cascading:cascading): 919.2321300506592 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 29
+  TotalSafeDerefs: 24
+  TotalBotDerefs : 5
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(lerner:lerner): 839.3845558166504 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 29
+  TotalSafeDerefs: 24
+  TotalBotDerefs : 5
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(span:span): 707.6339721679688 ms (Starts: 1, Stops: 1)
+TimeElapsed(TotalTimeTaken): 3120.8009719848633 ms (Starts: 1, Stops: 1)
+
+
+
+
+chown.c.e.c.spanir
+
+
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(plain, plain, ['PointsToA'], 'No Description')
+  TotalDerefs    : 24
+  TotalSafeDerefs: 19
+  TotalBotDerefs : 5
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(plain:plain): 289.4911766052246 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 24
+  TotalSafeDerefs: 20
+  TotalBotDerefs : 4
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(cascading:cascading): 866.3175106048584 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 24
+  TotalSafeDerefs: 20
+  TotalBotDerefs : 4
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(lerner:lerner): 632.2753429412842 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 24
+  TotalSafeDerefs: 20
+  TotalBotDerefs : 4
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(span:span): 585.4005813598633 ms (Starts: 1, Stops: 1)
+TimeElapsed(TotalTimeTaken): 2529.378890991211 ms (Starts: 1, Stops: 1)
+
+
+
+
+chown-core.c.e.c.spanir
+
+
+------------------------------------------------
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 258, in diagnoseSpanIr
+    currTUnit,
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/diagnosis.py", line 147, in runDiagnosisNew
+    dfvs = diObj.computeDfvs(mDetails, anClassMap)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/diagnosis.py", line 198, in computeDfvs
+    res = self.computeDfvsUsingPlainMethod(method, anClassMap)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/diagnosis.py", line 263, in computeDfvsUsingPlainMethod
+    maxNumOfAnalyses=1,
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 328, in __init__
+    if tUnit is None or not tUnit.getFuncObj(entryFuncName):
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 2136, in getFuncObj
+    raise ValueError(f"{funcName}, {funcId}")
+ValueError: f:main, None
+
+
+
+
+chroot.c.e.c.spanir
+
+
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(plain, plain, ['PointsToA'], 'No Description')
+  TotalDerefs    : 55
+  TotalSafeDerefs: 23
+  TotalBotDerefs : 30
+  TotalNullDerefs: 2
+------------------------------------------------
+TimeElapsed(plain:plain): 787.1606349945068 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 53
+  TotalSafeDerefs: 37
+  TotalBotDerefs : 14
+  TotalNullDerefs: 2
+------------------------------------------------
+TimeElapsed(cascading:cascading): 1097.2239971160889 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 43
+  TotalSafeDerefs: 28
+  TotalBotDerefs : 13
+  TotalNullDerefs: 2
+------------------------------------------------
+TimeElapsed(lerner:lerner): 552.3903369903564 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 43
+  TotalSafeDerefs: 28
+  TotalBotDerefs : 13
+  TotalNullDerefs: 2
+------------------------------------------------
+TimeElapsed(span:span): 479.3720245361328 ms (Starts: 1, Stops: 1)
+TimeElapsed(TotalTimeTaken): 3119.1153526306152 ms (Starts: 1, Stops: 1)
+
+
+
+
+cksum.c.e.c.spanir
+
+
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(plain, plain, ['PointsToA'], 'No Description')
+  TotalDerefs    : 28
+  TotalSafeDerefs: 21
+  TotalBotDerefs : 7
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(plain:plain): 232.9416275024414 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 10
+  TotalSafeDerefs: 4
+  TotalBotDerefs : 6
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(cascading:cascading): 497.417688369751 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 10
+  TotalSafeDerefs: 4
+  TotalBotDerefs : 6
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(lerner:lerner): 477.8170585632324 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 10
+  TotalSafeDerefs: 4
+  TotalBotDerefs : 6
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(span:span): 293.1032180786133 ms (Starts: 1, Stops: 1)
+TimeElapsed(TotalTimeTaken): 1688.5709762573242 ms (Starts: 1, Stops: 1)
+
+
+
+
+comm.c.e.c.spanir
+
+
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(plain, plain, ['PointsToA'], 'No Description')
+  TotalDerefs    : 149
+  TotalSafeDerefs: 115
+  TotalBotDerefs : 33
+  TotalNullDerefs: 1
+------------------------------------------------
+TimeElapsed(plain:plain): 616.1818504333496 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 149
+  TotalSafeDerefs: 115
+  TotalBotDerefs : 33
+  TotalNullDerefs: 1
+------------------------------------------------
+TimeElapsed(cascading:cascading): 1241.3697242736816 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 149
+  TotalSafeDerefs: 115
+  TotalBotDerefs : 33
+  TotalNullDerefs: 1
+------------------------------------------------
+TimeElapsed(lerner:lerner): 1051.5446662902832 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 149
+  TotalSafeDerefs: 115
+  TotalBotDerefs : 33
+  TotalNullDerefs: 1
+------------------------------------------------
+TimeElapsed(span:span): 1114.161729812622 ms (Starts: 1, Stops: 1)
+TimeElapsed(TotalTimeTaken): 4225.534439086914 ms (Starts: 1, Stops: 1)
+
+
+
+
+copy.c.e.c.spanir
+
+
+------------------------------------------------
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 258, in diagnoseSpanIr
+    currTUnit,
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/diagnosis.py", line 147, in runDiagnosisNew
+    dfvs = diObj.computeDfvs(mDetails, anClassMap)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/diagnosis.py", line 198, in computeDfvs
+    res = self.computeDfvsUsingPlainMethod(method, anClassMap)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/diagnosis.py", line 263, in computeDfvsUsingPlainMethod
+    maxNumOfAnalyses=1,
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 328, in __init__
+    if tUnit is None or not tUnit.getFuncObj(entryFuncName):
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 2136, in getFuncObj
+    raise ValueError(f"{funcName}, {funcId}")
+ValueError: f:main, None
+
+
+
+
+coreutils-arch.c.e.c.spanir
+
+
+------------------------------------------------
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 258, in diagnoseSpanIr
+    currTUnit,
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/diagnosis.py", line 147, in runDiagnosisNew
+    dfvs = diObj.computeDfvs(mDetails, anClassMap)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/diagnosis.py", line 198, in computeDfvs
+    res = self.computeDfvsUsingPlainMethod(method, anClassMap)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/diagnosis.py", line 263, in computeDfvsUsingPlainMethod
+    maxNumOfAnalyses=1,
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 328, in __init__
+    if tUnit is None or not tUnit.getFuncObj(entryFuncName):
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 2136, in getFuncObj
+    raise ValueError(f"{funcName}, {funcId}")
+ValueError: f:main, None
+
+
+
+
+coreutils.c.e.c.spanir
+
+
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(plain, plain, ['PointsToA'], 'No Description')
+  TotalDerefs    : 30
+  TotalSafeDerefs: 18
+  TotalBotDerefs : 11
+  TotalNullDerefs: 1
+------------------------------------------------
+TimeElapsed(plain:plain): 201.54237747192383 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 30
+  TotalSafeDerefs: 18
+  TotalBotDerefs : 11
+  TotalNullDerefs: 1
+------------------------------------------------
+TimeElapsed(cascading:cascading): 355.17358779907227 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 30
+  TotalSafeDerefs: 18
+  TotalBotDerefs : 11
+  TotalNullDerefs: 1
+------------------------------------------------
+TimeElapsed(lerner:lerner): 302.17909812927246 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 30
+  TotalSafeDerefs: 18
+  TotalBotDerefs : 11
+  TotalNullDerefs: 1
+------------------------------------------------
+TimeElapsed(span:span): 367.7842617034912 ms (Starts: 1, Stops: 1)
+TimeElapsed(TotalTimeTaken): 1352.468490600586 ms (Starts: 1, Stops: 1)
+
+
+
+
+coreutils-dir.c.e.c.spanir
+
+
+------------------------------------------------
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 258, in diagnoseSpanIr
+    currTUnit,
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/diagnosis.py", line 147, in runDiagnosisNew
+    dfvs = diObj.computeDfvs(mDetails, anClassMap)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/diagnosis.py", line 198, in computeDfvs
+    res = self.computeDfvsUsingPlainMethod(method, anClassMap)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/diagnosis.py", line 263, in computeDfvsUsingPlainMethod
+    maxNumOfAnalyses=1,
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 328, in __init__
+    if tUnit is None or not tUnit.getFuncObj(entryFuncName):
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 2136, in getFuncObj
+    raise ValueError(f"{funcName}, {funcId}")
+ValueError: f:main, None
+
+
+
+
+coreutils-vdir.c.e.c.spanir
+
+
+------------------------------------------------
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 258, in diagnoseSpanIr
+    currTUnit,
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/diagnosis.py", line 147, in runDiagnosisNew
+    dfvs = diObj.computeDfvs(mDetails, anClassMap)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/diagnosis.py", line 198, in computeDfvs
+    res = self.computeDfvsUsingPlainMethod(method, anClassMap)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/diagnosis.py", line 263, in computeDfvsUsingPlainMethod
+    maxNumOfAnalyses=1,
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 328, in __init__
+    if tUnit is None or not tUnit.getFuncObj(entryFuncName):
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 2136, in getFuncObj
+    raise ValueError(f"{funcName}, {funcId}")
+ValueError: f:main, None
+
+
+
+
+cp.c.e.c.spanir
+
+
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(plain, plain, ['PointsToA'], 'No Description')
+  TotalDerefs    : 150
+  TotalSafeDerefs: 103
+  TotalBotDerefs : 45
+  TotalNullDerefs: 2
+------------------------------------------------
+TimeElapsed(plain:plain): 1433.4783554077148 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 150
+  TotalSafeDerefs: 107
+  TotalBotDerefs : 41
+  TotalNullDerefs: 2
+------------------------------------------------
+TimeElapsed(cascading:cascading): 3360.898733139038 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 148
+  TotalSafeDerefs: 119
+  TotalBotDerefs : 28
+  TotalNullDerefs: 1
+------------------------------------------------
+TimeElapsed(lerner:lerner): 2744.3056106567383 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 148
+  TotalSafeDerefs: 119
+  TotalBotDerefs : 28
+  TotalNullDerefs: 1
+------------------------------------------------
+TimeElapsed(span:span): 2714.6527767181396 ms (Starts: 1, Stops: 1)
+TimeElapsed(TotalTimeTaken): 10654.981136322021 ms (Starts: 1, Stops: 1)
+
+
+
+
+cp-hash.c.e.c.spanir
+
+
+------------------------------------------------
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 258, in diagnoseSpanIr
+    currTUnit,
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/diagnosis.py", line 147, in runDiagnosisNew
+    dfvs = diObj.computeDfvs(mDetails, anClassMap)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/diagnosis.py", line 198, in computeDfvs
+    res = self.computeDfvsUsingPlainMethod(method, anClassMap)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/diagnosis.py", line 263, in computeDfvsUsingPlainMethod
+    maxNumOfAnalyses=1,
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 328, in __init__
+    if tUnit is None or not tUnit.getFuncObj(entryFuncName):
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 2136, in getFuncObj
+    raise ValueError(f"{funcName}, {funcId}")
+ValueError: f:main, None
+
+
+
+
+csplit.c.e.c.spanir
+
+
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(plain, plain, ['PointsToA'], 'No Description')
+  TotalDerefs    : 229
+  TotalSafeDerefs: 41
+  TotalBotDerefs : 132
+  TotalNullDerefs: 56
+------------------------------------------------
+TimeElapsed(plain:plain): 1550.9047508239746 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 258, in diagnoseSpanIr
+    currTUnit,
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/diagnosis.py", line 147, in runDiagnosisNew
+    dfvs = diObj.computeDfvs(mDetails, anClassMap)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/diagnosis.py", line 200, in computeDfvs
+    res = self.computeDfvsUsingCascadingMethod(method, anClassMap)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/diagnosis.py", line 316, in computeDfvsUsingCascadingMethod
+    res = ipaAnalyzeCascade(self.tUnit, method.anNames)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 882, in ipaAnalyzeCascade
+    res = ipaHost.analyze()
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 378, in analyze
+    self.analyzeFunc(callSitePair, mainBi, GLOBAL_INITS_FUNC_NAME)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 446, in analyzeFunc
+    thisInvocationId) #recurse
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 446, in analyzeFunc
+    thisInvocationId) #recurse
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 446, in analyzeFunc
+    thisInvocationId) #recurse
+  [Previous line repeated 3 more times]
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 435, in analyzeFunc
+    host.analyze()  # RUN THE ANALYSIS.
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 811, in analyze
+    self._analyze()
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 850, in _analyze
+    nodeDfv = self.analyzeInstr(node, node.insn, nodeDfv, treatAsNop)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 885, in analyzeInstr
+    return self._analyzeInstr(node, insn, nodeDfv)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 1020, in _analyzeInstr
+    nDfv = self.processInstrWithCall(node, insn, nodeDfv, tFuncName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 1058, in processInstrWithCall
+    newCalleeBi = self.activeAnObj.getLocalizedCalleeBi(nid, insn, callDfv, calleeBi)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/analysis.py", line 1946, in getLocalizedCalleeBi
+    localized = self.getBoundaryInfo(localized, ipa=True, forFunc=calleeFuncObj)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/analysis.py", line 1903, in getBoundaryInfo
+    for vName in varNames:
+KeyboardInterrupt
+
+
+
+
+cut.c.e.c.spanir
+
+
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(plain, plain, ['PointsToA'], 'No Description')
+  TotalDerefs    : 90
+  TotalSafeDerefs: 26
+  TotalBotDerefs : 29
+  TotalNullDerefs: 35
+------------------------------------------------
+TimeElapsed(plain:plain): 1335.1123332977295 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 78
+  TotalSafeDerefs: 24
+  TotalBotDerefs : 21
+  TotalNullDerefs: 33
+------------------------------------------------
+TimeElapsed(cascading:cascading): 2063.6003017425537 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 258, in diagnoseSpanIr
+    currTUnit,
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/diagnosis.py", line 147, in runDiagnosisNew
+    dfvs = diObj.computeDfvs(mDetails, anClassMap)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/diagnosis.py", line 202, in computeDfvs
+    res = self.computeDfvsUsingLernerMethod(method, anClassMap)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/diagnosis.py", line 304, in computeDfvsUsingLernerMethod
+    res = ipaHost.analyze()
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 378, in analyze
+    self.analyzeFunc(callSitePair, mainBi, GLOBAL_INITS_FUNC_NAME)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 446, in analyzeFunc
+    thisInvocationId) #recurse
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 446, in analyzeFunc
+    thisInvocationId) #recurse
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 416, in analyzeFunc
+    callSitePair, parentInvocationId, vContext)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 553, in getComputedValue
+    callSitePair, parentInstanceId, vContext)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 584, in getPrevValueContextHost
+    vci.removeCtxSite(prevValueContext, callSitePair.callSite)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 232, in removeCtxSite
+    hostSitesPair.removeSite(callSite)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 140, in removeSite
+    self.callSites.remove(callSite)
+KeyError: 81938
+
+
+
+
+date.c.e.c.spanir
+
+
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(plain, plain, ['PointsToA'], 'No Description')
+  TotalDerefs    : 37
+  TotalSafeDerefs: 22
+  TotalBotDerefs : 13
+  TotalNullDerefs: 2
+------------------------------------------------
+TimeElapsed(plain:plain): 590.9206867218018 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 32
+  TotalSafeDerefs: 24
+  TotalBotDerefs : 8
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(cascading:cascading): 768.4919834136963 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 32
+  TotalSafeDerefs: 22
+  TotalBotDerefs : 10
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(lerner:lerner): 903.6774635314941 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 32
+  TotalSafeDerefs: 22
+  TotalBotDerefs : 10
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(span:span): 760.4143619537354 ms (Starts: 1, Stops: 1)
+TimeElapsed(TotalTimeTaken): 3212.042808532715 ms (Starts: 1, Stops: 1)
+
+
+
+
+dd.c.e.c.spanir
+
+
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(plain, plain, ['PointsToA'], 'No Description')
+  TotalDerefs    : 138
+  TotalSafeDerefs: 75
+  TotalBotDerefs : 63
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(plain:plain): 2533.3855152130127 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 23
+  TotalSafeDerefs: 22
+  TotalBotDerefs : 1
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(cascading:cascading): 722.4650382995605 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 23
+  TotalSafeDerefs: 22
+  TotalBotDerefs : 1
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(lerner:lerner): 356.9769859313965 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 23
+  TotalSafeDerefs: 22
+  TotalBotDerefs : 1
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(span:span): 301.56564712524414 ms (Starts: 1, Stops: 1)
+TimeElapsed(TotalTimeTaken): 4826.213836669922 ms (Starts: 1, Stops: 1)
+
+
+
+
+df.c.e.c.spanir
+
+
+------------------------------------------------
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 258, in diagnoseSpanIr
+    currTUnit,
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/diagnosis.py", line 147, in runDiagnosisNew
+    dfvs = diObj.computeDfvs(mDetails, anClassMap)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/diagnosis.py", line 198, in computeDfvs
+    res = self.computeDfvsUsingPlainMethod(method, anClassMap)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/diagnosis.py", line 265, in computeDfvsUsingPlainMethod
+    res = ipaHost.analyze()
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 378, in analyze
+    self.analyzeFunc(callSitePair, mainBi, GLOBAL_INITS_FUNC_NAME)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 446, in analyzeFunc
+    thisInvocationId) #recurse
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 416, in analyzeFunc
+    callSitePair, parentInvocationId, vContext)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 553, in getComputedValue
+    callSitePair, parentInstanceId, vContext)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 584, in getPrevValueContextHost
+    vci.removeCtxSite(prevValueContext, callSitePair.callSite)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 232, in removeCtxSite
+    hostSitesPair.removeSite(callSite)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 140, in removeSite
+    self.callSites.remove(callSite)
+KeyError: 159789
+
+
+
+
+dircolors.c.e.c.spanir
+
+
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(plain, plain, ['PointsToA'], 'No Description')
+  TotalDerefs    : 178
+  TotalSafeDerefs: 116
+  TotalBotDerefs : 28
+  TotalNullDerefs: 34
+------------------------------------------------
+TimeElapsed(plain:plain): 1671.884536743164 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 116
+  TotalSafeDerefs: 112
+  TotalBotDerefs : 4
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(cascading:cascading): 1118.666172027588 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 116
+  TotalSafeDerefs: 112
+  TotalBotDerefs : 4
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(lerner:lerner): 684.5827102661133 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 116
+  TotalSafeDerefs: 112
+  TotalBotDerefs : 4
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(span:span): 638.6194229125977 ms (Starts: 1, Stops: 1)
+TimeElapsed(TotalTimeTaken): 5156.477928161621 ms (Starts: 1, Stops: 1)
+
+
+
+
+dirname.c.e.c.spanir
+
+
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(plain, plain, ['PointsToA'], 'No Description')
+  TotalDerefs    : 20
+  TotalSafeDerefs: 18
+  TotalBotDerefs : 2
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(plain:plain): 116.86372756958008 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 20
+  TotalSafeDerefs: 18
+  TotalBotDerefs : 2
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(cascading:cascading): 303.83825302124023 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 20
+  TotalSafeDerefs: 18
+  TotalBotDerefs : 2
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(lerner:lerner): 259.8433494567871 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 20
+  TotalSafeDerefs: 18
+  TotalBotDerefs : 2
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(span:span): 269.925594329834 ms (Starts: 1, Stops: 1)
+TimeElapsed(TotalTimeTaken): 1081.1753273010254 ms (Starts: 1, Stops: 1)
+
+
+
+
+du.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 693, in inferAllInstrTypes
+    self.inferTypeOfInstr(insn)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 903, in inferTypeOfInstr
+    t2 = self.inferTypeOfExpr(insn.rhs)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 855, in inferTypeOfExpr
+    assert isinstance(ofType, RecordT)
+AssertionError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 251, in diagnoseSpanIr
+    currTUnit: tunit.TranslationUnit = ir.readSpanIr(spanirFileName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/ir.py", line 337, in readSpanIr
+    tUnit: TranslationUnit = eval(content)
+  File "<string>", line 5490, in <module>
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 181, in __init__
+    self.preProcess()
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 198, in preProcess
+    self.inferAllInstrTypes()  # MUST
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 695, in inferAllInstrTypes
+    raise Exception(f"{insn}: {e}")
+Exception: 4t = 3t->st_dev; VOID: 
+
+
+
+
+echo.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 251, in diagnoseSpanIr
+    currTUnit: tunit.TranslationUnit = ir.readSpanIr(spanirFileName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/ir.py", line 337, in readSpanIr
+    tUnit: TranslationUnit = eval(content)
+  File "<string>", line 1216
+    XXX""", Info(Loc(7834,32)))], Info(Loc(7834,23))), Info(Loc(7834,23))),
+                                                                          ^
+SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 54-55: truncated \xXX escape
+
+
+
+
+env.c.e.c.spanir
+
+
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(plain, plain, ['PointsToA'], 'No Description')
+  TotalDerefs    : 35
+  TotalSafeDerefs: 19
+  TotalBotDerefs : 15
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(plain:plain): 322.904109954834 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 35
+  TotalSafeDerefs: 19
+  TotalBotDerefs : 15
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(cascading:cascading): 549.5781898498535 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 35
+  TotalSafeDerefs: 19
+  TotalBotDerefs : 15
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(lerner:lerner): 489.8335933685303 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 35
+  TotalSafeDerefs: 19
+  TotalBotDerefs : 15
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(span:span): 431.11729621887207 ms (Starts: 1, Stops: 1)
+TimeElapsed(TotalTimeTaken): 1956.2256336212158 ms (Starts: 1, Stops: 1)
+
+
+
+
+expand.c.e.c.spanir
+
+
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(plain, plain, ['PointsToA'], 'No Description')
+  TotalDerefs    : 47
+  TotalSafeDerefs: 22
+  TotalBotDerefs : 22
+  TotalNullDerefs: 2
+------------------------------------------------
+TimeElapsed(plain:plain): 557.7175617218018 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 47
+  TotalSafeDerefs: 31
+  TotalBotDerefs : 14
+  TotalNullDerefs: 1
+------------------------------------------------
+TimeElapsed(cascading:cascading): 1292.8805351257324 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 47
+  TotalSafeDerefs: 31
+  TotalBotDerefs : 14
+  TotalNullDerefs: 1
+------------------------------------------------
+TimeElapsed(lerner:lerner): 973.743200302124 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 47
+  TotalSafeDerefs: 31
+  TotalBotDerefs : 14
+  TotalNullDerefs: 1
+------------------------------------------------
+TimeElapsed(span:span): 758.756160736084 ms (Starts: 1, Stops: 1)
+TimeElapsed(TotalTimeTaken): 3811.5901947021484 ms (Starts: 1, Stops: 1)
+
+
+
+
+expr.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 693, in inferAllInstrTypes
+    self.inferTypeOfInstr(insn)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 903, in inferTypeOfInstr
+    t2 = self.inferTypeOfExpr(insn.rhs)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 855, in inferTypeOfExpr
+    assert isinstance(ofType, RecordT)
+AssertionError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 251, in diagnoseSpanIr
+    currTUnit: tunit.TranslationUnit = ir.readSpanIr(spanirFileName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/ir.py", line 337, in readSpanIr
+    tUnit: TranslationUnit = eval(content)
+  File "<string>", line 4627, in <module>
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 181, in __init__
+    self.preProcess()
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 198, in preProcess
+    self.inferAllInstrTypes()  # MUST
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 695, in inferAllInstrTypes
+    raise Exception(f"{insn}: {e}")
+Exception: 14t = 13t->_mp_size; VOID: 
+
+
+
+
+extent-scan.c.e.c.spanir
+
+
+------------------------------------------------
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 258, in diagnoseSpanIr
+    currTUnit,
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/diagnosis.py", line 147, in runDiagnosisNew
+    dfvs = diObj.computeDfvs(mDetails, anClassMap)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/diagnosis.py", line 198, in computeDfvs
+    res = self.computeDfvsUsingPlainMethod(method, anClassMap)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/diagnosis.py", line 263, in computeDfvsUsingPlainMethod
+    maxNumOfAnalyses=1,
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 328, in __init__
+    if tUnit is None or not tUnit.getFuncObj(entryFuncName):
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 2136, in getFuncObj
+    raise ValueError(f"{funcName}, {funcId}")
+ValueError: f:main, None
+
+
+
+
+factor.c.e.c.spanir
+
+
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(plain, plain, ['PointsToA'], 'No Description')
+  TotalDerefs    : 258
+  TotalSafeDerefs: 234
+  TotalBotDerefs : 24
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(plain:plain): 8634.26661491394 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 208
+  TotalSafeDerefs: 188
+  TotalBotDerefs : 20
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(cascading:cascading): 11033.514261245728 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 208
+  TotalSafeDerefs: 188
+  TotalBotDerefs : 20
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(lerner:lerner): 37392.89855957031 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 258, in diagnoseSpanIr
+    currTUnit,
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/diagnosis.py", line 147, in runDiagnosisNew
+    dfvs = diObj.computeDfvs(mDetails, anClassMap)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/diagnosis.py", line 204, in computeDfvs
+    res = self.computeDfvsUsingSpanMethod(method, anClassMap)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/diagnosis.py", line 284, in computeDfvsUsingSpanMethod
+    res = ipaHost.analyze()
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 365, in analyze
+    hostGlobal.analyze()
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 811, in analyze
+    self._analyze()
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 850, in _analyze
+    nodeDfv = self.analyzeInstr(node, node.insn, nodeDfv, treatAsNop)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 885, in analyzeInstr
+    return self._analyzeInstr(node, insn, nodeDfv)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 986, in _analyzeInstr
+    nDfv = self.handleRhsBinArith(node, insn, nodeDfv)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 1701, in handleRhsBinArith
+    if valid: return self.analyzeInstr(node, newInsn, nodeDfv) if newInsn else None
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 895, in analyzeInstr
+    res = mergeAll(ai(ins) for ins in insn.insns)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/lattice.py", line 261, in mergeAll
+    for val in values:
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 895, in <genexpr>
+    res = mergeAll(ai(ins) for ins in insn.insns)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 891, in ai
+    nDfv = self._analyzeInstr(node, ins, nodeDfv)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 1024, in _analyzeInstr
+    nDfv = activeAnObj.Any_Instr(nid, insn, nodeDfv)  # type: ignore
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/analysis.py", line 820, in Any_Instr
+    return self.Assign_Instr(nodeId, insn, nodeDfv, calleeBi)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/analysis.py", line 1999, in Assign_Instr
+    return self.processLhsRhs(nodeId, insn.lhs, insn.rhs, nodeDfv, calleeBi)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/analysis.py", line 2098, in processLhsRhs
+    nDfv = self.genNodeDfvL(outDfvValues, nodeDfv, callNode)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/clients/interval.py", line 722, in genNodeDfvL
+    for name, value in outDfvValues.items():
+KeyboardInterrupt
+
+
+
+
+false.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 17, in <module>
+    import span.sys.driver as driver  # IMPORTANT
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 21, in <module>
+    import span.ir.callgraph
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/callgraph.py", line 16, in <module>
+    from span.ir import tunit, constructs, instr, expr
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 31, in <module>
+    from span.util.util import LS, AS
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/util/util.py", line 17, in <module>
+    import span.util.ff as ff
+KeyboardInterrupt
+
+
+
+
+find-mount-point.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 251, in diagnoseSpanIr
+    currTUnit: tunit.TranslationUnit = ir.readSpanIr(spanirFileName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/ir.py", line 337, in readSpanIr
+    tUnit: TranslationUnit = eval(content)
+  File "<string>", line 2488, in <module>
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 181, in __init__
+    self.preProcess()
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 208, in preProcess
+    self.collectAddrTakenVars()  # MUST
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 295, in collectAddrTakenVars
+    if isinstance(rhs, AddrOfE):
+KeyboardInterrupt
+
+
+
+
+fmt.c.e.c.spanir
+
+
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(plain, plain, ['PointsToA'], 'No Description')
+  TotalDerefs    : 102
+  TotalSafeDerefs: 39
+  TotalBotDerefs : 11
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(plain:plain): 1243.2892322540283 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 258, in diagnoseSpanIr
+    currTUnit,
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/diagnosis.py", line 147, in runDiagnosisNew
+    dfvs = diObj.computeDfvs(mDetails, anClassMap)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/diagnosis.py", line 200, in computeDfvs
+    res = self.computeDfvsUsingCascadingMethod(method, anClassMap)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/diagnosis.py", line 316, in computeDfvsUsingCascadingMethod
+    res = ipaAnalyzeCascade(self.tUnit, method.anNames)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 882, in ipaAnalyzeCascade
+    res = ipaHost.analyze()
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 378, in analyze
+    self.analyzeFunc(callSitePair, mainBi, GLOBAL_INITS_FUNC_NAME)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 435, in analyzeFunc
+    host.analyze()  # RUN THE ANALYSIS.
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 811, in analyze
+    self._analyze()
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 850, in _analyze
+    nodeDfv = self.analyzeInstr(node, node.insn, nodeDfv, treatAsNop)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 885, in analyzeInstr
+    return self._analyzeInstr(node, insn, nodeDfv)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 1016, in _analyzeInstr
+    return self.Conditional_Instr(node, insn, nodeDfv)  # type: ignore
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 1768, in Conditional_Instr
+    return self.activeAnObj.Conditional_Instr(node.id, insn, nodeDfv)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/analysis.py", line 2011, in Conditional_Instr
+    return DfvPairL(dfvIn, None, outDfvTrue, outDfvFalse)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/dfv.py", line 152, in __init__
+    self.dfvOut, _ = dfvOutFalse.meet(dfvOutTrue)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/dfv.py", line 349, in meet
+    tup = self.basicMeetOp(other)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/lattice.py", line 199, in basicMeetOp
+    tup = basicMeetOp(self, other)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/lattice.py", line 284, in basicMeetOp
+    if first < second: return first, not Changed
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/dfv.py", line 380, in __lt__
+    defaultVal = selfGetDefaultVal(vName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/dfv.py", line 453, in getDefaultVal
+    if conv.isGlobalName(varName):
+KeyboardInterrupt
+
+
+
+
+fold.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 251, in diagnoseSpanIr
+    currTUnit: tunit.TranslationUnit = ir.readSpanIr(spanirFileName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/ir.py", line 336, in readSpanIr
+    content = util.readFromFile(fileName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/util/common_util.py", line 79, in readFromFile
+    return f.read()
+  File "/usr/lib/pypy3/lib-python/3/codecs.py", line 321, in decode
+    data = self.buffer + input
+KeyboardInterrupt
+
+
+
+
+getlimits.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 17, in <module>
+    import span.sys.driver as driver  # IMPORTANT
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 45, in <module>
+    import span.sys.host      as host
+KeyboardInterrupt
+
+
+
+
+group-list.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 251, in diagnoseSpanIr
+    currTUnit: tunit.TranslationUnit = ir.readSpanIr(spanirFileName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/ir.py", line 336, in readSpanIr
+    content = util.readFromFile(fileName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/util/common_util.py", line 79, in readFromFile
+    return f.read()
+  File "/usr/lib/pypy3/lib-python/3/codecs.py", line 321, in decode
+    data = self.buffer + input
+KeyboardInterrupt
+
+
+
+
+groups.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 17, in <module>
+    import span.sys.driver as driver  # IMPORTANT
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 45, in <module>
+    import span.sys.host      as host
+KeyboardInterrupt
+
+
+
+
+head.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 17, in <module>
+    import span.sys.driver as driver  # IMPORTANT
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 34, in <module>
+    import span.sys.ddm as ddm
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ddm.py", line 21, in <module>
+    import span.api.analysis as analysis
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/analysis.py", line 748, in <module>
+    class AnalysisAT:
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/analysis.py", line 1737, in AnalysisAT
+    values: Opt[List[bool]] = None,
+  File "/usr/lib/pypy3/lib-python/3/typing.py", line 251, in inner
+    return cached(*args, **kwds)
+  File "/usr/lib/pypy3/lib-python/3/functools.py", line 557, in wrapper
+    result = user_function(*args, **kwds)
+  File "/usr/lib/pypy3/lib-python/3/typing.py", line 636, in __getitem__
+    return _subs_tvars(self, self.__parameters__, params)
+  File "/usr/lib/pypy3/lib-python/3/typing.py", line 196, in _subs_tvars
+    return tp.copy_with(tuple(new_args))
+  File "/usr/lib/pypy3/lib-python/3/typing.py", line 640, in copy_with
+    return _GenericAlias(self.__origin__, params, name=self._name, inst=self._inst)
+  File "/usr/lib/pypy3/lib-python/3/typing.py", line 621, in __init__
+    self.__parameters__ = _collect_type_vars(params)
+  File "/usr/lib/pypy3/lib-python/3/typing.py", line 711, in __setattr__
+    super().__setattr__(attr, val)
+KeyboardInterrupt
+
+
+
+
+hostid.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 17, in <module>
+    import span.sys.driver as driver  # IMPORTANT
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 48, in <module>
+    import span.sys.diagnosis as sysDiagnosis
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/diagnosis.py", line 32, in <module>
+    import span.diagnoses.register as register
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/diagnoses/register.py", line 23, in <module>
+    from span.diagnoses.nullderef import NullDerefR
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/diagnoses/nullderef.py", line 13, in <module>
+    from span.ir import instr, conv
+KeyboardInterrupt
+
+
+
+
+hostname.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 17, in <module>
+    import span.sys.driver as driver  # IMPORTANT
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 48, in <module>
+    import span.sys.diagnosis as sysDiagnosis
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/diagnosis.py", line 32, in <module>
+    import span.diagnoses.register as register
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/diagnoses/register.py", line 20, in <module>
+    from span.diagnoses.arrayindex import ArrayIndexOutOfBoundsR
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/diagnoses/arrayindex.py", line 32, in <module>
+    from span.api.diagnosis import (
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/diagnosis.py", line 139, in <module>
+    class DiagnosisRT:
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/diagnosis.py", line 188, in DiagnosisRT
+    ) -> Opt[Dict[FuncNameT, Dict[AnNameT, AnResult]]]:
+  File "/usr/lib/pypy3/lib-python/3/typing.py", line 251, in inner
+    return cached(*args, **kwds)
+  File "/usr/lib/pypy3/lib-python/3/functools.py", line 542, in wrapper
+    key = make_key(args, kwds, typed)
+  File "/usr/lib/pypy3/lib-python/3/functools.py", line 456, in _make_key
+    return _HashedSeq(key)
+  File "/usr/lib/pypy3/lib-python/3/functools.py", line 422, in __init__
+    self.hashvalue = hash(tup)
+KeyboardInterrupt
+
+
+
+
+id.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 17, in <module>
+    import span.sys.driver as driver  # IMPORTANT
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 50, in <module>
+    import span.sys.optimize  as sysOpt
+KeyboardInterrupt
+
+
+
+
+install.c.e.c.spanir
+
+
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(plain, plain, ['PointsToA'], 'No Description')
+  TotalDerefs    : 93
+  TotalSafeDerefs: 61
+  TotalBotDerefs : 32
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(plain:plain): 1035.5925559997559 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 93
+  TotalSafeDerefs: 63
+  TotalBotDerefs : 30
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(cascading:cascading): 2664.292097091675 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 93
+  TotalSafeDerefs: 64
+  TotalBotDerefs : 29
+  TotalNullDerefs: 0
+------------------------------------------------
+TimeElapsed(lerner:lerner): 1946.094274520874 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 258, in diagnoseSpanIr
+    currTUnit,
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/diagnosis.py", line 147, in runDiagnosisNew
+    dfvs = diObj.computeDfvs(mDetails, anClassMap)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/diagnosis.py", line 204, in computeDfvs
+    res = self.computeDfvsUsingSpanMethod(method, anClassMap)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/diagnosis.py", line 284, in computeDfvsUsingSpanMethod
+    res = ipaHost.analyze()
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 378, in analyze
+    self.analyzeFunc(callSitePair, mainBi, GLOBAL_INITS_FUNC_NAME)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ipa.py", line 435, in analyzeFunc
+    host.analyze()  # RUN THE ANALYSIS.
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 811, in analyze
+    self._analyze()
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 850, in _analyze
+    nodeDfv = self.analyzeInstr(node, node.insn, nodeDfv, treatAsNop)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 885, in analyzeInstr
+    return self._analyzeInstr(node, insn, nodeDfv)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 986, in _analyzeInstr
+    nDfv = self.handleRhsBinArith(node, insn, nodeDfv)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 1701, in handleRhsBinArith
+    if valid: return self.analyzeInstr(node, newInsn, nodeDfv) if newInsn else None
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 895, in analyzeInstr
+    res = mergeAll(ai(ins) for ins in insn.insns)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/lattice.py", line 261, in mergeAll
+    for val in values:
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 895, in <genexpr>
+    res = mergeAll(ai(ins) for ins in insn.insns)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 891, in ai
+    nDfv = self._analyzeInstr(node, ins, nodeDfv)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 1024, in _analyzeInstr
+    nDfv = activeAnObj.Any_Instr(nid, insn, nodeDfv)  # type: ignore
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/analysis.py", line 820, in Any_Instr
+    return self.Assign_Instr(nodeId, insn, nodeDfv, calleeBi)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/analysis.py", line 1999, in Assign_Instr
+    return self.processLhsRhs(nodeId, insn.lhs, insn.rhs, nodeDfv, calleeBi)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/analysis.py", line 2080, in processLhsRhs
+    name, rhsDfv, dfvIn, nodeId, mustUpdate
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/analysis.py", line 2164, in computeLhsDfvFromRhs
+    return newVal if newVal != oldVal else None
+KeyboardInterrupt
+
+
+
+
+join.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 17, in <module>
+    import span.sys.driver as driver  # IMPORTANT
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 34, in <module>
+    import span.sys.ddm as ddm
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ddm.py", line 22, in <module>
+    import span.sys.clients as clients
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/clients.py", line 191, in <module>
+    ) -> Opt[types.DirectionT]:
+KeyboardInterrupt
+
+
+
+
+kill.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 31, in <module>
+    parser = driver.getParser()
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 811, in getParser
+    help="Non-Synergistic IPA analysis (interactions disabled)")
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1122, in add_parser
+    parser = self._parser_class(**kwargs)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1659, in __init__
+    self._optionals = add_group(_('optional arguments'))
+  File "/usr/lib/pypy3/lib-python/3/gettext.py", line 644, in gettext
+    return dgettext(_current_domain, message)
+  File "/usr/lib/pypy3/lib-python/3/gettext.py", line 607, in dgettext
+    codeset=_localecodesets.get(domain))
+  File "/usr/lib/pypy3/lib-python/3/gettext.py", line 541, in translation
+    from errno import ENOENT
+KeyboardInterrupt
+
+
+
+
+lbracket.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 17, in <module>
+    import span.sys.driver as driver  # IMPORTANT
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 29, in <module>
+    import argparse
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 90, in <module>
+    from gettext import gettext as _, ngettext
+  File "/usr/lib/pypy3/lib-python/3/gettext.py", line 88, in <module>
+    """, re.VERBOSE|re.DOTALL)
+  File "/usr/lib/pypy3/lib-python/3/re.py", line 236, in compile
+    return _compile(pattern, flags)
+  File "/usr/lib/pypy3/lib-python/3/re.py", line 288, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/pypy3/lib-python/3/sre_compile.py", line 764, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/pypy3/lib-python/3/sre_parse.py", line 924, in parse
+    p = _parse_sub(source, pattern, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/pypy3/lib-python/3/sre_parse.py", line 420, in _parse_sub
+    not nested and not items))
+  File "/usr/lib/pypy3/lib-python/3/sre_parse.py", line 487, in _parse
+    sourceget()
+  File "/usr/lib/pypy3/lib-python/3/sre_parse.py", line 256, in get
+    self.__next()
+  File "/usr/lib/pypy3/lib-python/3/sre_parse.py", line 248, in __next
+    self.next = char
+KeyboardInterrupt
+
+
+
+
+libstdbuf.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 31, in <module>
+    parser = driver.getParser()
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 978, in getParser
+    subpar = subParser.add_parser("settings", help="Current settings in SPAN.")
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1122, in add_parser
+    parser = self._parser_class(**kwargs)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1659, in __init__
+    self._optionals = add_group(_('optional arguments'))
+  File "/usr/lib/pypy3/lib-python/3/gettext.py", line 644, in gettext
+    return dgettext(_current_domain, message)
+  File "/usr/lib/pypy3/lib-python/3/gettext.py", line 607, in dgettext
+    codeset=_localecodesets.get(domain))
+  File "/usr/lib/pypy3/lib-python/3/gettext.py", line 537, in translation
+    mofiles = find(domain, localedir, languages, all=True)
+  File "/usr/lib/pypy3/lib-python/3/gettext.py", line 496, in find
+    nelangs.append(nelang)
+KeyboardInterrupt
+
+
+
+
+link.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 251, in diagnoseSpanIr
+    currTUnit: tunit.TranslationUnit = ir.readSpanIr(spanirFileName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/ir.py", line 336, in readSpanIr
+    content = util.readFromFile(fileName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/util/common_util.py", line 79, in readFromFile
+    return f.read()
+  File "/usr/lib/pypy3/lib-python/3/codecs.py", line 321, in decode
+    data = self.buffer + input
+KeyboardInterrupt
+
+
+
+
+ln.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 31, in <module>
+    parser = driver.getParser()
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 787, in getParser
+    subpar.add_argument('-l', '--logging', action='count', default=0)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1369, in add_argument
+    self._get_formatter()._format_args(action, None)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 2480, in _get_formatter
+    return self.formatter_class(prog=self.prog)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 184, in __init__
+    self._root_section = self._Section(self, None)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 205, in __init__
+    self.formatter = formatter
+KeyboardInterrupt
+
+
+
+
+logname.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 31, in <module>
+    parser = driver.getParser()
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 859, in getParser
+    subpar = subParser.add_parser("view", help="View graphs (needs xdot program)")
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1122, in add_parser
+    parser = self._parser_class(**kwargs)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1674, in __init__
+    help=_('show this help message and exit'))
+  File "/usr/lib/pypy3/lib-python/3/gettext.py", line 644, in gettext
+    return dgettext(_current_domain, message)
+  File "/usr/lib/pypy3/lib-python/3/gettext.py", line 607, in dgettext
+    codeset=_localecodesets.get(domain))
+  File "/usr/lib/pypy3/lib-python/3/gettext.py", line 537, in translation
+    mofiles = find(domain, localedir, languages, all=True)
+  File "/usr/lib/pypy3/lib-python/3/gettext.py", line 520, in find
+    if os.path.exists(mofile_lp):
+  File "/usr/lib/pypy3/lib-python/3/genericpath.py", line 19, in exists
+    os.stat(path)
+KeyboardInterrupt
+
+
+
+
+ls.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 31, in <module>
+    parser = driver.getParser()
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 845, in getParser
+    subpar = subParser.add_parser("slice", help="Raise a demand to get a slice.")
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1122, in add_parser
+    parser = self._parser_class(**kwargs)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1674, in __init__
+    help=_('show this help message and exit'))
+  File "/usr/lib/pypy3/lib-python/3/gettext.py", line 644, in gettext
+    return dgettext(_current_domain, message)
+  File "/usr/lib/pypy3/lib-python/3/gettext.py", line 607, in dgettext
+    codeset=_localecodesets.get(domain))
+  File "/usr/lib/pypy3/lib-python/3/gettext.py", line 541, in translation
+    from errno import ENOENT
+KeyboardInterrupt
+
+
+
+
+make-prime-list.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 251, in diagnoseSpanIr
+    currTUnit: tunit.TranslationUnit = ir.readSpanIr(spanirFileName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/ir.py", line 336, in readSpanIr
+    content = util.readFromFile(fileName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/util/common_util.py", line 79, in readFromFile
+    return f.read()
+  File "/usr/lib/pypy3/lib-python/3/codecs.py", line 321, in decode
+    data = self.buffer + input
+KeyboardInterrupt
+
+
+
+
+mkdir.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 17, in <module>
+    import span.sys.driver as driver  # IMPORTANT
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 21, in <module>
+    import span.ir.callgraph
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/callgraph.py", line 16, in <module>
+    from span.ir import tunit, constructs, instr, expr
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/tunit.py", line 59, in <module>
+    from span.ir.instr import (
+KeyboardInterrupt
+
+
+
+
+mkfifo.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 40, in <module>
+    args = parser.parse_args()  # parse command line
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1755, in parse_args
+    args, argv = self.parse_known_args(args, namespace)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1787, in parse_known_args
+    namespace, args = self._parse_known_args(args, namespace)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 2008, in _parse_known_args
+    stop_index = consume_positionals(start_index)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1964, in consume_positionals
+    take_action(action, args)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1873, in take_action
+    action(self, namespace, argument_values, option_string)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1159, in __call__
+    for key, value in vars(subnamespace).items():
+KeyboardInterrupt
+
+
+
+
+mknod.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 251, in diagnoseSpanIr
+    currTUnit: tunit.TranslationUnit = ir.readSpanIr(spanirFileName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/ir.py", line 336, in readSpanIr
+    content = util.readFromFile(fileName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/util/common_util.py", line 79, in readFromFile
+    return f.read()
+  File "/usr/lib/pypy3/lib-python/3/codecs.py", line 321, in decode
+    data = self.buffer + input
+KeyboardInterrupt
+
+
+
+
+mktemp.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 17, in <module>
+    import span.sys.driver as driver  # IMPORTANT
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 34, in <module>
+    import span.sys.ddm as ddm
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ddm.py", line 22, in <module>
+    import span.sys.clients as clients
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/clients.py", line 20, in <module>
+    import span.clients.register as register
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/clients/register.py", line 18, in <module>
+    from span.clients.const import ConstA
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/clients/const.py", line 20, in <module>
+    from typing import Tuple, Set, Dict, List, Optional as Opt,\
+KeyboardInterrupt
+
+
+
+
+mv.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 251, in diagnoseSpanIr
+    currTUnit: tunit.TranslationUnit = ir.readSpanIr(spanirFileName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/ir.py", line 336, in readSpanIr
+    content = util.readFromFile(fileName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/util/common_util.py", line 79, in readFromFile
+    return f.read()
+  File "/usr/lib/pypy3/lib-python/3/codecs.py", line 321, in decode
+    data = self.buffer + input
+KeyboardInterrupt
+
+
+
+
+nice.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 31, in <module>
+    parser = driver.getParser()
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 876, in getParser
+    help="Convert .c file to .c.spanir file")
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1122, in add_parser
+    parser = self._parser_class(**kwargs)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1643, in __init__
+    conflict_handler=conflict_handler)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1290, in __init__
+    self._negative_number_matcher = _re.compile(r'^-\d+$|^-\d*\.\d+$')
+  File "/usr/lib/pypy3/lib-python/3/re.py", line 236, in compile
+    return _compile(pattern, flags)
+  File "/usr/lib/pypy3/lib-python/3/re.py", line 278, in _compile
+    return _cache[type(pattern), pattern, flags]
+KeyboardInterrupt
+
+
+
+
+nl.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 251, in diagnoseSpanIr
+    currTUnit: tunit.TranslationUnit = ir.readSpanIr(spanirFileName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/ir.py", line 336, in readSpanIr
+    content = util.readFromFile(fileName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/util/common_util.py", line 79, in readFromFile
+    return f.read()
+  File "/usr/lib/pypy3/lib-python/3/codecs.py", line 321, in decode
+    data = self.buffer + input
+KeyboardInterrupt
+
+
+
+
+nohup.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 17, in <module>
+    import span.sys.driver as driver  # IMPORTANT
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 48, in <module>
+    import span.sys.diagnosis as sysDiagnosis
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/diagnosis.py", line 32, in <module>
+    import span.diagnoses.register as register
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/diagnoses/register.py", line 26, in <module>
+    from span.diagnoses.uninitvars import UninitializedVarsR
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/diagnoses/uninitvars.py", line 42, in <module>
+    class UninitializedVarsR(DiagnosisRT):
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/diagnoses/uninitvars.py", line 161, in UninitializedVarsR
+    ) -> Tuple[Set[VarNameT], Set[VarNameT]]:
+  File "/usr/lib/pypy3/lib-python/3/typing.py", line 251, in inner
+    return cached(*args, **kwds)
+  File "/usr/lib/pypy3/lib-python/3/functools.py", line 542, in wrapper
+    key = make_key(args, kwds, typed)
+  File "/usr/lib/pypy3/lib-python/3/functools.py", line 456, in _make_key
+    return _HashedSeq(key)
+  File "/usr/lib/pypy3/lib-python/3/functools.py", line 422, in __init__
+    self.hashvalue = hash(tup)
+  File "/usr/lib/pypy3/lib-python/3/typing.py", line 672, in __hash__
+    return hash((self.__origin__, self.__args__))
+KeyboardInterrupt
+
+
+
+
+nproc.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 251, in diagnoseSpanIr
+    currTUnit: tunit.TranslationUnit = ir.readSpanIr(spanirFileName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/ir.py", line 336, in readSpanIr
+    content = util.readFromFile(fileName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/util/common_util.py", line 79, in readFromFile
+    return f.read()
+  File "/usr/lib/pypy3/lib-python/3/codecs.py", line 321, in decode
+    data = self.buffer + input
+KeyboardInterrupt
+
+
+
+
+numfmt.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 31, in <module>
+    parser = driver.getParser()
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 896, in getParser
+    help="Run tests")
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1122, in add_parser
+    parser = self._parser_class(**kwargs)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1674, in __init__
+    help=_('show this help message and exit'))
+  File "/usr/lib/pypy3/lib-python/3/gettext.py", line 644, in gettext
+    return dgettext(_current_domain, message)
+  File "/usr/lib/pypy3/lib-python/3/gettext.py", line 607, in dgettext
+    codeset=_localecodesets.get(domain))
+  File "/usr/lib/pypy3/lib-python/3/gettext.py", line 537, in translation
+    mofiles = find(domain, localedir, languages, all=True)
+  File "/usr/lib/pypy3/lib-python/3/gettext.py", line 483, in find
+    languages = []
+KeyboardInterrupt
+
+
+
+
+od.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 251, in diagnoseSpanIr
+    currTUnit: tunit.TranslationUnit = ir.readSpanIr(spanirFileName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/ir.py", line 336, in readSpanIr
+    content = util.readFromFile(fileName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/util/common_util.py", line 79, in readFromFile
+    return f.read()
+  File "/usr/lib/pypy3/lib-python/3/codecs.py", line 321, in decode
+    data = self.buffer + input
+KeyboardInterrupt
+
+
+
+
+operand2sig.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 17, in <module>
+    import span.sys.driver as driver  # IMPORTANT
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 34, in <module>
+    import span.sys.ddm as ddm
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ddm.py", line 21, in <module>
+    import span.api.analysis as analysis
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/analysis.py", line 45, in <module>
+    from span.api.dfv import (
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/dfv.py", line 46, in <module>
+    class ChangePairL(LatticeLT):
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/api/dfv.py", line 62, in ChangePairL
+    def meet(self, other) -> Tuple['ChangePairL', ChangedT]:
+  File "/usr/lib/pypy3/lib-python/3/typing.py", line 751, in __getitem__
+    return self.__getitem_inner__(params)
+  File "/usr/lib/pypy3/lib-python/3/typing.py", line 251, in inner
+    return cached(*args, **kwds)
+  File "/usr/lib/pypy3/lib-python/3/functools.py", line 557, in wrapper
+    result = user_function(*args, **kwds)
+  File "/usr/lib/pypy3/lib-python/3/typing.py", line 778, in __getitem_inner__
+    return self.copy_with(params)
+  File "/usr/lib/pypy3/lib-python/3/typing.py", line 640, in copy_with
+    return _GenericAlias(self.__origin__, params, name=self._name, inst=self._inst)
+  File "/usr/lib/pypy3/lib-python/3/typing.py", line 609, in __init__
+    self._inst = inst
+  File "/usr/lib/pypy3/lib-python/3/typing.py", line 710, in __setattr__
+    if _is_dunder(attr) or attr in ('_name', '_inst', '_special'):
+KeyboardInterrupt
+
+
+
+
+paste.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 31, in <module>
+    parser = driver.getParser()
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 978, in getParser
+    subpar = subParser.add_parser("settings", help="Current settings in SPAN.")
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1122, in add_parser
+    parser = self._parser_class(**kwargs)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1674, in __init__
+    help=_('show this help message and exit'))
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1369, in add_argument
+    self._get_formatter()._format_args(action, None)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 2480, in _get_formatter
+    return self.formatter_class(prog=self.prog)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 166, in __init__
+    if width is None:
+KeyboardInterrupt
+
+
+
+
+pathchk.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 31, in <module>
+    parser = driver.getParser()
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 811, in getParser
+    help="Non-Synergistic IPA analysis (interactions disabled)")
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1122, in add_parser
+    parser = self._parser_class(**kwargs)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1658, in __init__
+    self._positionals = add_group(_('positional arguments'))
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1376, in add_argument_group
+    group = _ArgumentGroup(self, *args, **kwargs)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1561, in __init__
+    super_init(description=description, **kwargs)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1252, in __init__
+    super(_ActionsContainer, self).__init__()
+KeyboardInterrupt
+
+
+
+
+pinky.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 251, in diagnoseSpanIr
+    currTUnit: tunit.TranslationUnit = ir.readSpanIr(spanirFileName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/ir.py", line 336, in readSpanIr
+    content = util.readFromFile(fileName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/util/common_util.py", line 79, in readFromFile
+    return f.read()
+  File "/usr/lib/pypy3/lib-python/3/codecs.py", line 321, in decode
+    data = self.buffer + input
+KeyboardInterrupt
+
+
+
+
+pr.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 31, in <module>
+    parser = driver.getParser()
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 772, in getParser
+    help="Non-Synergistically analyze (interactions disabled)")
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1122, in add_parser
+    parser = self._parser_class(**kwargs)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1659, in __init__
+    self._optionals = add_group(_('optional arguments'))
+  File "/usr/lib/pypy3/lib-python/3/gettext.py", line 644, in gettext
+    return dgettext(_current_domain, message)
+  File "/usr/lib/pypy3/lib-python/3/gettext.py", line 607, in dgettext
+    codeset=_localecodesets.get(domain))
+  File "/usr/lib/pypy3/lib-python/3/gettext.py", line 537, in translation
+    mofiles = find(domain, localedir, languages, all=True)
+  File "/usr/lib/pypy3/lib-python/3/gettext.py", line 505, in find
+    mofile = os.path.join(localedir, lang, 'LC_MESSAGES', '%s.mo' % domain)
+  File "/usr/lib/pypy3/lib-python/3/posixpath.py", line 89, in join
+    elif not path or path.endswith(sep):
+KeyboardInterrupt
+
+
+
+
+printenv.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 17, in <module>
+    import span.sys.driver as driver  # IMPORTANT
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 45, in <module>
+    import span.sys.host      as host
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 124, in <module>
+    class PriorityAnWorklist:
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 226, in PriorityAnWorklist
+    visited: Dict[Participant, int]
+  File "/usr/lib/pypy3/lib-python/3/typing.py", line 251, in inner
+    return cached(*args, **kwds)
+  File "/usr/lib/pypy3/lib-python/3/functools.py", line 557, in wrapper
+    result = user_function(*args, **kwds)
+  File "/usr/lib/pypy3/lib-python/3/typing.py", line 635, in __getitem__
+    _check_generic(self, params)
+  File "/usr/lib/pypy3/lib-python/3/typing.py", line 206, in _check_generic
+    elen = len(cls.__parameters__)
+KeyboardInterrupt
+
+
+
+
+printf.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 31, in <module>
+    parser = driver.getParser()
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 959, in getParser
+    subpar = subParser.add_parser("opt", help="Optimize the program")
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1122, in add_parser
+    parser = self._parser_class(**kwargs)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1674, in __init__
+    help=_('show this help message and exit'))
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1359, in add_argument
+    action = action_class(**kwargs)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1035, in __init__
+    super(_HelpAction, self).__init__(
+KeyboardInterrupt
+
+
+
+
+prog-fprintf.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 251, in diagnoseSpanIr
+    currTUnit: tunit.TranslationUnit = ir.readSpanIr(spanirFileName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/ir.py", line 337, in readSpanIr
+    tUnit: TranslationUnit = eval(content)
+  File "<string>", line 16, in <module>
+KeyboardInterrupt
+
+
+
+
+ptx.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 17, in <module>
+    import span.sys.driver as driver  # IMPORTANT
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 29, in <module>
+    import argparse
+KeyboardInterrupt
+
+
+
+
+pwd.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 251, in diagnoseSpanIr
+    currTUnit: tunit.TranslationUnit = ir.readSpanIr(spanirFileName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/ir.py", line 336, in readSpanIr
+    content = util.readFromFile(fileName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/util/common_util.py", line 79, in readFromFile
+    return f.read()
+  File "/usr/lib/pypy3/lib-python/3/codecs.py", line 321, in decode
+    data = self.buffer + input
+KeyboardInterrupt
+
+
+
+
+readlink.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 17, in <module>
+    import span.sys.driver as driver  # IMPORTANT
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 45, in <module>
+    import span.sys.host      as host
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 78, in <module>
+    class Participant:
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/host.py", line 87, in Participant
+    neededBy: Opt[Set['Participant']] = None
+  File "/usr/lib/pypy3/lib-python/3/typing.py", line 251, in inner
+    return cached(*args, **kwds)
+  File "/usr/lib/pypy3/lib-python/3/functools.py", line 557, in wrapper
+    result = user_function(*args, **kwds)
+  File "/usr/lib/pypy3/lib-python/3/typing.py", line 358, in __getitem__
+    return Union[arg, type(None)]
+  File "/usr/lib/pypy3/lib-python/3/typing.py", line 251, in inner
+    return cached(*args, **kwds)
+  File "/usr/lib/pypy3/lib-python/3/functools.py", line 557, in wrapper
+    result = user_function(*args, **kwds)
+  File "/usr/lib/pypy3/lib-python/3/typing.py", line 355, in __getitem__
+    return _GenericAlias(self, parameters)
+  File "/usr/lib/pypy3/lib-python/3/typing.py", line 620, in __init__
+    a for a in params)
+  File "/usr/lib/pypy3/lib-python/3/typing.py", line 618, in <genexpr>
+    self.__args__ = tuple(... if a is _TypingEllipsis else
+KeyboardInterrupt
+
+
+
+
+realpath.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 17, in <module>
+    import span.sys.driver as driver  # IMPORTANT
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 45, in <module>
+    import span.sys.host      as host
+KeyboardInterrupt
+
+
+
+
+relpath.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 17, in <module>
+    import span.sys.driver as driver  # IMPORTANT
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 34, in <module>
+    import span.sys.ddm as ddm
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/ddm.py", line 22, in <module>
+    import span.sys.clients as clients
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/clients.py", line 20, in <module>
+    import span.clients.register as register
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/clients/register.py", line 21, in <module>
+    from span.clients.interval import IntervalA
+KeyboardInterrupt
+
+
+
+
+remove.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 31, in <module>
+    parser = driver.getParser()
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 961, in getParser
+    subpar.add_argument('-l', '--logging', action='count', default=0)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1369, in add_argument
+    self._get_formatter()._format_args(action, None)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 2480, in _get_formatter
+    return self.formatter_class(prog=self.prog)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 168, in __init__
+    width = int(_os.environ['COLUMNS'])
+  File "/usr/lib/pypy3/lib-python/3/os.py", line 681, in __getitem__
+    raise KeyError(key) from None
+KeyboardInterrupt
+
+
+
+
+rm.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 17, in <module>
+    import span.sys.driver as driver  # IMPORTANT
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 45, in <module>
+    import span.sys.host      as host
+KeyboardInterrupt
+
+
+
+
+rmdir.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 31, in <module>
+    parser = driver.getParser()
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 833, in getParser
+    help="Simulate cascading and lerners method")
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1122, in add_parser
+    parser = self._parser_class(**kwargs)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1643, in __init__
+    conflict_handler=conflict_handler)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1264, in __init__
+    self.register('action', 'store', _StoreAction)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1301, in register
+    registry[value] = object
+KeyboardInterrupt
+
+
+
+
+runcon.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 251, in diagnoseSpanIr
+    currTUnit: tunit.TranslationUnit = ir.readSpanIr(spanirFileName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/ir.py", line 336, in readSpanIr
+    content = util.readFromFile(fileName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/util/common_util.py", line 79, in readFromFile
+    return f.read()
+  File "/usr/lib/pypy3/lib-python/3/codecs.py", line 321, in decode
+    data = self.buffer + input
+KeyboardInterrupt
+
+
+
+
+selinux.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 31, in <module>
+    parser = driver.getParser()
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 765, in getParser
+    parser = argparse.ArgumentParser(description="Synergistic Program Analyzer (SPAN)")
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1674, in __init__
+    help=_('show this help message and exit'))
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 1369, in add_argument
+    self._get_formatter()._format_args(action, None)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 2480, in _get_formatter
+    return self.formatter_class(prog=self.prog)
+  File "/usr/lib/pypy3/lib-python/3/argparse.py", line 187, in __init__
+    self._whitespace_matcher = _re.compile(r'\s+', _re.ASCII)
+  File "/usr/lib/pypy3/lib-python/3/re.py", line 236, in compile
+    return _compile(pattern, flags)
+  File "/usr/lib/pypy3/lib-python/3/re.py", line 288, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/pypy3/lib-python/3/sre_compile.py", line 768, in compile
+    code = _code(p, flags)
+  File "/usr/lib/pypy3/lib-python/3/sre_compile.py", line 607, in _code
+    _compile(code, p.data, flags)
+  File "/usr/lib/pypy3/lib-python/3/sre_compile.py", line 148, in _compile
+    _compile(code, av[2], flags)
+  File "/usr/lib/pypy3/lib-python/3/sre_compile.py", line 130, in _compile
+    _compile_charset(charset, flags, code)
+  File "/usr/lib/pypy3/lib-python/3/sre_compile.py", line 261, in _compile_charset
+    elif op is CHARSET:
+KeyboardInterrupt
+
+
+
+
+seq.c.e.c.spanir
+
+
+Traceback (most recent call last):
+  File "/home/codeman/.local/bin/span", line 49, in <module>
+    args.func(args)             # take action
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/sys/driver.py", line 251, in diagnoseSpanIr
+    currTUnit: tunit.TranslationUnit = ir.readSpanIr(spanirFileName)
+  File "/home/codeman/itsoflife/mydata/git/research/span-git/span-project/span/ir/ir.py", line 337, in readSpanIr
+    tUnit: TranslationUnit = eval(content)
+  File "<string>", line 16, in <module>
+KeyboardInterrupt
+
+
+
+
+shred.c.e.c.spanir
+
+
