@@ -15,7 +15,7 @@ from typing import List, Optional as Opt, Dict, Set, Type
 import io
 
 import span.util.util as util
-from span.util.util import LS
+from span.util.util import LS, Timer
 
 from span.api.analysis import (
   AnalysisAClassT,
@@ -55,7 +55,7 @@ def runDiagnosis(diName: DiagnosisNameT,
     cascade: bool = False,
     lerner: bool = False,
 ) -> Opt[List[ClangReport]]:
-  """Runs the given dianosis and returns a list of reports.
+  """Runs the given diagnosis and returns a list of reports.
   The reports can be read in by a clang checker developed for this purpose.
   To view the checkers in clang see:
     clang -cc1 -analyzer-checker-help-developer
@@ -106,7 +106,7 @@ def runDiagnosisNew(
     fileName: FileNameT,
     tUnit: irTUnit.TranslationUnit,
 ) -> None:
-  """Runs the given dianosis and returns a list of reports.
+  """Runs the given diagnosis and returns a list of reports.
   The reports can be read in by a clang checker developed for this purpose.
   To view the checkers in clang see:
     clang -cc1 -analyzer-checker-help-developer
@@ -130,23 +130,26 @@ def runDiagnosisNew(
         and diMethod != mDetails.name
         and diMethod != UseAllMethods
     ):
+      # if diMethod is given, skip undesirable methods
       continue
 
     #STEP 1.5: Load analyses. Don't proceed if analyses not present.
     try: # try loading the analyses
       anClassMap = loadAnalyses(mDetails.anNames)
-    except ValueError: # failed? Then don't proceed.
+    except ValueError as e: # failed? Then don't proceed.
+      print(f"SomeAnalysesNotPresentIn: {mDetails.anNames}"
+            f" (ErrorMsg: '{e.args[0]}')")
       continue
 
-    #STEP 2: Iterate over each config of the method.
-    for config in mDetails.configSeq: # run each config of the method
-      #STEP 3: COMPUTE.
-      diObj.init(mDetails, config, anClassMap)
-      dfvs = diObj.computeDfvs(mDetails, config, anClassMap)
-      if dfvs: # could be None
-        res = diObj.computeResults(mDetails, config, dfvs, anClassMap)
-        diObj.handleResults(mDetails, config, res, dfvs, anClassMap)
-      diObj.finish(mDetails, config, anClassMap)
+    #STEP 2: COMPUTE.
+    timer = Timer(f"{mDetails.name}:{mDetails.subName}")
+    diObj.init(mDetails, anClassMap)
+    dfvs = diObj.computeDfvs(mDetails, anClassMap)
+    if dfvs: # could be None
+      res = diObj.computeResults(mDetails, dfvs, anClassMap)
+      diObj.handleResults(mDetails, res, dfvs, anClassMap)
+    diObj.finish(mDetails, anClassMap)
+    timer.stopAndLog(printAlso=True)
 
 
 def loadAnalyses(

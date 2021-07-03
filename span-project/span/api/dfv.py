@@ -6,6 +6,8 @@
 """The analysis' common data flow value declarations."""
 
 import logging
+import os
+
 LOG = logging.getLogger(__name__)
 LDB = LOG.debug
 
@@ -735,15 +737,17 @@ class AnResult:
     return equal
 
 
-  def __str__(self):
-    print(f"AnalysisResult: {self.anName}:, Func: '{self.func.name}'"
-          f"TUnit: {self.func.tUnit.name}")
+  def __str__(self) -> str:
+    sio = io.StringIO()
+    sio.write(f"AnalysisResult: {self.anName}, Func: '{self.func.name}',"
+              f" TUnit: {self.func.tUnit.name}{os.linesep}")
     topTop = "IN == OUT: Top (Unreachable/Nop)"
     for node in self.func.cfg.revPostOrder:
       nid = node.id
       nDfv = self.get(nid, topTop)
-      print(f">> {nid}. ({node.insn}):\n {nDfv}")
-    print() # a blank line
+      sio.write(f">> {nid}. ({node.insn}):{os.linesep} {nDfv}")
+      sio.write(f"{os.linesep}") # a blank line
+    return sio.getvalue()
 
 ################################################
 # BOUND END  : AnalysisResult

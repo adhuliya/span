@@ -37,28 +37,24 @@ from span.api.diagnosis import (
 
 
 class NullDerefR(DiagnosisRT):
-  """Computes the average number of pointees of deref expressions."""
+  """Computes possible null dereferences."""
 
   MethodSequence: List[MethodDetail] = [
     MethodDetail(
-      PlainMethod,
-      [0],
-      ["PointsToA"],
+      name=PlainMethod,
+      anNames=["PointsToA"],
     ),
     MethodDetail(
-      CascadingMethod,
-      [0],
-      ["IntervalA", "PointsToA"],
+      name=CascadingMethod,
+      anNames=["IntervalA", "PointsToA"],
     ),
     MethodDetail(
-      LernerMethod,
-      [0],
-      ["IntervalA", "PointsToA"],
+      name=LernerMethod,
+      anNames=["IntervalA", "PointsToA"],
     ),
     MethodDetail(
-      SpanMethod,
-      [0],
-      ["IntervalA", "PointsToA"],
+      name=SpanMethod,
+      anNames=["IntervalA", "PointsToA"],
     ),
   ]
 
@@ -69,30 +65,8 @@ class NullDerefR(DiagnosisRT):
     self.res = None
 
 
-  def computeDfvs(self,
-      method: MethodDetail,
-      config: int, #IMPORTANT
-      anClassMap: Dict[AnNameT, Type[AnalysisAT]],
-  ) -> Opt[Dict[FuncNameT, Dict[AnNameT, AnResult]]]:
-    """Compute the DFVs necessary to detect index out of bounds."""
-    if util.LL0: LDB("ComputeDFVs: Method=%s, Config=%s", method, config)
-
-    res = None
-    if method.name == PlainMethod:
-      res = self.computeDfvsUsingPlainMethod(method, config, anClassMap)
-    elif method.name == CascadingMethod:
-      res = self.computeDfvsUsingCascadingMethod(method, config, anClassMap)
-    elif method.name == LernerMethod:
-      res = self.computeDfvsUsingLernerMethod(method, config, anClassMap)
-    elif method.name == SpanMethod:
-      res = self.computeDfvsUsingSpanMethod(method, config, anClassMap)
-
-    return res
-
-
   def computeResults(self,
       method: MethodDetail,
-      config: int,
       dfvs: Dict[FuncNameT, Dict[AnNameT, AnResult]],
       anClassMap: Dict[AnNameT, Type[AnalysisAT]],
   ) -> Any:
@@ -132,7 +106,6 @@ class NullDerefR(DiagnosisRT):
 
   def handleResults(self,
       method: MethodDetail,
-      config: int,
       result: Any, # Any type that a particular implementation needs.
       dfvs: Dict[FuncNameT, Dict[AnNameT, AnResult]],
       anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
@@ -142,55 +115,6 @@ class NullDerefR(DiagnosisRT):
     print(f"  TotalDerefs    : {result[0]}")
     print(f"  TotalSafeDerefs: {result[1]}")
     print(f"  TotalBotDerefs : {result[2]}")
-
-
-  def computeResultsUsingPlainMethod(self,
-      method: MethodDetail,
-      config: int,
-      dfvs: Dict[FuncNameT, Dict[AnNameT, AnResult]],
-      anClassMap: Dict[AnNameT, Type[AnalysisAT]],
-  ) -> Any:
-    """Count array indexes, and count out-of-bounds indexes.
-
-    It only uses IntervalA.
-    """
-    anName1 = "IntervalA"
-    anClass1 = anClassMap[anName1]
-
-    total = 0
-    inRangeTotal = 0
-    outOfRangeTotal = 0
-    unknownTotal = 0 # couldn't determine
-
-    for fName, anResMap in dfvs.items():
-      func = self.tUnit.getFuncObj(fName)
-      anObj1 = cast(ValueAnalysisAT, anClass1(func))
-
-      for nid, insn in func.yieldNodeIdInstrTupleSeq():
-        arrayE = instr.getArrayE(insn)
-
-        if not arrayE: continue   # goto next instruction in sequence
-        total += 1
-
-        indexDfv, arrType, arrIndex = None, arrayE.of.type, arrayE.index
-
-        size = self.getArraySize(arrayE, nid)
-        indexDfv = self.getExprDfv(arrIndex, nid, anResMap[anName1], anObj1)
-
-        if not size or indexDfv.bot:
-          unknownTotal += 1
-          self.printDebugInfo(nid, arrayE, size, indexDfv, func.name, "Unknown")
-        elif indexDfv.top:
-          inRangeTotal += 1 # top because of unreachable code, thus any range okay
-        else:
-          if indexDfv.inIndexRange(size):
-            inRangeTotal += 1
-            self.printDebugInfo(nid, arrayE, size, indexDfv, func.name, "InRange")
-          else:
-            outOfRangeTotal += 1
-            self.printDebugInfo(nid, arrayE, size, indexDfv, func.name, "OutOfRange")
-
-    return total, inRangeTotal, outOfRangeTotal, unknownTotal
 
 
   def getArraySize(self,
@@ -230,74 +154,6 @@ class NullDerefR(DiagnosisRT):
     dfvPair = anResult.get(nid)
     if dfvPair:
       return anObj.getExprDfv(e, cast(dfv.OverallL, dfvPair.dfvIn))
-
-
-  def computeDfvsUsingPlainMethod(self,
-      method: MethodDetail,
-      config: int,
-      anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
-  ) -> Opt[Dict[FuncNameT, Dict[AnNameT, AnResult]]]:
-    assert len(anClassMap) == 1, f"{anClassMap}, {config}"
-
-    mainAnalysis = method.anNames[0]
-    ipaHost = IpaHost(
-      self.tUnit,
-      mainAnName=mainAnalysis,
-      maxNumOfAnalyses=1,
-    )
-    ipaHost.analyze()
-
-    return ipaHost.vci.finalResult
-
-
-  def computeDfvsUsingSpanMethod(self,
-      method: MethodDetail,
-      config: int,
-      anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
-  ) -> Dict[FuncNameT, Dict[AnNameT, AnResult]]:
-    assert len(anClassMap) == 2, f"{anClassMap}, {config}"
-
-    mainAnalysis = method.anNames[0]
-    ipaHost = IpaHost(
-      self.tUnit,
-      mainAnName=mainAnalysis,
-      otherAnalyses=method.anNames[1:],
-      maxNumOfAnalyses=len(method.anNames),
-    )
-    res = ipaHost.analyze()
-
-    return res
-
-
-  def computeDfvsUsingLernerMethod(self,
-      method: MethodDetail,
-      config: int,
-      anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
-  ) -> Dict[FuncNameT, Dict[AnNameT, AnResult]]:
-    assert len(anClassMap) == 2, f"{anClassMap}, {config}"
-
-    mainAnalysis = method.anNames[0]
-    ipaHost = IpaHost(
-      self.tUnit,
-      mainAnName=mainAnalysis,
-      otherAnalyses=method.anNames[1:],
-      maxNumOfAnalyses=len(method.anNames),
-      useTransformation=True, # this induces lerner's method
-    )
-    res = ipaHost.analyze()
-
-    return res
-
-
-  def computeDfvsUsingCascadingMethod(self,
-      method: MethodDetail,
-      config: int,
-      anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
-  ) -> Dict[FuncNameT, Dict[AnNameT, AnResult]]:
-    assert len(anClassMap) == 2, f"{anClassMap}, {config}"
-
-    res = ipaAnalyzeCascade(self.tUnit, method.anNames)
-    return res
 
 
   def printDebugInfo(self,

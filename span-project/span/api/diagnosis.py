@@ -116,17 +116,20 @@ class MethodDetail:
   invoked by the user.
   """
   def __init__(self,
-      methodName: str,
-      configSeq: List[int],
+      name: str,
       anNames: List, # list of analyses the method uses
+      subName: str = "",
+      description: str = "No Description",
   ):
-    self.name = methodName
+    self.name = name
     self.anNames = anNames
-    self.configSeq = configSeq
+    self.subName = subName if subName else name
+    self.description = description
 
 
   def __str__(self):
-    return f"MethodDetail({self.name}, {self.configSeq}, {self.anNames})"
+    return f"MethodDetail({self.name}, {self.subName}," \
+           f" {self.anNames}, {repr(self.description)})"
 
 
   def __repr__(self):
@@ -144,22 +147,18 @@ class DiagnosisRT:
   MethodSequence: List[MethodDetail] = [
     MethodDetail(
       PlainMethod,
-      [0],
       ["IntervalA"],
     ),
     MethodDetail(
       CascadingMethod,
-      [0],
       ["IntervalA", "PointsToA"],
     ),
     MethodDetail(
       LernerMethod,
-      [0],
       ["IntervalA", "PointsToA"],
     ),
     MethodDetail(
       SpanMethod,
-      [0],
       ["IntervalA", "PointsToA"],
     ),
   ]
@@ -177,7 +176,6 @@ class DiagnosisRT:
 
   def init(self,
       method: MethodDetail,
-      config: int,
       anClassMap: Dict[AnNameT, Type[AnalysisAT]],
   ) -> None:
     """Override this method to do some initialization."""
@@ -186,32 +184,30 @@ class DiagnosisRT:
 
   def computeDfvs(self,
       method: MethodDetail,
-      config: int, #IMPORTANT
       anClassMap: Dict[AnNameT, Type[AnalysisAT]],
   ) -> Opt[Dict[FuncNameT, Dict[AnNameT, AnResult]]]:
     """Compute the DFVs of various analysis using a desired method.
 
-    Override this function to run any desired method with a desired config.
+    Override this function to run any desired method with a desired subName.
     This is a default implementation. Please Override if needed.
     """
-    if util.LL0: LDB("ComputeDFVs: Method=%s, Config=%s", method, config)
+    if util.LL0: LDB("ComputeDFVs: Method=%s", method)
 
     res = None
     if method.name == PlainMethod:
-      res = self.computeDfvsUsingPlainMethod(method, config, anClassMap)
+      res = self.computeDfvsUsingPlainMethod(method, anClassMap)
     elif method.name == CascadingMethod:
-      res = self.computeDfvsUsingCascadingMethod(method, config, anClassMap)
+      res = self.computeDfvsUsingCascadingMethod(method, anClassMap)
     elif method.name == LernerMethod:
-      res = self.computeDfvsUsingLernerMethod(method, config, anClassMap)
+      res = self.computeDfvsUsingLernerMethod(method, anClassMap)
     elif method.name == SpanMethod:
-      res = self.computeDfvsUsingSpanMethod(method, config, anClassMap)
+      res = self.computeDfvsUsingSpanMethod(method, anClassMap)
 
     return res
 
 
   def computeResults(self,
       method: MethodDetail,
-      config: int,
       dfvs: Dict[FuncNameT, Dict[AnNameT, AnResult]],
       anClassMap: Dict[AnNameT, Type[AnalysisAT]],
   ) -> Any:
@@ -222,7 +218,6 @@ class DiagnosisRT:
 
   def handleResults(self,
       method: MethodDetail,
-      config: int,
       result: Any, # Any type that a particular implementation needs.
       dfvs: Dict[FuncNameT, Dict[AnNameT, AnResult]],
       anClassMap: Dict[AnNameT, Type[AnalysisAT]],
@@ -247,19 +242,18 @@ class DiagnosisRT:
 
   def finish(self,
       method: MethodDetail,
-      config: int,
       anClassMap: Dict[AnNameT, Type[AnalysisAT]],
   ) -> None:
     """Override this method to do some work after all operations finish."""
     pass
 
+
   def computeDfvsUsingPlainMethod(self,
       method: MethodDetail,
-      config: int,
       anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
   ) -> Opt[Dict[FuncNameT, Dict[AnNameT, AnResult]]]:
     """A default implementation. Please Override."""
-    assert len(anClassMap) == 1, f"{anClassMap}, {config}"
+    assert len(anClassMap) == 1, f"{anClassMap}"
 
     mainAnalysis = method.anNames[0]
     ipaHost = IpaHost(
@@ -274,11 +268,10 @@ class DiagnosisRT:
 
   def computeDfvsUsingSpanMethod(self,
       method: MethodDetail,
-      config: int,
       anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
   ) -> Dict[FuncNameT, Dict[AnNameT, AnResult]]:
     """A default implementation. Please Override."""
-    assert len(anClassMap) == 2, f"{anClassMap}, {config}"
+    assert len(anClassMap) == 2, f"{anClassMap}"
 
     mainAnalysis = method.anNames[0]
     ipaHost = IpaHost(
@@ -294,11 +287,10 @@ class DiagnosisRT:
 
   def computeDfvsUsingLernerMethod(self,
       method: MethodDetail,
-      config: int,
       anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
   ) -> Dict[FuncNameT, Dict[AnNameT, AnResult]]:
     """A default implementation. Please Override."""
-    assert len(anClassMap) == 2, f"{anClassMap}, {config}"
+    assert len(anClassMap) == 2, f"{anClassMap}"
 
     mainAnalysis = method.anNames[0]
     ipaHost = IpaHost(
@@ -315,11 +307,10 @@ class DiagnosisRT:
 
   def computeDfvsUsingCascadingMethod(self,
       method: MethodDetail,
-      config: int,
       anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
   ) -> Dict[FuncNameT, Dict[AnNameT, AnResult]]:
     """A default implementation. Please Override."""
-    assert len(anClassMap) == 2, f"{anClassMap}, {config}"
+    assert len(anClassMap) == 2, f"{anClassMap}"
 
     res = ipaAnalyzeCascade(self.tUnit, method.anNames)
     return res

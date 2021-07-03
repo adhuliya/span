@@ -35,7 +35,7 @@ TestActionAndResult(
     },
 
     "f:main": {
-      'ir.cfg.node.count': 9, # the total nodes in the cfg
+      'ir.cfg.node.count': 10, # the total nodes in the cfg
       'ir.cfg.bb.edge.count': 1, # the total edges in the cfg
       'ir.cfg.bb.edge.false.true.pair.count': 0, # the total false/true edges pair in the cfg
       'ir.cfg.bb.edge.uncond.count': 1, # the total true edges in the cfg
@@ -43,7 +43,7 @@ TestActionAndResult(
         (START_BB_ID, END_BB_ID, UnCondEdge),
       },
       'ir.cfg.bb.insn.count': {
-        START_BB_ID: 8,
+        START_BB_ID: 9,
       },
       'ir.cfg.insn.nop.count': 2,
       'ir.cfg.start.end.node.is.insn.nop': True,

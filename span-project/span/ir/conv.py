@@ -225,7 +225,7 @@ def isCorrectNameFormat(name: str) -> bool:
   if colonCount3: return False  # no name has more than two colons
 
   colonCount1 = colonCount == 1
-  if isGlobalName(name): return colonCount1
+  if isGlobalName(name): return 1 <= colonCount <= 2 # function static globals too
   if isLocalVarName(name): return colonCount == 2
   if isFuncName(name): return colonCount1
   if isRecordName(name): return colonCount1

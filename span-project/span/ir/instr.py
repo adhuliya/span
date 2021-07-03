@@ -1183,9 +1183,10 @@ def getNamesUsedInInstrSyntactically(
   elif isinstance(insn, CondI):
     names |= expr.getNamesUsedInExprSyntactically(insn.arg, forLiveness)
   elif isinstance(insn, ReturnI):
-    names |= expr.getNamesUsedInExprSyntactically(insn.arg, forLiveness)
+    if insn.arg:
+      names |= expr.getNamesUsedInExprSyntactically(insn.arg, forLiveness)
   elif isinstance(insn, UseI):
-    names |= expr.getNamesUsedInExprSyntactically(insn.arg, forLiveness)
+    names |= insn.vars
   return names
 
 

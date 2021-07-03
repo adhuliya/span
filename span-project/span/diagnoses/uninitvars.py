@@ -44,24 +44,20 @@ class UninitializedVarsR(DiagnosisRT):
 
   MethodSequence: List[MethodDetail] = [
     MethodDetail(
-      PlainMethod,
-      [0],
-      ["ReachingDefA"],
+      name=PlainMethod,
+      anNames=["ReachingDefA"],
     ),
     # MethodDetail(
-    #   CascadingMethod,
-    #   [0],
-    #   ["ReachingDefA", "PointsToA"],
+    #   name=CascadingMethod,
+    #   anNames=["ReachingDefA", "PointsToA"],
     # ),
     # MethodDetail(
-    #   LernerMethod,
-    #   [0],
-    #   ["ReachingDefA", "PointsToA"],
+    #   name=LernerMethod,
+    #   anNames=["ReachingDefA", "PointsToA"],
     # ),
     MethodDetail(
-      SpanMethod,
-      [0],
-      ["ReachingDefA", "PointsToA"],
+      name=SpanMethod,
+      anNames=["ReachingDefA", "PointsToA"],
     ),
   ]
 
@@ -72,7 +68,6 @@ class UninitializedVarsR(DiagnosisRT):
 
   def computeResults(self,
       method: MethodDetail,
-      config: int,
       dfvs: Dict[FuncNameT, Dict[AnNameT, AnResult]],
       anClassMap: Dict[AnNameT, Type[AnalysisAT]],
   ) -> Any:
@@ -80,16 +75,22 @@ class UninitializedVarsR(DiagnosisRT):
     anName1, anName2  = "ReachingDefA", "PointsToA"
     # anClass1, anClass2 = anClassMap[anName1], anClassMap[anName2]
 
+    totalNodes = 0
     totalUses = 0 # total use points
+    totalUsesInitUnreachMust = 0 # total uninit uses (must)
     totalUsesUninitMust = 0 # total uninit uses (must)
     totalUsesInitMust = 0 # total init uses (must)
+    totalUsesInitMay = 0 # total may uninitialized uses (may)
 
-    for fName, anResMap in dfvs.items():
+    for fName in sorted(dfvs.keys()):
+      print(f"{fName}")
+      anResMap = dfvs[fName]
       func = self.tUnit.getFuncObj(fName)
       # anObj1 = cast(ValueAnalysisAT, anClass1(func))
       # anObj2 = cast(ValueAnalysisAT, anClass2(func))
 
       for nid, insn in func.yieldNodeIdInstrTupleSeq():
+        totalNodes += 1
         ptsAnResult = None if method.name == PlainMethod else anResMap[anName2]
 
         varNamesUsed = self.getVarNamesUsed(func, nid, insn, ptsAnResult)
@@ -103,28 +104,32 @@ class UninitializedVarsR(DiagnosisRT):
 
         for vName, dfv in varDefsDfvMap.items():
           if dfv is None: # None if nid is unreachable
-            totalUsesInitMust += 1 # unreachable code is assumed initialized
+            totalUsesInitUnreachMust += 1 # unreachable code is assumed initialized
           elif dfv.isInitialized(must=True):
             totalUsesInitMust += 1
           elif not dfv.isInitialized(must=False):
             totalUsesUninitMust += 1
+          elif dfv.isInitialized(must=False):
+            totalUsesInitMay += 1 # may uninitialized (excluded must)
 
-    return totalUses, totalUsesInitMust, totalUsesUninitMust
+    return totalNodes, totalUses, totalUsesInitMust, totalUsesUninitMust,\
+           totalUsesInitMay, totalUsesInitUnreachMust
 
 
   def handleResults(self,
       method: MethodDetail,
-      config: int,
       result: Any, # Any type that a particular implementation needs.
       dfvs: Dict[FuncNameT, Dict[AnNameT, AnResult]],
       anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
   ) -> None:
     print(f"AnalysisType: {self.__class__.__name__}")
     print(f"Method: {method}")
-    print(f"  TotalUses          : {result[0]}")
-    print(f"  TotalUsesInitMust  : {result[1]}")
-    print(f"  TotalUsesUninitMust: {result[2]}")
-    print(f"  TotalUsesUnknown   : {result[0]-result[1]-result[2]}")
+    print(f"  TotalNodes              : {result[0]}")
+    print(f"  TotalUses               : {result[1]}")
+    print(f"  TotalUsesInitMust       : {result[2]}")
+    print(f"  TotalUsesUninitMust     : {result[3]}")
+    print(f"  TotalUsesInitMay        : {result[4]} (does not include must init)")
+    print(f"  TotalUsesInitUnreachMust: {result[5]}")
 
 
   def getVarNamesUsed(self,
@@ -134,7 +139,7 @@ class UninitializedVarsR(DiagnosisRT):
       ptsAnResult: Opt[AnResult] = None,
   ) -> Set[VarNameT]:
     """Returns var names possibly used in an expression."""
-    names = instr.getNamesUsedInExprSyntactically(insn)
+    names = instr.getNamesUsedInInstrSyntactically(insn)
     de = instr.getDerefExpr(insn, includeLhs=False)
 
     if not de:
@@ -144,10 +149,10 @@ class UninitializedVarsR(DiagnosisRT):
     if not ptsAnResult: # in case of plain method
       return names | self.tUnit.getNamesEnv(func, de.type)
     else:
-      derefName = expr.getDereferencedVar(de)
+      derefVar = expr.getDereferencedVar(de)
       dfv, ptsRes = None, ptsAnResult.get(nid)
       if ptsRes:
-        dfv = ptsRes.dfvIn.getVal(derefName)
+        dfv = ptsRes.dfvIn.getVal(derefVar.name)
 
       if not dfv or dfv.bot:
         return names | self.tUnit.getNamesEnv(func, de.type)
@@ -166,56 +171,5 @@ class UninitializedVarsR(DiagnosisRT):
     for vName in varNamesUsed:
       resMap[vName] = None if nidRes is None else nidRes.dfvIn.getVal(vName)
     return resMap
-
-
-  def getArraySize(self,
-      arrayE: ArrayE,
-      nid: NodeIdT,
-      anResult: Opt[AnResult] = None,
-      anObj : Opt[ValueAnalysisAT] = None,
-  ) -> Opt[int]:
-    arrType, arrIndex = arrayE.of.type, arrayE.index
-
-    size = None
-    if isinstance(arrType, ConstSizeArray):
-      size = arrType.size
-    elif anResult and anObj and isinstance(arrType, Ptr):
-      pointeesDfv = self.getExprDfv(arrayE.of, nid, anResult, anObj)
-      if pointeesDfv and not pointeesDfv.bot and not pointeesDfv.top:
-        minSize = ff.LARGE_INT_VAL
-        for vName in pointeesDfv.val: # find minimum size
-          vType = self.tUnit.inferTypeOfVal(vName)
-          if isinstance(vType, ConstSizeArray):
-            minSize = vType.size if minSize > vType.size else minSize
-          else: # a pointee is not a ConstSizeArray, no benefit to continue
-            minSize = ff.LARGE_INT_VAL
-            break
-        if minSize != ff.LARGE_INT_VAL:
-          size = minSize
-
-    return size
-
-
-  def getExprDfv(self,
-      e: ExprET,
-      nid: NodeIdT,
-      anResult: AnResult,
-      anObj : ValueAnalysisAT,
-  ) -> Opt[dfv.ComponentL]:
-    dfvPair = anResult.get(nid)
-    if dfvPair:
-      return anObj.getExprDfv(e, cast(dfv.OverallL, dfvPair.dfvIn))
-
-
-  def printDebugInfo(self,
-      nid: NodeIdT,
-      arrayE: ArrayE,
-      size: int,
-      indexDfv: Opt[dfv.ComponentL],
-      funcName: FuncNameT,
-      msg: str,
-  ) -> None:
-    print(f"  {msg}({nid}): {indexDfv},"
-          f" {arrayE} (size:{size}, {arrayE.info}), {funcName}.")
 
 

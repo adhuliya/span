@@ -1868,8 +1868,8 @@ class ValueAnalysisAT(AnalysisAT):
   ) -> DfvPairL:
     """
       * IPA/Intra: initialize all local (non-parameter) vars to Top.
-      * IPA: initialize all non-initialized globals to Top
-        only at the entry of the main function. (DONE)
+      * IPA: initialize all non-initialized globals to their default values
+        only at the entry of the main function.
       * Intra: initialize all globals to Bot. (as is done currently)
     """
     if ipa and not nodeDfv:
@@ -1889,7 +1889,8 @@ class ValueAnalysisAT(AnalysisAT):
         inBi, outBi = overBot, overBot
 
       tUnit: TranslationUnit = func.tUnit
-      inBiSetVal, tUnitGetNameInfo = inBi.setVal, tUnit.getNameInfo
+      tUnitGetNameInfo = tUnit.getNameInfo
+      inBiGetVal, inBiSetVal = inBi.getVal, inBi.setVal
 
       compTop, compBot = self.componentTop.getCopy(), self.componentBot.getCopy()
       compTop.func = compBot.func = func #IMPORTANT
@@ -1904,10 +1905,15 @@ class ValueAnalysisAT(AnalysisAT):
               (ff.SET_LOCAL_ARRAYS_TO_TOP and tUnitGetNameInfo(vName).hasArray):
             inBiSetVal(vName, compTop) #Mutates inBi
 
-      if entryFunc: # then set its parameters to Bot (main() function)
-        for vName in func.paramNames:
+      if entryFunc: # i.e. main() function
+        for vName in func.paramNames: # then set its parameters to Bot
           if self.L.isAcceptedType(tUnitGetNameInfo(vName).type):
             inBiSetVal(vName, compBot)
+        for vName in self.L.getAllVars(self.func):
+          if conv.isGlobalName(vName):
+            val = inBiGetVal(vName)
+            if val.top: # set top global vars to their default value
+              inBiSetVal(vName, inBi.getDefaultValForGlobal())
 
     nDfv1 = DfvPairL(inBi, outBi)
     return nDfv1

@@ -22,7 +22,7 @@ TestActionAndResult(
     "tunit": {
       'ir.names.global': (None, {'g:0Null'}),
       'ir.var.real.count': 1, # the total vars in the translation unit
-      'ir.var.abs.count': 2, # the total vars in the translation unit
+      'ir.var.abs.count': 1, # the total vars in the translation unit
       'ir.func.count': 2, # total functions (with or without body)
       'ir.func.def.count': 2, # total functions with definitions
       'ir.func.decl.count': 0, # total functions with declaration only

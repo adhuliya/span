@@ -124,12 +124,13 @@ class ComponentL(DataLT):
   ) -> bool:
     gNid = genGlobalNodeId(0, 0)  # i.e. uninitialized def
     if self.top: # only possible if code is unreachable
-      return True # assume initialized (since unreachable)
+      return True # assume must initialized (since unreachable)
     elif self.bot:
       return not must
     elif gNid in self.val:
-      return True if len(self.val) == 1 else not must
-    raise ValueError(f"{self.func.name}, {must}, {self}")
+      return False if len(self.val) == 1 else not must
+    else:
+      return True  # a must initialized value
 
 
   def __eq__(self,

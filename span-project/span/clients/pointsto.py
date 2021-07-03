@@ -720,8 +720,8 @@ class PointsToA(analysis.ValueAnalysisAT):
       elif strVal.strip() in {"top", "Top", "TOP"}:
         return computed.top
       else: # must be a tuple
-        mapOfVarNames = eval(strVal)
-        return computed.val == mapOfVarNames
+        givenVal = eval(strVal)
+        return computed.val == givenVal
 
     if strVal.startswith("has:"):
       strVal = strVal[4:]

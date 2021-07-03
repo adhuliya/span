@@ -2153,7 +2153,7 @@ class Host:
     elif res == NULL_OBJ_SINGLETON_SET:
       if util.LL1: LER("NullDerefEncountered (bad user program)(%s,%s): %s, %s",
                        self.func.name, node.id, e.name, node)
-      if util.VV0: print(f"NullDerefEncountered (bad user program)"
+      if util.VV1: print(f"  NullDerefEncountered (bad user program)"
                          f"({self.func.name},{node.id}), {e}, {e.info}")
       res = SimFailed  # i.e. process_the_original_insn
 
@@ -2357,7 +2357,7 @@ class Host:
     if anName in self.anWorkDict:
       return self.anWorkDict[anName].anResult
     elif anName in self.inputAnResults:
-      return self.inputAnResults[anName].result
+      return self.inputAnResults[anName]
     raise ValueError("f{anName}")
 
 

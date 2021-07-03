@@ -1640,11 +1640,11 @@ def getNamesUsedInExprSyntactically(
     return thisFunction(e.arg, forLiveness)
   if isinstance(e, CallE):
     if forLiveness and not e.hasDereference():  # forLiveness
-      varNames = []  # i.e. in 'f(a,b)' don't include 'f'
+      varNames = set()  # i.e. in 'f(a,b)' don't include 'f'
     else:
       varNames = thisFunction(e.callee, forLiveness)  # i.e. in 'f(a,b)' include 'f'
     for arg in e.args:
-      varNames.extend(thisFunction(arg, forLiveness))
+      varNames |= thisFunction(arg, forLiveness)
     return varNames
   raise ValueError(f"{e}")
 

@@ -41,24 +41,20 @@ class ArrayIndexOutOfBoundsR(DiagnosisRT):
 
   MethodSequence: List[MethodDetail] = [
     MethodDetail(
-      PlainMethod,
-      [0],
-      ["IntervalA"],
+      name=PlainMethod,
+      anNames=["IntervalA"],
     ),
     MethodDetail(
-      CascadingMethod,
-      [0],
-      ["IntervalA", "PointsToA"],
+      name=CascadingMethod,
+      anNames=["IntervalA", "PointsToA"],
     ),
     MethodDetail(
-      LernerMethod,
-      [0],
-      ["IntervalA", "PointsToA"],
+      name=LernerMethod,
+      anNames=["IntervalA", "PointsToA"],
     ),
     MethodDetail(
-      SpanMethod,
-      [0],
-      ["IntervalA", "PointsToA"],
+      name=SpanMethod,
+      anNames=["IntervalA", "PointsToA"],
     ),
   ]
 
@@ -67,36 +63,14 @@ class ArrayIndexOutOfBoundsR(DiagnosisRT):
     super().__init__(name="IndexOutOfBounds", category="Count", tUnit=tUnit)
 
 
-  def computeDfvs(self,
-      method: MethodDetail,
-      config: int, #IMPORTANT
-      anClassMap: Dict[AnNameT, Type[AnalysisAT]],
-  ) -> Opt[Dict[FuncNameT, Dict[AnNameT, AnResult]]]:
-    """Compute the DFVs necessary to detect index out of bounds."""
-    if util.LL0: LDB("ComputeDFVs: Method=%s, Config=%s", method, config)
-
-    res = None
-    if method.name == PlainMethod:
-      res = self.computeDfvsUsingPlainMethod(method, config, anClassMap)
-    elif method.name == CascadingMethod:
-      res = self.computeDfvsUsingCascadingMethod(method, config, anClassMap)
-    elif method.name == LernerMethod:
-      res = self.computeDfvsUsingLernerMethod(method, config, anClassMap)
-    elif method.name == SpanMethod:
-      res = self.computeDfvsUsingSpanMethod(method, config, anClassMap)
-
-    return res
-
-
   def computeResults(self,
       method: MethodDetail,
-      config: int,
       dfvs: Dict[FuncNameT, Dict[AnNameT, AnResult]],
       anClassMap: Dict[AnNameT, Type[AnalysisAT]],
   ) -> Any:
     """Count array indexes, and count out-of-bounds indexes."""
     if method.name == PlainMethod:
-      return self.computeResultsUsingPlainMethod(method, config, dfvs, anClassMap)
+      return self.computeResultsUsingPlainMethod(method, dfvs, anClassMap)
 
     # Logic for all the methods is here (except the PlainMethod)
     anName1, anName2  = "IntervalA", "PointsToA"
@@ -141,7 +115,6 @@ class ArrayIndexOutOfBoundsR(DiagnosisRT):
 
   def handleResults(self,
       method: MethodDetail,
-      config: int,
       result: Any, # Any type that a particular implementation needs.
       dfvs: Dict[FuncNameT, Dict[AnNameT, AnResult]],
       anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
@@ -156,7 +129,6 @@ class ArrayIndexOutOfBoundsR(DiagnosisRT):
 
   def computeResultsUsingPlainMethod(self,
       method: MethodDetail,
-      config: int,
       dfvs: Dict[FuncNameT, Dict[AnNameT, AnResult]],
       anClassMap: Dict[AnNameT, Type[AnalysisAT]],
   ) -> Any:
@@ -240,74 +212,6 @@ class ArrayIndexOutOfBoundsR(DiagnosisRT):
     dfvPair = anResult.get(nid)
     if dfvPair:
       return anObj.getExprDfv(e, cast(dfv.OverallL, dfvPair.dfvIn))
-
-
-  def computeDfvsUsingPlainMethod(self,
-      method: MethodDetail,
-      config: int,
-      anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
-  ) -> Opt[Dict[FuncNameT, Dict[AnNameT, AnResult]]]:
-    assert len(anClassMap) == 1, f"{anClassMap}, {config}"
-
-    mainAnalysis = method.anNames[0]
-    ipaHost = IpaHost(
-      self.tUnit,
-      mainAnName=mainAnalysis,
-      maxNumOfAnalyses=1,
-    )
-    ipaHost.analyze()
-
-    return ipaHost.vci.finalResult
-
-
-  def computeDfvsUsingSpanMethod(self,
-      method: MethodDetail,
-      config: int,
-      anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
-  ) -> Dict[FuncNameT, Dict[AnNameT, AnResult]]:
-    assert len(anClassMap) == 2, f"{anClassMap}, {config}"
-
-    mainAnalysis = method.anNames[0]
-    ipaHost = IpaHost(
-      self.tUnit,
-      mainAnName=mainAnalysis,
-      otherAnalyses=method.anNames[1:],
-      maxNumOfAnalyses=len(method.anNames),
-    )
-    res = ipaHost.analyze()
-
-    return res
-
-
-  def computeDfvsUsingLernerMethod(self,
-      method: MethodDetail,
-      config: int,
-      anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
-  ) -> Dict[FuncNameT, Dict[AnNameT, AnResult]]:
-    assert len(anClassMap) == 2, f"{anClassMap}, {config}"
-
-    mainAnalysis = method.anNames[0]
-    ipaHost = IpaHost(
-      self.tUnit,
-      mainAnName=mainAnalysis,
-      otherAnalyses=method.anNames[1:],
-      maxNumOfAnalyses=len(method.anNames),
-      useTransformation=True, # this induces lerner's method
-    )
-    res = ipaHost.analyze()
-
-    return res
-
-
-  def computeDfvsUsingCascadingMethod(self,
-      method: MethodDetail,
-      config: int,
-      anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
-  ) -> Dict[FuncNameT, Dict[AnNameT, AnResult]]:
-    assert len(anClassMap) == 2, f"{anClassMap}, {config}"
-
-    res = ipaAnalyzeCascade(self.tUnit, method.anNames)
-    return res
 
 
   def printDebugInfo(self,
