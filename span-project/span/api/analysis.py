@@ -782,7 +782,7 @@ class AnalysisAT:
       nodeDfv: Opt[DfvPairL] = None,
       ipa: bool = False,
       entryFunc: bool = False,
-      func: Opt[constructs.Func] = None,
+      forFunc: Opt[constructs.Func] = None,
   ) -> DfvPairL:
     """Must generate a valid boundary info."""
     if ipa and not nodeDfv:

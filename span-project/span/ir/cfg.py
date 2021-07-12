@@ -761,6 +761,37 @@ class FeasibleEdges:
     return feasibleNodes
 
 
+  def setFeasible2(self,
+      cfgEdge: CfgEdge
+  ) -> List[CfgNode]:
+    """Marks the given edge, and all subsequent UnCondEdges chains as feasible.
+
+    TODO: A non-recursive version.
+    Returns list of nodes id of nodes, that may become reachable,
+    due to the freshly marked incoming feasible edges.
+    """
+    if cfgEdge in self.fEdges:
+      # edge already present, hence must have been already set
+      return []
+
+    feasibleNodes: List[CfgNode] = []
+    feasibleNodes.append(cfgEdge.dest)
+    if util.LL1: LOG.debug("New_Feasible_Edge: %s.", cfgEdge)
+
+    self.fEdges.add(cfgEdge)
+    toVisit = {cfgEdge.dest}
+    while toVisit: #TODO: working on it.
+      node = toVisit.pop()
+      for edge in node.succEdges:
+        if self.allFeasible or edge.label == UnCondEdge:
+          if edge not in self.fEdges:
+            self.fEdges.add(edge)
+            feasibleNodes.append(edge.dest)
+
+    self.feasibleNodes.update(feasibleNodes)
+    return feasibleNodes
+
+
   def isFeasibleEdge(self,
       cfgEdge: CfgEdge
   ) -> bool:

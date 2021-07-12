@@ -1692,6 +1692,11 @@ def evalExpr(e: ExprET) -> LitE:
         newExpr = LitE(int(arg1.val >> arg2.val), info=arg1.info)  # type: ignore
       elif opCode == op.BO_LSHIFT_OC:
         newExpr = LitE(int(arg1.val << arg2.val), info=arg1.info)  # type: ignore
+      elif opCode == op.BO_BIT_XOR_OC:
+        newExpr = LitE(int(arg1.val ^ arg2.val), info=arg1.info)  # type: ignore
+
+      if newExpr is e:
+        print(f"ExprNotEvaluated: {e}, {e.info}, {e.type}")
 
   elif isinstance(e, UnaryE):
     arg, opCode = e.arg, e.opr.opCode

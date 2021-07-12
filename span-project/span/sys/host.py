@@ -798,7 +798,7 @@ class Host:
     return dirn
 
 
-  #mainentry
+  #mainentry to start the host analyses
   def analyze(self) -> float:
     """Starts the process of running the analysis synergy."""
     timer = util.Timer("HostAnalyze")
@@ -1033,9 +1033,9 @@ class Host:
       tFuncName: str, # just for logging
   ) -> DfvPairL:
     """
-    # Inter-procedural analysis does not process the instructions with call
-    # currently: function pointer based calls are handled intra-procedurally
-    #            func which cannot be analyzed are handled intra-procedurally
+    Inter-procedural analysis process the instructions with call here.
+    Instructions with pointer based calls must not reach here.
+    The func which cannot be analyzed (like varargs functions) are handled intra-procedurally
     """
     assert self.ipaEnabled
     if util.LL4: LDB(f" ProcessingIPACall(Host): {self.func.name}, {node.id}, {insn}")
@@ -1043,11 +1043,11 @@ class Host:
     nid, callE = node.id, getCallExpr(insn)
     calleeFuncName = callE.getFuncName()
 
-    if not calleeFuncName:
+    if not calleeFuncName: # possible if func-pointer based calls
       return self.activeAnObj.Any_Instr(nid, insn, nodeDfv) # go #INTRA
     else:
       func = self.tUnit.getFuncObj(calleeFuncName)
-      if not func.canBeAnalyzed():
+      if not func.canBeAnalyzed(): # see function's doc-string
         return self.activeAnObj.Any_Instr(nid, insn, nodeDfv) # go #INTRA
 
     if util.LL4: LDB("CalleeCallSiteDfv(CallerDfv): %s", nodeDfv)
@@ -1055,11 +1055,14 @@ class Host:
     calleeBi = self.getCallSiteDfv(nid, calleeFuncName, self.activeAnName)
     if self.activeAnDirn == Forward:
       callDfv = self.processCallArguments(node, callE, nodeDfv)
-      newCalleeBi = self.activeAnObj.getLocalizedCalleeBi(nid, insn, callDfv, calleeBi)
-      self.setCallSiteDfv(nid, calleeFuncName, self.activeAnName, newCalleeBi)
-    else: #TODO for backward analysis
+    elif self.activeAnDirn == Backward: #TODO #FIXME
+      callDfv = self.processCallReturns(node, callE, nodeDfv)
+    else: #TODO for bi-directional analyses
+      callDfv = None
       assert False #TODO
       # assert self.activeAnDirn in (Backward, ForwBack), f"{self.activeAnDirn}"
+    newCalleeBi = self.activeAnObj.getLocalizedCalleeBi(nid, insn, callDfv, calleeBi)
+    self.setCallSiteDfv(nid, calleeFuncName, self.activeAnName, newCalleeBi)
 
     if not calleeBi: # i.e. wait for the calleeBi to be some useful value
       nodeDfv = self.Barrier_Instr(node, insn, nodeDfv)
@@ -1074,7 +1077,58 @@ class Host:
     return nodeDfv
 
 
-  def processCallArguments(self,
+  def processCallReturns(self, #IPA
+      node: cfg.CfgNode,
+      callE: CallE, # must not be a pointer-call
+      nodeDfv: DfvPairL
+  ) -> DfvPairL:
+    """Analyzes the return values/variables of a call."""
+    insn = node.insn
+    funcName = callE.getFuncName()
+    assert funcName, f"{self.func.name}, {callE}: {callE.info}"
+    assert isinstance(insn, AssignI), f"{node.id}: {insn}, {insn.info}"
+    funcObj = self.tUnit.getFuncObj(funcName)
+
+    # adding Top to avoid unintended widening of params (esp. IntervalA)
+    if self.activeAnDirn == Forward:
+      nextNodeDfv = DfvPairL(nodeDfv.dfvIn, self.activeAnTop)
+    elif self.activeAnDirn == Backward:
+      nextNodeDfv = DfvPairL(self.activeAnTop, nodeDfv.dfvOut)
+    else:
+      raise ValueError(f"{self.activeAnDirn}")
+
+    lhs = insn.lhs
+    for retExpr in funcObj.getReturnExprList():
+      ins = AssignI(lhs, retExpr, lhs.info)
+      self.tUnit.inferTypeOfInstr(ins)
+      nextNodeDfv = self.analyzeInstr(node, ins, nextNodeDfv)
+      if util.LL4: LDB(" FinalInstrDfv(ParamAssign): %s", nextNodeDfv)
+
+      # in/out of succ/pred becomes out/in of the current node
+      if self.activeAnDirn == Forward:
+        nextNodeDfv = DfvPairL(nextNodeDfv.dfvOut, self.activeAnTop)
+      elif self.activeAnDirn == Backward:
+        nextNodeDfv = DfvPairL(self.activeAnTop, nextNodeDfv.dfvIn)
+      else:
+        raise ValueError(f"{self.activeAnDirn}")
+
+    # restore in/out dfv
+    if self.activeAnDirn == Forward:
+      nextNodeDfv.dfvOut = nodeDfv.dfvOut
+      nextNodeDfv.dfvOutTrue = nextNodeDfv.dfvOutFalse = nextNodeDfv.dfvOut
+    elif self.activeAnDirn == Backward:
+      nextNodeDfv.dfvIn = nodeDfv.dfvIn
+    else:
+      raise ValueError(f"{self.activeAnDirn}")
+
+    if util.LL4:
+      callSitePair = CallSitePair(funcName, genGlobalNodeId(self.func.id, node.id))
+      LDB("CalleeCallSiteDfv(AfterParams): (%s): %s", callSitePair, nextNodeDfv)
+
+    return nextNodeDfv
+
+
+  def processCallArguments(self, #IPA
       node: cfg.CfgNode,
       callE: CallE, # must not be a pointer-call
       nodeDfv: DfvPairL

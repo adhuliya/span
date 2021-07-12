@@ -1,0 +1,362 @@
+------------------------------------------------
+
+TotalValueContexts     : 10
+TotalSize(ValueContext): 3834 KB.
+TotalSize(VCI object)  : 3835 KB.
+
+  FINITE  : v:kh_put_str:3if, (0, 1), (if (3if) BB1 BB5; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:7if, (0, 1), (if (7if) BB2 BB3; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:43t, (0, 1), (44if = !43t; INT32, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:44if, (0, 1), (if (44if) BB12 BB11; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:32L, (0, 1), (if (32L) BB14 BB13; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:23L, (0, 1), (if (23L) BB15 BB23; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:54if, (0, 1), (if (54if) BB18 BB19; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:57if, (0, 1), (if (57if) BB21 BB22; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:59if, (0, 1), (if (59if) BB24 BB31; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:69if, (0, 1), (if (69if) BB27 BB26; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:60L, (0, 1), (if (60L) BB28 BB29; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:2if, (0, 1), (if (2if) BB2 BB3; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:9if, (0, 1), (if (9if) BB4 BB5; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:18if, (0, 1), (if (18if) BB6 BB9; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB7 BB8; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:j, (0, 1), (if (j) BB10 BB41; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:28if, (0, 1), (if (28if) BB12 BB36; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:36if, (0, 1), (if (36if) BB13 BB35; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB14 BB15; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB17 BB34; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:56if, (0, 1), (if (56if) BB20 BB21; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:67if, (0, 1), (if (67if) BB24 BB25; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:75if, (0, 1), (if (75if) BB26 BB25; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:65L, (0, 1), (if (65L) BB27 BB30; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB28 BB29; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB31 BB32; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:91if, (0, 1), (if (91if) BB37 BB40; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB38 BB39; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:main:block_end, 0, (curr = block_end; INT32, f:main, Info(Loc(18,2),0))
+  FINITE  : v:main:ret, (0, 2), (if (ret) BB3 BB6; VOID, f:main, Info(Loc(22,3),0))
+  FINITE  : v:main:7if, (0, 1), (if (7if) BB4 BB5; VOID, f:main, Info(Loc(24,4),0))
+  FINITE  : v:main:24if, (0, 1), (if (24if) BB7 BB8; VOID, f:main, Info(Loc(35,4),0))
+  FINITE  : v:main:27if, (0, 1), (if (27if) BB11 BB12; VOID, f:main, Info(Loc(39,16),0))
+AnalysisType: IntervalR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 424
+  TotalNumericNames     : 331
+  TotalConstantValues   : 7
+  TotalFiniteRange      : 26
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 298
+------------------------------------------------
+TimeElapsed(span:span): 1486.1607551574707 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+
+TotalValueContexts     : 9
+TotalSize(ValueContext): 3264 KB.
+TotalSize(VCI object)  : 3265 KB.
+
+  FINITE  : v:kh_put_str:3if, (0, 1), (if (3if) BB1 BB5; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:7if, (0, 1), (if (7if) BB2 BB3; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:43t, (0, 1), (44if = !43t; INT32, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:44if, (0, 1), (if (44if) BB12 BB11; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:32L, (0, 1), (if (32L) BB14 BB13; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:23L, (0, 1), (if (23L) BB15 BB23; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:54if, (0, 1), (if (54if) BB18 BB19; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:57if, (0, 1), (if (57if) BB21 BB22; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:59if, (0, 1), (if (59if) BB24 BB31; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:69if, (0, 1), (if (69if) BB27 BB26; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:60L, (0, 1), (if (60L) BB28 BB29; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:2if, (0, 1), (if (2if) BB2 BB3; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:9if, (0, 1), (if (9if) BB4 BB5; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:18if, (0, 1), (if (18if) BB6 BB9; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB7 BB8; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:j, (0, 1), (if (j) BB10 BB41; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:28if, (0, 1), (if (28if) BB12 BB36; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:36if, (0, 1), (if (36if) BB13 BB35; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB14 BB15; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB17 BB34; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:56if, (0, 1), (if (56if) BB20 BB21; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:67if, (0, 1), (if (67if) BB24 BB25; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:75if, (0, 1), (if (75if) BB26 BB25; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:65L, (0, 1), (if (65L) BB27 BB30; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB28 BB29; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB31 BB32; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:91if, (0, 1), (if (91if) BB37 BB40; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB38 BB39; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:main:block_end, 0, (curr = block_end; INT32, f:main, Info(Loc(18,2),0))
+  FINITE  : v:main:7if, (0, 1), (if (7if) BB4 BB5; VOID, f:main, Info(Loc(24,4),0))
+  FINITE  : v:main:24if, (0, 1), (if (24if) BB7 BB8; VOID, f:main, Info(Loc(35,4),0))
+  FINITE  : v:main:27if, (0, 1), (if (27if) BB11 BB12; VOID, f:main, Info(Loc(39,16),0))
+AnalysisType: IntervalR
+Method: MethodDetail(plain, plain, ['IntervalA'], 'No Description')
+  TotalNodes            : 272
+  TotalNumericNames     : 331
+  TotalConstantValues   : 7
+  TotalFiniteRange      : 25
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 299
+------------------------------------------------
+TimeElapsed(plain:plain): 726.5872955322266 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+
+TotalValueContexts     : 9
+TotalSize(ValueContext): 3279 KB.
+TotalSize(VCI object)  : 3281 KB.
+
+
+TotalValueContexts     : 9
+TotalSize(ValueContext): 2353 KB.
+TotalSize(VCI object)  : 2354 KB.
+
+  FINITE  : v:kh_put_str:3if, (0, 1), (if (3if) BB1 BB5; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:7if, (0, 1), (if (7if) BB2 BB3; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:43t, (0, 1), (44if = !43t; INT32, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:44if, (0, 1), (if (44if) BB12 BB11; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:32L, (0, 1), (if (32L) BB14 BB13; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:23L, (0, 1), (if (23L) BB15 BB23; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:54if, (0, 1), (if (54if) BB18 BB19; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:57if, (0, 1), (if (57if) BB21 BB22; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:59if, (0, 1), (if (59if) BB24 BB31; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:69if, (0, 1), (if (69if) BB27 BB26; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:60L, (0, 1), (if (60L) BB28 BB29; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:2if, (0, 1), (if (2if) BB2 BB3; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:9if, (0, 1), (if (9if) BB4 BB5; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:18if, (0, 1), (if (18if) BB6 BB9; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB7 BB8; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:j, (0, 1), (if (j) BB10 BB41; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:28if, (0, 1), (if (28if) BB12 BB36; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:36if, (0, 1), (if (36if) BB13 BB35; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB14 BB15; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB17 BB34; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:56if, (0, 1), (if (56if) BB20 BB21; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:67if, (0, 1), (if (67if) BB24 BB25; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:75if, (0, 1), (if (75if) BB26 BB25; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:65L, (0, 1), (if (65L) BB27 BB30; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB28 BB29; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB31 BB32; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:91if, (0, 1), (if (91if) BB37 BB40; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB38 BB39; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:main:block_end, 0, (curr = block_end; INT32, f:main, Info(Loc(18,2),0))
+  FINITE  : v:main:7if, (0, 1), (if (7if) BB4 BB5; VOID, f:main, Info(Loc(24,4),0))
+  FINITE  : v:main:24if, (0, 1), (if (24if) BB7 BB8; VOID, f:main, Info(Loc(35,4),0))
+  FINITE  : v:main:27if, (0, 1), (if (27if) BB11 BB12; VOID, f:main, Info(Loc(39,16),0))
+AnalysisType: IntervalR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 272
+  TotalNumericNames     : 331
+  TotalConstantValues   : 7
+  TotalFiniteRange      : 25
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 299
+------------------------------------------------
+TimeElapsed(cascading:cascading): 981.2240600585938 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+
+TotalValueContexts     : 9
+TotalSize(ValueContext): 1462 KB.
+TotalSize(VCI object)  : 1463 KB.
+
+
+TotalValueContexts     : 9
+TotalSize(ValueContext): 3528 KB.
+TotalSize(VCI object)  : 3530 KB.
+
+  FINITE  : v:kh_put_str:3if, (0, 1), (if (3if) BB1 BB5; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:7if, (0, 1), (if (7if) BB2 BB3; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:43t, (0, 1), (44if = !43t; INT32, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:44if, (0, 1), (if (44if) BB12 BB11; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:32L, (0, 1), (if (32L) BB14 BB13; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:23L, (0, 1), (if (23L) BB15 BB23; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:54if, (0, 1), (if (54if) BB18 BB19; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:57if, (0, 1), (if (57if) BB21 BB22; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:59if, (0, 1), (if (59if) BB24 BB31; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:69if, (0, 1), (if (69if) BB27 BB26; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:60L, (0, 1), (if (60L) BB28 BB29; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:2if, (0, 1), (if (2if) BB2 BB3; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:9if, (0, 1), (if (9if) BB4 BB5; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:18if, (0, 1), (if (18if) BB6 BB9; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB7 BB8; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:j, (0, 1), (if (j) BB10 BB41; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:28if, (0, 1), (if (28if) BB12 BB36; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:36if, (0, 1), (if (36if) BB13 BB35; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB14 BB15; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB17 BB34; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:56if, (0, 1), (if (56if) BB20 BB21; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:67if, (0, 1), (if (67if) BB24 BB25; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:75if, (0, 1), (if (75if) BB26 BB25; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:65L, (0, 1), (if (65L) BB27 BB30; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB28 BB29; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB31 BB32; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:91if, (0, 1), (if (91if) BB37 BB40; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB38 BB39; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:main:block_end, 0, (curr = block_end; INT32, f:main, Info(Loc(18,2),0))
+  FINITE  : v:main:ret, (0, 2), (if (ret) BB3 BB6; VOID, f:main, Info(Loc(22,3),0))
+  FINITE  : v:main:7if, (0, 1), (if (7if) BB4 BB5; VOID, f:main, Info(Loc(24,4),0))
+  FINITE  : v:main:24if, (0, 1), (if (24if) BB7 BB8; VOID, f:main, Info(Loc(35,4),0))
+  FINITE  : v:main:27if, (0, 1), (if (27if) BB11 BB12; VOID, f:main, Info(Loc(39,16),0))
+AnalysisType: IntervalR
+Method: MethodDetail(cascading, cascading, ['PointsToA', 'IntervalA'], 'No Description')
+  TotalNodes            : 272
+  TotalNumericNames     : 331
+  TotalConstantValues   : 7
+  TotalFiniteRange      : 26
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 298
+------------------------------------------------
+TimeElapsed(cascading:cascading): 978.3437252044678 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+
+TotalValueContexts     : 9
+TotalSize(ValueContext): 3716 KB.
+TotalSize(VCI object)  : 3717 KB.
+
+  FINITE  : v:kh_put_str:3if, (0, 1), (if (3if) BB1 BB5; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:7if, (0, 1), (if (7if) BB2 BB3; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:43t, (0, 1), (44if = !43t; INT32, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:44if, (0, 1), (if (44if) BB12 BB11; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:32L, (0, 1), (if (32L) BB14 BB13; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:23L, (0, 1), (if (23L) BB15 BB23; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:54if, (0, 1), (if (54if) BB18 BB19; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:57if, (0, 1), (if (57if) BB21 BB22; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:59if, (0, 1), (if (59if) BB24 BB31; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:69if, (0, 1), (if (69if) BB27 BB26; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:60L, (0, 1), (if (60L) BB28 BB29; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:2if, (0, 1), (if (2if) BB2 BB3; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:9if, (0, 1), (if (9if) BB4 BB5; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:18if, (0, 1), (if (18if) BB6 BB9; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB7 BB8; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:j, (0, 1), (if (j) BB10 BB41; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:28if, (0, 1), (if (28if) BB12 BB36; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:36if, (0, 1), (if (36if) BB13 BB35; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB14 BB15; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB17 BB34; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:56if, (0, 1), (if (56if) BB20 BB21; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:67if, (0, 1), (if (67if) BB24 BB25; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:75if, (0, 1), (if (75if) BB26 BB25; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:65L, (0, 1), (if (65L) BB27 BB30; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB28 BB29; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB31 BB32; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:91if, (0, 1), (if (91if) BB37 BB40; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB38 BB39; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:main:block_end, 0, (curr = block_end; INT32, f:main, Info(Loc(18,2),0))
+  FINITE  : v:main:ret, (0, 2), (if (ret) BB3 BB6; VOID, f:main, Info(Loc(22,3),0))
+  FINITE  : v:main:7if, (0, 1), (if (7if) BB4 BB5; VOID, f:main, Info(Loc(24,4),0))
+  FINITE  : v:main:24if, (0, 1), (if (24if) BB7 BB8; VOID, f:main, Info(Loc(35,4),0))
+  FINITE  : v:main:27if, (0, 1), (if (27if) BB11 BB12; VOID, f:main, Info(Loc(39,16),0))
+AnalysisType: IntervalR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 272
+  TotalNumericNames     : 331
+  TotalConstantValues   : 7
+  TotalFiniteRange      : 26
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 298
+------------------------------------------------
+TimeElapsed(lerner:lerner): 1226.2978553771973 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+
+TotalValueContexts     : 9
+TotalSize(ValueContext): 3716 KB.
+TotalSize(VCI object)  : 3717 KB.
+
+  FINITE  : v:kh_put_str:3if, (0, 1), (if (3if) BB1 BB5; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:7if, (0, 1), (if (7if) BB2 BB3; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:43t, (0, 1), (44if = !43t; INT32, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:44if, (0, 1), (if (44if) BB12 BB11; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:32L, (0, 1), (if (32L) BB14 BB13; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:23L, (0, 1), (if (23L) BB15 BB23; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:54if, (0, 1), (if (54if) BB18 BB19; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:57if, (0, 1), (if (57if) BB21 BB22; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:59if, (0, 1), (if (59if) BB24 BB31; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:69if, (0, 1), (if (69if) BB27 BB26; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:60L, (0, 1), (if (60L) BB28 BB29; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:2if, (0, 1), (if (2if) BB2 BB3; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:9if, (0, 1), (if (9if) BB4 BB5; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:18if, (0, 1), (if (18if) BB6 BB9; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB7 BB8; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:j, (0, 1), (if (j) BB10 BB41; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:28if, (0, 1), (if (28if) BB12 BB36; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:36if, (0, 1), (if (36if) BB13 BB35; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB14 BB15; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB17 BB34; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:56if, (0, 1), (if (56if) BB20 BB21; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:67if, (0, 1), (if (67if) BB24 BB25; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:75if, (0, 1), (if (75if) BB26 BB25; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:65L, (0, 1), (if (65L) BB27 BB30; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB28 BB29; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB31 BB32; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:91if, (0, 1), (if (91if) BB37 BB40; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB38 BB39; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:main:block_end, 0, (curr = block_end; INT32, f:main, Info(Loc(18,2),0))
+  FINITE  : v:main:ret, (0, 2), (if (ret) BB3 BB6; VOID, f:main, Info(Loc(22,3),0))
+  FINITE  : v:main:7if, (0, 1), (if (7if) BB4 BB5; VOID, f:main, Info(Loc(24,4),0))
+  FINITE  : v:main:24if, (0, 1), (if (24if) BB7 BB8; VOID, f:main, Info(Loc(35,4),0))
+  FINITE  : v:main:27if, (0, 1), (if (27if) BB11 BB12; VOID, f:main, Info(Loc(39,16),0))
+AnalysisType: IntervalR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 272
+  TotalNumericNames     : 331
+  TotalConstantValues   : 7
+  TotalFiniteRange      : 26
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 298
+------------------------------------------------
+TimeElapsed(lerner:lerner): 1229.0942668914795 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+
+TotalValueContexts     : 10
+TotalSize(ValueContext): 3858 KB.
+TotalSize(VCI object)  : 3860 KB.
+
+  FINITE  : v:kh_put_str:3if, (0, 1), (if (3if) BB1 BB5; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:7if, (0, 1), (if (7if) BB2 BB3; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:43t, (0, 1), (44if = !43t; INT32, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:44if, (0, 1), (if (44if) BB12 BB11; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:32L, (0, 1), (if (32L) BB14 BB13; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:23L, (0, 1), (if (23L) BB15 BB23; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:54if, (0, 1), (if (54if) BB18 BB19; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:57if, (0, 1), (if (57if) BB21 BB22; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:59if, (0, 1), (if (59if) BB24 BB31; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:69if, (0, 1), (if (69if) BB27 BB26; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_put_str:60L, (0, 1), (if (60L) BB28 BB29; VOID, f:kh_put_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:2if, (0, 1), (if (2if) BB2 BB3; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:9if, (0, 1), (if (9if) BB4 BB5; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:18if, (0, 1), (if (18if) BB6 BB9; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB7 BB8; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:j, (0, 1), (if (j) BB10 BB41; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:28if, (0, 1), (if (28if) BB12 BB36; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:36if, (0, 1), (if (36if) BB13 BB35; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB14 BB15; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB17 BB34; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:56if, (0, 1), (if (56if) BB20 BB21; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:67if, (0, 1), (if (67if) BB24 BB25; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:75if, (0, 1), (if (75if) BB26 BB25; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:65L, (0, 1), (if (65L) BB27 BB30; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB28 BB29; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB31 BB32; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  FINITE  : v:kh_resize_str:91if, (0, 1), (if (91if) BB37 BB40; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB38 BB39; VOID, f:kh_resize_str, Info(Loc(3,1),0))
+  CONSTANT: v:main:block_end, 0, (curr = block_end; INT32, f:main, Info(Loc(18,2),0))
+  FINITE  : v:main:ret, (0, 2), (if (ret) BB3 BB6; VOID, f:main, Info(Loc(22,3),0))
+  FINITE  : v:main:7if, (0, 1), (if (7if) BB4 BB5; VOID, f:main, Info(Loc(24,4),0))
+  FINITE  : v:main:24if, (0, 1), (if (24if) BB7 BB8; VOID, f:main, Info(Loc(35,4),0))
+  FINITE  : v:main:27if, (0, 1), (if (27if) BB11 BB12; VOID, f:main, Info(Loc(39,16),0))
+AnalysisType: IntervalR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 272
+  TotalNumericNames     : 331
+  TotalConstantValues   : 7
+  TotalFiniteRange      : 26
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 298
+------------------------------------------------
+TimeElapsed(span:span): 1498.8529682159424 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+------------------------------------------------
+TimeElapsed(compareall:compareall): 0.3879070281982422 ms (Starts: 1, Stops: 1)
+TimeElapsed(TotalTimeTaken): 8165.401458740234 ms (Starts: 1, Stops: 1)

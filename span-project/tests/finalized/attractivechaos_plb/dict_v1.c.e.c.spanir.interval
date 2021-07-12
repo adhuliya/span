@@ -1,0 +1,362 @@
+------------------------------------------------
+
+TotalValueContexts     : 10
+TotalSize(ValueContext): 3941 KB.
+TotalSize(VCI object)  : 3942 KB.
+
+  FINITE  : v:kh_put_str:3if, (0, 1), (if (3if) BB1 BB5; VOID, f:kh_put_str, Info(Loc(2180,2869),0))
+  FINITE  : v:kh_put_str:7if, (0, 1), (if (7if) BB2 BB3; VOID, f:kh_put_str, Info(Loc(2180,2908),0))
+  FINITE  : v:kh_put_str:43t, (0, 1), (44if = !43t; INT32, f:kh_put_str, Info(Loc(2180,3317),0))
+  FINITE  : v:kh_put_str:44if, (0, 1), (if (44if) BB12 BB11; VOID, f:kh_put_str, Info(Loc(2180,3279),0))
+  FINITE  : v:kh_put_str:32L, (0, 1), (if (32L) BB14 BB13; VOID, f:kh_put_str, Info(Loc(2180,3237),0))
+  FINITE  : v:kh_put_str:23L, (0, 1), (if (23L) BB15 BB23; VOID, f:kh_put_str, Info(Loc(2180,3237),0))
+  FINITE  : v:kh_put_str:54if, (0, 1), (if (54if) BB18 BB19; VOID, f:kh_put_str, Info(Loc(2180,3404),0))
+  FINITE  : v:kh_put_str:57if, (0, 1), (if (57if) BB21 BB22; VOID, f:kh_put_str, Info(Loc(2180,3476),0))
+  FINITE  : v:kh_put_str:59if, (0, 1), (if (59if) BB24 BB31; VOID, f:kh_put_str, Info(Loc(2180,3514),0))
+  FINITE  : v:kh_put_str:69if, (0, 1), (if (69if) BB27 BB26; VOID, f:kh_put_str, Info(Loc(2180,3544),0))
+  FINITE  : v:kh_put_str:60L, (0, 1), (if (60L) BB28 BB29; VOID, f:kh_put_str, Info(Loc(2180,3539),0))
+  FINITE  : v:kh_resize_str:3if, (0, 1), (if (3if) BB2 BB3; VOID, f:kh_resize_str, Info(Loc(2180,1168),0))
+  FINITE  : v:kh_resize_str:11if, (0, 1), (if (11if) BB4 BB5; VOID, f:kh_resize_str, Info(Loc(2180,1247),0))
+  FINITE  : v:kh_resize_str:20if, (0, 1), (if (20if) BB6 BB9; VOID, f:kh_resize_str, Info(Loc(2180,1475),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB7 BB8; VOID, f:kh_resize_str, Info(Loc(2180,1586),0))
+  FINITE  : v:kh_resize_str:j, (0, 1), (if (j) BB10 BB41; VOID, f:kh_resize_str, Info(Loc(2180,1662),0))
+  FINITE  : v:kh_resize_str:30if, (0, 1), (if (30if) BB12 BB36; VOID, f:kh_resize_str, Info(Loc(2180,1683),0))
+  FINITE  : v:kh_resize_str:38if, (0, 1), (if (38if) BB13 BB35; VOID, f:kh_resize_str, Info(Loc(2180,1709),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB14 BB15; VOID, f:kh_resize_str, Info(Loc(2180,1794),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB17 BB34; VOID, f:kh_resize_str, Info(Loc(2180,1864),0))
+  FINITE  : v:kh_resize_str:59if, (0, 1), (if (59if) BB20 BB21; VOID, f:kh_resize_str, Info(Loc(2180,2025),0))
+  FINITE  : v:kh_resize_str:71if, (0, 1), (if (71if) BB24 BB25; VOID, f:kh_resize_str, Info(Loc(2180,2147),0))
+  FINITE  : v:kh_resize_str:79if, (0, 1), (if (79if) BB26 BB25; VOID, f:kh_resize_str, Info(Loc(2180,2147),0))
+  FINITE  : v:kh_resize_str:69L, (0, 1), (if (69L) BB27 BB30; VOID, f:kh_resize_str, Info(Loc(2180,2143),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB28 BB29; VOID, f:kh_resize_str, Info(Loc(2180,2272),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB31 BB32; VOID, f:kh_resize_str, Info(Loc(2180,2399),0))
+  FINITE  : v:kh_resize_str:95if, (0, 1), (if (95if) BB37 BB40; VOID, f:kh_resize_str, Info(Loc(2180,2439),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB38 BB39; VOID, f:kh_resize_str, Info(Loc(2180,2550),0))
+  CONSTANT: v:main:block_end, 0, (curr = block_end; INT32, f:main, Info(Loc(2195,2),0))
+  FINITE  : v:main:ret, (0, 2), (if (ret) BB3 BB6; VOID, f:main, Info(Loc(2199,3),0))
+  FINITE  : v:main:8if, (0, 1), (if (8if) BB4 BB5; VOID, f:main, Info(Loc(2201,4),0))
+  FINITE  : v:main:28if, (0, 1), (if (28if) BB7 BB8; VOID, f:main, Info(Loc(2212,4),0))
+  FINITE  : v:main:31if, (0, 1), (if (31if) BB11 BB12; VOID, f:main, Info(Loc(2216,16),0))
+AnalysisType: IntervalR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 433
+  TotalNumericNames     : 331
+  TotalConstantValues   : 7
+  TotalFiniteRange      : 26
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 298
+------------------------------------------------
+TimeElapsed(span:span): 1551.640272140503 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+
+TotalValueContexts     : 9
+TotalSize(ValueContext): 3307 KB.
+TotalSize(VCI object)  : 3308 KB.
+
+  FINITE  : v:kh_put_str:3if, (0, 1), (if (3if) BB1 BB5; VOID, f:kh_put_str, Info(Loc(2180,2869),0))
+  FINITE  : v:kh_put_str:7if, (0, 1), (if (7if) BB2 BB3; VOID, f:kh_put_str, Info(Loc(2180,2908),0))
+  FINITE  : v:kh_put_str:43t, (0, 1), (44if = !43t; INT32, f:kh_put_str, Info(Loc(2180,3317),0))
+  FINITE  : v:kh_put_str:44if, (0, 1), (if (44if) BB12 BB11; VOID, f:kh_put_str, Info(Loc(2180,3279),0))
+  FINITE  : v:kh_put_str:32L, (0, 1), (if (32L) BB14 BB13; VOID, f:kh_put_str, Info(Loc(2180,3237),0))
+  FINITE  : v:kh_put_str:23L, (0, 1), (if (23L) BB15 BB23; VOID, f:kh_put_str, Info(Loc(2180,3237),0))
+  FINITE  : v:kh_put_str:54if, (0, 1), (if (54if) BB18 BB19; VOID, f:kh_put_str, Info(Loc(2180,3404),0))
+  FINITE  : v:kh_put_str:57if, (0, 1), (if (57if) BB21 BB22; VOID, f:kh_put_str, Info(Loc(2180,3476),0))
+  FINITE  : v:kh_put_str:59if, (0, 1), (if (59if) BB24 BB31; VOID, f:kh_put_str, Info(Loc(2180,3514),0))
+  FINITE  : v:kh_put_str:69if, (0, 1), (if (69if) BB27 BB26; VOID, f:kh_put_str, Info(Loc(2180,3544),0))
+  FINITE  : v:kh_put_str:60L, (0, 1), (if (60L) BB28 BB29; VOID, f:kh_put_str, Info(Loc(2180,3539),0))
+  FINITE  : v:kh_resize_str:3if, (0, 1), (if (3if) BB2 BB3; VOID, f:kh_resize_str, Info(Loc(2180,1168),0))
+  FINITE  : v:kh_resize_str:11if, (0, 1), (if (11if) BB4 BB5; VOID, f:kh_resize_str, Info(Loc(2180,1247),0))
+  FINITE  : v:kh_resize_str:20if, (0, 1), (if (20if) BB6 BB9; VOID, f:kh_resize_str, Info(Loc(2180,1475),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB7 BB8; VOID, f:kh_resize_str, Info(Loc(2180,1586),0))
+  FINITE  : v:kh_resize_str:j, (0, 1), (if (j) BB10 BB41; VOID, f:kh_resize_str, Info(Loc(2180,1662),0))
+  FINITE  : v:kh_resize_str:30if, (0, 1), (if (30if) BB12 BB36; VOID, f:kh_resize_str, Info(Loc(2180,1683),0))
+  FINITE  : v:kh_resize_str:38if, (0, 1), (if (38if) BB13 BB35; VOID, f:kh_resize_str, Info(Loc(2180,1709),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB14 BB15; VOID, f:kh_resize_str, Info(Loc(2180,1794),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB17 BB34; VOID, f:kh_resize_str, Info(Loc(2180,1864),0))
+  FINITE  : v:kh_resize_str:59if, (0, 1), (if (59if) BB20 BB21; VOID, f:kh_resize_str, Info(Loc(2180,2025),0))
+  FINITE  : v:kh_resize_str:71if, (0, 1), (if (71if) BB24 BB25; VOID, f:kh_resize_str, Info(Loc(2180,2147),0))
+  FINITE  : v:kh_resize_str:79if, (0, 1), (if (79if) BB26 BB25; VOID, f:kh_resize_str, Info(Loc(2180,2147),0))
+  FINITE  : v:kh_resize_str:69L, (0, 1), (if (69L) BB27 BB30; VOID, f:kh_resize_str, Info(Loc(2180,2143),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB28 BB29; VOID, f:kh_resize_str, Info(Loc(2180,2272),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB31 BB32; VOID, f:kh_resize_str, Info(Loc(2180,2399),0))
+  FINITE  : v:kh_resize_str:95if, (0, 1), (if (95if) BB37 BB40; VOID, f:kh_resize_str, Info(Loc(2180,2439),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB38 BB39; VOID, f:kh_resize_str, Info(Loc(2180,2550),0))
+  CONSTANT: v:main:block_end, 0, (curr = block_end; INT32, f:main, Info(Loc(2195,2),0))
+  FINITE  : v:main:8if, (0, 1), (if (8if) BB4 BB5; VOID, f:main, Info(Loc(2201,4),0))
+  FINITE  : v:main:28if, (0, 1), (if (28if) BB7 BB8; VOID, f:main, Info(Loc(2212,4),0))
+  FINITE  : v:main:31if, (0, 1), (if (31if) BB11 BB12; VOID, f:main, Info(Loc(2216,16),0))
+AnalysisType: IntervalR
+Method: MethodDetail(plain, plain, ['IntervalA'], 'No Description')
+  TotalNodes            : 274
+  TotalNumericNames     : 331
+  TotalConstantValues   : 7
+  TotalFiniteRange      : 25
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 299
+------------------------------------------------
+TimeElapsed(plain:plain): 693.2258605957031 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+
+TotalValueContexts     : 9
+TotalSize(ValueContext): 3323 KB.
+TotalSize(VCI object)  : 3324 KB.
+
+
+TotalValueContexts     : 9
+TotalSize(ValueContext): 2418 KB.
+TotalSize(VCI object)  : 2419 KB.
+
+  FINITE  : v:kh_put_str:3if, (0, 1), (if (3if) BB1 BB5; VOID, f:kh_put_str, Info(Loc(2180,2869),0))
+  FINITE  : v:kh_put_str:7if, (0, 1), (if (7if) BB2 BB3; VOID, f:kh_put_str, Info(Loc(2180,2908),0))
+  FINITE  : v:kh_put_str:43t, (0, 1), (44if = !43t; INT32, f:kh_put_str, Info(Loc(2180,3317),0))
+  FINITE  : v:kh_put_str:44if, (0, 1), (if (44if) BB12 BB11; VOID, f:kh_put_str, Info(Loc(2180,3279),0))
+  FINITE  : v:kh_put_str:32L, (0, 1), (if (32L) BB14 BB13; VOID, f:kh_put_str, Info(Loc(2180,3237),0))
+  FINITE  : v:kh_put_str:23L, (0, 1), (if (23L) BB15 BB23; VOID, f:kh_put_str, Info(Loc(2180,3237),0))
+  FINITE  : v:kh_put_str:54if, (0, 1), (if (54if) BB18 BB19; VOID, f:kh_put_str, Info(Loc(2180,3404),0))
+  FINITE  : v:kh_put_str:57if, (0, 1), (if (57if) BB21 BB22; VOID, f:kh_put_str, Info(Loc(2180,3476),0))
+  FINITE  : v:kh_put_str:59if, (0, 1), (if (59if) BB24 BB31; VOID, f:kh_put_str, Info(Loc(2180,3514),0))
+  FINITE  : v:kh_put_str:69if, (0, 1), (if (69if) BB27 BB26; VOID, f:kh_put_str, Info(Loc(2180,3544),0))
+  FINITE  : v:kh_put_str:60L, (0, 1), (if (60L) BB28 BB29; VOID, f:kh_put_str, Info(Loc(2180,3539),0))
+  FINITE  : v:kh_resize_str:3if, (0, 1), (if (3if) BB2 BB3; VOID, f:kh_resize_str, Info(Loc(2180,1168),0))
+  FINITE  : v:kh_resize_str:11if, (0, 1), (if (11if) BB4 BB5; VOID, f:kh_resize_str, Info(Loc(2180,1247),0))
+  FINITE  : v:kh_resize_str:20if, (0, 1), (if (20if) BB6 BB9; VOID, f:kh_resize_str, Info(Loc(2180,1475),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB7 BB8; VOID, f:kh_resize_str, Info(Loc(2180,1586),0))
+  FINITE  : v:kh_resize_str:j, (0, 1), (if (j) BB10 BB41; VOID, f:kh_resize_str, Info(Loc(2180,1662),0))
+  FINITE  : v:kh_resize_str:30if, (0, 1), (if (30if) BB12 BB36; VOID, f:kh_resize_str, Info(Loc(2180,1683),0))
+  FINITE  : v:kh_resize_str:38if, (0, 1), (if (38if) BB13 BB35; VOID, f:kh_resize_str, Info(Loc(2180,1709),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB14 BB15; VOID, f:kh_resize_str, Info(Loc(2180,1794),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB17 BB34; VOID, f:kh_resize_str, Info(Loc(2180,1864),0))
+  FINITE  : v:kh_resize_str:59if, (0, 1), (if (59if) BB20 BB21; VOID, f:kh_resize_str, Info(Loc(2180,2025),0))
+  FINITE  : v:kh_resize_str:71if, (0, 1), (if (71if) BB24 BB25; VOID, f:kh_resize_str, Info(Loc(2180,2147),0))
+  FINITE  : v:kh_resize_str:79if, (0, 1), (if (79if) BB26 BB25; VOID, f:kh_resize_str, Info(Loc(2180,2147),0))
+  FINITE  : v:kh_resize_str:69L, (0, 1), (if (69L) BB27 BB30; VOID, f:kh_resize_str, Info(Loc(2180,2143),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB28 BB29; VOID, f:kh_resize_str, Info(Loc(2180,2272),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB31 BB32; VOID, f:kh_resize_str, Info(Loc(2180,2399),0))
+  FINITE  : v:kh_resize_str:95if, (0, 1), (if (95if) BB37 BB40; VOID, f:kh_resize_str, Info(Loc(2180,2439),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB38 BB39; VOID, f:kh_resize_str, Info(Loc(2180,2550),0))
+  CONSTANT: v:main:block_end, 0, (curr = block_end; INT32, f:main, Info(Loc(2195,2),0))
+  FINITE  : v:main:8if, (0, 1), (if (8if) BB4 BB5; VOID, f:main, Info(Loc(2201,4),0))
+  FINITE  : v:main:28if, (0, 1), (if (28if) BB7 BB8; VOID, f:main, Info(Loc(2212,4),0))
+  FINITE  : v:main:31if, (0, 1), (if (31if) BB11 BB12; VOID, f:main, Info(Loc(2216,16),0))
+AnalysisType: IntervalR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 274
+  TotalNumericNames     : 331
+  TotalConstantValues   : 7
+  TotalFiniteRange      : 25
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 299
+------------------------------------------------
+TimeElapsed(cascading:cascading): 995.0439929962158 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+
+TotalValueContexts     : 9
+TotalSize(ValueContext): 1522 KB.
+TotalSize(VCI object)  : 1524 KB.
+
+
+TotalValueContexts     : 9
+TotalSize(ValueContext): 3589 KB.
+TotalSize(VCI object)  : 3591 KB.
+
+  FINITE  : v:kh_put_str:3if, (0, 1), (if (3if) BB1 BB5; VOID, f:kh_put_str, Info(Loc(2180,2869),0))
+  FINITE  : v:kh_put_str:7if, (0, 1), (if (7if) BB2 BB3; VOID, f:kh_put_str, Info(Loc(2180,2908),0))
+  FINITE  : v:kh_put_str:43t, (0, 1), (44if = !43t; INT32, f:kh_put_str, Info(Loc(2180,3317),0))
+  FINITE  : v:kh_put_str:44if, (0, 1), (if (44if) BB12 BB11; VOID, f:kh_put_str, Info(Loc(2180,3279),0))
+  FINITE  : v:kh_put_str:32L, (0, 1), (if (32L) BB14 BB13; VOID, f:kh_put_str, Info(Loc(2180,3237),0))
+  FINITE  : v:kh_put_str:23L, (0, 1), (if (23L) BB15 BB23; VOID, f:kh_put_str, Info(Loc(2180,3237),0))
+  FINITE  : v:kh_put_str:54if, (0, 1), (if (54if) BB18 BB19; VOID, f:kh_put_str, Info(Loc(2180,3404),0))
+  FINITE  : v:kh_put_str:57if, (0, 1), (if (57if) BB21 BB22; VOID, f:kh_put_str, Info(Loc(2180,3476),0))
+  FINITE  : v:kh_put_str:59if, (0, 1), (if (59if) BB24 BB31; VOID, f:kh_put_str, Info(Loc(2180,3514),0))
+  FINITE  : v:kh_put_str:69if, (0, 1), (if (69if) BB27 BB26; VOID, f:kh_put_str, Info(Loc(2180,3544),0))
+  FINITE  : v:kh_put_str:60L, (0, 1), (if (60L) BB28 BB29; VOID, f:kh_put_str, Info(Loc(2180,3539),0))
+  FINITE  : v:kh_resize_str:3if, (0, 1), (if (3if) BB2 BB3; VOID, f:kh_resize_str, Info(Loc(2180,1168),0))
+  FINITE  : v:kh_resize_str:11if, (0, 1), (if (11if) BB4 BB5; VOID, f:kh_resize_str, Info(Loc(2180,1247),0))
+  FINITE  : v:kh_resize_str:20if, (0, 1), (if (20if) BB6 BB9; VOID, f:kh_resize_str, Info(Loc(2180,1475),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB7 BB8; VOID, f:kh_resize_str, Info(Loc(2180,1586),0))
+  FINITE  : v:kh_resize_str:j, (0, 1), (if (j) BB10 BB41; VOID, f:kh_resize_str, Info(Loc(2180,1662),0))
+  FINITE  : v:kh_resize_str:30if, (0, 1), (if (30if) BB12 BB36; VOID, f:kh_resize_str, Info(Loc(2180,1683),0))
+  FINITE  : v:kh_resize_str:38if, (0, 1), (if (38if) BB13 BB35; VOID, f:kh_resize_str, Info(Loc(2180,1709),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB14 BB15; VOID, f:kh_resize_str, Info(Loc(2180,1794),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB17 BB34; VOID, f:kh_resize_str, Info(Loc(2180,1864),0))
+  FINITE  : v:kh_resize_str:59if, (0, 1), (if (59if) BB20 BB21; VOID, f:kh_resize_str, Info(Loc(2180,2025),0))
+  FINITE  : v:kh_resize_str:71if, (0, 1), (if (71if) BB24 BB25; VOID, f:kh_resize_str, Info(Loc(2180,2147),0))
+  FINITE  : v:kh_resize_str:79if, (0, 1), (if (79if) BB26 BB25; VOID, f:kh_resize_str, Info(Loc(2180,2147),0))
+  FINITE  : v:kh_resize_str:69L, (0, 1), (if (69L) BB27 BB30; VOID, f:kh_resize_str, Info(Loc(2180,2143),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB28 BB29; VOID, f:kh_resize_str, Info(Loc(2180,2272),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB31 BB32; VOID, f:kh_resize_str, Info(Loc(2180,2399),0))
+  FINITE  : v:kh_resize_str:95if, (0, 1), (if (95if) BB37 BB40; VOID, f:kh_resize_str, Info(Loc(2180,2439),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB38 BB39; VOID, f:kh_resize_str, Info(Loc(2180,2550),0))
+  CONSTANT: v:main:block_end, 0, (curr = block_end; INT32, f:main, Info(Loc(2195,2),0))
+  FINITE  : v:main:ret, (0, 2), (if (ret) BB3 BB6; VOID, f:main, Info(Loc(2199,3),0))
+  FINITE  : v:main:8if, (0, 1), (if (8if) BB4 BB5; VOID, f:main, Info(Loc(2201,4),0))
+  FINITE  : v:main:28if, (0, 1), (if (28if) BB7 BB8; VOID, f:main, Info(Loc(2212,4),0))
+  FINITE  : v:main:31if, (0, 1), (if (31if) BB11 BB12; VOID, f:main, Info(Loc(2216,16),0))
+AnalysisType: IntervalR
+Method: MethodDetail(cascading, cascading, ['PointsToA', 'IntervalA'], 'No Description')
+  TotalNodes            : 274
+  TotalNumericNames     : 331
+  TotalConstantValues   : 7
+  TotalFiniteRange      : 26
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 298
+------------------------------------------------
+TimeElapsed(cascading:cascading): 1006.5040588378906 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+
+TotalValueContexts     : 9
+TotalSize(ValueContext): 3793 KB.
+TotalSize(VCI object)  : 3794 KB.
+
+  FINITE  : v:kh_put_str:3if, (0, 1), (if (3if) BB1 BB5; VOID, f:kh_put_str, Info(Loc(2180,2869),0))
+  FINITE  : v:kh_put_str:7if, (0, 1), (if (7if) BB2 BB3; VOID, f:kh_put_str, Info(Loc(2180,2908),0))
+  FINITE  : v:kh_put_str:43t, (0, 1), (44if = !43t; INT32, f:kh_put_str, Info(Loc(2180,3317),0))
+  FINITE  : v:kh_put_str:44if, (0, 1), (if (44if) BB12 BB11; VOID, f:kh_put_str, Info(Loc(2180,3279),0))
+  FINITE  : v:kh_put_str:32L, (0, 1), (if (32L) BB14 BB13; VOID, f:kh_put_str, Info(Loc(2180,3237),0))
+  FINITE  : v:kh_put_str:23L, (0, 1), (if (23L) BB15 BB23; VOID, f:kh_put_str, Info(Loc(2180,3237),0))
+  FINITE  : v:kh_put_str:54if, (0, 1), (if (54if) BB18 BB19; VOID, f:kh_put_str, Info(Loc(2180,3404),0))
+  FINITE  : v:kh_put_str:57if, (0, 1), (if (57if) BB21 BB22; VOID, f:kh_put_str, Info(Loc(2180,3476),0))
+  FINITE  : v:kh_put_str:59if, (0, 1), (if (59if) BB24 BB31; VOID, f:kh_put_str, Info(Loc(2180,3514),0))
+  FINITE  : v:kh_put_str:69if, (0, 1), (if (69if) BB27 BB26; VOID, f:kh_put_str, Info(Loc(2180,3544),0))
+  FINITE  : v:kh_put_str:60L, (0, 1), (if (60L) BB28 BB29; VOID, f:kh_put_str, Info(Loc(2180,3539),0))
+  FINITE  : v:kh_resize_str:3if, (0, 1), (if (3if) BB2 BB3; VOID, f:kh_resize_str, Info(Loc(2180,1168),0))
+  FINITE  : v:kh_resize_str:11if, (0, 1), (if (11if) BB4 BB5; VOID, f:kh_resize_str, Info(Loc(2180,1247),0))
+  FINITE  : v:kh_resize_str:20if, (0, 1), (if (20if) BB6 BB9; VOID, f:kh_resize_str, Info(Loc(2180,1475),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB7 BB8; VOID, f:kh_resize_str, Info(Loc(2180,1586),0))
+  FINITE  : v:kh_resize_str:j, (0, 1), (if (j) BB10 BB41; VOID, f:kh_resize_str, Info(Loc(2180,1662),0))
+  FINITE  : v:kh_resize_str:30if, (0, 1), (if (30if) BB12 BB36; VOID, f:kh_resize_str, Info(Loc(2180,1683),0))
+  FINITE  : v:kh_resize_str:38if, (0, 1), (if (38if) BB13 BB35; VOID, f:kh_resize_str, Info(Loc(2180,1709),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB14 BB15; VOID, f:kh_resize_str, Info(Loc(2180,1794),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB17 BB34; VOID, f:kh_resize_str, Info(Loc(2180,1864),0))
+  FINITE  : v:kh_resize_str:59if, (0, 1), (if (59if) BB20 BB21; VOID, f:kh_resize_str, Info(Loc(2180,2025),0))
+  FINITE  : v:kh_resize_str:71if, (0, 1), (if (71if) BB24 BB25; VOID, f:kh_resize_str, Info(Loc(2180,2147),0))
+  FINITE  : v:kh_resize_str:79if, (0, 1), (if (79if) BB26 BB25; VOID, f:kh_resize_str, Info(Loc(2180,2147),0))
+  FINITE  : v:kh_resize_str:69L, (0, 1), (if (69L) BB27 BB30; VOID, f:kh_resize_str, Info(Loc(2180,2143),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB28 BB29; VOID, f:kh_resize_str, Info(Loc(2180,2272),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB31 BB32; VOID, f:kh_resize_str, Info(Loc(2180,2399),0))
+  FINITE  : v:kh_resize_str:95if, (0, 1), (if (95if) BB37 BB40; VOID, f:kh_resize_str, Info(Loc(2180,2439),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB38 BB39; VOID, f:kh_resize_str, Info(Loc(2180,2550),0))
+  CONSTANT: v:main:block_end, 0, (curr = block_end; INT32, f:main, Info(Loc(2195,2),0))
+  FINITE  : v:main:ret, (0, 2), (if (ret) BB3 BB6; VOID, f:main, Info(Loc(2199,3),0))
+  FINITE  : v:main:8if, (0, 1), (if (8if) BB4 BB5; VOID, f:main, Info(Loc(2201,4),0))
+  FINITE  : v:main:28if, (0, 1), (if (28if) BB7 BB8; VOID, f:main, Info(Loc(2212,4),0))
+  FINITE  : v:main:31if, (0, 1), (if (31if) BB11 BB12; VOID, f:main, Info(Loc(2216,16),0))
+AnalysisType: IntervalR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 274
+  TotalNumericNames     : 331
+  TotalConstantValues   : 7
+  TotalFiniteRange      : 26
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 298
+------------------------------------------------
+TimeElapsed(lerner:lerner): 1271.9078063964844 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+
+TotalValueContexts     : 9
+TotalSize(ValueContext): 3793 KB.
+TotalSize(VCI object)  : 3794 KB.
+
+  FINITE  : v:kh_put_str:3if, (0, 1), (if (3if) BB1 BB5; VOID, f:kh_put_str, Info(Loc(2180,2869),0))
+  FINITE  : v:kh_put_str:7if, (0, 1), (if (7if) BB2 BB3; VOID, f:kh_put_str, Info(Loc(2180,2908),0))
+  FINITE  : v:kh_put_str:43t, (0, 1), (44if = !43t; INT32, f:kh_put_str, Info(Loc(2180,3317),0))
+  FINITE  : v:kh_put_str:44if, (0, 1), (if (44if) BB12 BB11; VOID, f:kh_put_str, Info(Loc(2180,3279),0))
+  FINITE  : v:kh_put_str:32L, (0, 1), (if (32L) BB14 BB13; VOID, f:kh_put_str, Info(Loc(2180,3237),0))
+  FINITE  : v:kh_put_str:23L, (0, 1), (if (23L) BB15 BB23; VOID, f:kh_put_str, Info(Loc(2180,3237),0))
+  FINITE  : v:kh_put_str:54if, (0, 1), (if (54if) BB18 BB19; VOID, f:kh_put_str, Info(Loc(2180,3404),0))
+  FINITE  : v:kh_put_str:57if, (0, 1), (if (57if) BB21 BB22; VOID, f:kh_put_str, Info(Loc(2180,3476),0))
+  FINITE  : v:kh_put_str:59if, (0, 1), (if (59if) BB24 BB31; VOID, f:kh_put_str, Info(Loc(2180,3514),0))
+  FINITE  : v:kh_put_str:69if, (0, 1), (if (69if) BB27 BB26; VOID, f:kh_put_str, Info(Loc(2180,3544),0))
+  FINITE  : v:kh_put_str:60L, (0, 1), (if (60L) BB28 BB29; VOID, f:kh_put_str, Info(Loc(2180,3539),0))
+  FINITE  : v:kh_resize_str:3if, (0, 1), (if (3if) BB2 BB3; VOID, f:kh_resize_str, Info(Loc(2180,1168),0))
+  FINITE  : v:kh_resize_str:11if, (0, 1), (if (11if) BB4 BB5; VOID, f:kh_resize_str, Info(Loc(2180,1247),0))
+  FINITE  : v:kh_resize_str:20if, (0, 1), (if (20if) BB6 BB9; VOID, f:kh_resize_str, Info(Loc(2180,1475),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB7 BB8; VOID, f:kh_resize_str, Info(Loc(2180,1586),0))
+  FINITE  : v:kh_resize_str:j, (0, 1), (if (j) BB10 BB41; VOID, f:kh_resize_str, Info(Loc(2180,1662),0))
+  FINITE  : v:kh_resize_str:30if, (0, 1), (if (30if) BB12 BB36; VOID, f:kh_resize_str, Info(Loc(2180,1683),0))
+  FINITE  : v:kh_resize_str:38if, (0, 1), (if (38if) BB13 BB35; VOID, f:kh_resize_str, Info(Loc(2180,1709),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB14 BB15; VOID, f:kh_resize_str, Info(Loc(2180,1794),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB17 BB34; VOID, f:kh_resize_str, Info(Loc(2180,1864),0))
+  FINITE  : v:kh_resize_str:59if, (0, 1), (if (59if) BB20 BB21; VOID, f:kh_resize_str, Info(Loc(2180,2025),0))
+  FINITE  : v:kh_resize_str:71if, (0, 1), (if (71if) BB24 BB25; VOID, f:kh_resize_str, Info(Loc(2180,2147),0))
+  FINITE  : v:kh_resize_str:79if, (0, 1), (if (79if) BB26 BB25; VOID, f:kh_resize_str, Info(Loc(2180,2147),0))
+  FINITE  : v:kh_resize_str:69L, (0, 1), (if (69L) BB27 BB30; VOID, f:kh_resize_str, Info(Loc(2180,2143),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB28 BB29; VOID, f:kh_resize_str, Info(Loc(2180,2272),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB31 BB32; VOID, f:kh_resize_str, Info(Loc(2180,2399),0))
+  FINITE  : v:kh_resize_str:95if, (0, 1), (if (95if) BB37 BB40; VOID, f:kh_resize_str, Info(Loc(2180,2439),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB38 BB39; VOID, f:kh_resize_str, Info(Loc(2180,2550),0))
+  CONSTANT: v:main:block_end, 0, (curr = block_end; INT32, f:main, Info(Loc(2195,2),0))
+  FINITE  : v:main:ret, (0, 2), (if (ret) BB3 BB6; VOID, f:main, Info(Loc(2199,3),0))
+  FINITE  : v:main:8if, (0, 1), (if (8if) BB4 BB5; VOID, f:main, Info(Loc(2201,4),0))
+  FINITE  : v:main:28if, (0, 1), (if (28if) BB7 BB8; VOID, f:main, Info(Loc(2212,4),0))
+  FINITE  : v:main:31if, (0, 1), (if (31if) BB11 BB12; VOID, f:main, Info(Loc(2216,16),0))
+AnalysisType: IntervalR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 274
+  TotalNumericNames     : 331
+  TotalConstantValues   : 7
+  TotalFiniteRange      : 26
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 298
+------------------------------------------------
+TimeElapsed(lerner:lerner): 1278.1791687011719 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+
+TotalValueContexts     : 10
+TotalSize(ValueContext): 3965 KB.
+TotalSize(VCI object)  : 3967 KB.
+
+  FINITE  : v:kh_put_str:3if, (0, 1), (if (3if) BB1 BB5; VOID, f:kh_put_str, Info(Loc(2180,2869),0))
+  FINITE  : v:kh_put_str:7if, (0, 1), (if (7if) BB2 BB3; VOID, f:kh_put_str, Info(Loc(2180,2908),0))
+  FINITE  : v:kh_put_str:43t, (0, 1), (44if = !43t; INT32, f:kh_put_str, Info(Loc(2180,3317),0))
+  FINITE  : v:kh_put_str:44if, (0, 1), (if (44if) BB12 BB11; VOID, f:kh_put_str, Info(Loc(2180,3279),0))
+  FINITE  : v:kh_put_str:32L, (0, 1), (if (32L) BB14 BB13; VOID, f:kh_put_str, Info(Loc(2180,3237),0))
+  FINITE  : v:kh_put_str:23L, (0, 1), (if (23L) BB15 BB23; VOID, f:kh_put_str, Info(Loc(2180,3237),0))
+  FINITE  : v:kh_put_str:54if, (0, 1), (if (54if) BB18 BB19; VOID, f:kh_put_str, Info(Loc(2180,3404),0))
+  FINITE  : v:kh_put_str:57if, (0, 1), (if (57if) BB21 BB22; VOID, f:kh_put_str, Info(Loc(2180,3476),0))
+  FINITE  : v:kh_put_str:59if, (0, 1), (if (59if) BB24 BB31; VOID, f:kh_put_str, Info(Loc(2180,3514),0))
+  FINITE  : v:kh_put_str:69if, (0, 1), (if (69if) BB27 BB26; VOID, f:kh_put_str, Info(Loc(2180,3544),0))
+  FINITE  : v:kh_put_str:60L, (0, 1), (if (60L) BB28 BB29; VOID, f:kh_put_str, Info(Loc(2180,3539),0))
+  FINITE  : v:kh_resize_str:3if, (0, 1), (if (3if) BB2 BB3; VOID, f:kh_resize_str, Info(Loc(2180,1168),0))
+  FINITE  : v:kh_resize_str:11if, (0, 1), (if (11if) BB4 BB5; VOID, f:kh_resize_str, Info(Loc(2180,1247),0))
+  FINITE  : v:kh_resize_str:20if, (0, 1), (if (20if) BB6 BB9; VOID, f:kh_resize_str, Info(Loc(2180,1475),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB7 BB8; VOID, f:kh_resize_str, Info(Loc(2180,1586),0))
+  FINITE  : v:kh_resize_str:j, (0, 1), (if (j) BB10 BB41; VOID, f:kh_resize_str, Info(Loc(2180,1662),0))
+  FINITE  : v:kh_resize_str:30if, (0, 1), (if (30if) BB12 BB36; VOID, f:kh_resize_str, Info(Loc(2180,1683),0))
+  FINITE  : v:kh_resize_str:38if, (0, 1), (if (38if) BB13 BB35; VOID, f:kh_resize_str, Info(Loc(2180,1709),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB14 BB15; VOID, f:kh_resize_str, Info(Loc(2180,1794),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB17 BB34; VOID, f:kh_resize_str, Info(Loc(2180,1864),0))
+  FINITE  : v:kh_resize_str:59if, (0, 1), (if (59if) BB20 BB21; VOID, f:kh_resize_str, Info(Loc(2180,2025),0))
+  FINITE  : v:kh_resize_str:71if, (0, 1), (if (71if) BB24 BB25; VOID, f:kh_resize_str, Info(Loc(2180,2147),0))
+  FINITE  : v:kh_resize_str:79if, (0, 1), (if (79if) BB26 BB25; VOID, f:kh_resize_str, Info(Loc(2180,2147),0))
+  FINITE  : v:kh_resize_str:69L, (0, 1), (if (69L) BB27 BB30; VOID, f:kh_resize_str, Info(Loc(2180,2143),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB28 BB29; VOID, f:kh_resize_str, Info(Loc(2180,2272),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB31 BB32; VOID, f:kh_resize_str, Info(Loc(2180,2399),0))
+  FINITE  : v:kh_resize_str:95if, (0, 1), (if (95if) BB37 BB40; VOID, f:kh_resize_str, Info(Loc(2180,2439),0))
+  CONSTANT: v:kh_resize_str:90if, 1, (if (90if) BB38 BB39; VOID, f:kh_resize_str, Info(Loc(2180,2550),0))
+  CONSTANT: v:main:block_end, 0, (curr = block_end; INT32, f:main, Info(Loc(2195,2),0))
+  FINITE  : v:main:ret, (0, 2), (if (ret) BB3 BB6; VOID, f:main, Info(Loc(2199,3),0))
+  FINITE  : v:main:8if, (0, 1), (if (8if) BB4 BB5; VOID, f:main, Info(Loc(2201,4),0))
+  FINITE  : v:main:28if, (0, 1), (if (28if) BB7 BB8; VOID, f:main, Info(Loc(2212,4),0))
+  FINITE  : v:main:31if, (0, 1), (if (31if) BB11 BB12; VOID, f:main, Info(Loc(2216,16),0))
+AnalysisType: IntervalR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 274
+  TotalNumericNames     : 331
+  TotalConstantValues   : 7
+  TotalFiniteRange      : 26
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 298
+------------------------------------------------
+TimeElapsed(span:span): 1609.2960834503174 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+------------------------------------------------
+TimeElapsed(compareall:compareall): 0.26726722717285156 ms (Starts: 1, Stops: 1)
+TimeElapsed(TotalTimeTaken): 8473.529815673828 ms (Starts: 1, Stops: 1)

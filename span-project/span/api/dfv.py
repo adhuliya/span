@@ -555,7 +555,7 @@ class OverallL(DataLT):
 
     self.val = self.val if self.val else {}
     self.bot = False
-    selfSetVal, = self.setVal
+    selfSetVal = self.setVal
     compTop = getTopBotComp(self.func, self.anName, True, self.compL)
     for vName in varNames:
       selfSetVal(vName, compTop)

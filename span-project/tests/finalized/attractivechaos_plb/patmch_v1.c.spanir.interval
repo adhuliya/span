@@ -1,0 +1,154 @@
+------------------------------------------------
+
+TotalValueContexts     : 1
+TotalSize(ValueContext): 266 KB.
+TotalSize(VCI object)  : 268 KB.
+
+  FINITE  : v:main:1if, (0, 1), (if (1if) BB1 BB2; VOID, f:main, Info(Loc(14,2),0))
+  CONSTANT: v:main:4t, 65535, (5if = fgets(buf,4t,stdin); Ptr(INT8, 1), f:main, Info(Loc(20,9),0))
+  FINITE  : v:main:13if, (0, 1), (if (13if) BB10 BB11; VOID, f:main, Info(Loc(23,3),0))
+AnalysisType: IntervalR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 32
+  TotalNumericNames     : 9
+  TotalConstantValues   : 1
+  TotalFiniteRange      : 2
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 6
+------------------------------------------------
+TimeElapsed(span:span): 32.651424407958984 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+
+TotalValueContexts     : 1
+TotalSize(ValueContext): 243 KB.
+TotalSize(VCI object)  : 244 KB.
+
+  FINITE  : v:main:1if, (0, 1), (if (1if) BB1 BB2; VOID, f:main, Info(Loc(14,2),0))
+  CONSTANT: v:main:4t, 65535, (5if = fgets(buf,4t,stdin); Ptr(INT8, 1), f:main, Info(Loc(20,9),0))
+  FINITE  : v:main:13if, (0, 1), (if (13if) BB10 BB11; VOID, f:main, Info(Loc(23,3),0))
+AnalysisType: IntervalR
+Method: MethodDetail(plain, plain, ['IntervalA'], 'No Description')
+  TotalNodes            : 9
+  TotalNumericNames     : 9
+  TotalConstantValues   : 1
+  TotalFiniteRange      : 2
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 6
+------------------------------------------------
+TimeElapsed(plain:plain): 20.48659324645996 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+
+TotalValueContexts     : 1
+TotalSize(ValueContext): 242 KB.
+TotalSize(VCI object)  : 244 KB.
+
+
+TotalValueContexts     : 1
+TotalSize(ValueContext): 239 KB.
+TotalSize(VCI object)  : 241 KB.
+
+  FINITE  : v:main:1if, (0, 1), (if (1if) BB1 BB2; VOID, f:main, Info(Loc(14,2),0))
+  CONSTANT: v:main:4t, 65535, (5if = fgets(buf,4t,stdin); Ptr(INT8, 1), f:main, Info(Loc(20,9),0))
+  FINITE  : v:main:13if, (0, 1), (if (13if) BB10 BB11; VOID, f:main, Info(Loc(23,3),0))
+AnalysisType: IntervalR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 9
+  TotalNumericNames     : 9
+  TotalConstantValues   : 1
+  TotalFiniteRange      : 2
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 6
+------------------------------------------------
+TimeElapsed(cascading:cascading): 34.75379943847656 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+
+TotalValueContexts     : 1
+TotalSize(ValueContext): 217 KB.
+TotalSize(VCI object)  : 218 KB.
+
+
+TotalValueContexts     : 1
+TotalSize(ValueContext): 256 KB.
+TotalSize(VCI object)  : 258 KB.
+
+  FINITE  : v:main:1if, (0, 1), (if (1if) BB1 BB2; VOID, f:main, Info(Loc(14,2),0))
+  CONSTANT: v:main:4t, 65535, (5if = fgets(buf,4t,stdin); Ptr(INT8, 1), f:main, Info(Loc(20,9),0))
+  FINITE  : v:main:13if, (0, 1), (if (13if) BB10 BB11; VOID, f:main, Info(Loc(23,3),0))
+AnalysisType: IntervalR
+Method: MethodDetail(cascading, cascading, ['PointsToA', 'IntervalA'], 'No Description')
+  TotalNodes            : 9
+  TotalNumericNames     : 9
+  TotalConstantValues   : 1
+  TotalFiniteRange      : 2
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 6
+------------------------------------------------
+TimeElapsed(cascading:cascading): 34.551382064819336 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+
+TotalValueContexts     : 1
+TotalSize(ValueContext): 264 KB.
+TotalSize(VCI object)  : 266 KB.
+
+  FINITE  : v:main:1if, (0, 1), (if (1if) BB1 BB2; VOID, f:main, Info(Loc(14,2),0))
+  CONSTANT: v:main:4t, 65535, (5if = fgets(buf,4t,stdin); Ptr(INT8, 1), f:main, Info(Loc(20,9),0))
+  FINITE  : v:main:13if, (0, 1), (if (13if) BB10 BB11; VOID, f:main, Info(Loc(23,3),0))
+AnalysisType: IntervalR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 9
+  TotalNumericNames     : 9
+  TotalConstantValues   : 1
+  TotalFiniteRange      : 2
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 6
+------------------------------------------------
+TimeElapsed(lerner:lerner): 29.07848358154297 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+
+TotalValueContexts     : 1
+TotalSize(ValueContext): 264 KB.
+TotalSize(VCI object)  : 266 KB.
+
+  FINITE  : v:main:1if, (0, 1), (if (1if) BB1 BB2; VOID, f:main, Info(Loc(14,2),0))
+  CONSTANT: v:main:4t, 65535, (5if = fgets(buf,4t,stdin); Ptr(INT8, 1), f:main, Info(Loc(20,9),0))
+  FINITE  : v:main:13if, (0, 1), (if (13if) BB10 BB11; VOID, f:main, Info(Loc(23,3),0))
+AnalysisType: IntervalR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 9
+  TotalNumericNames     : 9
+  TotalConstantValues   : 1
+  TotalFiniteRange      : 2
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 6
+------------------------------------------------
+TimeElapsed(lerner:lerner): 29.2205810546875 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+
+TotalValueContexts     : 1
+TotalSize(ValueContext): 266 KB.
+TotalSize(VCI object)  : 268 KB.
+
+  FINITE  : v:main:1if, (0, 1), (if (1if) BB1 BB2; VOID, f:main, Info(Loc(14,2),0))
+  CONSTANT: v:main:4t, 65535, (5if = fgets(buf,4t,stdin); Ptr(INT8, 1), f:main, Info(Loc(20,9),0))
+  FINITE  : v:main:13if, (0, 1), (if (13if) BB10 BB11; VOID, f:main, Info(Loc(23,3),0))
+AnalysisType: IntervalR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 9
+  TotalNumericNames     : 9
+  TotalConstantValues   : 1
+  TotalFiniteRange      : 2
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 6
+------------------------------------------------
+TimeElapsed(span:span): 30.790328979492188 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+------------------------------------------------
+TimeElapsed(compareall:compareall): 0.06031990051269531 ms (Starts: 1, Stops: 1)
+TimeElapsed(TotalTimeTaken): 215.68799018859863 ms (Starts: 1, Stops: 1)

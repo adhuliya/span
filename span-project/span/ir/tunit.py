@@ -2149,6 +2149,10 @@ class TranslationUnit:
       underApprox = False
     elif "scanf" in funcName:
       underApprox = False
+    elif "f:fgets" in funcName:
+      underApprox = False
+    elif "f:strcpy" in funcName:
+      underApprox = False
     elif "f:stat" == funcName:
       underApprox = False
 

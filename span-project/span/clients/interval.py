@@ -789,6 +789,9 @@ class IntervalA(analysis.ValueAnalysisAT):
       dfvIn: dfv.OverallL,
   ) -> dfv.ComponentL:
     """A default implementation (assuming Constant Propagation)."""
+    if not e.arg1.type.isNumeric() or not e.arg2.type.isNumeric():
+      return self.componentBot
+
     val1 = cast(ComponentL, self.getExprDfv(e.arg1, dfvIn))
     val2 = cast(ComponentL, self.getExprDfv(e.arg2, dfvIn))
     opr, rhsOpCode  = e.opr, e.opr.opCode

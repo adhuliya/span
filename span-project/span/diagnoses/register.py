@@ -25,6 +25,7 @@ from span.diagnoses.constants import ConstantsUsedR
 from span.diagnoses.unreachable import UnreachableCodeR
 from span.diagnoses.uninitvars import UninitializedVarsR
 from span.diagnoses.interval import IntervalR
+from span.diagnoses.defuse import DefUseR
 
 ################################################
 # BOUND END  : import_the_diagnosis_class_here

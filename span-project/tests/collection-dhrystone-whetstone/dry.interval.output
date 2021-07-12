@@ -1,0 +1,264 @@
+------------------------------------------------
+  FINITE  : v:Proc_1:9t, (0, 5), (8t->Int_Comp = 9t; INT32, f:Proc_1, Info(Loc(747,3),0))
+  FINITE  : v:Proc_1:13if, (0, 1), (if (13if) BB1 BB2; VOID, f:Proc_1, Info(Loc(753,3),0))
+  TOP_VAL: Proc_6(18t,21t); INT32, (v:Proc_1:18t:'Top'), (f:Proc_1,Info(Loc(757,5),0))
+  TOP_VAL: Proc_7(25t,10,28t); INT32, (v:Proc_1:25t:'Top'), (f:Proc_1,Info(Loc(760,5),0))
+  TOP_VAL: Proc_7(10,Int_Glob,5t); INT32, (g:Int_Glob:'Top'), (f:Proc_3,Info(Loc(802,3),0))
+  CONSTANT: g:Ch_1_Glob, 65, (Bool_Loc = Ch_1_Glob == 65; INT32, f:Proc_4, Info(Loc(812,3),0))
+  CONSTANT: v:Proc_4:Bool_Loc, 1, (Bool_Glob = Bool_Glob | Bool_Loc; INT32, f:Proc_4, Info(Loc(813,3),0))
+  CONSTANT: g:Bool_Glob, 0, (Bool_Glob = Bool_Glob | Bool_Loc; INT32, f:Proc_4, Info(Loc(813,3),0))
+  FINITE  : v:main:1if, (0, 1), (if (1if) BB1 BB2; VOID, f:main, Info(Loc(546,3),0))
+  FINITE  : v:main:4if, (0, 1), (if (4if) BB3 BB4; VOID, f:main, Info(Loc(551,3),0))
+  FINITE  : v:main:7if, (0, 1), (if (7if) BB6 BB7; VOID, f:main, Info(Loc(558,3),0))
+  FINITE  : g:Done, (0, 1), (19if = !Done; INT32, f:main, Info(Loc(596,10),0))
+  FINITE  : v:main:19if, (0, 1), (if (19if) BB12 BB27; VOID, f:main, Info(Loc(596,10),0))
+  CONSTANT: v:main:Run_Index, 1, (22if = Number_Of_Runs >= Run_Index; INT32, f:main, Info(Loc(606,25),0))
+  FINITE  : v:main:22if, (0, 1), (if (22if) BB14 BB23; VOID, f:main, Info(Loc(606,25),0))
+  CONSTANT: v:main:Int_2_Loc, 3, (24if = Int_1_Loc < Int_2_Loc; INT32, f:main, Info(Loc(618,14),0))
+  FINITE  : v:main:24if, (0, 1), (if (24if) BB16 BB17; VOID, f:main, Info(Loc(618,14),0))
+  CONSTANT: v:main:Int_2_Loc, 3, (Int_3_Loc = 25t - Int_2_Loc; INT32, f:main, Info(Loc(620,2),0))
+  CONSTANT: v:main:Int_2_Loc, 3, (Proc_7(Int_1_Loc,Int_2_Loc,26t); INT32, f:main, Info(Loc(622,2),0))
+  TOP_VAL: 27if = Ch_2_Glob >= Ch_Index; INT32, (g:Ch_2_Glob:'Top'), (f:main,Info(Loc(630,28),0))
+  CONSTANT: v:main:Ch_Index, 65, (27if = Ch_2_Glob >= Ch_Index; INT32, f:main, Info(Loc(630,28),0))
+  TOP_VAL: if (27if) BB19 BB22; VOID, (v:main:27if:'Top'), (f:main,Info(Loc(630,28),0))
+  TOP_VAL: 28t = Func_1(Ch_Index,67); INT32, (v:main:Ch_Index:'Top'), (f:main,Info(Loc(633,18),0))
+  TOP_VAL: 29if = 28t == Enum_Loc; INT32, (v:main:28t:'Top'), (f:main,Info(Loc(633,6),0))
+  TOP_VAL: 29if = 28t == Enum_Loc; INT32, (v:main:Enum_Loc:'Top'), (f:main,Info(Loc(633,6),0))
+  TOP_VAL: if (29if) BB20 BB21; VOID, (v:main:29if:'Top'), (f:main,Info(Loc(633,2),0))
+  TOP_VAL: strcpy(Str_2_Loc,"DHRYSTONE PROGRAM, 3\'RD STRING"); Ptr(INT8, 1), (v:main:Str_2_Loc:'Top'), (f:main,Info(Loc(637,4),0))
+  TOP_VAL: Int_2_Loc = Run_Index; INT32, (v:main:Run_Index:'Top'), (f:main,Info(Loc(638,4),0))
+  TOP_VAL: Int_Glob = Run_Index; INT32, (v:main:Run_Index:'Top'), (f:main,Info(Loc(639,4),0))
+  TOP_VAL: Ch_Index = Ch_Index + 1; INT8, (v:main:Ch_Index:'Top'), (f:main,Info(Loc(630,51),0))
+  TOP_VAL: 31t = Ch_Index; INT8, (v:main:Ch_Index:'Top'), (f:main,Info(Loc(630,53),0))
+  TOP_VAL: Int_2_Loc = Int_1_Loc * Int_2_Loc; INT32, (v:main:Int_2_Loc:'Top'), (f:main,Info(Loc(643,7),0))
+  TOP_VAL: Int_2_Loc = Int_1_Loc * Int_2_Loc; INT32, (v:main:Int_1_Loc:'Top'), (f:main,Info(Loc(643,7),0))
+  TOP_VAL: Int_1_Loc = Int_2_Loc / Int_3_Loc; INT32, (v:main:Int_2_Loc:'Top'), (f:main,Info(Loc(644,7),0))
+  TOP_VAL: Int_1_Loc = Int_2_Loc / Int_3_Loc; INT32, (v:main:Int_3_Loc:'Top'), (f:main,Info(Loc(644,7),0))
+  TOP_VAL: 32t = Int_2_Loc - Int_3_Loc; INT32, (v:main:Int_2_Loc:'Top'), (f:main,Info(Loc(645,24),0))
+  TOP_VAL: 32t = Int_2_Loc - Int_3_Loc; INT32, (v:main:Int_3_Loc:'Top'), (f:main,Info(Loc(645,24),0))
+  TOP_VAL: 33t = 32t * 7; INT32, (v:main:32t:'Top'), (f:main,Info(Loc(645,19),0))
+  TOP_VAL: Int_2_Loc = 33t - Int_1_Loc; INT32, (v:main:Int_1_Loc:'Top'), (f:main,Info(Loc(645,7),0))
+  TOP_VAL: Int_2_Loc = 33t - Int_1_Loc; INT32, (v:main:33t:'Top'), (f:main,Info(Loc(645,7),0))
+  TOP_VAL: Run_Index = Run_Index + 1; INT32, (v:main:Run_Index:'Top'), (f:main,Info(Loc(606,54),0))
+  TOP_VAL: 35t = Run_Index; INT32, (v:main:Run_Index:'Top'), (f:main,Info(Loc(606,56),0))
+  CONSTANT: v:main:38t, 200, (39if = User_Time < 38t; INT32, f:main, Info(Loc(660,9),0))
+  FINITE  : v:main:39if, (0, 1), (if (39if) BB24 BB25; VOID, f:main, Info(Loc(660,5),0))
+  TOP_VAL: Number_Of_Runs = Number_Of_Runs * 10; INT32, (v:main:Number_Of_Runs:'Top'), (f:main,Info(Loc(663,7),0))
+  FINITE  : v:main:50t, (0, 2), (fprintf(stderr,'  Enum_Comp:         %d\\n',50t); INT32, f:main, Info(Loc(687,3),0))
+  FINITE  : v:main:53t, (0, 40), (fprintf(stderr,'  Int_Comp:          %d\\n',53t); INT32, f:main, Info(Loc(689,3),0))
+  FINITE  : v:main:62t, (0, 2), (fprintf(stderr,'  Enum_Comp:         %d\\n',62t); INT32, f:main, Info(Loc(698,3),0))
+  FINITE  : v:main:65t, (0, 40), (fprintf(stderr,'  Int_Comp:          %d\\n',65t); INT32, f:main, Info(Loc(700,3),0))
+  TOP_VAL: fprintf(stderr,'Int_2_Loc:           %d\\n',Int_2_Loc); INT32, (v:main:Int_2_Loc:'Top'), (f:main,Info(Loc(707,3),0))
+  CONSTANT: v:main:70t, 100.0, (73t = 70t * 71t; FLOAT64, f:main, Info(Loc(721,28),0))
+  CONSTANT: v:main:74t, 100.0, (76t = 74t * 75t; FLOAT64, f:main, Info(Loc(722,30),0))
+AnalysisType: IntervalR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 263
+  TotalNumericNames     : 112
+  TotalConstantValues   : 11
+  TotalFiniteRange      : 14
+  TotalPositiveRange    : 9
+  TotalNegativeRange    : 0
+  TotalUnknown          : 47
+------------------------------------------------
+TimeElapsed(span:span): 96.02570533752441 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+  FINITE  : v:Proc_1:13if, (0, 1), (if (13if) BB1 BB2; VOID, f:Proc_1, Info(Loc(753,3),0))
+  CONSTANT: g:Ch_1_Glob, 65, (Bool_Loc = Ch_1_Glob == 65; INT32, f:Proc_4, Info(Loc(812,3),0))
+  CONSTANT: v:Proc_4:Bool_Loc, 1, (Bool_Glob = Bool_Glob | Bool_Loc; INT32, f:Proc_4, Info(Loc(813,3),0))
+  CONSTANT: g:Bool_Glob, 0, (Bool_Glob = Bool_Glob | Bool_Loc; INT32, f:Proc_4, Info(Loc(813,3),0))
+  FINITE  : v:main:1if, (0, 1), (if (1if) BB1 BB2; VOID, f:main, Info(Loc(546,3),0))
+  FINITE  : v:main:4if, (0, 1), (if (4if) BB3 BB4; VOID, f:main, Info(Loc(551,3),0))
+  FINITE  : v:main:7if, (0, 1), (if (7if) BB6 BB7; VOID, f:main, Info(Loc(558,3),0))
+  FINITE  : g:Done, (0, 1), (19if = !Done; INT32, f:main, Info(Loc(596,10),0))
+  FINITE  : v:main:19if, (0, 1), (if (19if) BB12 BB27; VOID, f:main, Info(Loc(596,10),0))
+  CONSTANT: v:main:Run_Index, 1, (22if = Number_Of_Runs >= Run_Index; INT32, f:main, Info(Loc(606,25),0))
+  FINITE  : v:main:22if, (0, 1), (if (22if) BB14 BB23; VOID, f:main, Info(Loc(606,25),0))
+  CONSTANT: v:main:Int_2_Loc, 3, (24if = Int_1_Loc < Int_2_Loc; INT32, f:main, Info(Loc(618,14),0))
+  FINITE  : v:main:24if, (0, 1), (if (24if) BB16 BB17; VOID, f:main, Info(Loc(618,14),0))
+  CONSTANT: v:main:Int_2_Loc, 3, (Int_3_Loc = 25t - Int_2_Loc; INT32, f:main, Info(Loc(620,2),0))
+  CONSTANT: v:main:Int_2_Loc, 3, (Proc_7(Int_1_Loc,Int_2_Loc,26t); INT32, f:main, Info(Loc(622,2),0))
+  TOP_VAL: 27if = Ch_2_Glob >= Ch_Index; INT32, (g:Ch_2_Glob:'Top'), (f:main,Info(Loc(630,28),0))
+  CONSTANT: v:main:Ch_Index, 65, (27if = Ch_2_Glob >= Ch_Index; INT32, f:main, Info(Loc(630,28),0))
+  CONSTANT: v:main:38t, 200, (39if = User_Time < 38t; INT32, f:main, Info(Loc(660,9),0))
+  FINITE  : v:main:39if, (0, 1), (if (39if) BB24 BB25; VOID, f:main, Info(Loc(660,5),0))
+  FINITE  : v:main:50t, (0, 2), (fprintf(stderr,'  Enum_Comp:         %d\\n',50t); INT32, f:main, Info(Loc(687,3),0))
+  FINITE  : v:main:53t, (0, 40), (fprintf(stderr,'  Int_Comp:          %d\\n',53t); INT32, f:main, Info(Loc(689,3),0))
+  FINITE  : v:main:62t, (0, 2), (fprintf(stderr,'  Enum_Comp:         %d\\n',62t); INT32, f:main, Info(Loc(698,3),0))
+  FINITE  : v:main:65t, (0, 40), (fprintf(stderr,'  Int_Comp:          %d\\n',65t); INT32, f:main, Info(Loc(700,3),0))
+  CONSTANT: v:main:70t, 100.0, (73t = 70t * 71t; FLOAT64, f:main, Info(Loc(721,28),0))
+  CONSTANT: v:main:74t, 100.0, (76t = 74t * 75t; FLOAT64, f:main, Info(Loc(722,30),0))
+AnalysisType: IntervalR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 70
+  TotalNumericNames     : 86
+  TotalConstantValues   : 11
+  TotalFiniteRange      : 13
+  TotalPositiveRange    : 9
+  TotalNegativeRange    : 0
+  TotalUnknown          : 48
+------------------------------------------------
+TimeElapsed(lerner:lerner): 96.6639518737793 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+  FINITE  : v:Proc_1:13if, (0, 1), (if (13if) BB1 BB2; VOID, f:Proc_1, Info(Loc(753,3),0))
+  CONSTANT: g:Ch_1_Glob, 65, (Bool_Loc = Ch_1_Glob == 65; INT32, f:Proc_4, Info(Loc(812,3),0))
+  CONSTANT: v:Proc_4:Bool_Loc, 1, (Bool_Glob = Bool_Glob | Bool_Loc; INT32, f:Proc_4, Info(Loc(813,3),0))
+  CONSTANT: g:Bool_Glob, 0, (Bool_Glob = Bool_Glob | Bool_Loc; INT32, f:Proc_4, Info(Loc(813,3),0))
+  FINITE  : v:main:1if, (0, 1), (if (1if) BB1 BB2; VOID, f:main, Info(Loc(546,3),0))
+  FINITE  : v:main:4if, (0, 1), (if (4if) BB3 BB4; VOID, f:main, Info(Loc(551,3),0))
+  FINITE  : v:main:7if, (0, 1), (if (7if) BB6 BB7; VOID, f:main, Info(Loc(558,3),0))
+  FINITE  : v:main:22if, (0, 1), (if (22if) BB14 BB23; VOID, f:main, Info(Loc(606,25),0))
+  CONSTANT: v:main:Int_2_Loc, 3, (24if = Int_1_Loc < Int_2_Loc; INT32, f:main, Info(Loc(618,14),0))
+  FINITE  : v:main:24if, (0, 1), (if (24if) BB16 BB17; VOID, f:main, Info(Loc(618,14),0))
+  CONSTANT: v:main:Int_2_Loc, 3, (Int_3_Loc = 25t - Int_2_Loc; INT32, f:main, Info(Loc(620,2),0))
+  CONSTANT: v:main:Int_2_Loc, 3, (Proc_7(Int_1_Loc,Int_2_Loc,26t); INT32, f:main, Info(Loc(622,2),0))
+  CONSTANT: v:main:38t, 200, (39if = User_Time < 38t; INT32, f:main, Info(Loc(660,9),0))
+  FINITE  : v:main:39if, (0, 1), (if (39if) BB24 BB25; VOID, f:main, Info(Loc(660,5),0))
+  CONSTANT: v:main:70t, 100.0, (73t = 70t * 71t; FLOAT64, f:main, Info(Loc(721,28),0))
+  CONSTANT: v:main:74t, 100.0, (76t = 74t * 75t; FLOAT64, f:main, Info(Loc(722,30),0))
+AnalysisType: IntervalR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 70
+  TotalNumericNames     : 86
+  TotalConstantValues   : 9
+  TotalFiniteRange      : 7
+  TotalPositiveRange    : 9
+  TotalNegativeRange    : 0
+  TotalUnknown          : 57
+------------------------------------------------
+TimeElapsed(cascading:cascading): 223.33669662475586 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+  FINITE  : v:Proc_1:13if, (0, 1), (if (13if) BB1 BB2; VOID, f:Proc_1, Info(Loc(753,3),0))
+  CONSTANT: g:Ch_1_Glob, 65, (Bool_Loc = Ch_1_Glob == 65; INT32, f:Proc_4, Info(Loc(812,3),0))
+  CONSTANT: v:Proc_4:Bool_Loc, 1, (Bool_Glob = Bool_Glob | Bool_Loc; INT32, f:Proc_4, Info(Loc(813,3),0))
+  CONSTANT: g:Bool_Glob, 0, (Bool_Glob = Bool_Glob | Bool_Loc; INT32, f:Proc_4, Info(Loc(813,3),0))
+  FINITE  : v:main:1if, (0, 1), (if (1if) BB1 BB2; VOID, f:main, Info(Loc(546,3),0))
+  FINITE  : v:main:4if, (0, 1), (if (4if) BB3 BB4; VOID, f:main, Info(Loc(551,3),0))
+  FINITE  : v:main:7if, (0, 1), (if (7if) BB6 BB7; VOID, f:main, Info(Loc(558,3),0))
+  FINITE  : v:main:22if, (0, 1), (if (22if) BB14 BB23; VOID, f:main, Info(Loc(606,25),0))
+  CONSTANT: v:main:Int_2_Loc, 3, (24if = Int_1_Loc < Int_2_Loc; INT32, f:main, Info(Loc(618,14),0))
+  FINITE  : v:main:24if, (0, 1), (if (24if) BB16 BB17; VOID, f:main, Info(Loc(618,14),0))
+  CONSTANT: v:main:Int_2_Loc, 3, (Int_3_Loc = 25t - Int_2_Loc; INT32, f:main, Info(Loc(620,2),0))
+  CONSTANT: v:main:Int_2_Loc, 3, (Proc_7(Int_1_Loc,Int_2_Loc,26t); INT32, f:main, Info(Loc(622,2),0))
+  CONSTANT: v:main:38t, 200, (39if = User_Time < 38t; INT32, f:main, Info(Loc(660,9),0))
+  FINITE  : v:main:39if, (0, 1), (if (39if) BB24 BB25; VOID, f:main, Info(Loc(660,5),0))
+  CONSTANT: v:main:70t, 100.0, (73t = 70t * 71t; FLOAT64, f:main, Info(Loc(721,28),0))
+  CONSTANT: v:main:74t, 100.0, (76t = 74t * 75t; FLOAT64, f:main, Info(Loc(722,30),0))
+AnalysisType: IntervalR
+Method: MethodDetail(plain, plain, ['IntervalA'], 'No Description')
+  TotalNodes            : 70
+  TotalNumericNames     : 86
+  TotalConstantValues   : 9
+  TotalFiniteRange      : 7
+  TotalPositiveRange    : 9
+  TotalNegativeRange    : 0
+  TotalUnknown          : 57
+------------------------------------------------
+TimeElapsed(plain:plain): 182.70134925842285 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+  FINITE  : v:Proc_1:13if, (0, 1), (if (13if) BB1 BB2; VOID, f:Proc_1, Info(Loc(753,3),0))
+  CONSTANT: g:Ch_1_Glob, 65, (Bool_Loc = Ch_1_Glob == 65; INT32, f:Proc_4, Info(Loc(812,3),0))
+  CONSTANT: v:Proc_4:Bool_Loc, 1, (Bool_Glob = Bool_Glob | Bool_Loc; INT32, f:Proc_4, Info(Loc(813,3),0))
+  CONSTANT: g:Bool_Glob, 0, (Bool_Glob = Bool_Glob | Bool_Loc; INT32, f:Proc_4, Info(Loc(813,3),0))
+  FINITE  : v:main:1if, (0, 1), (if (1if) BB1 BB2; VOID, f:main, Info(Loc(546,3),0))
+  FINITE  : v:main:4if, (0, 1), (if (4if) BB3 BB4; VOID, f:main, Info(Loc(551,3),0))
+  FINITE  : v:main:7if, (0, 1), (if (7if) BB6 BB7; VOID, f:main, Info(Loc(558,3),0))
+  FINITE  : v:main:22if, (0, 1), (if (22if) BB14 BB23; VOID, f:main, Info(Loc(606,25),0))
+  CONSTANT: v:main:Int_2_Loc, 3, (24if = Int_1_Loc < Int_2_Loc; INT32, f:main, Info(Loc(618,14),0))
+  FINITE  : v:main:24if, (0, 1), (if (24if) BB16 BB17; VOID, f:main, Info(Loc(618,14),0))
+  CONSTANT: v:main:Int_2_Loc, 3, (Int_3_Loc = 25t - Int_2_Loc; INT32, f:main, Info(Loc(620,2),0))
+  CONSTANT: v:main:Int_2_Loc, 3, (Proc_7(Int_1_Loc,Int_2_Loc,26t); INT32, f:main, Info(Loc(622,2),0))
+  CONSTANT: v:main:38t, 200, (39if = User_Time < 38t; INT32, f:main, Info(Loc(660,9),0))
+  FINITE  : v:main:39if, (0, 1), (if (39if) BB24 BB25; VOID, f:main, Info(Loc(660,5),0))
+  CONSTANT: v:main:70t, 100.0, (73t = 70t * 71t; FLOAT64, f:main, Info(Loc(721,28),0))
+  CONSTANT: v:main:74t, 100.0, (76t = 74t * 75t; FLOAT64, f:main, Info(Loc(722,30),0))
+AnalysisType: IntervalR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 70
+  TotalNumericNames     : 86
+  TotalConstantValues   : 9
+  TotalFiniteRange      : 7
+  TotalPositiveRange    : 9
+  TotalNegativeRange    : 0
+  TotalUnknown          : 57
+------------------------------------------------
+TimeElapsed(cascading:cascading): 219.3284034729004 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+  FINITE  : v:Proc_1:13if, (0, 1), (if (13if) BB1 BB2; VOID, f:Proc_1, Info(Loc(753,3),0))
+  CONSTANT: g:Ch_1_Glob, 65, (Bool_Loc = Ch_1_Glob == 65; INT32, f:Proc_4, Info(Loc(812,3),0))
+  CONSTANT: v:Proc_4:Bool_Loc, 1, (Bool_Glob = Bool_Glob | Bool_Loc; INT32, f:Proc_4, Info(Loc(813,3),0))
+  CONSTANT: g:Bool_Glob, 0, (Bool_Glob = Bool_Glob | Bool_Loc; INT32, f:Proc_4, Info(Loc(813,3),0))
+  FINITE  : v:main:1if, (0, 1), (if (1if) BB1 BB2; VOID, f:main, Info(Loc(546,3),0))
+  FINITE  : v:main:4if, (0, 1), (if (4if) BB3 BB4; VOID, f:main, Info(Loc(551,3),0))
+  FINITE  : v:main:7if, (0, 1), (if (7if) BB6 BB7; VOID, f:main, Info(Loc(558,3),0))
+  FINITE  : g:Done, (0, 1), (19if = !Done; INT32, f:main, Info(Loc(596,10),0))
+  FINITE  : v:main:19if, (0, 1), (if (19if) BB12 BB27; VOID, f:main, Info(Loc(596,10),0))
+  CONSTANT: v:main:Run_Index, 1, (22if = Number_Of_Runs >= Run_Index; INT32, f:main, Info(Loc(606,25),0))
+  FINITE  : v:main:22if, (0, 1), (if (22if) BB14 BB23; VOID, f:main, Info(Loc(606,25),0))
+  CONSTANT: v:main:Int_2_Loc, 3, (24if = Int_1_Loc < Int_2_Loc; INT32, f:main, Info(Loc(618,14),0))
+  FINITE  : v:main:24if, (0, 1), (if (24if) BB16 BB17; VOID, f:main, Info(Loc(618,14),0))
+  CONSTANT: v:main:Int_2_Loc, 3, (Int_3_Loc = 25t - Int_2_Loc; INT32, f:main, Info(Loc(620,2),0))
+  CONSTANT: v:main:Int_2_Loc, 3, (Proc_7(Int_1_Loc,Int_2_Loc,26t); INT32, f:main, Info(Loc(622,2),0))
+  TOP_VAL: 27if = Ch_2_Glob >= Ch_Index; INT32, (g:Ch_2_Glob:'Top'), (f:main,Info(Loc(630,28),0))
+  CONSTANT: v:main:Ch_Index, 65, (27if = Ch_2_Glob >= Ch_Index; INT32, f:main, Info(Loc(630,28),0))
+  CONSTANT: v:main:38t, 200, (39if = User_Time < 38t; INT32, f:main, Info(Loc(660,9),0))
+  FINITE  : v:main:39if, (0, 1), (if (39if) BB24 BB25; VOID, f:main, Info(Loc(660,5),0))
+  FINITE  : v:main:50t, (0, 2), (fprintf(stderr,'  Enum_Comp:         %d\\n',50t); INT32, f:main, Info(Loc(687,3),0))
+  FINITE  : v:main:53t, (0, 40), (fprintf(stderr,'  Int_Comp:          %d\\n',53t); INT32, f:main, Info(Loc(689,3),0))
+  FINITE  : v:main:62t, (0, 2), (fprintf(stderr,'  Enum_Comp:         %d\\n',62t); INT32, f:main, Info(Loc(698,3),0))
+  FINITE  : v:main:65t, (0, 40), (fprintf(stderr,'  Int_Comp:          %d\\n',65t); INT32, f:main, Info(Loc(700,3),0))
+  CONSTANT: v:main:70t, 100.0, (73t = 70t * 71t; FLOAT64, f:main, Info(Loc(721,28),0))
+  CONSTANT: v:main:74t, 100.0, (76t = 74t * 75t; FLOAT64, f:main, Info(Loc(722,30),0))
+AnalysisType: IntervalR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 70
+  TotalNumericNames     : 86
+  TotalConstantValues   : 11
+  TotalFiniteRange      : 13
+  TotalPositiveRange    : 9
+  TotalNegativeRange    : 0
+  TotalUnknown          : 48
+------------------------------------------------
+TimeElapsed(lerner:lerner): 93.72353553771973 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+  FINITE  : v:Proc_1:9t, (0, 5), (8t->Int_Comp = 9t; INT32, f:Proc_1, Info(Loc(747,3),0))
+  FINITE  : v:Proc_1:13if, (0, 1), (if (13if) BB1 BB2; VOID, f:Proc_1, Info(Loc(753,3),0))
+  CONSTANT: g:Ch_1_Glob, 65, (Bool_Loc = Ch_1_Glob == 65; INT32, f:Proc_4, Info(Loc(812,3),0))
+  CONSTANT: v:Proc_4:Bool_Loc, 1, (Bool_Glob = Bool_Glob | Bool_Loc; INT32, f:Proc_4, Info(Loc(813,3),0))
+  CONSTANT: g:Bool_Glob, 0, (Bool_Glob = Bool_Glob | Bool_Loc; INT32, f:Proc_4, Info(Loc(813,3),0))
+  FINITE  : v:main:1if, (0, 1), (if (1if) BB1 BB2; VOID, f:main, Info(Loc(546,3),0))
+  FINITE  : v:main:4if, (0, 1), (if (4if) BB3 BB4; VOID, f:main, Info(Loc(551,3),0))
+  FINITE  : v:main:7if, (0, 1), (if (7if) BB6 BB7; VOID, f:main, Info(Loc(558,3),0))
+  FINITE  : g:Done, (0, 1), (19if = !Done; INT32, f:main, Info(Loc(596,10),0))
+  FINITE  : v:main:19if, (0, 1), (if (19if) BB12 BB27; VOID, f:main, Info(Loc(596,10),0))
+  CONSTANT: v:main:Run_Index, 1, (22if = Number_Of_Runs >= Run_Index; INT32, f:main, Info(Loc(606,25),0))
+  FINITE  : v:main:22if, (0, 1), (if (22if) BB14 BB23; VOID, f:main, Info(Loc(606,25),0))
+  CONSTANT: v:main:Int_2_Loc, 3, (24if = Int_1_Loc < Int_2_Loc; INT32, f:main, Info(Loc(618,14),0))
+  FINITE  : v:main:24if, (0, 1), (if (24if) BB16 BB17; VOID, f:main, Info(Loc(618,14),0))
+  CONSTANT: v:main:Int_2_Loc, 3, (Int_3_Loc = 25t - Int_2_Loc; INT32, f:main, Info(Loc(620,2),0))
+  CONSTANT: v:main:Int_2_Loc, 3, (Proc_7(Int_1_Loc,Int_2_Loc,26t); INT32, f:main, Info(Loc(622,2),0))
+  TOP_VAL: 27if = Ch_2_Glob >= Ch_Index; INT32, (g:Ch_2_Glob:'Top'), (f:main,Info(Loc(630,28),0))
+  CONSTANT: v:main:Ch_Index, 65, (27if = Ch_2_Glob >= Ch_Index; INT32, f:main, Info(Loc(630,28),0))
+  CONSTANT: v:main:38t, 200, (39if = User_Time < 38t; INT32, f:main, Info(Loc(660,9),0))
+  FINITE  : v:main:39if, (0, 1), (if (39if) BB24 BB25; VOID, f:main, Info(Loc(660,5),0))
+  FINITE  : v:main:50t, (0, 2), (fprintf(stderr,'  Enum_Comp:         %d\\n',50t); INT32, f:main, Info(Loc(687,3),0))
+  FINITE  : v:main:53t, (0, 40), (fprintf(stderr,'  Int_Comp:          %d\\n',53t); INT32, f:main, Info(Loc(689,3),0))
+  FINITE  : v:main:62t, (0, 2), (fprintf(stderr,'  Enum_Comp:         %d\\n',62t); INT32, f:main, Info(Loc(698,3),0))
+  FINITE  : v:main:65t, (0, 40), (fprintf(stderr,'  Int_Comp:          %d\\n',65t); INT32, f:main, Info(Loc(700,3),0))
+  CONSTANT: v:main:70t, 100.0, (73t = 70t * 71t; FLOAT64, f:main, Info(Loc(721,28),0))
+  CONSTANT: v:main:74t, 100.0, (76t = 74t * 75t; FLOAT64, f:main, Info(Loc(722,30),0))
+AnalysisType: IntervalR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 70
+  TotalNumericNames     : 86
+  TotalConstantValues   : 11
+  TotalFiniteRange      : 14
+  TotalPositiveRange    : 9
+  TotalNegativeRange    : 0
+  TotalUnknown          : 47
+------------------------------------------------
+TimeElapsed(span:span): 96.64463996887207 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+------------------------------------------------
+TimeElapsed(compareall:compareall): 0.15401840209960938 ms (Starts: 1, Stops: 1)
+TimeElapsed(TotalTimeTaken): 1029.4225215911865 ms (Starts: 1, Stops: 1)

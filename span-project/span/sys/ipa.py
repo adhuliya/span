@@ -29,7 +29,7 @@ from span.ir import cfg, expr, types, op
 import span.ir.conv as conv
 from span.ir.conv import (GLOBAL_INITS_FUNC_NAME,
                           Forward, Backward, GLOBAL_INITS_FUNC_ID,
-                          genGlobalNodeId)
+                          genGlobalNodeId, getGlobalNodeIdStr)
 from span.ir.types import FuncNameT, GlobalNodeIdT, NodeIdT
 from span.ir.tunit import TranslationUnit
 from span.api.analysis import AnalysisNameT as AnNameT, DirectionDT, AnalysisAT, SimFailed
@@ -137,7 +137,9 @@ class HostSitesPair:
 
 
   def removeSite(self, callSite):
-    self.callSites.remove(callSite)
+    if callSite in self.callSites:
+      if util.LL1: LIN(f"WARN: {getGlobalNodeIdStr(callSite)} not present.")
+      self.callSites.remove(callSite)
 
 
   def __str__(self):
@@ -676,9 +678,11 @@ class IpaHost:
 
   def finalizeIpaResults(self):
     vci = self.vci
-    if util.VV1: print(f"TotalValueContexts: {len(vci)}, "
-                       f"SizeInBytes: {util.getSize2(vci.valueContextMap)},"
-                       f"VCI(Total): {util.getSize2(vci)}")
+    if util.VV0:
+      print(f"\n"
+            f"TotalValueContexts     : {len(vci)}\n"
+            f"TotalSize(ValueContext): {util.getSize2(vci.valueContextMap)//1024} KB.\n"
+            f"TotalSize(VCI object)  : {util.getSize2(vci)//1024} KB.\n")
 
     self.collectStats()
     self.mergeFinalResults()

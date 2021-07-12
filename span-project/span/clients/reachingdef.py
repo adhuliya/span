@@ -53,6 +53,7 @@ GLOBAL_INITS_FNID = genGlobalNodeId(GLOBAL_INITS_FUNC_ID, 1)  # initialized glob
 
 class ComponentL(DataLT):
 
+  __slots__ : List[str] = []
 
   def __init__(self,
       func: constructs.Func,
@@ -69,6 +70,9 @@ class ComponentL(DataLT):
     tup = self.basicMeetOp(other)
     if tup: return tup
 
+    # if (len(self.val) + len(other.val)) > 100:  #MEMOPTRD
+    #   new = ComponentL(self.func, bot=True)  #MEMOPTRD
+    # else:
     new = self.getCopy()
     new.val.update(other.val)
     return new, Changed
@@ -102,19 +106,19 @@ class ComponentL(DataLT):
     return fNid in self.val
 
 
-  def addVal(self, fNid: GlobalNodeIdT) -> None:
+  def addVal(self, gNid: GlobalNodeIdT) -> None:
     if self.top:
       self.val = set()
       self.top = False
-    if fNid == (0,0): raise ValueError() # delit
-    self.val.add(fNid)
+    if gNid == 0: raise ValueError() # delit
+    self.val.add(gNid)
 
 
-  def delVal(self, fNid: GlobalNodeIdT) -> None:
+  def delVal(self, gNid: GlobalNodeIdT) -> None:
     if self.top:
       return None
 
-    self.val.remove(fNid)
+    self.val.remove(gNid)
     if not len(self.val):
       self.top = True
       self.val = None
@@ -250,6 +254,47 @@ class OverallL(dfv.OverallL):
     except ValueError as e:
       raise ValueError(f"{varName}: {e}")
 
+
+  def setVal(self,
+      varName: VarNameT,
+      val: ComponentL
+  ) -> None:
+    """Mutates 'self'.
+    Changes accommodate PPMS vars whose value is assumed Top by default,
+    and their Bot value is explicitly kept in the dictionary.
+    """
+    # STEP 1: checks to avoid any explicit updates
+    if self.top and val.top: return
+    if self.bot and val.bot and self.getDefaultVal(varName).bot:
+      # as PPMS Vars default is Top, the bot state needs modification
+      # since getAllVars() never returns all the PPMS vars. # TODO: fix this properly
+      return
+
+    # STEP 2: if here, update of self.val is inevitable
+    self.val = {} if self.val is None else self.val
+
+    if self.top: # and not defaultVal.top:
+      top = dfv.getTopBotComp(self.func, self.anName, True, self.compL)
+      selfGetDefaultVal = self.getDefaultVal
+      self.val = {vName: top for vName in self.getAllVars(self.func)
+                  if not selfGetDefaultVal(vName).top}
+    if self.bot: # and not defaultVal.bot:
+      bot = dfv.getTopBotComp(self.func, self.anName, False, self.compL)
+      selfGetDefaultVal = self.getDefaultVal
+      self.val = {vName: bot for vName in self.getAllVars(self.func)
+                  if not selfGetDefaultVal(vName).bot}
+
+    assert self.val is not None, f"{self}"
+    self.top = self.bot = False  # if it was top/bot, then its no more.
+    if self.isDefaultVal(val, varName):
+      if varName in self.val:
+        del self.val[varName]  # since default value
+    else:
+      val =  val if len(val) < 100 else \
+        dfv.getTopBotComp(self.func, self.anName, False, self.compL) #ToSaveMemory
+      self.val[varName] = val
+
+
 ################################################
 # BOUND END  : ReachingDef lattice.
 ################################################
@@ -265,7 +310,7 @@ class ReachingDefA(ValueAnalysisAT):
   D: DirectionT = Forward   # direction of analysis
 
 
-  needsRhsDerefToVarsSim: bool = True
+  needsRhsDerefToVarsSim: bool = False
   needsLhsDerefToVarsSim: bool = True
   needsNumVarToNumLitSim: bool = False
   needsNumBinToNumLitSim: bool = True

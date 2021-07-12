@@ -7,16 +7,22 @@
 
 import logging
 
+from span.util import util
+
 LOG = logging.getLogger(__name__)
+LDB = LOG.debug
+
+from span.ir.constructs import Func
+from span.ir.tunit import TranslationUnit
+
 from typing import Optional as Opt, Set, Tuple, List, Callable, cast, Any
 
 from span.util.util import LS
 
 import span.ir.types as types
-from span.ir.conv import getSuffixes, simplifyName, Backward
+from span.ir.conv import getSuffixes, simplifyName, Backward, nameHasPpmsVar
 import span.ir.expr as expr
 import span.ir.instr as instr
-import span.ir.constructs as obj
 import span.ir.ir as ir
 from span.ir.ir import \
   (getNamesEnv, getNamesGlobal, getExprRValueNames,
@@ -41,7 +47,7 @@ class OverallL(DataLT):
 
 
   def __init__(self,
-      func: obj.Func,
+      func: Func,
       val: Opt[Set[types.VarNameT]] = None,
       top: bool = False,
       bot: bool = False
@@ -78,6 +84,7 @@ class OverallL(DataLT):
   def getVal(self,
       varName: types.VarNameT
   ) -> IsLiveT:
+    """Returns True if `varName` is live."""
     if self.top: return Dead
     if self.bot: return Live
     assert self.val is not None
@@ -128,6 +135,45 @@ class OverallL(DataLT):
 
     if not self.val:
       self.val, self.top, self.bot = None, True, False
+
+
+  def localize(self, #IPA
+      forFunc: Func,
+      keepParams: bool = False,
+  ) -> 'OverallL':
+    """Returns self's copy localized for the given forFunc."""
+    localizedDfv = self.getCopy()
+    localizedDfvVal, localizedDfvSetValDead = localizedDfv.val, localizedDfv.setValDead
+
+    if localizedDfvVal:
+      tUnit: TranslationUnit = self.func.tUnit
+      varNames = localizedDfvVal
+      keep = tUnit.getNamesGlobal() | (set(forFunc.paramNames) if keepParams else set())
+      dropNames = varNames - keep
+      for vName in dropNames:
+        if nameHasPpmsVar(vName): continue #don't drop
+        localizedDfvSetValDead(vName) # essentially removing the values
+
+    localizedDfv.updateFuncObj(forFunc)
+    return localizedDfv
+
+
+  def updateFuncObj(self, funcObj: Func): #IPA #mutates 'self'
+    self.func, selfVal = funcObj, self.val # updating function object here 1
+
+
+  def addLocals(self, #IPA #mutates 'self'
+      fromDfv: 'OverallL',
+  ) -> None:
+    tUnit: TranslationUnit = self.func.tUnit
+    localVars = tUnit.getNamesLocalStrict(self.func)
+    selfSetValLive, fromDfvGetVal = self.setValLive, fromDfv.getVal
+    if fromDfv.bot:
+      selfSetValLive(localVars)
+    elif fromDfv.top:
+      pass # nothing to do
+    elif fromDfv.val:
+      selfSetValLive(fromDfv.val & localVars)
 
 
   def __lt__(self, other) -> bool:
@@ -183,7 +229,7 @@ class StrongLiveVarsA(AnalysisAT):
 
 
   def __init__(self,
-      func: obj.Func,
+      func: Func,
   ) -> None:
     super().__init__(func)
     self.overallTop: OverallL = OverallL(self.func, top=True)
@@ -193,20 +239,28 @@ class StrongLiveVarsA(AnalysisAT):
   def getBoundaryInfo(self,
       nodeDfv: Opt[DfvPairL] = None,
       ipa: bool = False,
+      entryFunc: bool = False,
+      forFunc: Opt[Func] = None,
   ) -> DfvPairL:
     """Must generate a valid boundary info."""
     if ipa and not nodeDfv:
       raise ValueError(f"{ipa}, {nodeDfv}")
 
-    inBi = self.overallTop
-    outBi = OverallL(self.func, val=getNamesGlobal(self.func))
+    func = forFunc if forFunc else self.func
+
+    overallTop = self.overallTop.getCopy()
+    overallTop.func = func # IMPORTANT
+
+    inBi = overallTop
+    outBi = overallTop if entryFunc else\
+      OverallL(func, val=getNamesGlobal(self.func))
 
     if ipa:
       dfvIn = cast(OverallL, nodeDfv.dfvIn.getCopy())
       dfvOut = cast(OverallL, nodeDfv.dfvOut.getCopy())
-      dfvIn.func = dfvOut.func = self.func
+      dfvIn.func = dfvOut.func = func
 
-      vNames: Set[types.VarNameT] = self.getAllVars()
+      vNames: Set[types.VarNameT] = self.getAllVars(func)
 
       if dfvIn.val: dfvIn.val = dfvIn.val & vNames
       if dfvOut.val: dfvOut.val = dfvOut.val & vNames
@@ -216,9 +270,37 @@ class StrongLiveVarsA(AnalysisAT):
     return DfvPairL(inBi, outBi)  # good to create a copy
 
 
-  def getAllVars(self) -> Set[types.VarNameT]:
+  def getLocalizedCalleeBi(self, #IPA
+      nodeId: types.NodeIdT,
+      insn: instr.InstrIT,
+      nodeDfv: DfvPairL,  # caller's node IN/OUT
+      calleeBi: Opt[DfvPairL] = None,  #IPA
+  ) -> DfvPairL:
+    """See base method for doc."""
+    assert insn.hasRhsCallExpr(), f"{self.func.name}, {nodeId}, {insn}, {insn.info}"
+
+    calleeName = instr.getCalleeFuncName(insn)
+    tUnit: TranslationUnit = self.func.tUnit
+    calleeFuncObj = tUnit.getFuncObj(calleeName)
+
+    # In is unchanged in Backward analyses
+    if calleeBi:
+      inDfv = calleeBi.dfvIn # unchanged In
+    else:
+      inDfv = self.overallTop.getCopy()
+      inDfv.func = calleeFuncObj
+
+    newDfvOut = nodeDfv.dfvOut.localize(calleeFuncObj, keepParams=True)
+
+    localized = DfvPairL(inDfv, newDfvOut)
+    localized = self.getBoundaryInfo(localized, ipa=True, forFunc=calleeFuncObj)
+    if util.LL1: LDB("CalleeCallSiteDfv(Localized): %s", localized)
+    return localized
+
+
+  def getAllVars(self, func: Opt[Func] = None) -> Set[types.VarNameT]:
     """Gets all the variables of the accepted type."""
-    return ir.getNamesEnv(self.func)
+    return ir.getNamesEnv(func if func else self.func)
 
 
   def isAcceptedType(self,
@@ -397,7 +479,7 @@ class StrongLiveVarsA(AnalysisAT):
     dfvOut = nodeDfv.dfvOut
     assert isinstance(dfvOut, OverallL), f"{dfvOut}"
 
-    if LS: LOG.debug(f"StrongLiveVarsA: Kill={kill}, Gen={gen}")
+    if LS: LDB(f"StrongLiveVarsA: Kill={kill}, Gen={gen}")
 
     if dfvOut.bot and not kill: return DfvPairL(dfvOut, dfvOut)
     if dfvOut.top and not gen: return DfvPairL(dfvOut, dfvOut)
@@ -437,7 +519,7 @@ class StrongLiveVarsA(AnalysisAT):
     if dfvOut.val and set(lhsNames) & dfvOut.val:
       rhsNamesAreLive = True
 
-    if LS: LOG.debug(f"lhsNames = {lhsNames} (live={rhsNamesAreLive})")
+    if LS: LDB(f"lhsNames = {lhsNames} (live={rhsNamesAreLive})")
 
     # Now take action
     if not rhsNamesAreLive:

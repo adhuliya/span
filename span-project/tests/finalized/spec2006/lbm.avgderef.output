@@ -1,0 +1,30 @@
+------------------------------------------------
+
+TotalValueContexts     : 25
+ TotalSize(ValueContext): 0 bytes.
+TotalSize(VCI object)  : 0 bytes.
+
+AnalysisType: AvgDerefR
+Method: MethodDetail(plain, plain, ['PointsToA'], 'No Description')
+  TotalDereferences  : 642
+  TotalPointees      : 378289
+  AvgDerefs          : 589.2352024922118
+------------------------------------------------
+TimeElapsed(plain:plain): 1812.2179508209229 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, span, ['PointsToA'], 'No Description')
+  TotalDereferences  : 642
+  TotalPointees      : 377793
+  AvgDerefs          : 588.4626168224299
+------------------------------------------------
+TimeElapsed(span:span): 10.730981826782227 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, span, ['PointsToA', 'IntervalA'], 'No Description')
+  TotalDereferences  : 642
+  TotalPointees      : 377793
+  AvgDerefs          : 588.4626168224299
+------------------------------------------------
+TimeElapsed(span:span): 14.596939086914062 ms (Starts: 1, Stops: 1)
+TimeElapsed(TotalTimeTaken): 2658.0848693847656 ms (Starts: 1, Stops: 1)

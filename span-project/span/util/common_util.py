@@ -300,7 +300,7 @@ def getLineNumFunc() -> Callable[[str, int], int]:
 
 
 def getSize(obj, seen: Opt[Set[int]] = None) -> int:
-  """Recursively finds size of objects. Needs: import sys """
+  """Recursively finds size of objects in bytes. Needs: import sys """
   seen = set() if seen is None else seen
 
   if id(obj) in seen: return 0  # to handle self-referential objects
@@ -321,7 +321,7 @@ def getSize(obj, seen: Opt[Set[int]] = None) -> int:
 
 
 def getSize2(obj, seen: Opt[Set[int]] = None) -> int:
-  """Non-Recursively finds size of objects. Needs: import sys """
+  """Non-Recursively finds size of objects in bytes. Needs: import sys """
   seen = set() if seen is None else seen
   size = 0
 

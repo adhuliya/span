@@ -41,19 +41,16 @@ class AvgDerefR(DiagnosisRT):
 
   MethodSequence: List[MethodDetail] = [
     MethodDetail(
-      PlainMethod,
-      [0],
-      ["PointsToA"],
+      name=PlainMethod,
+      anNames=["PointsToA"],
     ),
     MethodDetail(
-      SpanMethod,
-      [0],
-      ["PointsToA"],
+      name=SpanMethod,
+      anNames=["PointsToA"],
     ),
     MethodDetail(
-      SpanMethod,
-      [1],
-      ["PointsToA", "IntervalA"],
+      name=SpanMethod,
+      anNames=["PointsToA", "IntervalA"],
     ),
   ]
 
@@ -66,21 +63,19 @@ class AvgDerefR(DiagnosisRT):
 
   def computeDfvs(self,
       method: MethodDetail,
-      config: int, #IMPORTANT
       anClassMap: Dict[AnNameT, Type[AnalysisAT]],
   ) -> Opt[Dict[FuncNameT, Dict[AnNameT, AnResult]]]:
     """Compute the DFVs necessary to detect index out of bounds."""
-    if util.LL0: LDB("ComputeDFVs: Method=%s, Config=%s", method, config)
+    if util.LL0: LDB("ComputeDFVs: Method=%s", method)
 
     if self.res is None:
-      self.res = self.computeDfvsUsingPlainMethod(method, config, anClassMap)
+      self.res = self.computeDfvsUsingPlainMethod(method, anClassMap)
 
     return self.res
 
 
   def computeResults(self,
       method: MethodDetail,
-      config: int,
       dfvs: Dict[FuncNameT, Dict[AnNameT, AnResult]],
       anClassMap: Dict[AnNameT, Type[AnalysisAT]],
   ) -> Any:
@@ -111,12 +106,13 @@ class AvgDerefR(DiagnosisRT):
         if not varDfv or varDfv.top: # may be None
           continue     # an unreachable nid has no pointees in its exprs
         elif varDfv.bot:
-          pointees = self.tUnit.getNamesEnv(func, var.type.getPointeeType())
+          pointees = self.tUnit.getNamesEnv(func) #, var.type.getPointeeType())
           totalPointees += len(pointees)
         else:
           if plainMethod:
             if len(varDfv.val) > 1:
-              pointees = self.tUnit.getNamesEnv(func, var.type.getPointeeType())
+              # a plainMethod
+              pointees = self.tUnit.getNamesEnv(func) #, var.type.getPointeeType())
               totalPointees += len(pointees)
               # if len(pointees) < len(varDfv.val):
               #   print(f"({var}, {var.type}): AllPossiblePointees: {pointees},"
@@ -131,13 +127,12 @@ class AvgDerefR(DiagnosisRT):
 
   def handleResults(self,
       method: MethodDetail,
-      config: int,
       result: Any, # Any type that a particular implementation needs.
       dfvs: Dict[FuncNameT, Dict[AnNameT, AnResult]],
       anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
   ) -> None:
     print(f"AnalysisType: {self.__class__.__name__}")
-    print(f"Method: {method}, Config: {config}")
+    print(f"Method: {method}")
     print(f"  TotalDereferences  : {result[0]}")
     print(f"  TotalPointees      : {result[1]}")
     print(f"  AvgDerefs          : {result[1]/result[0]}")
@@ -145,10 +140,9 @@ class AvgDerefR(DiagnosisRT):
 
   def computeDfvsUsingPlainMethod(self,
       method: MethodDetail,
-      config: int,
       anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
   ) -> Opt[Dict[FuncNameT, Dict[AnNameT, AnResult]]]:
-    assert len(anClassMap) == 1, f"{anClassMap}, {config}"
+    assert len(anClassMap) == 1, f"{anClassMap}"
 
     mainAnalysis = method.anNames[0]
     ipaHost = IpaHost(
