@@ -6,16 +6,13 @@
 """Defines the base lattice class."""
 
 import logging
-
-from span.util.consts import TOP_STR, BOT_STR
-
 _LOG = logging.getLogger(__name__)
 
 from typing import Tuple, Any, List, TypeVar, Optional as Opt, Sequence as Seq, Iterable
 
 from span.ir import constructs
-import span.ir.constructs as obj
 import span.ir.types as types
+from span.util.consts import TOP_STR, BOT_STR
 
 ChangedT = bool  # Is the value changed?
 Changed: ChangedT = True  # For unchanged value, use `not Changed`.
@@ -122,7 +119,7 @@ class DataLT(LatticeLT):
 
 
   def __init__(self,
-      func: obj.Func,
+      func: constructs.Func,
       val: Opt[Any] = None,
       top: bool = False,
       bot: bool = False

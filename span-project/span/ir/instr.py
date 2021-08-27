@@ -628,6 +628,7 @@ class CallI(InstrIT):
 
   def hasFpCallExpr(self) -> bool: return self.arg.hasPtrCall()
 
+
   def hasRhsCallExpr(self) -> bool: return True
 
 

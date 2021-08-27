@@ -6,11 +6,10 @@
 """The analysis' common data flow value declarations."""
 
 import logging
-import os
-
 LOG = logging.getLogger(__name__)
 LDB = LOG.debug
 
+import os
 from typing import Tuple, Optional as Opt, Dict, Any, Set,\
                    Type, TypeVar, List, cast, Callable
 import io
@@ -19,7 +18,10 @@ from span.ir.tunit import TranslationUnit
 from span.util import ff
 
 from span.ir import tunit, conv
-from span.ir.conv import isStringLitName, nameHasPpmsVar, isLocalVarName, NULL_OBJ_NAME, simplifyName
+from span.ir.conv import (
+  isStringLitName, nameHasPpmsVar,
+  NULL_OBJ_NAME, simplifyName,
+)
 
 from span.util.util import LS
 import span.util.util as util
@@ -175,8 +177,6 @@ class DfvPairL(LatticeLT):
     else:
       dfvIn, chIn = self.dfvIn.meet(other.dfvIn)
 
-    # dfvOut = dfvOutTrue = dfvOutFalse = None
-    # if self.dfvOut is not None:
     if self.dfvOut is other.dfvOut:
       dfvOut = self.dfvOut
     else:
@@ -325,7 +325,7 @@ class ComponentL(DataLT):
 
 
 class OverallL(DataLT):
-  """Common OverallL for numeric/value analyses."""
+  """Common OverallL for entity:value analyses."""
   __slots__ : List[str] = ["anName", "compL"]
 
   def __init__(self,

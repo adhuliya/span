@@ -550,8 +550,6 @@ def viewDotFile(args: argparse.Namespace):
       print(f"No graph generated: Given specific func if any: {funcName}")
 
 
-
-
 def showDotGraph(dotFileName: str) -> bool:
   """Invokes the `xdot` program to show the given dotfile."""
   if not util.programExists("xdot"):

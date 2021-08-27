@@ -604,7 +604,7 @@ class Host:
         slice = self.ddmObj.propagateDemand(demand)  # gets slice from cache
         depAnalyses = self.anDemandDep[demand]
         for anName in depAnalyses:
-          wl = self.anWorkDict[anName].wl
+          wl = self.anWorkDict[anName].fwl
           self.stats.nodeMapUpdateTimer.start()
           changed = wl.updateNodeMap(slice.nodeMap)  # add possible new nodes
           self.stats.nodeMapUpdateTimer.stop()
@@ -824,11 +824,11 @@ class Host:
     if GD: self.nodeInsnDot.clear()  # reinitialize for each new analysis iteration
 
     while True: #self.activeAnIsUseful:  #needs testing node visits are increasing
-      node, treatAsNop, ddmVarSet = dirn.wl.pop()
+      node, treatAsNop, ddmVarSet = dirn.fwl.pop()
       if util.LL4: LDB("GetNextNodeFrom_Worklist (%s, %s): %s"
                        "\n Got %s. %s",
                        self.func.name, self.activeAnName, "*" * 16,
-                       f"Node_{node.id}" if node else None, dirn.wl)
+                       f"Node_{node.id}" if node else None, dirn.fwl)
       if node is None: break  # worklist is empty, so exit the loop
       if util.LL4: LDB(" Node_%s: %s (info:%s) (TreatAsNop: %s, ddmVarSet: %s)",
                        node.id, node.insn, node.insn.info, treatAsNop, ddmVarSet)
@@ -2027,8 +2027,8 @@ class Host:
       return  # main analyses are not ddm driven
 
     if self.useDdm: self.ddmObj.timer.start()
-    wl = self.anWorkDict[anName].wl
-    assert not wl.fullSequence, f"Analysis {anName} already started."
+    wl = self.anWorkDict[anName].fwl
+    assert not wl.visitedSeq, f"Analysis {anName} already started."
     wl.initForDdm()
     if self.useDdm: self.ddmObj.timer.stop()
 
@@ -2043,7 +2043,7 @@ class Host:
     if anName in self.mainAnalyses: return
 
     if self.useDdm: self.ddmObj.timer.start()
-    wl = self.anWorkDict[anName].wl
+    wl = self.anWorkDict[anName].fwl
 
     assert e, f"{node}: {simName}, {anName}"
     simDemands = self.ddmObj.getDemandForExprSim(self.func, node, simName, e)
@@ -2241,7 +2241,7 @@ class Host:
         nDfv = res.anResult.get(nid, topTop)
         print(f">> {nid}. ({node.insn}):\n{nDfv}")
       #print("Worklist:", self.anWorkDict[anName].wl.getAllNodesStr())
-      print("NodesVisitOrder:", self.anWorkDict[anName].wl.fullSequence)
+      print("NodesVisitOrder:", self.anWorkDict[anName].fwl.visitedSeq)
 
     # print("DiagnosticInfo:", file=sys.stderr)
 
@@ -2266,7 +2266,7 @@ class Host:
       else: raise TypeError("Analysis Direction ForwBack not handled.")
       inOutChange = dirnObj.update(node, updateDfv)
       if inOutChange:
-        if util.LL4: LDB("IPA_UpdatedWorklist: %s, %s", self.func.name, dirnObj.wl)
+        if util.LL4: LDB("IPA_UpdatedWorklist: %s, %s", self.func.name, dirnObj.fwl)
         self.addAnToWorklist(anName, ipa=True)
         restart = True  # Should re-run the Host
 
@@ -2426,11 +2426,11 @@ class Host:
     self.anWorkListDot.append(self.anWorkList.genDiGraph(currentIterName))
 
     dirn = self.anWorkDict[self.activeAnName]
-    self.anWorkListDot.append(f"  \"{currentIterName}NodeWl\" [shape=box, label=\"{dirn.wl.tmpSequenceStr()}\"];")
+    self.anWorkListDot.append(f"  \"{currentIterName}NodeWl\" [shape=box, label=\"{dirn.fwl.tmpSequenceStr()}\"];")
     self.anWorkListDot.append(f"  \"{currentIterName}WL\" -> \"{currentIterName}NodeWl\" [style=invis];")
     self.anWorkListDot.append("} // close Wl subgraph")
     self.anWorkListDot.append("\n")
-    dirn.wl.clearTmpSequence()
+    dirn.fwl.clearTmpSequence()
 
     # generate cfg seen by the analysis
     self.anWorkListDot.append(f"subgraph \"{currentIterName}Cfg\" {{")

@@ -9,12 +9,13 @@ import logging
 LOG = logging.getLogger(__name__)
 LDB, LWR, LER = LOG.debug, LOG.warning, LOG.error
 
-from span.ir.tunit import TranslationUnit
-from span.util import ff
-
 from typing import List, Tuple, Set, Dict, Any, Type, Callable, cast, TypeVar
 from typing import Optional as Opt
 import io
+from bisect import insort as bisectInsort
+
+from span.ir.tunit import TranslationUnit
+from span.util import ff
 
 import span.util.util as util
 from span.util.util import LS, AS
@@ -83,77 +84,86 @@ NameValue: ValueTypeT = "VarName"
 
 class FastNodeWorkList:
 
-  __slots__ : List[str] = ["nodes", "postOrder", "frozen", "wl", "isNop",
-               "valueFilter", "wlNodeSet", "frozenSet", "fullSequence"]
+  __slots__ : List[str] = ["nodes", "postOrder", "useDdm", "wl", "isNop",
+               "valueFilter", "wlNodesSet", "allNidSet", "visitedSeq",
+               "totalNodes", "sign"]
 
   def __init__(self,
       nodes: Dict[cfg.CfgNodeId, cfg.CfgNode],
       postOrder: bool = False,  # True = revPostOrder
-      frozen: bool = False,  # True restricts addition of new nodes
   ):
     self.nodes = nodes
+    self.totalNodes = len(self.nodes) # total nodes in self.nodes
     self.postOrder = postOrder
-    self.frozen = frozen
+    self.sign = 1 if self.postOrder else -1
 
-    self.wl: List[cfg.CfgNodeId] = list(nodes.keys())
-    self.wl.sort(key=lambda x: x if self.postOrder else -x)
-    self.isNop = [frozen for i in range(len(nodes.keys()))]
-    self.valueFilter = [None for i in range(len(nodes.keys()))]
-    self.wlNodeSet = set(nodes.keys())
-    self.frozenSet = set(nodes.keys())  # the set of nodes on which to work
+    nodeIds = nodes.keys()
+    self.allNidSet = set(nodeIds)  # the set of all nodes on which to work
+    self.wl: List[cfg.CfgNodeId] = [nid * self.sign for nid in nodeIds]
+    self.wl.sort()
+    self.wlNodesSet = set(nodeIds)
 
-    # seq of nodes visited from start to end of the analysis
-    self.fullSequence: List[int] = []
+    self.useDdm = False #DDM
+    self.isNop = [] #DDM
+    self.valueFilter = [] #DDM
+
+    # Sequence of nodes visited from start to end of the analysis.
+    # A zero value indicates that the work list became empty.
+    # A negative value indicates that the node was treated as NOP.
+    self.visitedSeq: List[int] = []
 
 
   def clear(self):
-    """Clear the worklist."""
+    """Clear the work list."""
     self.wl.clear()
-    self.wlNodeSet.clear()
-    self.frozenSet.clear()
+    self.wlNodesSet.clear()
+    self.allNidSet.clear()
 
 
   def pop(self) -> Tuple[Opt[cfg.CfgNode], Opt[bool], Opt[Any]]:
     """Pops and returns next node id on top of queue, None otherwise."""
     if not self.wl:
-      self.fullSequence.append(0) # special value to denote wl consumed
+      self.visitedSeq.append(0) # special value to denote wl consumed
       return None, None, None
 
-    nid = self.wl.pop()
-    self.wlNodeSet.remove(nid)
+    nid = self.wl.pop() * self.sign
+    self.wlNodesSet.remove(nid)
 
-    nodeIsNop = self.isNop[nid-1]
-    self.fullSequence.append(nid * -1 if nodeIsNop else nid)
-    return self.nodes[nid], nodeIsNop, self.valueFilter[nid-1]
+    if self.useDdm:
+      nodeIsNop = self.isNop[nid]
+      self.visitedSeq.append(nid * -1 if nodeIsNop else nid)
+      return self.nodes[nid], nodeIsNop, self.valueFilter[nid]
+    else:
+      self.visitedSeq.append(nid)
+      return self.nodes[nid], False, None
 
 
   def add(self,
       node: cfg.CfgNode,
   ) -> bool:
     """Add a node to the queue."""
-    frozen, nid = self.frozen, node.id
+    nid = node.id
+    attemptAdd = nid in self.allNidSet
 
-    attemptAdd = (frozen and nid in self.frozenSet) or not frozen
-
-    if attemptAdd and nid not in self.wlNodeSet:
-      self.wl.append(nid)
-      self.wl.sort(key=lambda x: x if self.postOrder else -x)
-      self.wlNodeSet.add(nid)
+    if attemptAdd and nid not in self.wlNodesSet:
+      bisectInsort(self.wl, nid * self.sign)
+      self.wlNodesSet.add(nid)
       if util.LL5: LDB("AddedNodeToWl: Node_%s: Yes. %s", node.id, node.insn)
       return True
 
     if util.LL5: LDB("AddedNodeToWl: Node_%s: No."
                      " (Attempted: %s, AlreadyPresent: %s). %s",
-                     node.id, attemptAdd, nid in self.wlNodeSet, node.insn)
+                     node.id, attemptAdd, nid in self.wlNodesSet, node.insn)
     return False
 
 
-  def initForDdm(self):
-    """Used by #DDM"""
-    self.frozen = True
+  def initForDdm(self):  #DDM
+    """Initialization for DD method."""
+    self.useDdm = True
     self.clear()
-    for i in range(1, len(self.isNop)):
-      self.isNop[i] = True
+    # Index 0 is unused.
+    self.isNop = [True for i in range(self.totalNodes + 1)]
+    self.valueFilter = [None for i in range(self.totalNodes + 1)]
 
 
   def updateNodeMap(self,  #DDM
@@ -167,51 +177,58 @@ class FastNodeWorkList:
     changed, nopChanged, valueFilterChanged = False, False, False
     for node, nInfo in nodeMap.items():
       treatAsNop = nInfo.nop
-      nid, index = node.id, node.id - 1
-      if nid not in self.frozenSet:  # a fresh node
-        if nid not in self.wlNodeSet:
-          self.wl.append(nid)
-          self.wlNodeSet.add(nid)
-        self.frozenSet.add(nid)
-        self.isNop[index] = treatAsNop and self.isNop[index]
-        self.valueFilter[index] = nInfo.varNameSet
+      nid = node.id
+      if nid not in self.allNidSet:  # a fresh node
+        if nid not in self.wlNodesSet:
+          bisectInsort(self.wl, nid * self.sign)
+          self.wlNodesSet.add(nid)
+        self.allNidSet.add(nid)
+        self.isNop[nid] = treatAsNop and self.isNop[nid]
+        self.valueFilter[nid] = nInfo.varNameSet
         changed = True
       else:  # a known node
-        isNop = self.isNop[index]
+        isNop = self.isNop[nid]
         if not treatAsNop and isNop:
-          self.isNop[index] = False
+          self.isNop[nid] = False
           nopChanged = True
-        if self.valueFilter[index] != nInfo.varNameSet:
-          self.valueFilter[index] = nInfo.varNameSet
+        if self.valueFilter[nid] != nInfo.varNameSet:
+          self.valueFilter[nid] = nInfo.varNameSet
           valueFilterChanged = True
         if nopChanged or valueFilterChanged:
-          if nid not in self.wlNodeSet:
-            self.wl.append(nid)
-            self.wlNodeSet.add(nid)
+          if nid not in self.wlNodesSet:
+            bisectInsort(self.wl, nid * self.sign)
+            self.wlNodesSet.add(nid)
+            changed = True
 
-    if changed: self.wl.sort(key=lambda x: x if self.postOrder else -x)
     return changed or nopChanged or valueFilterChanged
 
 
-  def getWorkingNodesString(self, allNodes=False):
-    nodeIds = list(self.frozenSet if allNodes else self.wl)
-    nodeIds.sort(key=lambda x: x if self.postOrder else -x)
+  def getWorkingNodesString(self, allNodes=False) -> str:
+    """Returns a string representation of the work list."""
+    if allNodes:
+      nodeIds = [nid * self.sign for nid in self.allNidSet]
+      nodeIds.sort()
+    else:
+      nodeIds = self.wl
+
     listType = "(All)" if allNodes else ""
 
     prefix = ""
     with io.StringIO() as sio:
-      sio.write("#DDM " if self.frozen else "")
+      sio.write("#DDM " if self.useDdm else "")
       sio.write(f"NodeWorkList{listType} [")
       for nid in nodeIds:
-        sio.write(f"{prefix}{nid}")
-        sio.write("." if self.isNop[nid - 1] else "")
+        nid = nid * self.sign
+        nop = f"nop({nid})" if self.isNop[nid] else f"{nid}"
+        sio.write(f"{prefix}{nop}")
         if not prefix: prefix = ", "
-      sio.write("] ('.' is Nop)")
+      sio.write("]")
       prefix = sio.getvalue()  # reusing prefix
     return prefix
 
 
-  def getAllNodesStr(self):
+  def getAllNodesStr(self) -> str:
+    """Returns a string representation of the work list."""
     return self.getWorkingNodesString(allNodes=True)
 
 
@@ -221,193 +238,6 @@ class FastNodeWorkList:
 
   def __repr__(self):
     return self.__str__()
-
-
-# class NodeWorkList(object):
-#   """Cfg node worklist.
-#
-#   It remembers the initial order in which node ids are given,
-#   and maintains the same order when selective nodes are added later.
-#   """
-#
-#
-#   def __init__(self,
-#       nodes: Opt[List[cfg.CfgNode]] = None,
-#       frozen: bool = False,  # True restricts addition of new nodes
-#   ) -> None:
-#     # list to remember the order of each node initially given for the first time
-#     self.sequence: List[cfg.CfgNode] = []
-#     self.workque: List[bool] = []
-#     self.treatAsNop: List[bool] = []  # DDM used by demand driven technique
-#     # remembers the nodes already given
-#     self.nodeMem: Set[cfg.CfgNodeId] = set()
-#     _ = [self.add(node, force=True) for node in nodes] if nodes else None
-#     # seq of nodes visited from start to end of the analysis
-#     self.fullSequence: List[cfg.CfgNode] = []
-#     # seq of nodes visited till the analysis reaches intermediate FP
-#     # after each intermediate FP this is supposed to be cleared explicitly
-#     self.tmpSequence: List[cfg.CfgNode] = []
-#     self.frozen = frozen
-#
-#
-#   def __contains__(self, node: cfg.CfgNode):
-#     nid = node.id
-#     for index, n in enumerate(self.sequence):
-#       if nid == n.id: return self.workque[index]
-#     return False
-#
-#
-#   def clear(self):
-#     """Clear the worklist."""
-#     for index in range(len(self.workque)):
-#       self.workque[index] = False
-#
-#
-#   def isNodePresent(self, nid: cfg.CfgNodeId):
-#     return nid in self.nodeMem
-#
-#
-#   def add(self,
-#       node: cfg.CfgNode,
-#       treatAsNop: bool = False,
-#       force: bool = False,  # overrides the frozen property
-#   ) -> bool:
-#     """Add a node to the queue."""
-#     assert len(self.nodeMem) == len(self.sequence) or self.frozen
-#     assert len(self.sequence) == len(self.workque)
-#     nid = node.id
-#     if nid not in self.nodeMem:  # a new node -- add it
-#       if force or not self.frozen:  # checks if WL is frozen?
-#         self.nodeMem.add(nid)
-#         self.sequence.append(node)
-#         self.workque.append(True)
-#         self.treatAsNop.append(treatAsNop)
-#         return True
-#       else:
-#         return False  # not added since work list is frozen
-#
-#     # an old node -- re-add it
-#     index, added = 0, False
-#     for index, node in enumerate(self.sequence):
-#       if node.id == nid: break
-#     if not self.workque[index]:
-#       self.workque[index] = True
-#       added = True
-#
-#     return added  # possibly added
-#
-#
-#   def pop(self) -> Tuple[Opt[cfg.CfgNode], Opt[bool]]:
-#     """Pops and returns next node id on top of queue, None otherwise."""
-#     for index, active in enumerate(self.workque):
-#       if active: break
-#     else:
-#       return None, None
-#
-#     self.workque[index] = False
-#     node = self.sequence[index]
-#     self.fullSequence.append(node)
-#     self.tmpSequence.append(node)
-#     return node, self.treatAsNop[index]
-#
-#
-#   def peek(self) -> Opt[cfg.CfgNode]:
-#     """Returns next node id on top of queue, None otherwise."""
-#     for index, active in enumerate(self.workque):
-#       if active:
-#         return self.sequence[index]
-#     return None
-#
-#
-#   def initForDdm(self):
-#     """Used by #DDM"""
-#     self.frozen = True
-#     self.clear()
-#     self.nodeMem.clear()
-#     for i in range(1, len(self.treatAsNop)):
-#       self.treatAsNop[i] = True
-#
-#
-#   def updateNodeMap(self, nodeMap: Opt[Dict[cfg.CfgNode, bool]]) -> bool:
-#     """Used by #DDM"""
-#     if not nodeMap: return False  # i.e. no change
-#
-#     if util.LL5: LDB("UpdatedNodeMap(AddingMap): %s", nodeMap)
-#
-#     changed = False
-#     for node, treatAsNop in nodeMap.items():
-#       nid = node.id
-#       if nid not in self.nodeMem:  # a fresh node
-#         self.nodeMem.add(nid)
-#         for index, node in enumerate(self.sequence):
-#           if node.id == nid: break
-#         if not self.workque[index]:  # 'index' use is okay
-#           self.workque[index], self.treatAsNop[index] = True, treatAsNop
-#           changed = True
-#       else:  # a known node
-#         for index, node in enumerate(self.sequence):
-#           if node.id == nid: break
-#         treatedAsNop = self.treatAsNop[index]
-#         if not treatAsNop and treatedAsNop:
-#           self.workque[index], self.treatAsNop[index] = True, False
-#           changed = True
-#
-#     return changed
-#
-#
-#   def shouldTreatAsNop(self, node: cfg.CfgNode):
-#     """Should the current node be treated as containing NopI()? Used by #DDM"""
-#     nid = node.id
-#     for index, n in enumerate(self.sequence):
-#       if nid == n.id: return self.treatAsNop[index]
-#     return False
-#
-#
-#   def clearTmpSequence(self):
-#     self.tmpSequence.clear()
-#
-#
-#   def tmpSequenceStr(self):
-#     prefix = ""
-#     with io.StringIO() as sio:
-#       for node in self.tmpSequence:
-#         sio.write(f"{prefix}{node.id}")
-#         if not prefix: prefix = ","
-#       return sio.getvalue()
-#
-#
-#   def getAllNodesStr(self):
-#     prefix = ""
-#     with io.StringIO() as sio:
-#       sio.write("#DDM " if self.frozen else "")
-#       sio.write("NodeWorkList[")
-#       for index, node in enumerate(self.sequence):
-#         if node.id in self.nodeMem:
-#           sio.write(f"{prefix}{node.id}")
-#           sio.write("." if self.treatAsNop[index] else "")
-#           if not prefix: prefix = ", "
-#       sio.write("]")
-#       prefix = sio.getvalue()  # reusing prefix
-#     return prefix
-#
-#
-#   def __str__(self):
-#     prefix = ""
-#     with io.StringIO() as sio:
-#       sio.write("#DDM " if self.frozen else "")
-#       sio.write("NodeWorkList[")
-#       for index, active in enumerate(self.workque):
-#         if active:
-#           sio.write(f"{prefix}{self.sequence[index].id}")
-#           sio.write("." if self.treatAsNop[index] else "")
-#           if not prefix: prefix = ", "
-#       sio.write("]")
-#       prefix = sio.getvalue()  # reusing prefix
-#     return prefix
-#
-#
-#   def __repr__(self):
-#     return self.__str__()
 
 
 ################################################
@@ -436,7 +266,7 @@ class DirectionDT:
       self.anResult[nid] = self.topNdfv
     # set this to true once boundary values are initialized
     self.boundaryInfoInitialized = False
-    self.wl: Opt[FastNodeWorkList] = None # initialize in sub-class
+    self.fwl: Opt[FastNodeWorkList] = None # initialize in sub-class
 
 
   def generateInitialWorklist(self) -> FastNodeWorkList:
@@ -501,9 +331,9 @@ class DirectionDT:
 
 
   def add(self, node: cfg.CfgNode) -> bool:
-    """Add node_id to the worklist."""
-    assert self.wl is not None
-    added = self.wl.add(node)
+    """Add node to the work list."""
+    assert self.fwl is not None
+    added = self.fwl.add(node)
     return added
 
 
@@ -541,14 +371,14 @@ class ForwardDT(DirectionDT):
     if type(self).__name__ == "ForwardDT":
       raise NotImplementedError()  # can't create direct object
     super().__init__(anName, func, top)
-    self.wl = self.generateInitialWorklist()  # important
+    self.fwl = self.generateInitialWorklist()  # important
 
 
   def generateInitialWorklist(self) -> FastNodeWorkList:
     """Defaults to reverse post order."""
-    wl = FastNodeWorkList(self.cfg.nodeMap, postOrder=False)
-    if util.LL4: LDB("  Forward_Worklist_Init: %s", wl)
-    return wl
+    fwl = FastNodeWorkList(self.cfg.nodeMap, postOrder=False)
+    if util.LL4: LDB("  Forward_Worklist_Init: %s", fwl)
+    return fwl
 
 
   def update(self,
@@ -570,7 +400,7 @@ class ForwardDT(DirectionDT):
         dest = succEdge.dest
         if util.LL4: LDB("AddingNodeToWl(succ): Node_%s: %s (%s)",
                          dest.id, dest.insn, dest.insn.info)
-        self.wl.add(dest)
+        self.fwl.add(dest)
 
     return inOutChange
 
@@ -640,14 +470,14 @@ class BackwardDT(DirectionDT):
     if type(self).__name__ == "BackwardDT":
       raise NotImplementedError()  # can't create direct object
     super().__init__(anName, func, top)
-    self.wl = self.generateInitialWorklist()  # important
+    self.fwl = self.generateInitialWorklist()  # important
 
 
   def generateInitialWorklist(self) -> FastNodeWorkList:
     """Defaults to reverse post order."""
-    wl = FastNodeWorkList(self.cfg.nodeMap, postOrder=True)
-    if LS: LDB("Backward_Worklist_Init: %s", wl)
-    return wl
+    fwl = FastNodeWorkList(self.cfg.nodeMap, postOrder=True)
+    if LS: LDB("Backward_Worklist_Init: %s", fwl)
+    return fwl
 
 
   def update(self,
@@ -672,7 +502,7 @@ class BackwardDT(DirectionDT):
         pred = predEdge.src
         if LS: LDB("AddingNodeToWl(pred): Node_%s: %s (%s)",
                          pred.id, pred.insn, pred.insn.info)
-        self.wl.add(pred)
+        self.fwl.add(pred)
 
     return inOutChange
 
@@ -746,7 +576,12 @@ class ForwBackDT(DirectionDT):
 ################################################
 
 class AnalysisAT:
-  # For bi-directional analyses, subclass AnalysisAT directly.
+  """
+  A super-class of all the analyses in the system.
+  One instance of this class is created for each fresh analysis of a function.
+
+  For bi-directional analyses, subclass this class directly.
+  """
 
   __slots__ : List[str] = ["func", "overallTop", "overallBot"]
 
@@ -1709,14 +1544,9 @@ class AnalysisAT:
 
   """Simplification functions to be (optionally) overridden.
 
-  For convenience, analysis.AnalysisAT inherits this class.
-  So the user may only inherit AnalysisAT class, and
-  override functions in this class only if the
-  analysis works as a simplifier too.
-
   The second argument, nodeDfv, if its None,
   means that the return value should be either
-  Pending if the expression provided
+  empty set (i.e. Pending) if the expression provided
   can be possibly simplified by the analysis,
   or Failed if the expression cannot be simplified
   given any data flow value.
