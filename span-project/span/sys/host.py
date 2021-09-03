@@ -6,6 +6,8 @@
 """The Host that manages SPAN."""
 
 import logging
+import os
+
 LOG = logging.getLogger(__name__)
 LDB, LIN, LER, LWA = LOG.debug, LOG.info, LOG.error, LOG.warning
 
@@ -357,7 +359,7 @@ class Host:
     self.funcCfg: cfg.Cfg = func.cfg
 
     # cfg's edge feasibility information
-    self.ef: cfg.FeasibleEdges = cfg.FeasibleEdges(self.funcCfg)
+    self.fesEdges: cfg.FeasibleEdges = cfg.FeasibleEdges(self.funcCfg)
 
     #DDM demand driven method?
     self.useDdm: bool = useDdm
@@ -520,14 +522,14 @@ class Host:
 
     # add nodes that have one or more feasible pred edge
     if util.LL4: LDB(f"AddingFeasibleNodes(HostSetup) START.")
-    self.addNodes(self.ef.initFeasibility())
+    self.addNodes(self.fesEdges.initFeasibility())
     if util.LL4: LDB(f"AddingFeasibleNodes(HostSetup) END.")
 
     timer.stopAndLog(util.VV1, util.LL1)
 
 
   def addNodes(self, nodes: Opt[List[cfg.CfgNode]]) -> None:
-    """Add nodes to worklist of all analyses that have freshly become feasible."""
+    """Add the given nodes to the worklist of all analyses in the system."""
     if not nodes: return
 
     for anName in self.anParticipating:
@@ -734,10 +736,10 @@ class Host:
   ) -> Tuple[DfvPairL, ChangePairL, Reachability]:
     """Merge info at IN and OUT of a node."""
     nid = node.id
-    if self.ef.isFeasibleNode(node):
+    if self.fesEdges.isFeasibleNode(node):
       if util.LL4: LDB("Before InOutMerge (Node_%s):\n%s",
                        nid, dirn.anResult.get(nid, dirn.topNdfv))
-      ndfv, inout = dirn.calcInOut(node, self.ef)
+      ndfv, inout = dirn.calcInOut(node, self.fesEdges)
       if util.LL4: LDB("After  InOutMerge (Node_%s): %s:\n%s",
                        nid, inout, ndfv)
       return ndfv, inout, Reachable
@@ -1825,17 +1827,17 @@ class Host:
   def setEdgeFeasibility(self, node, arg) -> Opt[List[cfg.CfgNode]]:
     nodes = None
     if self.disableSim:
-      nodes = self.ef.setAllSuccEdgesFeasible(node)
+      nodes = self.fesEdges.setAllSuccEdgesFeasible(node)
     else: #if self.activeAnObj.needsCondToUnCondSim: # FIXME: assumed True always
       boolSim = self.getSim(node, Cond__to__UnCond__Name, arg)
       if boolSim is SimFailed:
-        nodes = self.ef.setAllSuccEdgesFeasible(node)
+        nodes = self.fesEdges.setAllSuccEdgesFeasible(node)
       elif boolSim is SimPending:
         nodes = None  # no edge to be taken yet
       elif False in boolSim:  # only false edge taken
-        nodes = self.ef.setFalseEdgeFeasible(node)
+        nodes = self.fesEdges.setFalseEdgeFeasible(node)
       elif True in boolSim:   # only true edge taken
-        nodes = self.ef.setTrueEdgeFeasible(node)
+        nodes = self.fesEdges.setTrueEdgeFeasible(node)
       else:
         raise ValueError(f"{node}, {arg}, {boolSim}")
 
@@ -2027,9 +2029,9 @@ class Host:
       return  # main analyses are not ddm driven
 
     if self.useDdm: self.ddmObj.timer.start()
-    wl = self.anWorkDict[anName].fwl
-    assert not wl.visitedSeq, f"Analysis {anName} already started."
-    wl.initForDdm()
+    fwl = self.anWorkDict[anName].fwl
+    assert not fwl.visitedSeq, f"Analysis {anName} already started."
+    fwl.initForDdm()
     if self.useDdm: self.ddmObj.timer.stop()
 
 
@@ -2468,7 +2470,7 @@ class Host:
         self.anWorkListDot.append(content)
 
     self.anWorkListDot.append("} // close cfg subgraph")
-    self.anWorkListDot.append("\n")
+    self.anWorkListDot.append(f"{os.linesep}")
 
 
   def getCachedInstrSim(self,

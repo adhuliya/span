@@ -33,7 +33,8 @@ from span.util.common_util import \
 # BOUND START: SystemWideSwitches
 ################################################
 
-LL = LL0 = LL1 = LL2 = LL3 = LL4 = LL5 = False
+LL: int = 0 # Log level. One of 0,1,2,3,4,5 (set via command line)
+LL0 = LL1 = LL2 = LL3 = LL4 = LL5 = False
 def setupLL(count):
   """Call this function to enact global LL settings."""
   global LL, LL0, LL1, LL2, LL3, LL4, LL5
@@ -45,7 +46,8 @@ def setupLL(count):
   LL4 = LL >= 4 # shows logs in the Host
   LL5 = LL >= 5 # shows logs in the Analyses spec too
 
-VV:int = 0  # Verbosity. One of 0,1,2,3 (set via command line)
+
+VV:int = 0  # Verbosity. One of 0,1,2,3,4,5 (set via command line)
 VV0 = VV1 = VV2 = VV3 = VV4 = VV5 = False
 def setupVV(count):
   """Call this function to enact global VV settings."""
@@ -58,7 +60,8 @@ def setupVV(count):
   VV4 = VV >= 4 # prints Top values in dfv too
   VV5 = VV >= 5 # prints id() of dfv objects too
 
-DD:int = 0  # Detail. One of 0,1,2,3 (set via command line)
+
+DD:int = 0  # Detail. One of 0,1,2,3,4,5 (set via command line)
 DD0 = DD1 = DD2 = DD3 = DD4 = DD5 = False
 def setupDD(count):
   """Call this function to enact global DD settings."""
@@ -71,7 +74,8 @@ def setupDD(count):
   DD4 = DD >= 4
   DD5 = DD >= 5 # prints id() of dfv objects too
 
-CC:int = 0  # Constraint Checks. One of 0,1,2,3 (set via command line)
+
+CC:int = 0  # Constraint Checks. One of 0,1,2,3,4,5 (set via command line)
 CC0 = CC1 = CC2 = CC3 = CC4 = CC5 = False
 def setupCC(count):
   """Call this function to enact global CC settings."""

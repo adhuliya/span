@@ -18,7 +18,6 @@ from span.ir.tunit import TranslationUnit
 from span.util import ff
 
 import span.util.util as util
-from span.util.util import LS, AS
 import span.ir.types as types
 from span.ir.types import (
   VarNameT, RecordT, NodeIdT, DirectionT,
@@ -339,7 +338,7 @@ class DirectionDT:
 
   def calcInOut(self,
       node: cfg.CfgNode,
-      fcfg: cfg.FeasibleEdges
+      fesEdges: cfg.FeasibleEdges
   ) -> Tuple[DfvPairL, ChangePairL]:
     """Merges dfv from feasible edges."""
     raise NotImplementedError()
@@ -407,7 +406,7 @@ class ForwardDT(DirectionDT):
 
   def calcInOut(self,
       node: cfg.CfgNode,
-      fcfg: cfg.FeasibleEdges
+      fesEdges: cfg.FeasibleEdges
   ) -> Tuple[DfvPairL, ChangePairL]:
     """Forward: Merges OUT of feasible predecessors.
 
@@ -421,7 +420,7 @@ class ForwardDT(DirectionDT):
 
     newIn = topNdfv.dfvIn  # don't enforce_monotonicity
     for predEdge in predEdges:
-      f = fcfg.isFeasibleEdge(predEdge)
+      f = fesEdges.isFeasibleEdge(predEdge)
       if util.LL4: LDB(" Edge(%s): %s",
                        "Feasible" if f else "Infeasible", predEdge)
       if f:
@@ -476,7 +475,7 @@ class BackwardDT(DirectionDT):
   def generateInitialWorklist(self) -> FastNodeWorkList:
     """Defaults to reverse post order."""
     fwl = FastNodeWorkList(self.cfg.nodeMap, postOrder=True)
-    if LS: LDB("Backward_Worklist_Init: %s", fwl)
+    if util.LL0: LDB("Backward_Worklist_Init: %s", fwl)
     return fwl
 
 
@@ -500,7 +499,7 @@ class BackwardDT(DirectionDT):
       """Add the predecessors."""
       for predEdge in node.predEdges:
         pred = predEdge.src
-        if LS: LDB("AddingNodeToWl(pred): Node_%s: %s (%s)",
+        if util.LL0: LDB("AddingNodeToWl(pred): Node_%s: %s (%s)",
                          pred.id, pred.insn, pred.insn.info)
         self.fwl.add(pred)
 
@@ -509,7 +508,7 @@ class BackwardDT(DirectionDT):
 
   def calcInOut(self,
       node: cfg.CfgNode,
-      fcfg: cfg.FeasibleEdges
+      fesEdges: cfg.FeasibleEdges
   ) -> Tuple[DfvPairL, ChangePairL]:
     """Backward: Merges IN of feasible successors.
 
@@ -523,7 +522,7 @@ class BackwardDT(DirectionDT):
 
     newOut = topNdfv.dfvOut  # don't enforce_monotonicity
     for succEdge in succEdges:
-      f = fcfg.isFeasibleEdge(succEdge)
+      f = fesEdges.isFeasibleEdge(succEdge)
       if util.LL4: LDB(" Edge(%s): %s",
                        "Feasible" if f else "Infeasible", succEdge)
       if f:
@@ -1774,7 +1773,7 @@ class ValueAnalysisAT(AnalysisAT):
 
     localized = DfvPairL(newDfvIn, outDfv)
     localized = self.getBoundaryInfo(localized, ipa=True, forFunc=calleeFuncObj)
-    if LS: LDB("CalleeCallSiteDfv(Localized): %s", localized)
+    if util.LL0: LDB("CalleeCallSiteDfv(Localized): %s", localized)
     return localized
 
 
@@ -1957,7 +1956,7 @@ class ValueAnalysisAT(AnalysisAT):
       if not len(rhsVarNames):
         if util.VV1: print(f"NO_RVALUE_NAMES: {self.__class__.__name__},"
                            f" {self.func.name}, {rhs}, {rhs.info}")
-        if LS: LWR(f"NO_RVALUE_NAMES: {self.__class__.__name__},"
+        if util.LL0: LWR(f"NO_RVALUE_NAMES: {self.__class__.__name__},"
                    f" {self.func.name}, {rhs}, {rhs.info}"
                    f"\n  Hence treating it as NopI.")
         return {}  # i.e. NopI
