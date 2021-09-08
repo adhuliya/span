@@ -942,7 +942,7 @@ class CondReadI(InstrIT):
            f"instr.CondReadI({repr(self.lhs)}, {repr(self.rhs)})"
 
 
-class FilterI(InstrIT):
+class LiveLocationsI(InstrIT):
   """Set of vars dead at current program point."""
 
   __slots__ : List[str] = ["varNames"]
@@ -962,7 +962,7 @@ class FilterI(InstrIT):
   def __eq__(self, other) -> bool:
     if self is other:
       return True
-    if not isinstance(other, FilterI):
+    if not isinstance(other, LiveLocationsI):
       return NotImplemented
     equal = True
     if not self.varNames == other.varNames:

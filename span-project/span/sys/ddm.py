@@ -61,7 +61,7 @@ ExRead_Instr__Name: str = analysis.AnalysisAT.ExRead_Instr.__name__
 CondRead_Instr__Name: str = analysis.AnalysisAT.CondRead_Instr.__name__
 Conditional_Instr__Name: str = analysis.AnalysisAT.Conditional_Instr.__name__
 UnDefVal_Instr__Name: str = analysis.AnalysisAT.UnDefVal_Instr.__name__
-Live_Instr__Name: str = analysis.AnalysisAT.Filter_Instr.__name__
+Live_Instr__Name: str = analysis.AnalysisAT.LiveLocations_Instr.__name__
 
 
 # BOUND END  : Module_Storage__for__Optimization

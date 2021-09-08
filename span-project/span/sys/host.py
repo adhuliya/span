@@ -29,7 +29,7 @@ from span.ir.conv import Forward, Backward, ForwBack, NULL_OBJ_NAME
 
 from span.ir.instr import (
   InstrIT, III, ExReadI, AssignI, CallI, CondI,
-  CondReadI, FilterI,
+  CondReadI, LiveLocationsI,
   getFormalInstrStr, getCallExpr,
   FAILED_INSN_SIM
 )
@@ -73,7 +73,7 @@ ExRead_Instr__Name: str = AnalysisAT.ExRead_Instr.__name__
 CondRead_Instr__Name: str = AnalysisAT.CondRead_Instr.__name__
 Conditional_Instr__Name: str = AnalysisAT.Conditional_Instr.__name__
 UnDefVal_Instr__Name: str = AnalysisAT.UnDefVal_Instr.__name__
-Filter_Instr__Name: str = AnalysisAT.Filter_Instr.__name__
+Filter_Instr__Name: str = AnalysisAT.LiveLocations_Instr.__name__
 # BOUND END  : Module_Storage__for__Optimization
 
 
@@ -1305,12 +1305,12 @@ class Host:
 
     simVal: Opt[Set[VarNameT]] = simToLive.val
     if simToLive == SimPending:
-      newInsn = FilterI(ir.getNamesEnv(self.func))
+      newInsn = LiveLocationsI(ir.getNamesEnv(self.func))
     elif simVal and lhs.name in simVal:
       self.setCachedInstrSim(node.id, simName, insn, lhs, insn)
       return None  # i.e. lhs is live, hence no simplification
     elif simVal is not None:
-      newInsn = FilterI(ir.getNamesEnv(self.func) - simVal)
+      newInsn = LiveLocationsI(ir.getNamesEnv(self.func) - simVal)
     else:
       assert False, f"{simVal}"
 

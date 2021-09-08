@@ -415,9 +415,9 @@ class EvenOddA(analysis.AnalysisAT):
     return DfvPairL(dfvIn, dfvIn)
 
 
-  def Filter_Instr(self,
+  def LiveLocations_Instr(self,
       nodeId: types.NodeIdT,
-      insn: instr.FilterI,
+      insn: instr.LiveLocationsI,
       nodeDfv: DfvPairL
   ) -> DfvPairL:
     """Filter away dead variables.

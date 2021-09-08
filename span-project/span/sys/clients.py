@@ -143,7 +143,7 @@ def recordLivenessInfoOfAn(anName: AnNameT,
   global anReadyForLivenessSim, anAcceptingLivenessSim
   overridesLiveInstr = False
 
-  liveInstrName = AnalysisAT.Filter_Instr.__name__
+  liveInstrName = AnalysisAT.LiveLocations_Instr.__name__
   anClassMembers = anClass.__dict__
   if liveInstrName in anClassMembers:
     anAcceptingLivenessSim.add(anName)

@@ -58,7 +58,7 @@ from span.ir.conv import (
 
 from span.ir.instr import (
   InstrIT, III, ExReadI, AssignI, CallI, CondI,
-  CondReadI, FilterI, NopI, ReturnI, GotoI, UseI, UnDefValI,
+  CondReadI, LiveLocationsI, NopI, ReturnI, GotoI, UseI, UnDefValI,
   getFormalInstrStr, getCallExpr, getCalleeFuncName,
   FAILED_INSN_SIM, ASSIGN_INSTR_IC,
 )
@@ -909,7 +909,7 @@ class TranslationUnit:
       for var in insn.vars:
         iType = self.inferTypeOfVal(var)
 
-    elif isinstance(insn, FilterI):
+    elif isinstance(insn, LiveLocationsI):
       pass
 
     elif isinstance(insn, CondReadI):
