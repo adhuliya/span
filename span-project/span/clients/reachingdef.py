@@ -12,6 +12,9 @@ This (and every) analysis subclasses,
 """
 
 import logging
+
+from span.util.consts import TopAsBool, BotAsBool
+
 LOG = logging.getLogger(__name__)
 LDB, LIN = LOG.debug, LOG.info
 
@@ -274,12 +277,12 @@ class OverallL(dfv.OverallL):
     self.val = {} if self.val is None else self.val
 
     if self.top: # and not defaultVal.top:
-      top = dfv.getTopBotComp(self.func, self.anName, True, self.compL)
+      top = dfv.getTopBotComp(self.func, self.anName, TopAsBool, self.compL)
       selfGetDefaultVal = self.getDefaultVal
       self.val = {vName: top for vName in self.getAllVars(self.func)
                   if not selfGetDefaultVal(vName).top}
     if self.bot: # and not defaultVal.bot:
-      bot = dfv.getTopBotComp(self.func, self.anName, False, self.compL)
+      bot = dfv.getTopBotComp(self.func, self.anName, BotAsBool, self.compL)
       selfGetDefaultVal = self.getDefaultVal
       self.val = {vName: bot for vName in self.getAllVars(self.func)
                   if not selfGetDefaultVal(vName).bot}
@@ -291,7 +294,7 @@ class OverallL(dfv.OverallL):
         del self.val[varName]  # since default value
     else:
       val =  val if len(val) < 100 else \
-        dfv.getTopBotComp(self.func, self.anName, False, self.compL) #ToSaveMemory
+        dfv.getTopBotComp(self.func, self.anName, BotAsBool, self.compL) #ToSaveMemory
       self.val[varName] = val
 
 

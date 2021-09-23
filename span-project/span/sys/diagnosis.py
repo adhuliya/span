@@ -18,7 +18,7 @@ import span.util.util as util
 from span.util.util import LS, Timer
 
 from span.api.analysis import (
-  AnalysisAClassT,
+  AnalysisAT_T,
 )
 from span.api.dfv import DfvPairL
 from span.ir.types import (
@@ -154,12 +154,12 @@ def runDiagnosisNew(
 
 def loadAnalyses(
     anNames: List[AnNameT]
-) -> Dict[AnNameT, Type[AnalysisAClassT]]:
+) -> Dict[AnNameT, Type[AnalysisAT_T]]:
   """Loads the class of the given analysis names.
 
   It throws ValueError, if an Analysis' Name is not found.
   """
-  anClassMap: Dict[AnNameT, Type[AnalysisAClassT]] = {}
+  anClassMap: Dict[AnNameT, Type[AnalysisAT_T]] = {}
 
   for anName in anNames:
     anClass = clients.getAnClass(anName) #NOTE: May throw ValueError.

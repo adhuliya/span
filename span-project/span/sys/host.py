@@ -56,7 +56,7 @@ import span.sys.clients as clients
 import span.sys.ddm as ddm
 from span.sys.stats import HostStats, GST, GlobalStats
 from span.sys.sim import SimRecord
-from span.sys.common import CallSitePair, AnDfvPairDict
+from span.sys.common import CalleeAndCallSite, AnDfvPairDict
 from span.api.dfv import AnResult # replacing span.sys.common.AnResult
 import span.ir.cfg as cfg
 import span.ir.tunit as irTUnit
@@ -516,9 +516,9 @@ class Host:
     if util.LL4: LDB(f"AddingParticipantAnalyses(HostSetup) END.")
 
     # Host writes to this map, IpaHost reads from this map
-    self.callSiteDfvMap: Dict[CallSitePair, AnDfvPairDict] = dict()
+    self.callSiteDfvMap: Dict[CalleeAndCallSite, AnDfvPairDict] = dict()
     # IpaHost writes to this map, Host reads from this map
-    self.callSiteDfvMapIpaHost: Dict[CallSitePair, AnDfvPairDict] = dict()
+    self.callSiteDfvMapIpaHost: Dict[CalleeAndCallSite, AnDfvPairDict] = dict()
 
     # add nodes that have one or more feasible pred edge
     if util.LL4: LDB(f"AddingFeasibleNodes(HostSetup) START.")
@@ -1082,7 +1082,7 @@ class Host:
   def processCallReturns(self, #IPA
       node: cfg.CfgNode,
       callE: CallE, # must not be a pointer-call
-      nodeDfv: DfvPairL
+      callerNodeDfv: DfvPairL
   ) -> DfvPairL:
     """Analyzes the return values/variables of a call."""
     insn = node.insn
@@ -1093,9 +1093,9 @@ class Host:
 
     # adding Top to avoid unintended widening of params (esp. IntervalA)
     if self.activeAnDirn == Forward:
-      nextNodeDfv = DfvPairL(nodeDfv.dfvIn, self.activeAnTop)
+      nextNodeDfv = DfvPairL(callerNodeDfv.dfvIn, self.activeAnTop)
     elif self.activeAnDirn == Backward:
-      nextNodeDfv = DfvPairL(self.activeAnTop, nodeDfv.dfvOut)
+      nextNodeDfv = DfvPairL(self.activeAnTop, callerNodeDfv.dfvOut)
     else:
       raise ValueError(f"{self.activeAnDirn}")
 
@@ -1116,15 +1116,15 @@ class Host:
 
     # restore in/out dfv
     if self.activeAnDirn == Forward:
-      nextNodeDfv.dfvOut = nodeDfv.dfvOut
+      nextNodeDfv.dfvOut = callerNodeDfv.dfvOut
       nextNodeDfv.dfvOutTrue = nextNodeDfv.dfvOutFalse = nextNodeDfv.dfvOut
     elif self.activeAnDirn == Backward:
-      nextNodeDfv.dfvIn = nodeDfv.dfvIn
+      nextNodeDfv.dfvIn = callerNodeDfv.dfvIn
     else:
       raise ValueError(f"{self.activeAnDirn}")
 
     if util.LL4:
-      callSitePair = CallSitePair(funcName, genGlobalNodeId(self.func.id, node.id))
+      callSitePair = CalleeAndCallSite(funcName, genGlobalNodeId(self.func.id, node.id))
       LDB("CalleeCallSiteDfv(AfterParams): (%s): %s", callSitePair, nextNodeDfv)
 
     return nextNodeDfv
@@ -1174,7 +1174,7 @@ class Host:
       raise ValueError(f"{self.activeAnDirn}")
 
     if util.LL4:
-      callSitePair = CallSitePair(funcName, genGlobalNodeId(self.func.id, node.id))
+      callSitePair = CalleeAndCallSite(funcName, genGlobalNodeId(self.func.id, node.id))
       LDB("CalleeCallSiteDfv(AfterParams): (%s): %s", callSitePair, nextNodeDfv)
 
     return nextNodeDfv
@@ -1266,11 +1266,11 @@ class Host:
     TODO: check the logic.
     """
     needed = True
-    if not self.activeAnObj.needsLhsVarToNilSim:
+    if self.activeAnObj.needsLhsVarToNilSim:
+      enableLivenessSupport = self.activeAnAcceptsLivenessSim
+    else:
       needed = False
       enableLivenessSupport = False
-    else:
-      enableLivenessSupport = self.activeAnAcceptsLivenessSim
 
     if util.LL4: LDB("ProvidingLivenessSupport?: %s (LivenessSupportNeeded?: %s)",
                      enableLivenessSupport, needed)
@@ -2307,7 +2307,7 @@ class Host:
     Update the results for the call site.
     This method is only called by the Host.
     """
-    callSitePair = CallSitePair(calleeName, genGlobalNodeId(self.func.id, nodeId))
+    callSitePair = CalleeAndCallSite(calleeName, genGlobalNodeId(self.func.id, nodeId))
     if callSitePair not in self.callSiteDfvMap:
       dfvDict = self.callSiteDfvMap[callSitePair] = AnDfvPairDict()
     else:
@@ -2332,7 +2332,7 @@ class Host:
     This method is only called by the Host.
     """
     if not calleeName: return None # can happen in case of #INTRA analysis
-    callSitePair = CallSitePair(calleeName, genGlobalNodeId(self.func.id, nodeId))
+    callSitePair = CalleeAndCallSite(calleeName, genGlobalNodeId(self.func.id, nodeId))
     if callSitePair not in self.callSiteDfvMapIpaHost:
       return None
     else:
@@ -2340,7 +2340,7 @@ class Host:
 
 
   def setCallSiteDfvsIpaHost(self, #IPA
-      callSitePair: CallSitePair,
+      callSitePair: CalleeAndCallSite,
       newResults: AnDfvPairDict,
   ) -> bool:
     """
@@ -2373,7 +2373,7 @@ class Host:
 
 
   def getCallSiteDfvsIpaHost(self,
-  ) -> Dict[CallSitePair, AnDfvPairDict]:
+  ) -> Dict[CalleeAndCallSite, AnDfvPairDict]:
     """
     Returns the NodeDfvL objects for each analysis at the call site nodes.
     """

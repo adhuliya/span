@@ -251,11 +251,7 @@ class StrongLiveVarsA(AnalysisAT):
     overallTop = self.overallTop.getCopy()
     overallTop.func = func # IMPORTANT
 
-    inBi = overallTop
-    outBi = overallTop if entryFunc else\
-      OverallL(func, val=getNamesGlobal(self.func))
-
-    if ipa:
+    if ipa: #IPA
       dfvIn = cast(OverallL, nodeDfv.dfvIn.getCopy())
       dfvOut = cast(OverallL, nodeDfv.dfvOut.getCopy())
       dfvIn.func = dfvOut.func = func
@@ -266,7 +262,22 @@ class StrongLiveVarsA(AnalysisAT):
       if dfvOut.val: dfvOut.val = dfvOut.val & vNames
       return DfvPairL(dfvIn, dfvOut)
 
-    if nodeDfv: inBi, outBi = nodeDfv.dfvIn, nodeDfv.dfvOut
+    elif nodeDfv: #INTRA but explicit value given
+      inBi, outBi = nodeDfv.dfvIn, nodeDfv.dfvOut
+
+    else: #INTRA
+      inBi = overallTop
+      outBi = overallTop if entryFunc else \
+        OverallL(func, val=getNamesGlobal(func))
+      # Mark returned variables as live.
+      retVars = set()
+      for e in func.getReturnExprList():
+        if isinstance(e, expr.VarE):
+          retVars.add(e.name)
+          if isinstance(e.type, types.RecordT):
+            e.type.getNamesOfType(None, prefix=e.name)
+      outBi.val = outBi.val | retVars
+
     return DfvPairL(inBi, outBi)  # good to create a copy
 
 
@@ -318,7 +329,7 @@ class StrongLiveVarsA(AnalysisAT):
       insn: instr.InstrIT,
       nodeDfv: DfvPairL
   ) -> DfvPairL:
-    """An identity backward transfer function."""
+    """A backward identity transfer function."""
     nodeOut = nodeDfv.dfvOut
     nodeIn = nodeDfv.dfvIn
     if nodeIn is nodeOut:
@@ -377,7 +388,7 @@ class StrongLiveVarsA(AnalysisAT):
   # BOUND START: Normal_Instructions
   ################################################
 
-  def Num_Assign_Instr(self,
+  def Assign_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.AssignI,
       nodeDfv: DfvPairL,
@@ -387,43 +398,18 @@ class StrongLiveVarsA(AnalysisAT):
     Convention:
       Type of lhs and rhs is numeric.
     """
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Ptr_Assign_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: DfvPairL,
-      calleeBi: Opt[DfvPairL] = None,  #IPA
-  ) -> DfvPairL:
-    """Instr_Form: pointer: lhs = rhs.
-    Convention:
-      Type of lhs and rhs is a record.
-    """
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
-
-
-  def Record_Assign_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.AssignI,
-      nodeDfv: DfvPairL,
-      calleeBi: Opt[DfvPairL] = None,  #IPA
-  ) -> DfvPairL:
-    """Instr_Form: record: lhs = rhs.
-    Convention:
-      Type of lhs and rhs is a record.
-    """
-    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv)
+    return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv, calleeBi)
 
 
   def Call_Instr(self,
       nodeId: types.NodeIdT,
       insn: instr.CallI,
       nodeDfv: DfvPairL,
+      calleeBi: Opt[DfvPairL] = None,  #IPA
   ) -> DfvPairL:
     dfvOut = nodeDfv.dfvOut
     if dfvOut.bot: return DfvPairL(dfvOut, dfvOut)
-    varNames = self.processCallE(insn.arg)
+    varNames = self.processCallE(insn.arg, nodeDfv, calleeBi)
     return self._killGen(nodeDfv, gen=varNames)
 
 
@@ -435,12 +421,15 @@ class StrongLiveVarsA(AnalysisAT):
     return self._killGen(nodeDfv, gen={insn.arg.name})
 
 
-  def Return_Var_Instr(self,
-      nodeId: types.NodeIdT,
-      insn: instr.ReturnI,
-      nodeDfv: DfvPairL
-  ) -> DfvPairL:
-    return self._killGen(nodeDfv, gen={insn.arg.name})
+  # def Return_Var_Instr(self,
+  #     nodeId: types.NodeIdT,
+  #     insn: instr.ReturnI,
+  #     nodeDfv: DfvPairL
+  # ) -> DfvPairL:
+  #   # Consider return instruction as NopI.
+  #   #   In IPA liveness of returned variables is context dependent.
+  #   #   In Intra analysis case, mark all returned variables as line at BI.
+  #   # return self._killGen(nodeDfv, gen={insn.arg.name})
 
   ################################################
   # BOUND END  : Normal_Instructions
@@ -502,6 +491,7 @@ class StrongLiveVarsA(AnalysisAT):
       lhs: expr.ExprET,
       rhs: expr.ExprET,
       nodeDfv: DfvPairL,
+      calleeBi: Opt[DfvPairL] = None,  #IPA
   ) -> DfvPairL:
     """Processes all kinds of assignment instructions.
     The record types are also handled without any special treatment."""
@@ -526,7 +516,10 @@ class StrongLiveVarsA(AnalysisAT):
       return DfvPairL(dfvOut, dfvOut)
 
     if rhsIsCallExpr:
-      rhsNames = self.processCallE(rhs)
+      rhsNames = self.processCallE(rhs, nodeDfv, calleeBi)
+      for name in lhsNames:
+        if name not in getNamesGlobal(self.func):
+          rhsNames.remove(name)
     else:
       rhsNames = getNamesInExprMentionedIndirectly(self.func, rhs) \
                  | getNamesUsedInExprSyntactically(rhs)
@@ -543,11 +536,18 @@ class StrongLiveVarsA(AnalysisAT):
 
   def processCallE(self,
       e: expr.ExprET,
+      nodeDfv: DfvPairL,
+      calleeBi: Opt[DfvPairL] = None,  #IPA
   ) -> Set[types.VarNameT]:
     assert isinstance(e, expr.CallE), f"{e}"
-    names = getNamesGlobal(self.func)
-    names |= getNamesUsedInExprSyntactically(e)
-    return names
+    if calleeBi: #IPA
+      dfvIn = calleeBi.dfvIn.localize(self.func)
+      dfvIn.addLocals(nodeDfv.dfvOut)
+      return dfvIn.val
+    else: #INTRA
+      names = getNamesGlobal(self.func)
+      names |= getNamesUsedInExprSyntactically(e)
+      return names
 
 
   @staticmethod

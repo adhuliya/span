@@ -120,7 +120,7 @@ LS = US = AS = GD = False  # IMPORTANT
 
 def dsf(count, char='>') -> str:
   """
-  Depth String Format.
+  Depth in String Format.
   E.g. if count is 8, the return value is, ">>>>> >>>"
   E.g. if count is 15, the return value is, ">>>>> >>>>> >>>>>"
   E.g. if count is 16, the return value is, ">>>>> >>>>> >>>>> >"

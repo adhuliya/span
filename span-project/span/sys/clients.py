@@ -24,7 +24,7 @@ from span.ir.constructs import Func
 import span.ir.conv as irConv
 from span.api.analysis import (
   AnNameT, AnalysisAT, SimNameT, SimNames,
-  DirectionDT, ForwardD, BackwardD, AnalysisAClassT,
+  DirectionDT, ForwardD, BackwardD, AnalysisAT_T,
   Deref__to__Vars__Name, Num_Var__to__Num_Lit__Name, LhsVar__to__Nil__Name,
   Num_Bin__to__Num_Lit__Name, Cond__to__UnCond__Name, Node__to__Nil__Name,
 )
@@ -32,7 +32,7 @@ import span.ir.types as types
 
 # list of all concrete analysis class given
 # this dictionary is used with in package span.sys only.
-analyses: Dict[AnNameT, Type[AnalysisAClassT]] = dict()
+analyses: Dict[AnNameT, Type[AnalysisAT_T]] = dict()
 # record of analyses names, that implement a particular expr evaluation
 # NOTE: if no analysis simplifies a particular sim func, still
 # add an empty set corresponding to the key.
@@ -180,7 +180,7 @@ def getSimNamesNeeded(anClass: Type[AnalysisAT]) -> Set[str]:
 
 @functools.lru_cache(32)
 def getAnClass(anName: AnNameT
-) -> Opt[Type[AnalysisAClassT]]:
+) -> Opt[Type[AnalysisAT_T]]:
   if anName in analyses:
     return analyses[anName]
   raise ValueError(f"UnknownAnalysis: {anName}")

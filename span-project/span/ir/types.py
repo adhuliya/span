@@ -15,6 +15,9 @@ modules from SPAN's `span.util` package.
 # FIXME: make all Type objects immutable. Till then assume immutable.
 
 import logging
+
+from span.ir.constructs import Func
+
 LOG = logging.getLogger(__name__)
 
 from typing import TypeVar, List, Optional as Opt, Tuple, Dict,\
@@ -23,13 +26,14 @@ import functools
 
 from span.util import util
 from span.util.util import LS
+import span.util.consts as consts
 from span.util.consts import PTR_INDLEV_INVALID
 
 ################################################
 # BOUND START: useful_types
 ################################################
 
-T = TypeVar("T")
+T = TypeVar("T")  # a generic data type
 
 FileNameT = str
 
@@ -76,6 +80,8 @@ InstrCodeT = int  # instruction codes type
 DirectionT = str  # analysis direction (see span.ir.conv)
 
 FormalStrT = str
+
+TopBotT = bool # E.g. False == Bot, True == Top
 
 ################################################
 # BOUND END  : useful_types
@@ -847,7 +853,7 @@ class VarNameInfo:  # IMPORTANT: don't change its position
   The name of an object cannot contain a pointer dereference.
   """
 
-  __slots__ : List[str] = ["name", "type", "hasArray", "bySpan"]
+  __slots__ : List[str] = ["name", "type", "hasArray", "bySpan", "id", "scope", "func"]
 
   def __init__(self,
       name: VarNameT,
@@ -859,6 +865,13 @@ class VarNameInfo:  # IMPORTANT: don't change its position
     self.type: Type = t
     self.hasArray: bool = hasArray
     self.bySpan = bySpan
+
+    self.id: int = 0
+    """A unique id of this variable."""
+    self.scope: consts.VarScope = consts.VarScope.LOCAL
+    """Scope of the variable."""
+    self.func: Opt[Func] = None
+    """If local, which function does it belong to."""
 
 
   def mayUpdate(self) -> bool:

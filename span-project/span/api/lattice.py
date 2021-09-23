@@ -17,7 +17,7 @@ from span.util.consts import TOP_STR, BOT_STR
 ChangedT = bool  # Is the value changed?
 Changed: ChangedT = True  # For unchanged value, use `not Changed`.
 
-BoundLatticeLT = TypeVar('BoundLatticeLT', bound='LatticeLT')
+LatticeLT_T = TypeVar('LatticeLT_T', bound='LatticeLT')
 
 
 class LatticeLT:
@@ -30,7 +30,7 @@ class LatticeLT:
       top: bool = False,  # the most unsound value
       bot: bool = False   # the most sound value (max over-approximation)
   ) -> None:
-    if bot and top:
+    if top and bot:
       raise ValueError(f"{top}, {bot}: Both can't be True.")
     self.top = top
     self.bot = bot
@@ -47,7 +47,9 @@ class LatticeLT:
     Returns:
       (Lattice, Changed): (glb of self and other, glb != self)
     """
-    return NotImplemented
+    res = basicMeetOp(self, other)
+    assert res is not None, f"{res}, {self}, {other}"
+    return res
 
 
   def widen(self,  #for #IPA and for infinite lattice heights
@@ -105,7 +107,7 @@ class LatticeLT:
     raise NotImplementedError()
 
 
-BoundDataLT = TypeVar('BoundDataLT', bound='DataLT')
+DataLT_T = TypeVar('DataLT_T', bound='DataLT')
 
 
 class DataLT(LatticeLT):
@@ -171,7 +173,9 @@ class DataLT(LatticeLT):
       forFunc: constructs.Func,
       keepParams: bool = False,
   ) -> 'DataLT':
-    """Returns self's copy localized for the given forFunc."""
+    """Returns self's copy localized for the given forFunc.
+    It basically drops all the non-environment names in the lattice of the function.
+    """
     raise NotImplementedError
 
 
@@ -250,7 +254,7 @@ class DataLT(LatticeLT):
     return self.__str__()
 
 
-def mergeAll(values: Iterable[BoundLatticeLT]) -> BoundLatticeLT:
+def mergeAll(values: Iterable[LatticeLT]) -> LatticeLT:
   """Takes meet of all the values of LatticeLT type.
   All values must be the same type."""
   result = None
@@ -269,10 +273,11 @@ def mergeAll(values: Iterable[BoundLatticeLT]) -> BoundLatticeLT:
   return result  # type: ignore
 
 
-def basicMeetOp(first: types.T, second: types.T) -> Opt[Tuple[types.T, ChangedT]]:
+def basicMeetOp(first: LatticeLT_T, second: LatticeLT_T) -> Opt[Tuple[LatticeLT_T, ChangedT]]:
   """A basic meet operation common to all lattices.
   If this fails the lattices can do more complicated operations.
   """
+  assert first.__class__ == second.__class__, f"{first}, {second}"
   if first is second: return first, not Changed
   if first.bot: return first, not Changed
   if second.top: return first, not Changed
@@ -283,10 +288,11 @@ def basicMeetOp(first: types.T, second: types.T) -> Opt[Tuple[types.T, ChangedT]
   return None  # i.e. can't compute
 
 
-def basicLessThanTest(first: LatticeLT, second: LatticeLT) -> Opt[bool]:
+def basicLessThanTest(first: LatticeLT_T, second: LatticeLT_T) -> Opt[bool]:
   """A basic less than test common to all lattices.
   If this fails the lattices can do more complicated tests.
   """
+  assert first.__class__ == second.__class__, f"{first}, {second}"
   if first.bot: return True
   if second.top: return True
   if second.bot: return False
@@ -295,10 +301,11 @@ def basicLessThanTest(first: LatticeLT, second: LatticeLT) -> Opt[bool]:
   return None  # i.e. can't decide
 
 
-def basicEqualsTest(first: LatticeLT, second: LatticeLT) -> Opt[bool]:
+def basicEqualsTest(first: LatticeLT_T, second: LatticeLT_T) -> Opt[bool]:
   """A basic equality test common to all lattices.
   If this fails the lattices can do more complicated tests.
   """
+  assert first.__class__ == second.__class__, f"{first}, {second}"
   if first is second: return True
   fTop, fBot, sTop, sBot = first.top, first.bot, second.top, second.bot
   if fTop and sTop: return True
@@ -308,7 +315,7 @@ def basicEqualsTest(first: LatticeLT, second: LatticeLT) -> Opt[bool]:
   return None  # i.e. can't decide
 
 
-def getBasicString(obj: LatticeLT) -> Opt[str]:
+def getBasicString(obj: LatticeLT_T) -> Opt[str]:
   """Utility function to convert Top/Bot lattice values to a readable string."""
   if obj.bot: return f"'{BOT_STR}'"
   if obj.top: return f"'{TOP_STR}'"

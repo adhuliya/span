@@ -21,7 +21,7 @@ from typing import (
 
 import span.util.ff as ff
 from span.util import util
-from span.api.analysis import AnalysisNameT, AnalysisAT, AnalysisAClassT, ValueAnalysisAT
+from span.api.analysis import AnalysisNameT, AnalysisAT, AnalysisAT_T, ValueAnalysisAT
 from span.api.dfv import DfvPairL
 from span.ir.constructs import Func
 from span.ir.types import (
@@ -117,7 +117,7 @@ class ArrayIndexOutOfBoundsR(DiagnosisRT):
       method: MethodDetail,
       result: Any, # Any type that a particular implementation needs.
       dfvs: Dict[FuncNameT, Dict[AnNameT, AnResult]],
-      anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
+      anClassMap: Dict[AnNameT, Type[AnalysisAT_T]],
   ) -> None:
     print(f"AnalysisType: {self.__class__.__name__}")
     print(f"Method: {method}")

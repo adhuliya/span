@@ -22,7 +22,7 @@ from span.api.dfv import DfvPairL
 import span.util.util as util
 
 
-class CallSitePair:
+class CalleeAndCallSite:
   """A pair of function name (callee) and the call site.
   Useful in associating function name with call site,
   especially when its a function pointer based call.
@@ -65,7 +65,7 @@ class CallSitePair:
   def __eq__(self, other):
     if self is other: return True
     equal = True
-    if not isinstance(other, CallSitePair):
+    if not isinstance(other, CalleeAndCallSite):
       equal = False
     elif not self.callSite == other.callSite:
       equal = False
@@ -119,12 +119,24 @@ class AnDfvPairDict:
     self.dfvs[anName] = nDfv
 
 
-  def getCopy(self):
-    return AnDfvPairDict({k: v.getCopy() for k, v in self.dfvs.items()}, self.depth)
+  def getCopy(self, deep: bool = True):
+    if deep:
+      return AnDfvPairDict({k: v.getCopy() for k, v in self.dfvs.items()}, self.depth)
+    else:
+      return AnDfvPairDict(self.dfvs.copy(), self.depth)
 
 
-  def getCopyShallow(self):
-    return AnDfvPairDict(self.dfvs.copy(), self.depth)
+  def swapBiInOut(self) -> 'AnDfvPairDict':
+    """Swaps IN and OUT. Returns a copy.
+    This is useful in cases like the OUT of the end node in
+    the global function is the IN of the main() function,
+    and the IN of global function is useful in the OUT of main()
+    function in case of backward analyses.
+    """
+    newBi = AnDfvPairDict(None, depth=self.depth)
+    for anName, nDfv in self.dfvs.items():
+      newBi[anName] = DfvPairL(nDfv.dfvOut, nDfv.dfvIn)
+    return newBi
 
 
   def __contains__(self, anName: AnNameT):
@@ -197,5 +209,8 @@ class AnDfvPairDict:
 
 
   def __repr__(self): return self.__str__()
+
+
+
 
 

@@ -4,6 +4,11 @@
 # Copyright (C) 2021 Anshuman Dhuliya
 
 """Project wide constants (e.g. messages / strings)."""
+from enum import Enum
+
+
+TopAsBool, BotAsBool = True, False
+
 
 START_BB_ID_NOT_MINUS_ONE = (
   "Start BB id is not -1 in the given input"
@@ -52,6 +57,26 @@ CMD_F_SLANG_BUG = ("scan-build -V"
                    " clang -c -std=c99 {includesString} {cFileName}")
 ################################################
 # BOUND END  : for_span_testing_module
+################################################
+
+################################################
+# BOUND START: variable_scope
+################################################
+
+class VarScope(Enum):
+  GLOBAL = 0
+  """A truly global variable not defined in any function."""
+  LOCAL = 1
+  """A local variable that is not static, strict or address taken."""
+  LOCAL_STATIC = 2
+  """A static local has a lifetime beyond the local variables."""
+  LOCAL_ADDR_TAKEN = 3
+  """The address of the local is taken hence it can be assumed a global."""
+  LOCAL_STRICT = 4
+  """Value of local variable is not dependent on globals or function arguments."""
+
+################################################
+# BOUND END  : variable_scope
 ################################################
 
 # DISABLE_CHECKER_STRING =

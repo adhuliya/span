@@ -46,7 +46,7 @@ from span.api.dfv import (
   OLD_IN_OUT, NEW_IN_ONLY, DfvPairL, ChangePairL,
 )
 import span.api.dfv as dfv
-from span.api.lattice import ChangedT, Changed, DataLT, mergeAll
+from span.api.lattice import ChangedT, Changed, DataLT, mergeAll, DataLT_T
 
 AnNameT = AnalysisNameT = str
 
@@ -585,7 +585,7 @@ class AnalysisAT:
   __slots__ : List[str] = ["func", "overallTop", "overallBot"]
 
   # concrete lattice class of the analysis
-  L: Type[dfv.DataLT] = DataLT
+  L: Type[DataLT_T] = DataLT
   # direction of the analysis
   D: DirectionT = Forward  # default setting
 
@@ -608,7 +608,7 @@ class AnalysisAT:
       super().__init__()  # no instance of this class
     assert self.L is not None and self.D is not None
     self.func = func
-    self.overallTop = self.L(func, top=True)  # L is callable. pylint: disable=E
+    self.overallTop = self.L(func, top=True)
     self.overallBot = self.L(func, bot=True)  # L is callable. pylint: disable=E
 
 
@@ -619,11 +619,9 @@ class AnalysisAT:
       forFunc: Opt[constructs.Func] = None,
   ) -> DfvPairL:
     """Must generate a valid boundary info."""
-    if ipa and not nodeDfv:
-      raise ValueError(f"{ipa}, {nodeDfv}")
+    if ipa: raise NotImplementedError()  # for IPA override this function
 
     inBi, outBi = self.overallBot, self.overallBot
-    if ipa: raise NotImplementedError()  # for IPA override this function
     if nodeDfv: inBi, outBi = nodeDfv.dfvIn, nodeDfv.dfvOut
     return DfvPairL(inBi, outBi)  # good to create a copy
 
@@ -904,7 +902,7 @@ class AnalysisAT:
   # BOUND END  : sim_related 2/3
   ################################################
 
-AnalysisAClassT = TypeVar('AnalysisAClassT', bound=AnalysisAT)
+AnalysisAT_T = TypeVar('AnalysisAT_T', bound=AnalysisAT)
 
 ################################################
 # BOUND END  : AnalysisAT_The_Base_Class.
@@ -956,7 +954,7 @@ class ValueAnalysisAT(AnalysisAT):
   Common functionality to most value analyses and other similar ones."""
   __slots__ : List[str] = ["anName", "componentTop", "componentBot"]
   # redefine these variables as needed (see ConstA, IntervalA for examples)
-  L: Type[dfv.OverallL] = dfv.OverallL  # the OverallL lattice used
+  L: Type[dfv.OverallL_T] = dfv.OverallL  # the OverallL lattice used
   D: DirectionT = Forward  # its a forward flow analysis
 
 
@@ -1035,7 +1033,9 @@ class ValueAnalysisAT(AnalysisAT):
         for vName in self.L.getAllVars(self.func):
           if conv.isGlobalName(vName):
             val = inBiGetVal(vName)
-            if val.top: # set top global vars to their default value
+            # Set top global vars to their default initialization value.
+            # As only uninitialized globals may have top values.
+            if val.top:
               inBiSetVal(vName, inBi.getDefaultValForGlobal())
 
     nDfv1 = DfvPairL(inBi, outBi)

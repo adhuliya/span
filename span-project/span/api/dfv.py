@@ -9,6 +9,8 @@ import logging
 LOG = logging.getLogger(__name__)
 LDB = LOG.debug
 
+from span.util.consts import BotAsBool, TopAsBool
+
 import os
 from typing import Tuple, Optional as Opt, Dict, Any, Set,\
                    Type, TypeVar, List, cast, Callable
@@ -27,7 +29,7 @@ from span.util.util import LS
 import span.util.util as util
 from span.api.lattice import\
   (LatticeLT, DataLT, ChangedT, Changed,
-   BoundLatticeLT, basicMeetOp, basicLessThanTest,
+   LatticeLT_T, basicMeetOp, basicLessThanTest,
    basicEqualsTest, getBasicString)
 import span.ir.constructs as constructs
 import span.ir.types as types
@@ -324,25 +326,90 @@ class ComponentL(DataLT):
     raise NotImplementedError()
 
 
+# To represent ComponentL and all its subtypes
+ComponentL_T = TypeVar("ComponentL_T", bound=ComponentL)
+
+
 class OverallL(DataLT):
   """Common OverallL for entity:value analyses."""
   __slots__ : List[str] = ["anName", "compL"]
 
   def __init__(self,
       func: constructs.Func,
-      val: Opt[Dict[VarNameT, ComponentL]] = None,
+      val: Opt[Dict[VarNameT, ComponentL_T]] = None,
       top: bool = False,
       bot: bool = False,
-      componentL: Type[ComponentL] = ComponentL,
+      componentL: Type[ComponentL_T] = ComponentL,
       anName: str = "", # unique analysis name
   ) -> None:
     super().__init__(func, val, top, bot)
     initTopBotComp(func, anName, componentL)
-    self.val: Opt[Dict[VarNameT, ComponentL]] = val
+    self.val: Opt[Dict[VarNameT, ComponentL_T]] = val
     assert componentL is not ComponentL,\
       f"Analysis should subclass dfv.ComponentL. Details: {func} {anName}"
     self.compL = componentL
     self.anName = anName
+
+
+  def getBoundaryInfo(self,
+      nodeDfv: Opt[DfvPairL] = None, # needs to be localized to the target func
+      ipa: bool = False,  #IPA
+      entryFunc: bool = False,
+      forFunc: Opt[constructs.Func] = None,
+  ) -> DfvPairL:
+    """
+    TODO: unused function. Make it a class method and use.
+      This function will eventually replace AnalysisAT.getBoundaryInfo().
+      * IPA/Intra: initialize all local (non-parameter) vars to Top.
+      * IPA: initialize all non-initialized globals to their default values
+        only at the entry of the main function.
+      * Intra: initialize all globals to Bot. (as is done currently)
+    """
+    if ipa and not nodeDfv:
+      raise ValueError(f"{ipa}, {nodeDfv}")
+
+    func = forFunc if forFunc else self.func
+
+    overTop, overBot = self.__class__(func, top=True), self.__class__(func, bot=True)
+
+    if ir.isDummyGlobalFunc(func):  # initialize all to Top
+      inBi, outBi = overTop, overTop
+    else:
+      if nodeDfv: #IPA or #INTRA
+        inBi, outBi = nodeDfv.dfvIn, nodeDfv.dfvOut
+      else: #INTRA
+        inBi, outBi = overBot, overBot
+
+      tUnit: TranslationUnit = func.tUnit
+      tUnitGetNameInfo = tUnit.getNameInfo
+      inBiGetVal, inBiSetVal = inBi.getVal, inBi.setVal
+
+      compTop, compBot = self.compL(func, top=True), self.compL(func, bot=True)
+
+      # set arrays/locals to a top initial value
+      if ff.SET_LOCAL_ARRAYS_TO_TOP or ff.SET_LOCAL_VARS_TO_TOP:
+        localNames = tUnit.getNamesLocal(func)
+        allVars = self.getAllVars(func)
+        varNames = (localNames - set(func.paramNames)) & allVars
+        for vName in varNames:
+          if ff.SET_LOCAL_VARS_TO_TOP or \
+              (ff.SET_LOCAL_ARRAYS_TO_TOP and tUnitGetNameInfo(vName).hasArray):
+            inBiSetVal(vName, compTop) #Mutates inBi
+
+      if entryFunc: # i.e. main() function
+        for vName in func.paramNames: # then set its parameters to Bot
+          if self.isAcceptedType(tUnitGetNameInfo(vName).type):
+            inBiSetVal(vName, compBot)
+        for vName in self.getAllVars(self.func):
+          if conv.isGlobalName(vName):
+            val = inBiGetVal(vName)
+            # Set top global vars to their default initialization value.
+            # As only uninitialized globals may have top values.
+            if val.top:
+              inBiSetVal(vName, inBi.getDefaultValForGlobal())
+
+    nDfv1 = DfvPairL(inBi, outBi)
+    return nDfv1
 
 
   def meet(self, other) -> Tuple['OverallL', ChangedT]:
@@ -485,8 +552,8 @@ class OverallL(DataLT):
       varName: VarNameT
   ) -> ComponentL:
     """returns entity lattice value."""
-    if self.top: return getTopBotComp(self.func, self.anName, True, self.compL)
-    if self.bot: return getTopBotComp(self.func, self.anName, False, self.compL)
+    if self.top: return getTopBotComp(self.func, self.anName, TopAsBool, self.compL)
+    if self.bot: return getTopBotComp(self.func, self.anName, BotAsBool, self.compL)
 
     selfVal = self.val
     if selfVal and varName in selfVal:
@@ -514,12 +581,12 @@ class OverallL(DataLT):
     self.val = {} if self.val is None else self.val
 
     if self.top: # and not defaultVal.top:
-      top = getTopBotComp(self.func, self.anName, True, self.compL)
+      top = getTopBotComp(self.func, self.anName, TopAsBool, self.compL)
       selfGetDefaultVal = self.getDefaultVal
       self.val = {vName: top for vName in self.getAllVars(self.func)
                   if not selfGetDefaultVal(vName).top}
     if self.bot: # and not defaultVal.bot:
-      bot = getTopBotComp(self.func, self.anName, False, self.compL)
+      bot = getTopBotComp(self.func, self.anName, BotAsBool, self.compL)
       selfGetDefaultVal = self.getDefaultVal
       self.val = {vName: bot for vName in self.getAllVars(self.func)
                   if not selfGetDefaultVal(vName).bot}
@@ -556,7 +623,7 @@ class OverallL(DataLT):
     self.val = self.val if self.val else {}
     self.bot = False
     selfSetVal = self.setVal
-    compTop = getTopBotComp(self.func, self.anName, True, self.compL)
+    compTop = getTopBotComp(self.func, self.anName, TopAsBool, self.compL)
     for vName in varNames:
       selfSetVal(vName, compTop)
     return None
@@ -566,7 +633,6 @@ class OverallL(DataLT):
       forFunc: constructs.Func,
       keepParams: bool = False,
   ) -> 'OverallL':
-    """Returns self's copy localized for the given forFunc."""
     localizedDfv = self.getCopy()
     localizedDfvVal, localizedDfvSetVal = localizedDfv.val, localizedDfv.setVal
 
@@ -644,6 +710,9 @@ class OverallL(DataLT):
     return string.getvalue()
 
 
+# To represent OverallL and all its subtypes
+OverallL_T = TypeVar("OverallL_T", bound=OverallL)
+
 ################################################
 # BOUND END  : Common_OverallL
 ################################################
@@ -670,8 +739,7 @@ class AnResult:
 
 
   def merge(self, other: 'AnResult') -> 'AnResult':
-    """Takes the meet of the whole result.
-    TODO: make it a proper meet operation."""
+    """Takes the meet of the whole result."""
     glb = AnResult(self.anName, self.func, self.topVal, None)
     cfgNodeIds = set(self.result.keys())
     cfgNodeIds.update(other.result.keys())
@@ -820,7 +888,7 @@ class AnResult:
 
 
 def updateDfv(
-    dfvDict: Dict[VarNameT, ComponentL],
+    dfvDict: Dict[VarNameT, ComponentL_T],
     overallDfv: OverallL,
 ) -> OverallL:
   """Creates a new dfv from `overallDfv` using `dfvDict` if needed."""
@@ -844,14 +912,14 @@ def updateDfv(
 
 # cache the component Top/Bot values globally
 _componentTopBot: \
-  Dict[Tuple[FuncNameT, str, bool], ComponentL] = {}
+  Dict[Tuple[FuncNameT, types.AnNameT, types.TopBotT], ComponentL_T] = {}
 _overallTopBot: \
-  Dict[Tuple[FuncNameT, str, bool], OverallL] = {}
+  Dict[Tuple[FuncNameT, types.AnNameT, types.TopBotT], OverallL_T] = {}
 
 def getTopBotComp(
     func: constructs.Func,
     anName: str,
-    topBot: bool, # False == Bot, True == Top
+    topBot: types.TopBotT,
     compL: Type[ComponentL] = None, # any comp object will do
 ) -> Opt[ComponentL]:
   tup, compDict = (func.name, anName, topBot), _componentTopBot
@@ -862,20 +930,20 @@ def getTopBotComp(
 
 def initTopBotComp(
     func: constructs.Func,
-    anName: str,
+    anName: types.AnNameT,
     componentL: Type[ComponentL],
 ) -> None:
-  tupTop, compDict = (func.name, anName, True), _componentTopBot
+  tupTop, compDict = (func.name, anName, TopAsBool), _componentTopBot
   if tupTop not in compDict: # then init
-    tupBot = (func.name, anName, False) # for bot
+    tupBot = (func.name, anName, BotAsBool) # for bot
     compDict[tupTop] = componentL(func, top=True)
     compDict[tupBot] = componentL(func, bot=True)
 
 
 def getTopBotOverall(
     func: constructs.Func,
-    anName: str,
-    topBot: bool = False, # False == Bot, True == Top
+    anName: types.AnNameT,
+    topBot: types.TopBotT = BotAsBool,
 ) -> Opt[OverallL]:
   tup, overallDict = (func.name, anName, topBot), _overallTopBot
   return overallDict[tup] if tup in overallDict else None
@@ -883,12 +951,12 @@ def getTopBotOverall(
 
 def initTopBotOverall(
     func: constructs.Func,
-    anName: str,
+    anName: types.AnNameT,
     overallL: Type[OverallL],
 ) -> None:
-  tupTop, overallDict = (func.name, anName, True), _overallTopBot
+  tupTop, overallDict = (func.name, anName, TopAsBool), _overallTopBot
   if tupTop not in overallDict: # then init
-    tupBot = (func.name, anName, False) # for bot
+    tupBot = (func.name, anName, BotAsBool) # for bot
     overallDict[tupTop] = overallL(func, top=True)
     overallDict[tupBot] = overallL(func, bot=True)
 

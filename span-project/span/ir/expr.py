@@ -1608,8 +1608,8 @@ def getVarExprs(e: ExprET) -> List[VarE]:
 
 def getNamesUsedInExprSyntactically(
     e: ExprET,
-    forLiveness=True,
-    addLValue=True,
+    forLiveness: bool = True,
+    addLValue: bool = True,
 ) -> Set[types.VarNameT]:
   """Returns the names syntactically present in the expression.
   If forLiveness is False, the return set will also include,

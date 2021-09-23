@@ -19,7 +19,7 @@ import io
 import span.util.util as util
 from span.api.dfv import AnResult # replacing span.sys.common.AnResult
 
-from span.api.analysis import (AnalysisNameT, AnalysisAT, AnalysisAClassT, )
+from span.api.analysis import (AnalysisNameT, AnalysisAT, AnalysisAT_T, )
 from span.api.dfv import (DfvPairL,)
 from span.ir.types import (Loc, NodeIdT, FuncNameT, AnNameT, )
 
@@ -251,7 +251,7 @@ class DiagnosisRT:
 
   def computeDfvsUsingPlainMethod(self,
       method: MethodDetail,
-      anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
+      anClassMap: Dict[AnNameT, Type[AnalysisAT_T]],
   ) -> Opt[Dict[FuncNameT, Dict[AnNameT, AnResult]]]:
     """A default implementation. Please Override."""
     assert len(anClassMap) == 1, f"{anClassMap}"
@@ -269,7 +269,7 @@ class DiagnosisRT:
 
   def computeDfvsUsingSpanMethod(self,
       method: MethodDetail,
-      anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
+      anClassMap: Dict[AnNameT, Type[AnalysisAT_T]],
   ) -> Dict[FuncNameT, Dict[AnNameT, AnResult]]:
     """A default implementation. Please Override."""
     assert len(anClassMap) == 2, f"{anClassMap}"
@@ -288,7 +288,7 @@ class DiagnosisRT:
 
   def computeDfvsUsingLernerMethod(self,
       method: MethodDetail,
-      anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
+      anClassMap: Dict[AnNameT, Type[AnalysisAT_T]],
   ) -> Dict[FuncNameT, Dict[AnNameT, AnResult]]:
     """A default implementation. Please Override."""
     assert len(anClassMap) == 2, f"{anClassMap}"
@@ -308,7 +308,7 @@ class DiagnosisRT:
 
   def computeDfvsUsingCascadingMethod(self,
       method: MethodDetail,
-      anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
+      anClassMap: Dict[AnNameT, Type[AnalysisAT_T]],
   ) -> Dict[FuncNameT, Dict[AnNameT, AnResult]]:
     """A default implementation. Please Override."""
     assert len(anClassMap) == 2, f"{anClassMap}"
@@ -319,7 +319,7 @@ class DiagnosisRT:
 
   def compareAll(self,
       method: MethodDetail,
-      anClassMap: Dict[AnNameT, Type[AnalysisAClassT]],
+      anClassMap: Dict[AnNameT, Type[AnalysisAT_T]],
   ) -> None:
     """Compares the results already computed using other methods."""
     pass
