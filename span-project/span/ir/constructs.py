@@ -286,7 +286,7 @@ class Func(ConstructT):
     return bbMap, bbEdges
 
 
-  def getReturnExprList(self) -> Opt[List[expr.SimpleET]]:
+  def getReturnExprList(self) -> List[expr.SimpleET]:
     """
     Returns the expressions (which are always of type expr.UnitET)
     that the function returns.
@@ -295,7 +295,7 @@ class Func(ConstructT):
     if self.sig.returnType.isVoid() or not self.hasBody():
       # a void function has no return expression
       # and so does a function with no body
-      return None
+      return [] # empty list
 
     exprSet: Set[expr.SimpleET] = set()
     for insn in self.yieldInstrSeq():

@@ -140,6 +140,7 @@ class OverallL(DataLT):
   def localize(self, #IPA
       forFunc: Func,
       keepParams: bool = False,
+      keepReturnVars: bool = False,
   ) -> 'OverallL':
     """Returns self's copy localized for the given forFunc."""
     localizedDfv = self.getCopy()
@@ -148,11 +149,13 @@ class OverallL(DataLT):
     if localizedDfvVal:
       tUnit: TranslationUnit = self.func.tUnit
       varNames = localizedDfvVal
-      keep = tUnit.getNamesGlobal() | (set(forFunc.paramNames) if keepParams else set())
+      keep = tUnit.getNamesGlobal()\
+             | ({e.name for e in forFunc.getReturnExprList() if isinstance(e, expr.VarE)}
+                if keepReturnVars else set())
+      print(f"KEEP: {keep} {tUnit.getNamesGlobal()}") #delit
       dropNames = varNames - keep
-      for vName in dropNames:
-        if nameHasPpmsVar(vName): continue #don't drop
-        localizedDfvSetValDead(vName) # essentially removing the values
+      # essentially removing the variables except the ppms vars
+      localizedDfvSetValDead({vName for vName in dropNames if not nameHasPpmsVar(vName)})
 
     localizedDfv.updateFuncObj(forFunc)
     return localizedDfv
@@ -167,7 +170,11 @@ class OverallL(DataLT):
   ) -> None:
     tUnit: TranslationUnit = self.func.tUnit
     localVars = tUnit.getNamesLocalStrict(self.func)
+    if not localVars:
+      return
+
     selfSetValLive, fromDfvGetVal = self.setValLive, fromDfv.getVal
+
     if fromDfv.bot:
       selfSetValLive(localVars)
     elif fromDfv.top:
@@ -251,7 +258,25 @@ class StrongLiveVarsA(AnalysisAT):
     overallTop = self.overallTop.getCopy()
     overallTop.func = func # IMPORTANT
 
-    if ipa: #IPA
+    if not ipa or entryFunc: #INTRA or #IPA entryFunc
+      if not ipa and nodeDfv: #INTRA but explicit value given
+        inBi, outBi = nodeDfv.dfvIn, nodeDfv.dfvOut
+      else: #IPA with entryFunc or #INTRA with no explicit value
+        inBi = overallTop
+        outBi = overallTop if entryFunc else \
+          OverallL(func, val=getNamesGlobal(func))
+        # Mark returned variables as live.
+        retVars = set()
+        for e in func.getReturnExprList():
+          if isinstance(e, expr.VarE):
+            retVars.add(e.name)
+            if isinstance(e.type, types.RecordT):
+              e.type.getNamesOfType(None, prefix=e.name)
+        if retVars:
+          outBi = outBi.getCopy()
+          outBi.setValLive(retVars)
+      return DfvPairL(inBi, outBi)  # good to create a copy
+    elif ipa: #IPA
       dfvIn = cast(OverallL, nodeDfv.dfvIn.getCopy())
       dfvOut = cast(OverallL, nodeDfv.dfvOut.getCopy())
       dfvIn.func = dfvOut.func = func
@@ -261,24 +286,9 @@ class StrongLiveVarsA(AnalysisAT):
       if dfvIn.val: dfvIn.val = dfvIn.val & vNames
       if dfvOut.val: dfvOut.val = dfvOut.val & vNames
       return DfvPairL(dfvIn, dfvOut)
+    else:
+      raise ValueError(f"{func.name}, {ipa}, {nodeDfv}")
 
-    elif nodeDfv: #INTRA but explicit value given
-      inBi, outBi = nodeDfv.dfvIn, nodeDfv.dfvOut
-
-    else: #INTRA
-      inBi = overallTop
-      outBi = overallTop if entryFunc else \
-        OverallL(func, val=getNamesGlobal(func))
-      # Mark returned variables as live.
-      retVars = set()
-      for e in func.getReturnExprList():
-        if isinstance(e, expr.VarE):
-          retVars.add(e.name)
-          if isinstance(e.type, types.RecordT):
-            e.type.getNamesOfType(None, prefix=e.name)
-      outBi.val = outBi.val | retVars
-
-    return DfvPairL(inBi, outBi)  # good to create a copy
 
 
   def getLocalizedCalleeBi(self, #IPA
@@ -301,7 +311,7 @@ class StrongLiveVarsA(AnalysisAT):
       inDfv = self.overallTop.getCopy()
       inDfv.func = calleeFuncObj
 
-    newDfvOut = nodeDfv.dfvOut.localize(calleeFuncObj, keepParams=True)
+    newDfvOut = nodeDfv.dfvOut.localize(calleeFuncObj, keepReturnVars=True)
 
     localized = DfvPairL(inDfv, newDfvOut)
     localized = self.getBoundaryInfo(localized, ipa=True, forFunc=calleeFuncObj)
@@ -398,6 +408,7 @@ class StrongLiveVarsA(AnalysisAT):
     Convention:
       Type of lhs and rhs is numeric.
     """
+    print(f"AssignInstr: {insn} {calleeBi}") #delit
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv, calleeBi)
 
 
@@ -410,7 +421,10 @@ class StrongLiveVarsA(AnalysisAT):
     dfvOut = nodeDfv.dfvOut
     if dfvOut.bot: return DfvPairL(dfvOut, dfvOut)
     varNames = self.processCallE(insn.arg, nodeDfv, calleeBi)
-    return self._killGen(nodeDfv, gen=varNames)
+    if not varNames:
+      return nodeDfv
+    else:
+      return self._killGen(nodeDfv, gen=varNames)
 
 
   def Conditional_Instr(self,
@@ -500,6 +514,9 @@ class StrongLiveVarsA(AnalysisAT):
     rhsNamesAreLive: bool = False
     rhsIsCallExpr: bool = isinstance(rhs, expr.CallE)
 
+    if rhsIsCallExpr:
+      print(f"CallExprRHS: {lhs} = {rhs}")
+
     # Find out: should variables be marked live?
     if dfvOut.bot or rhsIsCallExpr:
       rhsNamesAreLive = True
@@ -517,9 +534,13 @@ class StrongLiveVarsA(AnalysisAT):
 
     if rhsIsCallExpr:
       rhsNames = self.processCallE(rhs, nodeDfv, calleeBi)
-      for name in lhsNames:
+      print(f"RHSNAMES: {rhsNames}") #delit
+      # Remove lhsName form rhsNames, if it is not global.
+      for name in lhsNames: # this loop only runs once
         if name not in getNamesGlobal(self.func):
-          rhsNames.remove(name)
+          rhsNames.remove(name) if name in rhsNames else False
+      if not rhsNames:
+        return nodeDfv # return the nodeDfv as it is #TODO: check
     else:
       rhsNames = getNamesInExprMentionedIndirectly(self.func, rhs) \
                  | getNamesUsedInExprSyntactically(rhs)

@@ -632,6 +632,7 @@ class OverallL(DataLT):
   def localize(self, #IPA
       forFunc: constructs.Func,
       keepParams: bool = False,
+      keepReturnVars: bool = False,
   ) -> 'OverallL':
     localizedDfv = self.getCopy()
     localizedDfvVal, localizedDfvSetVal = localizedDfv.val, localizedDfv.setVal

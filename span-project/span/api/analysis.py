@@ -103,7 +103,7 @@ class FastNodeWorkList:
     self.wlNodesSet = set(nodeIds)
 
     self.useDdm = False #DDM
-    self.isNop = [] #DDM
+    self.isNop = [False for i in range(self.totalNodes + 1)] #DDM
     self.valueFilter = [] #DDM
 
     # Sequence of nodes visited from start to end of the analysis.
@@ -668,6 +668,8 @@ class AnalysisAT:
       return self.UnDefVal_Instr(nodeId, insn, nodeDfv)
     elif isinstance(insn, instr.UseI):
       return self.Use_Instr(nodeId, insn, nodeDfv)
+    elif isinstance(insn, instr.ExReadI):
+      return self.ExRead_Instr(nodeId, insn, nodeDfv)
     else:
       raise ValueError(f"Node_{nodeId}: {self.func}, {insn}")
 

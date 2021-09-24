@@ -15,9 +15,6 @@ modules from SPAN's `span.util` package.
 # FIXME: make all Type objects immutable. Till then assume immutable.
 
 import logging
-
-from span.ir.constructs import Func
-
 LOG = logging.getLogger(__name__)
 
 from typing import TypeVar, List, Optional as Opt, Tuple, Dict,\
@@ -853,7 +850,7 @@ class VarNameInfo:  # IMPORTANT: don't change its position
   The name of an object cannot contain a pointer dereference.
   """
 
-  __slots__ : List[str] = ["name", "type", "hasArray", "bySpan", "id", "scope", "func"]
+  __slots__ : List[str] = ["name", "type", "hasArray", "bySpan", "id", "scope", "funcName"]
 
   def __init__(self,
       name: VarNameT,
@@ -870,7 +867,7 @@ class VarNameInfo:  # IMPORTANT: don't change its position
     """A unique id of this variable."""
     self.scope: consts.VarScope = consts.VarScope.LOCAL
     """Scope of the variable."""
-    self.func: Opt[Func] = None
+    self.funcName: Opt[FuncNameT] = None
     """If local, which function does it belong to."""
 
 

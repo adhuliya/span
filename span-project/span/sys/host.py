@@ -917,14 +917,6 @@ class Host:
     activeAnObj = self.activeAnObj
     assert activeAnObj, f"{self.activeAnName}"
 
-    self.stats.funcSelectionTimer.start()
-    tFuncName = getFormalInstrStr(insn) # just for printing etc.
-    assert hasattr(AnalysisAT, tFuncName), f"{tFuncName}, {insn}, {insn.info}"
-    assert hasattr(activeAnObj, tFuncName), f"{tFuncName}, {insn}, {activeAnObj}"
-    self.stats.funcSelectionTimer.stop()
-
-    if util.LL4: LDB("Instr_identified_as: %s",
-                      getattr(AnalysisAT, tFuncName).__doc__.strip())
     if not self.disableSim and not insn.isNopI():
       # is the instr a var assignment (not deref etc)
       if activeAnObj.needsLhsVarToNilSim and insn.hasLhsVarExpr():
@@ -1019,10 +1011,10 @@ class Host:
     else:
       self.stats.instrAnTimer.start()
       if self.ipaEnabled and insn.hasRhsCallExpr():
-        nDfv = self.processInstrWithCall(node, insn, nodeDfv, tFuncName)
+        nDfv = self.processInstrWithCall(node, insn, nodeDfv )
       else:
-        if util.LL4: LDB("FinallyInvokingInstrFunc: %s.%s() on %s",
-                         self.activeAnName, tFuncName, insn)
+        if util.LL4: LDB("FinallyInvokingInstrFunc: by %s on %s",
+                         self.activeAnName, insn)
         nDfv = activeAnObj.Any_Instr(nid, insn, nodeDfv)  # type: ignore
       self.stats.instrAnTimer.stop()
       return nDfv
@@ -1032,7 +1024,6 @@ class Host:
       node: cfg.CfgNode,
       insn: InstrIT,
       nodeDfv: DfvPairL,
-      tFuncName: str, # just for logging
   ) -> DfvPairL:
     """
     Inter-procedural analysis process the instructions with call here.
@@ -1069,12 +1060,10 @@ class Host:
     if not calleeBi: # i.e. wait for the calleeBi to be some useful value
       nodeDfv = self.Barrier_Instr(node, insn, nodeDfv)
 
-    elif self.activeAnDirn == Forward:
-      if util.LL4: LDB("FinallyInvokingInstrFunc: %s.%s() on %s",
-                       self.activeAnName, tFuncName, insn)
+    else:
+      if util.LL4: LDB("FinallyInvokingInstrFunc: by %s on %s",
+                       self.activeAnName, insn)
       nodeDfv = self.activeAnObj.Any_Instr(nid, insn, nodeDfv, calleeBi)  # type: ignore
-    else: # both for Backward and ForwBack
-      assert False #TODO
 
     return nodeDfv
 
@@ -1084,50 +1073,44 @@ class Host:
       callE: CallE, # must not be a pointer-call
       callerNodeDfv: DfvPairL
   ) -> DfvPairL:
-    """Analyzes the return values/variables of a call."""
+    """Analyzes the return values/variables of a call.
+    Only for backward analyses.
+    Forward analyses analyses these in their own transfer functions.
+    """
     insn = node.insn
     funcName = callE.getFuncName()
+    assert self.activeAnDirn == Backward, f"{self.func.name}: {self.activeAnName}"
     assert funcName, f"{self.func.name}, {callE}: {callE.info}"
-    assert isinstance(insn, AssignI), f"{node.id}: {insn}, {insn.info}"
     funcObj = self.tUnit.getFuncObj(funcName)
 
-    # adding Top to avoid unintended widening of params (esp. IntervalA)
-    if self.activeAnDirn == Forward:
-      nextNodeDfv = DfvPairL(callerNodeDfv.dfvIn, self.activeAnTop)
-    elif self.activeAnDirn == Backward:
-      nextNodeDfv = DfvPairL(self.activeAnTop, callerNodeDfv.dfvOut)
-    else:
-      raise ValueError(f"{self.activeAnDirn}")
+    # adding Top to avoid unintended widening  #TODO: check
+    initialDfvPair = DfvPairL(self.activeAnTop, callerNodeDfv.dfvOut)
+    dfvList = []
 
-    lhs = insn.lhs
-    for retExpr in funcObj.getReturnExprList():
-      ins = AssignI(lhs, retExpr, lhs.info)
-      self.tUnit.inferTypeOfInstr(ins)
-      nextNodeDfv = self.analyzeInstr(node, ins, nextNodeDfv)
-      if util.LL4: LDB(" FinalInstrDfv(ParamAssign): %s", nextNodeDfv)
+    if isinstance(insn, AssignI):
+      lhs = insn.lhs
+      for retExpr in funcObj.getReturnExprList():
+        ins = AssignI(lhs, retExpr, lhs.info)
+        self.tUnit.inferTypeOfInstr(ins)
 
-      # in/out of succ/pred becomes out/in of the current node
-      if self.activeAnDirn == Forward:
-        nextNodeDfv = DfvPairL(nextNodeDfv.dfvOut, self.activeAnTop)
-      elif self.activeAnDirn == Backward:
-        nextNodeDfv = DfvPairL(self.activeAnTop, nextNodeDfv.dfvIn)
-      else:
-        raise ValueError(f"{self.activeAnDirn}")
+        dfvList.append(self.analyzeInstr(node, ins, initialDfvPair))
 
     # restore in/out dfv
-    if self.activeAnDirn == Forward:
-      nextNodeDfv.dfvOut = callerNodeDfv.dfvOut
-      nextNodeDfv.dfvOutTrue = nextNodeDfv.dfvOutFalse = nextNodeDfv.dfvOut
-    elif self.activeAnDirn == Backward:
-      nextNodeDfv.dfvIn = callerNodeDfv.dfvIn
+    if dfvList:
+      finalDfvPair = mergeAll(dfvList)
+      finalDfvPair.dfvOut = finalDfvPair.dfvIn # throw away dfvOut
+      # throw away dfvOut true/false too
+      finalDfvPair.dfvOutTrue = finalDfvPair.dfvOutFalse = finalDfvPair.dfvIn
     else:
-      raise ValueError(f"{self.activeAnDirn}")
+      finalDfvPair = initialDfvPair
+
+    finalDfvPair.dfvIn = callerNodeDfv.dfvIn
 
     if util.LL4:
       callSitePair = CalleeAndCallSite(funcName, genGlobalNodeId(self.func.id, node.id))
-      LDB("CalleeCallSiteDfv(AfterParams): (%s): %s", callSitePair, nextNodeDfv)
+      LDB("CalleeCallSiteDfv(AfterReturns): (%s): %s", callSitePair, finalDfvPair)
 
-    return nextNodeDfv
+    return finalDfvPair
 
 
   def processCallArguments(self, #IPA
@@ -1135,43 +1118,33 @@ class Host:
       callE: CallE, # must not be a pointer-call
       nodeDfv: DfvPairL
   ) -> DfvPairL:
-    """Analyzes the argument assignment to function params."""
+    """Analyzes the argument assignment to function params.
+    Only for forward analyses.
+    Backward analyses analyses these in their own transfer functions.
+    """
     funcName = callE.getFuncName()
+    assert self.activeAnDirn == Forward, f"{self.func.name}: {self.activeAnName}"
     assert funcName, f"{self.func.name}, {callE}: {callE.info}"
     funcObj = self.tUnit.getFuncObj(funcName)
 
     # adding Top to avoid unintended widening of params (esp. IntervalA)
-    if self.activeAnDirn == Forward:
-      nextNodeDfv = DfvPairL(nodeDfv.dfvIn, self.activeAnTop)
-    elif self.activeAnDirn == Backward:
-      nextNodeDfv = DfvPairL(self.activeAnTop, nodeDfv.dfvOut)
-    else:
-      raise ValueError(f"{self.activeAnDirn}")
+    nextNodeDfv = DfvPairL(nodeDfv.dfvIn, self.activeAnTop)
 
     for i, paramName in enumerate(funcObj.paramNames):
       arg = callE.args[i]
       lhs = VarE(paramName, arg.info)
       insn = AssignI(lhs, arg, arg.info)
       self.tUnit.inferTypeOfInstr(insn)
+
       nextNodeDfv = self.analyzeInstr(node, insn, nextNodeDfv)
       if util.LL4: LDB(" FinalInstrDfv(ParamAssign): %s", nextNodeDfv)
 
       # in/out of succ/pred becomes out/in of the current node
-      if self.activeAnDirn == Forward:
-        nextNodeDfv = DfvPairL(nextNodeDfv.dfvOut, self.activeAnTop)
-      elif self.activeAnDirn == Backward:
-        nextNodeDfv = DfvPairL(self.activeAnTop, nextNodeDfv.dfvIn)
-      else:
-        raise ValueError(f"{self.activeAnDirn}")
+      nextNodeDfv = DfvPairL(nextNodeDfv.dfvOut, self.activeAnTop)
 
     # restore in/out dfv
-    if self.activeAnDirn == Forward:
-      nextNodeDfv.dfvOut = nodeDfv.dfvOut
-      nextNodeDfv.dfvOutTrue = nextNodeDfv.dfvOutFalse = nextNodeDfv.dfvOut
-    elif self.activeAnDirn == Backward:
-      nextNodeDfv.dfvIn = nodeDfv.dfvIn
-    else:
-      raise ValueError(f"{self.activeAnDirn}")
+    nextNodeDfv.dfvOut = nodeDfv.dfvOut
+    nextNodeDfv.dfvOutTrue = nextNodeDfv.dfvOutFalse = nextNodeDfv.dfvOut
 
     if util.LL4:
       callSitePair = CalleeAndCallSite(funcName, genGlobalNodeId(self.func.id, node.id))

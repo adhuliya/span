@@ -172,6 +172,7 @@ class DataLT(LatticeLT):
   def localize(self, #IPA
       forFunc: constructs.Func,
       keepParams: bool = False,
+      keepReturnVars: bool = False,
   ) -> 'DataLT':
     """Returns self's copy localized for the given forFunc.
     It basically drops all the non-environment names in the lattice of the function.
@@ -254,7 +255,7 @@ class DataLT(LatticeLT):
     return self.__str__()
 
 
-def mergeAll(values: Iterable[LatticeLT]) -> LatticeLT:
+def mergeAll(values: Iterable[LatticeLT_T]) -> LatticeLT_T:
   """Takes meet of all the values of LatticeLT type.
   All values must be the same type."""
   result = None

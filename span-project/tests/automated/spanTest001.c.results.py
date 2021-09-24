@@ -43,7 +43,7 @@ TestActionAndResult(
       "StrongLiveVarsA": {
         "f:main": { # data flow value at given node numbers
           2 : ("is: {'g:0Null'}", "is: bot"), # IN/OUT/False/True values
-          3 : ("any", "is: {'g:0Null'}"), # IN/OUT/False/True values
+          3 : ("any", "is: bot"), # IN/OUT/False/True values
         }
       }, # end analysis LiveVarsA
     }, # end analysis.results
