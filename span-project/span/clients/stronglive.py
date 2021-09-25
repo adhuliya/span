@@ -152,7 +152,6 @@ class OverallL(DataLT):
       keep = tUnit.getNamesGlobal()\
              | ({e.name for e in forFunc.getReturnExprList() if isinstance(e, expr.VarE)}
                 if keepReturnVars else set())
-      print(f"KEEP: {keep} {tUnit.getNamesGlobal()}") #delit
       dropNames = varNames - keep
       # essentially removing the variables except the ppms vars
       localizedDfvSetValDead({vName for vName in dropNames if not nameHasPpmsVar(vName)})
@@ -408,7 +407,6 @@ class StrongLiveVarsA(AnalysisAT):
     Convention:
       Type of lhs and rhs is numeric.
     """
-    print(f"AssignInstr: {insn} {calleeBi}") #delit
     return self.processLhsRhs(insn.lhs, insn.rhs, nodeDfv, calleeBi)
 
 
@@ -534,7 +532,6 @@ class StrongLiveVarsA(AnalysisAT):
 
     if rhsIsCallExpr:
       rhsNames = self.processCallE(rhs, nodeDfv, calleeBi)
-      print(f"RHSNAMES: {rhsNames}") #delit
       # Remove lhsName form rhsNames, if it is not global.
       for name in lhsNames: # this loop only runs once
         if name not in getNamesGlobal(self.func):
