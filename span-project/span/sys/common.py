@@ -101,6 +101,10 @@ class AnDfvPairDict:
     self.depth = depth
 
 
+  def items(self):
+    return self.dfvs.items()
+
+
   def setIncDepth(self, other: 'AnDfvPairDict'):
     """Set depth one more that the other's depth (prev value's depth)."""
     self.depth = other.depth + 1

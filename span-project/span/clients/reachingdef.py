@@ -12,11 +12,10 @@ This (and every) analysis subclasses,
 """
 
 import logging
-
-from span.util.consts import TopAsBool, BotAsBool
-
 LOG = logging.getLogger(__name__)
 LDB, LIN = LOG.debug, LOG.info
+
+from span.util.consts import TopAsBool, BotAsBool
 
 from typing import Tuple, Dict, List, Optional as Opt, Set, Callable, cast
 import io

@@ -49,6 +49,9 @@ It works only when `IPA_VC_WIDEN_VALUE_CONTEXT` is True."""
 IPA_VC_REMOVE_UNUSED_VC = True
 """Remove value contexts not needed by any call site."""
 
+IPA_VC_SAVE_MEMORY = False
+"""Saves memory by merging too many contexts of a function."""
+
 RECURSION_LIMIT = max(IPA_VC_RECURSION_LIMIT, 20000)
 """Set global recursion limit."""
 
