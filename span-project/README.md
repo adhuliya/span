@@ -274,6 +274,13 @@ See the list of checkers available:
 * (optional) : Handle aggregate assignment.
 * (optional) : convert `?:` operator to `if-then-else`
 
+
+## Cross Translation Unit
+
+* <https://clang.llvm.org/docs/analyzer/user-docs/CrossTranslationUnit.html#automated-ctu-analysis-with-codechecker>
+* <https://codechecker.readthedocs.io/en/latest/usage/#step-1>
+
+
 <br /> <br /> <br />
 &copy; 2020 Anshuman Dhuliya
 <br /> <br /> <br />

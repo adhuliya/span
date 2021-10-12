@@ -2390,7 +2390,7 @@ class Host:
     raise ValueError("f{anName}")
 
 
-  def getResults(self):
+  def getResults(self) -> Dict[AnNameT, AnResult]:
     return {anName: res.anResult for anName, res in self.anWorkDict.items()}
 
 

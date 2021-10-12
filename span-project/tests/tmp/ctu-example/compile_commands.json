@@ -1,0 +1,12 @@
+[
+  {
+    "directory": "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/tests/tmp/ctu-example",
+    "command": "clang -c foo.c -o foo.o",
+    "file": "foo.c"
+  },
+  {
+    "directory": "/home/codeman/.itsoflife/mydata/git/research/span-git/span-project/tests/tmp/ctu-example",
+    "command": "clang -c main.c -o main.o",
+    "file": "main.c"
+  }
+]

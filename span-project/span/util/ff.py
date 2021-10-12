@@ -32,13 +32,13 @@ SET_LOCAL_VARS_TO_TOP: bool = True
 MAX_ANALYSES: int = 16
 """Max number of analyses to be executed simultaneously at a time."""
 
-IPA_VC_RECURSION_LIMIT: int = 200
+IPA_VC_RECURSION_LIMIT: int = 400
 """IPA (ValueContext) Recursion Limit."""
 
-IPA_VC_RE_USE_PREV_VALUE_CONTEXT_HOST: bool = True
+IPA_VC_RE_USE_SAVED_HOST_OBJECTS: bool = True
 """IPA (ValueContext) Reuse prev value context mapped Host? (optimization)."""
 
-IPA_VC_WIDEN_VALUE_CONTEXT: bool = False
+IPA_VC_WIDEN_VALUE_CONTEXT: bool = True
 """IPA (ValueContext) widen the value context? (for termination)."""
 
 IPA_VC_MAX_WIDENING_DEPTH: int = 1
@@ -48,9 +48,6 @@ It works only when `IPA_VC_WIDEN_VALUE_CONTEXT` is True."""
 
 IPA_VC_REMOVE_UNUSED_VC = True
 """Remove value contexts not needed by any call site."""
-
-IPA_VC_SAVE_MEMORY = False
-"""Saves memory by merging too many contexts of a function."""
 
 RECURSION_LIMIT = max(IPA_VC_RECURSION_LIMIT, 20000)
 """Set global recursion limit."""
