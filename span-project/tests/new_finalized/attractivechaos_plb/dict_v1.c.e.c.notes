@@ -1,0 +1,24 @@
+
+Inspite of the following error in the log, the SPAN IR conversion is okay:
+
+    7   21-06-2021 10:23:06: ERROR: (50):/home/codeman/.itsoflife/mydata/local/             >>>\packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/              >>>\Checkers/SlangCheckers/SlangGenAstChecker.cpp:handleVarDecl():865:
+    8 ERROR:AggregateInit: Check if the output is correct.
+    9 VarDecl 0x55f1e5d63f28 <./khash.h:125:1, line:134:1> line:125:24 used               >>>\__ac_prime_list 'const khint32_t [32]' static cinit
+
+
+
+Mon Jun 21 10:31:29 IST 2021
+----------------------------------------------------------------
+Method: MethodDetail(plain, [0], ['IntervalA'])
+  Total      : 45
+  InRange    : 0
+  OutOfRange : 2
+  Unknown    : 43
+Method: MethodDetail(span, [0], ['IntervalA', 'PointsToA'])
+  Total      : 26
+  InRange    : 0
+  OutOfRange : 0
+  Unknown    : 26
+TimeElapsed(TotalTimeTaken): 606.5974235534668 ms (Starts: 1, Stops: 1)
+
+----------------------------------------------------------------

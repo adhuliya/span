@@ -1,0 +1,25 @@
+------------------------------------------------
+AnalysisType: AvgDerefR
+Method: MethodDetail(plain, plain, ['PointsToA'], 'No Description')
+  TotalDereferences  : 3888
+  TotalPointees      : 3472570
+  AvgDerefs          : 893.1507201646091
+------------------------------------------------
+TimeElapsed(plain:plain): 172571.46644592285 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, span, ['PointsToA'], 'No Description')
+  TotalDereferences  : 3888
+  TotalPointees      : 830544
+  AvgDerefs          : 213.6172839506173
+------------------------------------------------
+TimeElapsed(span:span): 21.831750869750977 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, span, ['PointsToA', 'IntervalA'], 'No Description')
+  TotalDereferences  : 3888
+  TotalPointees      : 830544
+  AvgDerefs          : 213.6172839506173
+------------------------------------------------
+TimeElapsed(span:span): 22.583961486816406 ms (Starts: 1, Stops: 1)
+TimeElapsed(TotalTimeTaken): 174180.59825897217 ms (Starts: 1, Stops: 1)

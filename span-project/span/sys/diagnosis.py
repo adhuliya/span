@@ -6,10 +6,9 @@
 """Manages/Runs the code diagnosis subsystem."""
 
 import logging
+LOG = logging.getLogger(__name__)
 
 from span.sys import clients
-
-LOG = logging.getLogger(__name__)
 
 from typing import List, Optional as Opt, Dict, Set, Type
 import io

@@ -1,0 +1,18 @@
+Preprocessing a.out_comb.c
+clang -D_GNUCC -E -DCIL=1 a.out_comb.c -o /tmp/cil-1VIEQC91.i
+Saving source /tmp/cil-1VIEQC91.i into /tmp/cil-eMvgglJh.o
+Preprocessing foo.c
+clang -D_GNUCC -E -DCIL=1 foo.c -o /tmp/cil-y4MDcKSU.i
+Saving source /tmp/cil-y4MDcKSU.i into /tmp/cil-Tp0Hnxzz.o
+Preprocessing main.c
+clang -D_GNUCC -E -DCIL=1 main.c -o /tmp/cil-0RTnBIyN.i
+Saving source /tmp/cil-0RTnBIyN.i into /tmp/cil-OiSAIXYZ.o
+Merging saved sources into a.out_comb.o (in process of linking a.out)
+Will merge the following: App::Cilly::TempFile=HASH(0x56255934fe48) App::Cilly::TempFile=HASH(0x56255995b010) App::Cilly::TempFile=HASH(0x56255995ff28)
+Will just link the genuine object files: 
+After merge compile flags: 
+caught attempt to overwrite protected file: a.out_comb.c at /home/codeman/.opam/system/bin/../lib/perl5/App/Cilly/OutputFile.pm line 79.
+	App::Cilly::OutputFile::checkProtected(App::Cilly::OutputFile=HASH(0x56255995fbb0)) called at /home/codeman/.opam/system/bin/../lib/perl5/App/Cilly/OutputFile.pm line 29
+	App::Cilly::OutputFile::new("App::Cilly::OutputFile", "a.out", "a.out_comb.c") called at /home/codeman/.opam/system/bin/../lib/perl5/App/Cilly.pm line 931
+	App::Cilly::link(App::Cilly::CilCompiler=HASH(0x56255986b9e0), ARRAY(0x562559891400), "a.out", ARRAY(0x56255933e6d0), ARRAY(0x5625598c4668), ARRAY(0x5625599329a8)) called at /home/codeman/.opam/system/bin/../lib/perl5/App/Cilly.pm line 1179
+	App::Cilly::doit(App::Cilly::CilCompiler=HASH(0x56255986b9e0)) called at /home/codeman/.opam/system/bin/cilly line 56

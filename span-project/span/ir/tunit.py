@@ -115,7 +115,7 @@ class TranslationUnit:
     # whole of TU is contained in these three variables
     self.allVars = allVars
     self.allRecords = allRecords
-    self.allFunctions: Dict[VarNameT, constructs.Func] = allFunctions
+    self.allFunctions: Dict[FuncNameT, constructs.Func] = allFunctions
 
     # all global inits are put into a special function
     self.allFunctions[GLOBAL_INITS_FUNC_NAME] = constructs.Func(

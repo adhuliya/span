@@ -1,0 +1,8 @@
+clang -D_GNUCC -E -DCIL=1 a.out_comb.c -o /tmp/cil-uCaEVdgV.i
+clang -D_GNUCC -E -DCIL=1 foo.c -o /tmp/cil-moTY8nOb.i
+clang -D_GNUCC -E -DCIL=1 main.c -o /tmp/cil-Ayc4yqUp.i
+caught attempt to overwrite protected file: a.out_comb.c at /home/codeman/.opam/system/bin/../lib/perl5/App/Cilly/OutputFile.pm line 79.
+	App::Cilly::OutputFile::checkProtected(App::Cilly::OutputFile=HASH(0x55bba61b3d30)) called at /home/codeman/.opam/system/bin/../lib/perl5/App/Cilly/OutputFile.pm line 29
+	App::Cilly::OutputFile::new("App::Cilly::OutputFile", "a.out", "a.out_comb.c") called at /home/codeman/.opam/system/bin/../lib/perl5/App/Cilly.pm line 931
+	App::Cilly::link(App::Cilly::CilCompiler=HASH(0x55bba614b500), ARRAY(0x55bba6170f20), "a.out", ARRAY(0x55bba5c206d0), ARRAY(0x55bba61a43c8), ARRAY(0x55bba62128a8)) called at /home/codeman/.opam/system/bin/../lib/perl5/App/Cilly.pm line 1179
+	App::Cilly::doit(App::Cilly::CilCompiler=HASH(0x55bba614b500)) called at /home/codeman/.opam/system/bin/cilly line 56

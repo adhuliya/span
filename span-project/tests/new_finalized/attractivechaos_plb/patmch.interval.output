@@ -1,0 +1,84 @@
+------------------------------------------------
+  FINITE: v:main:1if, (0, 1), (if (1if) BB1 BB2; VOID, f:main, Info(Loc(14,2),0))
+  TOP_VAL: if (9if) BB8 BB9; VOID, (v:main:9if:'Top'), (f:main,Info(Loc(22,27),0))
+  TOP_VAL: 13if = 12t != 1; INT32, (v:main:12t:'Top'), (f:main,Info(Loc(23,7),0))
+  TOP_VAL: if (13if) BB10 BB11; VOID, (v:main:13if:'Top'), (f:main,Info(Loc(23,3),0))
+AnalysisType: IntervalR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 32
+  TotalNumericNames     : 9
+  TotalConstantValues   : 3
+  TotalFiniteRange      : 1
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 2
+------------------------------------------------
+TimeElapsed(cascading:cascading): 34.70301628112793 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+  FINITE: v:main:1if, (0, 1), (if (1if) BB1 BB2; VOID, f:main, Info(Loc(14,2),0))
+  TOP_VAL: if (9if) BB8 BB9; VOID, (v:main:9if:'Top'), (f:main,Info(Loc(22,27),0))
+  TOP_VAL: 13if = 12t != 1; INT32, (v:main:12t:'Top'), (f:main,Info(Loc(23,7),0))
+  TOP_VAL: if (13if) BB10 BB11; VOID, (v:main:13if:'Top'), (f:main,Info(Loc(23,3),0))
+AnalysisType: IntervalR
+Method: MethodDetail(plain, plain, ['IntervalA'], 'No Description')
+  TotalNodes            : 32
+  TotalNumericNames     : 9
+  TotalConstantValues   : 3
+  TotalFiniteRange      : 1
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 2
+------------------------------------------------
+TimeElapsed(plain:plain): 18.700122833251953 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+  FINITE: v:main:1if, (0, 1), (if (1if) BB1 BB2; VOID, f:main, Info(Loc(14,2),0))
+  TOP_VAL: if (9if) BB8 BB9; VOID, (v:main:9if:'Top'), (f:main,Info(Loc(22,27),0))
+  TOP_VAL: 13if = 12t != 1; INT32, (v:main:12t:'Top'), (f:main,Info(Loc(23,7),0))
+  TOP_VAL: if (13if) BB10 BB11; VOID, (v:main:13if:'Top'), (f:main,Info(Loc(23,3),0))
+AnalysisType: IntervalR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 32
+  TotalNumericNames     : 9
+  TotalConstantValues   : 3
+  TotalFiniteRange      : 1
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 2
+------------------------------------------------
+TimeElapsed(cascading:cascading): 30.16376495361328 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+  FINITE: v:main:1if, (0, 1), (if (1if) BB1 BB2; VOID, f:main, Info(Loc(14,2),0))
+  TOP_VAL: if (9if) BB8 BB9; VOID, (v:main:9if:'Top'), (f:main,Info(Loc(22,27),0))
+  TOP_VAL: 13if = 12t != 1; INT32, (v:main:12t:'Top'), (f:main,Info(Loc(23,7),0))
+  TOP_VAL: if (13if) BB10 BB11; VOID, (v:main:13if:'Top'), (f:main,Info(Loc(23,3),0))
+AnalysisType: IntervalR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 32
+  TotalNumericNames     : 9
+  TotalConstantValues   : 3
+  TotalFiniteRange      : 1
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 2
+------------------------------------------------
+TimeElapsed(lerner:lerner): 29.036283493041992 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+  FINITE: v:main:1if, (0, 1), (if (1if) BB1 BB2; VOID, f:main, Info(Loc(14,2),0))
+  TOP_VAL: if (9if) BB8 BB9; VOID, (v:main:9if:'Top'), (f:main,Info(Loc(22,27),0))
+  TOP_VAL: 13if = 12t != 1; INT32, (v:main:12t:'Top'), (f:main,Info(Loc(23,7),0))
+  TOP_VAL: if (13if) BB10 BB11; VOID, (v:main:13if:'Top'), (f:main,Info(Loc(23,3),0))
+AnalysisType: IntervalR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 32
+  TotalNumericNames     : 9
+  TotalConstantValues   : 4
+  TotalFiniteRange      : 1
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 1
+------------------------------------------------
+TimeElapsed(span:span): 22.79043197631836 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+------------------------------------------------
+TimeElapsed(compareall:compareall): 0.11515617370605469 ms (Starts: 1, Stops: 1)
+TimeElapsed(TotalTimeTaken): 156.21614456176758 ms (Starts: 1, Stops: 1)

@@ -85,7 +85,7 @@ class DefUseR(DiagnosisRT):
       func = self.tUnit.getFuncObj(fName)
 
       allVars = self.tUnit.getNamesEnv(func)
-      nonTmpVars = self.removeTmp(allVars)
+      nonTmpVars = self.filterVariables(allVars)
       nonTmpVarRatio = len(nonTmpVars)/len(allVars)
 
       # anObj1 = cast(ValueAnalysisAT, anClass1(func))
@@ -98,8 +98,7 @@ class DefUseR(DiagnosisRT):
 
         directUse, indirectUse = self.getVarNamesUsed(func, nid, insn, ptsAnResult,
                                                       method.name == SpanMethod)
-        directUse = self.removeTmp(directUse)
-        indirectUse = self.removeTmp(indirectUse)
+        directUse = self.filterVariables(directUse)
 
         if not (directUse or indirectUse):
           continue # no variable used, goto next insn
@@ -115,7 +114,7 @@ class DefUseR(DiagnosisRT):
             totalDefsReaching += 1 # assume uninitialized
           elif dfv.bot:
             allDefPoints += 100 # a lower approximation when #defs > 100.
-            # assert False, f"{vName}, {dfv}, {dfv.func.name}"
+            #assert False, f"{vName}, {dfv}, {dfv.func.name}"
           else:
             allDefPoints += len(dfv.val)
 
@@ -159,7 +158,7 @@ class DefUseR(DiagnosisRT):
 
     # if here, there is a deref expression as rvalue
     if not ptsAnResult: # in case of plain method
-      return names, self.removeTmp(self.tUnit.getNamesEnv(func, de.type))
+      return names, self.filterVariables(self.tUnit.getNamesEnv(func, de.type))
     else:
       derefVar = expr.getDereferencedVar(de)
       dfv, ptsRes = None, ptsAnResult.get(nid)
@@ -167,14 +166,14 @@ class DefUseR(DiagnosisRT):
         dfv = ptsRes.dfvIn.getVal(derefVar.name)
 
       if not dfv or dfv.bot:
-        return names, self.removeTmp(self.tUnit.getNamesEnv(func, de.type))
+        return names, self.filterVariables(self.tUnit.getNamesEnv(func, de.type))
       elif dfv.top:
         return names, set()
       else:
-        # if len(dfv.val) > 1 and not spanMethod:
-        #   return names, self.tUnit.getNamesEnv(func, de.type)
-        # else:
-        return names, self.removeTmp(dfv.val) # taking points-to set of non-tmp vars
+        if len(dfv.val) > 1 and not spanMethod:
+          return names, self.filterVariables(self.tUnit.getNamesEnv(func, de.type))
+        else:
+          return names, self.filterVariables(dfv.val) # taking points-to set of non-tmp vars
 
 
   def getVarDefsDfvMap(self,
@@ -209,7 +208,7 @@ class DefUseR(DiagnosisRT):
     return allDefs
 
 
-  def removeTmp(self, varNameSet: Set[VarNameT]) -> Set[VarNameT]:
+  def filterVariables(self, varNameSet: Set[VarNameT]) -> Set[VarNameT]:
     nonTmpVars = set()
     for vName in varNameSet:
       if not conv.isTmpVar(vName):

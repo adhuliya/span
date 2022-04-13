@@ -1,0 +1,62 @@
+------------------------------------------------
+
+TotalValueContexts     : 220
+TotalSize(ValueContext): 19310 KB.
+TotalSize(VCI object)  : 39430 KB.
+
+AnalysisType: DefUseR
+Method: MethodDetail(plain, plain, ['ReachingDefA'], 'No Description')
+  TotalNodes              : 1817
+  TotalDefsReaching       : 81139
+  TotalDefsReachingFuncEnd: 14
+  TotalUses               : 10116
+------------------------------------------------
+TimeElapsed(plain:plain): 28675.06456375122 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+
+TotalValueContexts     : 49
+TotalSize(ValueContext): 3678 KB.
+TotalSize(VCI object)  : 4845 KB.
+
+
+TotalValueContexts     : 220
+TotalSize(ValueContext): 17473 KB.
+TotalSize(VCI object)  : 35727 KB.
+
+AnalysisType: DefUseR
+Method: MethodDetail(cascading, cascading, ['PointsToA', 'ReachingDefA'], 'No Description')
+  TotalNodes              : 1817
+  TotalDefsReaching       : 29959
+  TotalDefsReachingFuncEnd: 10
+  TotalUses               : 5672
+------------------------------------------------
+TimeElapsed(cascading:cascading): 37436.097621917725 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+
+TotalValueContexts     : 220
+TotalSize(ValueContext): 19609 KB.
+TotalSize(VCI object)  : 37840 KB.
+
+AnalysisType: DefUseR
+Method: MethodDetail(lerner, lerner, ['ReachingDefA', 'PointsToA'], 'No Description')
+  TotalNodes              : 1817
+  TotalDefsReaching       : 29959
+  TotalDefsReachingFuncEnd: 10
+  TotalUses               : 5672
+------------------------------------------------
+TimeElapsed(lerner:lerner): 42927.459478378296 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+
+TotalValueContexts     : 220
+TotalSize(ValueContext): 19455 KB.
+TotalSize(VCI object)  : 38097 KB.
+
+AnalysisType: DefUseR
+Method: MethodDetail(span, span, ['ReachingDefA', 'PointsToA'], 'No Description')
+  TotalNodes              : 1817
+  TotalDefsReaching       : 29492
+  TotalDefsReachingFuncEnd: 10
+  TotalUses               : 5584
+------------------------------------------------
+TimeElapsed(span:span): 43470.65544128418 ms (Starts: 1, Stops: 1)
+TimeElapsed(TotalTimeTaken): 152639.83416557312 ms (Starts: 1, Stops: 1)

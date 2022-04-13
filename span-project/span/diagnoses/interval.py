@@ -174,7 +174,7 @@ class IntervalR(DiagnosisRT):
       dfvs: Dict[FuncNameT, Dict[AnNameT, AnResult]],
       anClassMap: Dict[AnNameT, Type[AnalysisAT]],
   ) -> Any:
-    """Count the average deref."""
+    """Count the total dereferences and the total pointees at those dereference points."""
 
     anName = "PointsToA"
     if anName not in anClassMap:

@@ -1,6 +1,8 @@
 // main.cpp
+extern int var;
+
 int foo();
 
 int main() {
-  return 3 / foo();
+  return var / foo();
 }

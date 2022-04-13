@@ -44,7 +44,7 @@ from span.api.analysis import AnalysisAT, ValueAnalysisAT
 from span.ir.conv import (
   simplifyName, isCorrectNameFormat, genGlobalNodeId, getNodeId,
   GLOBAL_INITS_FUNC_ID, isGlobalName, getGlobalNodeIdStr,
-  getFuncId, Forward, nameHasPpmsVar,
+  getFuncId, Forward, nameHasPpmsVar, STR_LIT_NAME_REGEX,
 )
 
 GLOBAL_INITS_FNID = genGlobalNodeId(GLOBAL_INITS_FUNC_ID, 1)  # initialized global
@@ -232,7 +232,10 @@ class OverallL(dfv.OverallL):
       t: SpanType,
       name: Opt[VarNameT] = None,
   ) -> bool:
-    return True # accepts all types
+    if name:
+      return False if STR_LIT_NAME_REGEX.search(name) else True
+    else:
+      return True # accepts all types
 
 
   def isInitialized(self,

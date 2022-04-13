@@ -1,0 +1,41 @@
+Name      #ArraySubscript  Interval    Span   Lerner
+======================================================
+bzip2         1888            278      467     408
+hmmer         944             ????
+lbm           184   
+milc          2830   
+mfc           21
+RERS 13-2019  3906            
+RERS 12-2019  10
+
+Name      #Div      Interval    Span   Lerner
+=================================================
+bzip2     19          5          15      11
+hmmer     219         112        126     120
+lbm       22          9          15      15
+milc      95                  
+mfc       10           
+13-2019   173         --         36      36
+12-2019   128     
+
+Prof. Raghavan:
+* arr[] -- arr is an array and not a pointer. Count. + Peephole.
+Pointer analysis check to track pointer arithmetic.
+formal parameter pointing to an array and other simple cases.
+
+* Program points where Null is a possible pointee. -- use points.
+
+small examples -- add synthetic bugs to it.
+ -- null ptr
+ -- divide by zero
+ -- array overflow
+Couple of patterns -- Yes/No per program.
+one program -- n synthetic bugs -- x detected (x<=n)
+
+null stone benchmark
+dhrystone benchmark
+coremark benchmark
+
+synthetic bugs in the benchmark programs as well.
+
+

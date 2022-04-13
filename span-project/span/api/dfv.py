@@ -477,7 +477,8 @@ class OverallL(DataLT):
           Reason: PPMS var type is polymorphic.
     """
     names = ir.getNamesEnv(func)
-    return ir.filterNames(func, names, cls.isAcceptedType)
+    filteredNames = ir.filterNames(func, names, cls.isAcceptedType)
+    return filteredNames
 
 
   def __eq__(self, other) -> bool:
@@ -652,12 +653,12 @@ class OverallL(DataLT):
 
 
   def updateFuncObj(self, funcObj: constructs.Func): #IPA #mutates 'self'
-    self.func, selfVal = funcObj, self.val # updating function object here 1
+    self.func, selfVal = funcObj, self.val  # updating function object here (1)
     if not selfVal: return
 
     for vName in selfVal:
       newVal = selfVal[vName].getCopy()
-      newVal.func = funcObj  # updating function object here 2
+      newVal.func = funcObj                 # updating function object here (2)
       selfVal[vName] = newVal
 
 

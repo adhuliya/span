@@ -83,7 +83,7 @@ class LatticeLT:
     if: x <= y and y <= x, then x and y are equal.
     if: not x <= y and not y <= x, then x and y are incomparable.
     for all other cases,
-    not (x <= y) should-be-equal-to (y <= x).
+    (not (x <= y)) should-be-equal-to (y <= x).
     """
     res = basicLessThanTest(self, other)
     assert res is not None, f"{res}, {self}, {other}"
@@ -145,7 +145,7 @@ class DataLT(LatticeLT):
       other: the data flow value to calculate `meet` with.
 
     Returns:
-      (Lattice, ChangedT): glb of self and dfv, and 'Changed' if glb != self
+      (Lattice, ChangedT): glb of self and other, and 'Changed' if glb != self
     """
     raise NotImplementedError()
 
@@ -158,10 +158,7 @@ class DataLT(LatticeLT):
 
     MUST override this function if widening is needed.
     """
-    if self != other:
-      return other, Changed  # For finite height lattice and monotone analyses.
-    else:
-      return self, not Changed
+    return self.meet(other)  # For finite height lattices
 
 
   def checkInvariants(self):
@@ -182,7 +179,8 @@ class DataLT(LatticeLT):
 
   def updateFuncObj(self, funcObj: constructs.Func): #IPA #Mutates 'self'.
     """Updates the self.func object reference (for all sub-objects too).
-    Modifies self object."""
+    Modifies self object !!!
+    """
     raise NotImplementedError
 
 
@@ -191,30 +189,25 @@ class DataLT(LatticeLT):
   ) -> None:
     """Adds the value of strictly local variables in self.func
     in fromDfv to self. It modifies self object.
-    Modifies self object.
+    Modifies self object !!!
     """
     raise NotImplementedError
 
 
   def basicMeetOp(self, other: types.T) -> Opt[Tuple[types.T, ChangedT]]:
-    assert self.__class__ == other.__class__, f"{self}, {other}"
     tup = basicMeetOp(self, other)
     if tup: return tup
 
-    #assert self.val and other.val, f"self: {self.val}, other: {other.val}"
     return None  # can't compute
 
 
   def basicLessThanTest(self, other: 'DataLT') -> Opt[bool]:
     """A basic less than test common to all data lattices.
     If this fails the lattices can do more complicated tests.
-    This function does some common assertion tests to ensure correctness.
     """
-    assert self.__class__ == other.__class__, f"{self}, {other}"
     lt = basicLessThanTest(self, other)
     if lt is not None: return lt
 
-    #assert self.val and other.val, f"{self}, {other}"
     return None  # i.e. can't decide
 
 
@@ -222,11 +215,9 @@ class DataLT(LatticeLT):
     """A basic equality test common to all lattices.
     If this fails the lattices can do more complicated tests.
     """
-    assert self.__class__ == other.__class__, f"{self}, {other}"
     equal = basicEqualsTest(self, other)
     if equal is not None: return equal
 
-    #assert self.val and other.val, f"{self}, {other}"
     return None  # i.e. can't decide
 
 
@@ -242,7 +233,7 @@ class DataLT(LatticeLT):
     raise NotImplementedError()
 
 
-  def getCopy(self) -> 'DataLT':
+  def getCopy(self) -> DataLT_T:
     raise NotImplementedError()
 
 

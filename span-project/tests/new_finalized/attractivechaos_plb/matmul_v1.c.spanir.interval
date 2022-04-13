@@ -1,0 +1,203 @@
+------------------------------------------------
+
+TotalValueContexts     : 7
+TotalSize(ValueContext): 796 KB.
+TotalSize(VCI object)  : 797 KB.
+
+  FINITE  : v:main:1if, (0, 1), (if (1if) BB1 BB2; VOID, f:main, Info(Loc(56,2),0))
+  FINITE  : v:mm_destroy:1if, (0, 1), (if (1if) BB2 BB3; VOID, f:mm_destroy, Info(Loc(18,14),0))
+  FINITE  : v:mm_gen:2if, (0, 1), (if (2if) BB2 BB6; VOID, f:mm_gen, Info(Loc(26,14),0))
+  FINITE  : v:mm_gen:3if, (0, 1), (if (3if) BB4 BB5; VOID, f:mm_gen, Info(Loc(27,15),0))
+  FINITE  : v:mm_init:3if, (0, 1), (if (3if) BB2 BB3; VOID, f:mm_init, Info(Loc(11,14),0))
+  FINITE  : v:mm_mul:1if, (0, 1), (if (1if) BB2 BB6; VOID, f:mm_mul, Info(Loc(37,14),0))
+  FINITE  : v:mm_mul:2if, (0, 1), (if (2if) BB4 BB5; VOID, f:mm_mul, Info(Loc(38,15),0))
+  FINITE  : v:mm_mul:8if, (0, 1), (if (8if) BB8 BB15; VOID, f:mm_mul, Info(Loc(40,14),0))
+  FINITE  : v:mm_mul:9if, (0, 1), (if (9if) BB10 BB14; VOID, f:mm_mul, Info(Loc(42,15),0))
+  FINITE  : v:mm_mul:10if, (0, 1), (if (10if) BB12 BB13; VOID, f:mm_mul, Info(Loc(44,16),0))
+AnalysisType: IntervalR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 110
+  TotalNumericNames     : 97
+  TotalConstantValues   : 0
+  TotalFiniteRange      : 10
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 87
+------------------------------------------------
+TimeElapsed(span:span): 196.3043212890625 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+
+TotalValueContexts     : 7
+TotalSize(ValueContext): 679 KB.
+TotalSize(VCI object)  : 681 KB.
+
+  FINITE  : v:main:1if, (0, 1), (if (1if) BB1 BB2; VOID, f:main, Info(Loc(56,2),0))
+  FINITE  : v:mm_destroy:1if, (0, 1), (if (1if) BB2 BB3; VOID, f:mm_destroy, Info(Loc(18,14),0))
+  FINITE  : v:mm_gen:2if, (0, 1), (if (2if) BB2 BB6; VOID, f:mm_gen, Info(Loc(26,14),0))
+  FINITE  : v:mm_gen:3if, (0, 1), (if (3if) BB4 BB5; VOID, f:mm_gen, Info(Loc(27,15),0))
+  FINITE  : v:mm_init:3if, (0, 1), (if (3if) BB2 BB3; VOID, f:mm_init, Info(Loc(11,14),0))
+  FINITE  : v:mm_mul:1if, (0, 1), (if (1if) BB2 BB6; VOID, f:mm_mul, Info(Loc(37,14),0))
+  FINITE  : v:mm_mul:2if, (0, 1), (if (2if) BB4 BB5; VOID, f:mm_mul, Info(Loc(38,15),0))
+  FINITE  : v:mm_mul:8if, (0, 1), (if (8if) BB8 BB15; VOID, f:mm_mul, Info(Loc(40,14),0))
+  FINITE  : v:mm_mul:9if, (0, 1), (if (9if) BB10 BB14; VOID, f:mm_mul, Info(Loc(42,15),0))
+  FINITE  : v:mm_mul:10if, (0, 1), (if (10if) BB12 BB13; VOID, f:mm_mul, Info(Loc(44,16),0))
+AnalysisType: IntervalR
+Method: MethodDetail(plain, plain, ['IntervalA'], 'No Description')
+  TotalNodes            : 78
+  TotalNumericNames     : 97
+  TotalConstantValues   : 0
+  TotalFiniteRange      : 10
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 87
+------------------------------------------------
+TimeElapsed(plain:plain): 147.55558967590332 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+
+TotalValueContexts     : 7
+TotalSize(ValueContext): 675 KB.
+TotalSize(VCI object)  : 676 KB.
+
+
+TotalValueContexts     : 7
+TotalSize(ValueContext): 533 KB.
+TotalSize(VCI object)  : 534 KB.
+
+  FINITE  : v:main:1if, (0, 1), (if (1if) BB1 BB2; VOID, f:main, Info(Loc(56,2),0))
+  FINITE  : v:mm_destroy:1if, (0, 1), (if (1if) BB2 BB3; VOID, f:mm_destroy, Info(Loc(18,14),0))
+  FINITE  : v:mm_gen:2if, (0, 1), (if (2if) BB2 BB6; VOID, f:mm_gen, Info(Loc(26,14),0))
+  FINITE  : v:mm_gen:3if, (0, 1), (if (3if) BB4 BB5; VOID, f:mm_gen, Info(Loc(27,15),0))
+  FINITE  : v:mm_init:3if, (0, 1), (if (3if) BB2 BB3; VOID, f:mm_init, Info(Loc(11,14),0))
+  FINITE  : v:mm_mul:1if, (0, 1), (if (1if) BB2 BB6; VOID, f:mm_mul, Info(Loc(37,14),0))
+  FINITE  : v:mm_mul:2if, (0, 1), (if (2if) BB4 BB5; VOID, f:mm_mul, Info(Loc(38,15),0))
+  FINITE  : v:mm_mul:8if, (0, 1), (if (8if) BB8 BB15; VOID, f:mm_mul, Info(Loc(40,14),0))
+  FINITE  : v:mm_mul:9if, (0, 1), (if (9if) BB10 BB14; VOID, f:mm_mul, Info(Loc(42,15),0))
+  FINITE  : v:mm_mul:10if, (0, 1), (if (10if) BB12 BB13; VOID, f:mm_mul, Info(Loc(44,16),0))
+AnalysisType: IntervalR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 78
+  TotalNumericNames     : 97
+  TotalConstantValues   : 0
+  TotalFiniteRange      : 10
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 87
+------------------------------------------------
+TimeElapsed(cascading:cascading): 172.6815700531006 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+
+TotalValueContexts     : 7
+TotalSize(ValueContext): 459 KB.
+TotalSize(VCI object)  : 460 KB.
+
+
+TotalValueContexts     : 7
+TotalSize(ValueContext): 722 KB.
+TotalSize(VCI object)  : 724 KB.
+
+  FINITE  : v:main:1if, (0, 1), (if (1if) BB1 BB2; VOID, f:main, Info(Loc(56,2),0))
+  FINITE  : v:mm_destroy:1if, (0, 1), (if (1if) BB2 BB3; VOID, f:mm_destroy, Info(Loc(18,14),0))
+  FINITE  : v:mm_gen:2if, (0, 1), (if (2if) BB2 BB6; VOID, f:mm_gen, Info(Loc(26,14),0))
+  FINITE  : v:mm_gen:3if, (0, 1), (if (3if) BB4 BB5; VOID, f:mm_gen, Info(Loc(27,15),0))
+  FINITE  : v:mm_init:3if, (0, 1), (if (3if) BB2 BB3; VOID, f:mm_init, Info(Loc(11,14),0))
+  FINITE  : v:mm_mul:1if, (0, 1), (if (1if) BB2 BB6; VOID, f:mm_mul, Info(Loc(37,14),0))
+  FINITE  : v:mm_mul:2if, (0, 1), (if (2if) BB4 BB5; VOID, f:mm_mul, Info(Loc(38,15),0))
+  FINITE  : v:mm_mul:8if, (0, 1), (if (8if) BB8 BB15; VOID, f:mm_mul, Info(Loc(40,14),0))
+  FINITE  : v:mm_mul:9if, (0, 1), (if (9if) BB10 BB14; VOID, f:mm_mul, Info(Loc(42,15),0))
+  FINITE  : v:mm_mul:10if, (0, 1), (if (10if) BB12 BB13; VOID, f:mm_mul, Info(Loc(44,16),0))
+AnalysisType: IntervalR
+Method: MethodDetail(cascading, cascading, ['PointsToA', 'IntervalA'], 'No Description')
+  TotalNodes            : 78
+  TotalNumericNames     : 97
+  TotalConstantValues   : 0
+  TotalFiniteRange      : 10
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 87
+------------------------------------------------
+TimeElapsed(cascading:cascading): 173.4917163848877 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+
+TotalValueContexts     : 7
+TotalSize(ValueContext): 781 KB.
+TotalSize(VCI object)  : 783 KB.
+
+  FINITE  : v:main:1if, (0, 1), (if (1if) BB1 BB2; VOID, f:main, Info(Loc(56,2),0))
+  FINITE  : v:mm_destroy:1if, (0, 1), (if (1if) BB2 BB3; VOID, f:mm_destroy, Info(Loc(18,14),0))
+  FINITE  : v:mm_gen:2if, (0, 1), (if (2if) BB2 BB6; VOID, f:mm_gen, Info(Loc(26,14),0))
+  FINITE  : v:mm_gen:3if, (0, 1), (if (3if) BB4 BB5; VOID, f:mm_gen, Info(Loc(27,15),0))
+  FINITE  : v:mm_init:3if, (0, 1), (if (3if) BB2 BB3; VOID, f:mm_init, Info(Loc(11,14),0))
+  FINITE  : v:mm_mul:1if, (0, 1), (if (1if) BB2 BB6; VOID, f:mm_mul, Info(Loc(37,14),0))
+  FINITE  : v:mm_mul:2if, (0, 1), (if (2if) BB4 BB5; VOID, f:mm_mul, Info(Loc(38,15),0))
+  FINITE  : v:mm_mul:8if, (0, 1), (if (8if) BB8 BB15; VOID, f:mm_mul, Info(Loc(40,14),0))
+  FINITE  : v:mm_mul:9if, (0, 1), (if (9if) BB10 BB14; VOID, f:mm_mul, Info(Loc(42,15),0))
+  FINITE  : v:mm_mul:10if, (0, 1), (if (10if) BB12 BB13; VOID, f:mm_mul, Info(Loc(44,16),0))
+AnalysisType: IntervalR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 78
+  TotalNumericNames     : 97
+  TotalConstantValues   : 0
+  TotalFiniteRange      : 10
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 87
+------------------------------------------------
+TimeElapsed(lerner:lerner): 157.67812728881836 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+
+TotalValueContexts     : 7
+TotalSize(ValueContext): 781 KB.
+TotalSize(VCI object)  : 783 KB.
+
+  FINITE  : v:main:1if, (0, 1), (if (1if) BB1 BB2; VOID, f:main, Info(Loc(56,2),0))
+  FINITE  : v:mm_destroy:1if, (0, 1), (if (1if) BB2 BB3; VOID, f:mm_destroy, Info(Loc(18,14),0))
+  FINITE  : v:mm_gen:2if, (0, 1), (if (2if) BB2 BB6; VOID, f:mm_gen, Info(Loc(26,14),0))
+  FINITE  : v:mm_gen:3if, (0, 1), (if (3if) BB4 BB5; VOID, f:mm_gen, Info(Loc(27,15),0))
+  FINITE  : v:mm_init:3if, (0, 1), (if (3if) BB2 BB3; VOID, f:mm_init, Info(Loc(11,14),0))
+  FINITE  : v:mm_mul:1if, (0, 1), (if (1if) BB2 BB6; VOID, f:mm_mul, Info(Loc(37,14),0))
+  FINITE  : v:mm_mul:2if, (0, 1), (if (2if) BB4 BB5; VOID, f:mm_mul, Info(Loc(38,15),0))
+  FINITE  : v:mm_mul:8if, (0, 1), (if (8if) BB8 BB15; VOID, f:mm_mul, Info(Loc(40,14),0))
+  FINITE  : v:mm_mul:9if, (0, 1), (if (9if) BB10 BB14; VOID, f:mm_mul, Info(Loc(42,15),0))
+  FINITE  : v:mm_mul:10if, (0, 1), (if (10if) BB12 BB13; VOID, f:mm_mul, Info(Loc(44,16),0))
+AnalysisType: IntervalR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 78
+  TotalNumericNames     : 97
+  TotalConstantValues   : 0
+  TotalFiniteRange      : 10
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 87
+------------------------------------------------
+TimeElapsed(lerner:lerner): 157.99641609191895 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+
+TotalValueContexts     : 7
+TotalSize(ValueContext): 798 KB.
+TotalSize(VCI object)  : 800 KB.
+
+  FINITE  : v:main:1if, (0, 1), (if (1if) BB1 BB2; VOID, f:main, Info(Loc(56,2),0))
+  FINITE  : v:mm_destroy:1if, (0, 1), (if (1if) BB2 BB3; VOID, f:mm_destroy, Info(Loc(18,14),0))
+  FINITE  : v:mm_gen:2if, (0, 1), (if (2if) BB2 BB6; VOID, f:mm_gen, Info(Loc(26,14),0))
+  FINITE  : v:mm_gen:3if, (0, 1), (if (3if) BB4 BB5; VOID, f:mm_gen, Info(Loc(27,15),0))
+  FINITE  : v:mm_init:3if, (0, 1), (if (3if) BB2 BB3; VOID, f:mm_init, Info(Loc(11,14),0))
+  FINITE  : v:mm_mul:1if, (0, 1), (if (1if) BB2 BB6; VOID, f:mm_mul, Info(Loc(37,14),0))
+  FINITE  : v:mm_mul:2if, (0, 1), (if (2if) BB4 BB5; VOID, f:mm_mul, Info(Loc(38,15),0))
+  FINITE  : v:mm_mul:8if, (0, 1), (if (8if) BB8 BB15; VOID, f:mm_mul, Info(Loc(40,14),0))
+  FINITE  : v:mm_mul:9if, (0, 1), (if (9if) BB10 BB14; VOID, f:mm_mul, Info(Loc(42,15),0))
+  FINITE  : v:mm_mul:10if, (0, 1), (if (10if) BB12 BB13; VOID, f:mm_mul, Info(Loc(44,16),0))
+AnalysisType: IntervalR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalNodes            : 78
+  TotalNumericNames     : 97
+  TotalConstantValues   : 0
+  TotalFiniteRange      : 10
+  TotalPositiveRange    : 0
+  TotalNegativeRange    : 0
+  TotalUnknown          : 87
+------------------------------------------------
+TimeElapsed(span:span): 185.58382987976074 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+------------------------------------------------
+TimeElapsed(compareall:compareall): 0.07748603820800781 ms (Starts: 1, Stops: 1)
+TimeElapsed(TotalTimeTaken): 1228.7299633026123 ms (Starts: 1, Stops: 1)

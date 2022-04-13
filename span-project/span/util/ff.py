@@ -36,7 +36,7 @@ IPA_VC_RECURSION_LIMIT: int = 400
 """IPA (ValueContext) Recursion Limit."""
 
 IPA_VC_RE_USE_SAVED_HOST_OBJECTS: bool = True
-"""IPA (ValueContext) Reuse prev value context mapped Host? (optimization)."""
+"""IPA (ValueContext) Reuses prev Host objects when possible (optimization)."""
 
 IPA_VC_WIDEN_VALUE_CONTEXT: bool = True
 """IPA (ValueContext) widen the value context? (for termination)."""

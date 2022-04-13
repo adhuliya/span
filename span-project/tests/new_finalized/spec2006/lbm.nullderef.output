@@ -1,0 +1,33 @@
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(plain, plain, ['PointsToA'], 'No Description')
+  TotalDerefs    : 642
+  TotalSafeDerefs: 129
+  TotalBotDerefs : 513
+------------------------------------------------
+TimeElapsed(plain:plain): 953.7363052368164 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(cascading, cascading, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 642
+  TotalSafeDerefs: 129
+  TotalBotDerefs : 513
+------------------------------------------------
+TimeElapsed(cascading:cascading): 20151.438236236572 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(lerner, lerner, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 642
+  TotalSafeDerefs: 130
+  TotalBotDerefs : 512
+------------------------------------------------
+TimeElapsed(lerner:lerner): 23085.60562133789 ms (Starts: 1, Stops: 1)
+------------------------------------------------
+AnalysisType: NullDerefR
+Method: MethodDetail(span, span, ['IntervalA', 'PointsToA'], 'No Description')
+  TotalDerefs    : 642
+  TotalSafeDerefs: 130
+  TotalBotDerefs : 512
+------------------------------------------------
+TimeElapsed(span:span): 26393.50199699402 ms (Starts: 1, Stops: 1)
+TimeElapsed(TotalTimeTaken): 70889.53995704651 ms (Starts: 1, Stops: 1)

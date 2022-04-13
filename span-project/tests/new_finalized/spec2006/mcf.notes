@@ -1,0 +1,14 @@
+
+----------------------------------------------------------------
+AnalysisType: AvgDerefR
+Method: MethodDetail(plain, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 605
+  TotalPointees      : 1682
+  AvgDerefs          : 2.7801652892561983
+AnalysisType: AvgDerefR
+Method: MethodDetail(span, [0], ['PointsToA']), Config: 0
+  TotalDereferences  : 605
+  TotalPointees      : 1682
+  AvgDerefs          : 2.7801652892561983
+TimeElapsed(TotalTimeTaken): 983.0422401428223 ms (Starts: 1, Stops: 1)
+----------------------------------------------------------------

@@ -48,7 +48,10 @@ import span.sys.clients   as clients
 import span.sys.diagnosis as sysDiagnosis
 from span.api.diagnosis import (AllMethods, SpanMethod, UseAllMethods)
 import span.sys.optimize  as sysOpt
+
+
 sysDiagnosis.init()  # IMPORTANT
+
 
 installDotMsg = """
 SPAN: `xdot` error: cannot locate program to view graphviz dot files.
