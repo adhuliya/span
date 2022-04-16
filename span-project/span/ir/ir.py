@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (C) 2021 Anshuman Dhuliya
+# Copyright (C) 2021
 
 """
 This is a convenience module that brings the scattered API

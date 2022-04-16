@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (C) 2021 Anshuman Dhuliya
+# Copyright (C) 2021
 
 """Common functionality needed by other sys modules.
 """
@@ -164,9 +164,11 @@ class AnDfvPairDict:
     equal = True
     if not isinstance(other, AnDfvPairDict):
       equal = False
-    elif not self.depth == other.depth:
-      equal = False
+    # elif not self.depth == other.depth:
+    #   if util.LL2: LDB(f"unequal depth:\n self value:  {self.depth}, {other.depth}") #delit
+    #   equal = False
     elif not self.dfvs.keys() == other.dfvs.keys():
+      if util.LL2: LDB(f"unequal keys:\n self value:  {self.dfvs.keys() ==  other.dfvs.keys()}") #delit
       equal = False
     else:
       for anName, nDfvSelf in self.dfvs.items():
@@ -177,6 +179,7 @@ class AnDfvPairDict:
         direction = clients.getAnDirn(anName)
         if direction == Forward:
           if not nDfvSelf.dfvIn == nDfvOther.dfvIn:
+            if util.LL2: LDB(f"unequal dfvIn:\n self value:  {nDfvSelf.dfvIn}\n other value: {nDfvOther.dfvIn}") #delit
             equal = False
         elif direction == Backward:
           if not nDfvSelf.dfvOut == nDfvOther.dfvOut:

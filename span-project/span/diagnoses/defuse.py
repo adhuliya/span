@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2021 Anshuman Dhuliya
+# Copyright (c) 2021
 
 """The number of definitions reaching variables use."""
 
@@ -158,7 +158,8 @@ class DefUseR(DiagnosisRT):
 
     # if here, there is a deref expression as rvalue
     if not ptsAnResult: # in case of plain method
-      return names, self.filterVariables(self.tUnit.getNamesEnv(func, de.type))
+      #return names, self.filterVariables(self.tUnit.getNamesEnv(func, de.type))
+      return names, self.tUnit._globalsAndAddrTakenVarNames
     else:
       derefVar = expr.getDereferencedVar(de)
       dfv, ptsRes = None, ptsAnResult.get(nid)
@@ -171,7 +172,8 @@ class DefUseR(DiagnosisRT):
         return names, set()
       else:
         if len(dfv.val) > 1 and not spanMethod:
-          return names, self.filterVariables(self.tUnit.getNamesEnv(func, de.type))
+          #return names, self.filterVariables(self.tUnit.getNamesEnv(func, de.type))
+          return names, self.tUnit._globalsAndAddrTakenVarNames
         else:
           return names, self.filterVariables(dfv.val) # taking points-to set of non-tmp vars
 
@@ -209,8 +211,9 @@ class DefUseR(DiagnosisRT):
 
 
   def filterVariables(self, varNameSet: Set[VarNameT]) -> Set[VarNameT]:
-    nonTmpVars = set()
-    for vName in varNameSet:
-      if not conv.isTmpVar(vName):
-        nonTmpVars.add(vName)
-    return nonTmpVars
+    return varNameSet
+    # nonTmpVars = set()
+    # for vName in varNameSet:
+    #   if not conv.isTmpVar(vName):
+    #     nonTmpVars.add(vName)
+    # return nonTmpVars

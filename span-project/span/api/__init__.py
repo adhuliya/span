@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (C) 2021 Anshuman Dhuliya
+# Copyright (C) 2021
 
 """The API needed to develop clients (analyses) and diagnoses.
 

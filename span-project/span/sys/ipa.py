@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (C) 2021 Anshuman Dhuliya
+# Copyright (C) 2021
 
 """
 Inter-Procedural Analysis (IPA)
@@ -81,8 +81,10 @@ class ValueContext:
     if not isinstance(other, ValueContext):
       equal = False
     elif not self.funcName == other.funcName:
+      if util.LL2: LDB(f"unequal valuecontext: {self.funcName} other: {other.funcName}") #delit
       equal = False
     elif not self.dfvDict == other.dfvDict:
+      if util.LL2: LDB(f"unequal valuecontext:\n self value:  {self.dfvDict}\n other value: {other.dfvDict}") #delit
       equal = False
 
     return equal

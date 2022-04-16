@@ -1,7 +1,7 @@
 bget source notes
 ============
 
-Author: Anshuman Dhuliya
+Author: 
 
 Reference: <https://www.fourmilab.ch/bget/>
 

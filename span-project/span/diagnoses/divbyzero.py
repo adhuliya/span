@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (c) 2021 Anshuman Dhuliya
+# Copyright (c) 2021
 
 """The number divisions that are safe (i.e. no-div-by-zero)"""
 

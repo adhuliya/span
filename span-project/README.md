@@ -1,6 +1,6 @@
 Synergistic Program ANalysis (SPAN)
 ===================================
-Author: Anshuman Dhuliya
+Author: 
 
 To run the project use the script: `./main.py`
 
@@ -282,6 +282,6 @@ See the list of checkers available:
 
 
 <br /> <br /> <br />
-&copy; 2020 Anshuman Dhuliya
+&copy; 2020 
 <br /> <br /> <br />
 

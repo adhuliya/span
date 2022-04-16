@@ -1,7 +1,7 @@
 #!/usr/bin/env python3.6
 
 # MIT License
-# Copyright (C) 2021 Anshuman Dhuliya
+# Copyright (C) 2021
 
 """
 Python 3.6 or above.

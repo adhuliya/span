@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # MIT License
-# Copyright (C) 2021 Akshat Garg, Anshuman Dhuliya
+# Copyright (C) 2021 Akshat Garg,
 
 """Demand Driven Method (#DDM) Augmentation
 This module provides the demand driven logic to SPAN.
