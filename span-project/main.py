@@ -1,7 +1,6 @@
-#!/usr/bin/env python3.6
+#!/usr/bin/env python3
 
-# MIT License
-# Copyright (C) 2021
+# Copyright (c) 2021-2024 MIT License
 
 """
 Python 3.6 or above.
@@ -14,6 +13,7 @@ This module is supposed to be aliased as `span`.
 
 Once aliased, invoke `span -h` to get help with the command line options.
 """
+
 import span.sys.driver as driver  # IMPORTANT
 import span.util.logger as logger
 import logging
@@ -39,16 +39,16 @@ if __name__ == "__main__":
 
   args = parser.parse_args()  # parse command line
 
-  if util.LL1: LOG.info("\n\nSPAN_SYSTEM: STARTED!\n\n")
+  if util.LL1: LOG.info("\n\nSPAN: System: STARTED!\n\n")
 
-  if util.VV1: print("SPAN is:", os.path.realpath(__file__))
-  if util.VV1: print("RotatingLogFile: file://",
+  if util.VV1: print("SPAN: Driver: file://", os.path.realpath(__file__))
+  if util.VV1: print("SPAN: RotatingLogFile: file://",
                      logger.ABS_LOG_FILE_NAME, "\n\n", sep="")
 
-  timer = util.Timer("TotalTimeTaken")
+  timer = util.Timer("StartToFinish")
   args.func(args)             # take action
   timer.stopAndLog(util.VV0, util.LL0)
 
-  if util.LL1: LOG.info("\n\nSPAN_SYSTEM: FINISHED!\n\n")
+  if util.LL1: LOG.info("\n\nSPAN: System: FINISHED!\n\n")
 
 

@@ -414,7 +414,7 @@ class Timer:
 
 
   def __str__(self):
-    return f"TimeElapsed({self.name}):" \
+    return f"SPAN: {self.name}: TimeElapsed:" \
            f" {self.getDurationInMillisec()} ms" \
            f" (Starts: {self.startCounts}, Stops: {self.stopCounts})"
 
