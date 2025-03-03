@@ -1,0 +1,17 @@
+Follow the instructions below to create the initial project structure.
+
+Create a standard Go project file and directory structure and a Makefile based build system for this golang project. Use best practices to format and vet the project before building. Use @README.md to understand the nature of the project. Find the details of the project below.
+
+1. Create a main function for `span` executable that takes in command line arguments with subcommands like 'span help' to print help message, 'span analyze', 'span link' etc. Use community standard golang mechanism to add command line processing support. After processing the command line save all the state in a properly structured 'CmdLine' structure object which can be globally accessed. Process the command line in a dedicated function call. Keep all command line processing and definitions in a dedicated package which can be imported by other packages and extended to add more command line options as per needs. Define it neatly keeping in mind that it will become complex and involved soon. Always print a help message when there is error in processing the command line.
+
+2. Initialize a structured logger using the slog package with support for multi-level logging. Create a handler to add the source location of the log messages. Add a command line argument option to select logging level in all the subcommands. Make the handler configurable by allowing the user to choose the to log time, source location, function name etc. from the command line itself. By default, use a text based logger (with an option of a json based logger), with source location (no time and no function name).
+
+3. Create dedicated initialize() and finish() functions that are called from main(). All command line processing, logger initialization etc. should be called from the initialize() function, keeping the main() function as clean as possible. For now, just create a stub finish() function. Its details will be added later. Add info log message that the system has started and stopped.
+
+4. Create an SPAN IR package called `spir` with a `spir.proto` stub file. Add mechanism in the project Makefile to generate golang sources from the proto file in the spir package. Fetch the required protoc module using `go get` for this to work.
+
+5. Create a `slang/` folder which is a Clang/LLVM based tool. This tool will use the `spir.proto` file's C++ API. This would use cmake based build system like in LLVM. Create a simple Clang tool that accepts all the clang based arguments and visits each function in the AST and prints its name. Add build support for this in the top level Makefile of the project by making a `slang/build` directory to configure and build using cmake.
+
+6. Create a `docker/` folder which contains all the docker related resources. Configure a docker container which can build and run this Go project. Add protobuf and LLVM development libraries and files to the container to support the creation of the slang tool. Make a standard Go setup for this project in the container. Create scripts to easily build, start and stop the container and  a script to execute command in the container with custom commands.
+
+Create a working structure as stated above and tell show how to run the project inside the docker container.

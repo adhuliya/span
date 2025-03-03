@@ -1,0 +1,16 @@
+---
+description: The style of code to follow for Go files
+globs: *.go
+alwaysApply: false
+---
+
+# When generating Go code adhere to the following list of rules
+
+- Use SOLID software design principles.
+- Use interfaces werever possible. Try to use minimal interface definitions.
+- Create small and simple functions or components.
+- When writing new code or refactoring an old code, try to use existing functionality and compose it to achieve the results.
+- Add short and simple documentation comments wherever possible, unless explicitly asked to expand.
+- Always, explain the generated code.
+
+- Try to define all the string constants in a dedicated go file `util/strings.go` in a package util. There can be some exception to this when you think that the constant will not be used in more than one place, for example format strings and log messages. Ask if you are in doubt.
