@@ -1,0 +1,47 @@
+//devcontainer.json
+{
+    "name": "span.go",
+  
+    // More info: https://containers.dev/guide/dockerfile
+    "build": {
+        // Path is relative to the devcontainer.json file.
+        "dockerfile": "Dockerfile"
+    },
+
+    "postCreateCommand": "make tidy",
+  
+    // Features to add to the dev container. More info: https://containers.dev/features.
+    // "features": {},
+  
+    "customizations": {
+        "vscode": {
+          "settings": {
+            "terminal.integrated.defaultProfile.linux": "zsh",
+            "terminal.integrated.profiles.linux": { 
+              "zsh": { 
+                "path": "/bin/zsh" 
+              } 
+            }
+          },
+          "extensions": [
+            "golang.go",
+            "ms-vscode.makefile-tools",
+            "ms-python.python",
+            "ms-vscode.cpptools",
+            "ms-vscode.cmake-tools",
+            "ms-vscode.cmake"
+          ]
+        }
+      },
+  
+    "forwardPorts": [3000],
+  
+    "portsAttributes": {
+      "3000": {
+        "label": "Documentation",
+        "onAutoForward": "notify"
+      }
+    }
+  
+    // "remoteUser": "root"
+  }

@@ -1,0 +1,12 @@
+# IDE related excludes
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+.history/
+
+# Build and log files
+build-*
+*.tmp.log

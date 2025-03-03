@@ -21,17 +21,25 @@ RUN mkdir -p "$GOPATH/src" "$GOPATH/bin" && chmod -R 777 "$GOPATH"
 
 # Install required packages
 RUN apt-get update && apt-get install -y \
-    cmake \
-    clang \
-    llvm \
-    libclang-dev \
-    llvm-dev \
-    protobuf-compiler \
-    libprotobuf-dev \
+    binutils=2.42* \
+    cmake=3.28.3* \
+    clang-19 \
+    llvm-19 \
+    libclang-19-dev \
+    llvm-19-dev \
+    llvm-19-doc \
+    libclang-cpp19 \
+    libllvm19 \
+    llvm-19-linker-tools \
+    llvm-19-runtime \
+    llvm-19-tools \
+    protobuf-compiler=3.21.12* \
+    libprotobuf-dev=3.21.12* \
+    protoc-gen-go=1.32.0* \
     && rm -rf /var/lib/apt/lists/*
 
 # Install protoc-gen-go
-RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@1.36.5
 
 # Set working directory
 WORKDIR /span

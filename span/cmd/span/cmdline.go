@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/adhuliya/span/pkg/logger"
 	"github.com/spf13/cobra"
 )
@@ -21,7 +19,8 @@ var (
 	}
 )
 
-func init() {
+// All command line options are initialized and setup here.
+func initCmdLine() {
 	rootCmd.PersistentFlags().StringVar(&cmdLine.LogConfig.Level, "log-level", "info", "Set logging level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().BoolVar(&cmdLine.LogConfig.ShowTime, "log-time", false, "Show timestamp in logs")
 	rootCmd.PersistentFlags().BoolVar(&cmdLine.LogConfig.ShowSource, "log-source", true, "Show source location in logs")
@@ -57,20 +56,6 @@ func processCmdLine(args []string) error {
 		return logger.Initialize(cmdLine.LogConfig)
 	}, nil)
 	return err
-}
-
-func Execute() error {
-	switch cmdLine.Command {
-	case "analyze":
-		return executeAnalyze()
-	case "link":
-		return executeLink()
-	case "help":
-		rootCmd.Help()
-		return nil
-	default:
-		return fmt.Errorf("unknown command: %s", cmdLine.Command)
-	}
 }
 
 func executeAnalyze() error {

@@ -9,6 +9,7 @@ import (
 
 func initialize() error {
 	// Process command line arguments
+	initCmdLine()
 	if err := processCmdLine(os.Args[1:]); err != nil {
 		return err
 	}
