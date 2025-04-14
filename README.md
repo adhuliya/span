@@ -1,16 +1,16 @@
 # Synergistic Program Analyzer (SPAN)
-A program analysis engine and bug finder tool.
+A program analysis engine and bug finder tool with its foundation in Abstract Interpretation and Data Flow Analysis.
 
 ## The platform
 
 SPAN is a program analysis engine written in Go programming language.
 It uses the Clang/LLVM infrastructure to convert a C program to Clang AST
-and then to a three-address code intermediate represenation called SPIR.
+and then to a three-address code intermediate represenation called SPIR (SPAN IR).
 
 ## What is SPAN IR (SPIR)?
 
 SPIR is an simple three-address code intermediate representation (IR) which
-is built to experiment with different program analysis alogirthms.
+is built to experiment with different program analysis abstractions and alogirthms.
 The goal of SPIR is to provide an IR that lends itself efficiently
 to program analysis, and to allow experimentation with different program
 analysis algorithms and techniques.

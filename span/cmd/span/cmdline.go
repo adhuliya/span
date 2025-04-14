@@ -15,12 +15,12 @@ var (
 	rootCmd = &cobra.Command{
 		Use:   "span",
 		Short: "Synergistic Program Analyzer",
-		Long:  `SPAN is a program analysis engine for analyzing C programs`,
+		Long:  `SPAN is a program analysis engine for analyzing C11 programs`,
 	}
 )
 
-// All command line options are initialized and setup here.
-func initCmdLine() {
+// All command line options are configured and setup here.
+func configureCommand() {
 	rootCmd.PersistentFlags().StringVar(&cmdLine.LogConfig.Level, "log-level", "info", "Set logging level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().BoolVar(&cmdLine.LogConfig.ShowTime, "log-time", false, "Show timestamp in logs")
 	rootCmd.PersistentFlags().BoolVar(&cmdLine.LogConfig.ShowSource, "log-source", true, "Show source location in logs")
@@ -37,6 +37,7 @@ var analyzeCmd = &cobra.Command{
 	Short: "Analyze a SPIR file",
 	Run: func(cmd *cobra.Command, args []string) {
 		cmdLine.Command = "analyze"
+		logger.Get().Info("Analyzing SPIR file...")
 		// TODO: Implement analyze
 	},
 }
@@ -50,12 +51,25 @@ var linkCmd = &cobra.Command{
 	},
 }
 
-func processCmdLine(args []string) error {
+// processCmdLine processes the command line arguments and initializes the logger.
+// It returns an error if the initialization fails.
+// The function is designed to be called from the main function.
+func processCmdLine(args []string) *cobra.Command {
+	configureCommand()
+
+	// Set the command line arguments
 	rootCmd.SetArgs(args)
-	err := Run(func() error {
+
+	// Initialize the logger
+	err := FirstError(func() error {
 		return logger.Initialize(cmdLine.LogConfig)
 	}, nil)
-	return err
+
+	if err != nil {
+		panic("Failed to initialize process command line: %v" + err.Error())
+	}
+
+	return rootCmd
 }
 
 func executeAnalyze() error {

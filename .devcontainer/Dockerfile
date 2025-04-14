@@ -7,14 +7,14 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Go 1.24
-RUN wget -O go.tgz https://go.dev/dl/go1.24.0.linux-arm64.tar.gz && \
+RUN wget -O go.tgz https://go.dev/dl/go1.24.2.linux-arm64.tar.gz && \
     tar -C /usr/local -xzf go.tgz && \
     rm go.tgz
 
 # Set Go environment variables
 ENV GOROOT=/usr/local/go
 ENV GOPATH=/go
-ENV PATH=$GOPATH/bin:$GOROOT/bin:$PATH
+ENV PATH=$GOPATH/bin:$GOROOT/bin:/usr/lib/llvm-19/bin:$PATH
 
 # Create Go workspace directory
 RUN mkdir -p "$GOPATH/src" "$GOPATH/bin" && chmod -R 777 "$GOPATH"

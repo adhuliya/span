@@ -1,34 +1,33 @@
 package main
 
 import (
-	"log"
 	"os"
 
 	"github.com/adhuliya/span/pkg/logger"
+	"github.com/spf13/cobra"
 )
 
-func initialize() error {
-	// Process command line arguments
-	initCmdLine()
-	if err := processCmdLine(os.Args[1:]); err != nil {
-		return err
-	}
+func initialize() *cobra.Command {
+	logger.Get().Info(">>>>>>> SPAN started !!!")
 
-	rootCmd.Execute()
+	rootCmd = processCmdLine(os.Args[1:])
 
-	// Initialize logger
-	return logger.Initialize(getCmdLine().LogConfig)
+	// other initialization code can go here
+
+	return rootCmd
 }
 
 func finish() {
-	logger.Get().Info(">>>>>>> SPAN analysis completed !!!")
+	logger.Get().Info(">>>>>>> SPAN finished !!!")
 }
 
 func main() {
-	if err := initialize(); err != nil {
-		log.Fatalf("Failed to initialize: %v", err)
-	}
+	rootCmd := initialize()
 	defer finish()
 
-	logger.Get().Info(">>>>>>> SPAN analysis started !!!")
+	// Execute the root command
+	if err := rootCmd.Execute(); err != nil {
+		logger.Get().Error("Error executing command", "error", err)
+		os.Exit(1)
+	}
 }

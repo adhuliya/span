@@ -1,0 +1,8 @@
+[
+{
+  "directory": "/workspaces/span/build",
+  "command": "/usr/bin/clang++-19  -I/usr/lib/llvm-19/include -g   -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -o CMakeFiles/slang.dir/src/main.cpp.o -c /workspaces/span/slang/src/main.cpp",
+  "file": "/workspaces/span/slang/src/main.cpp",
+  "output": "CMakeFiles/slang.dir/src/main.cpp.o"
+}
+]

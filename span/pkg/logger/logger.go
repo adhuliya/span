@@ -43,6 +43,13 @@ func Initialize(config LogConfig) error {
 	}
 
 	logger = slog.New(handler)
+	logger.Info("Logger initialized",
+		slog.String("level", config.Level),
+		slog.Bool("show_time", config.ShowTime),
+		slog.Bool("show_source", config.ShowSource),
+		slog.Bool("show_function", config.ShowFunction),
+		slog.Bool("use_json", config.UseJSON),
+	)
 	return nil
 }
 

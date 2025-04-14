@@ -29,7 +29,12 @@
             "ms-python.python",
             "ms-vscode.cpptools",
             "ms-vscode.cmake-tools",
-            "ms-vscode.cmake"
+            "ms-vscode.cmake",
+            "ms-azuretools.vscode-docker",
+            "ms-vscode.cpptools-extension-pack",
+            "xaver.clang-format",
+            "twxs.cmake",
+            "google.geminicodeassist"
           ]
         }
       },

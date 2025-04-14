@@ -1,0 +1,10 @@
+/workspaces/span/build/CMakeFiles/intrinsics_gen.dir
+/workspaces/span/build/CMakeFiles/omp_gen.dir
+/workspaces/span/build/CMakeFiles/acc_gen.dir
+/workspaces/span/build/CMakeFiles/ARMTargetParserTableGen.dir
+/workspaces/span/build/CMakeFiles/AArch64TargetParserTableGen.dir
+/workspaces/span/build/CMakeFiles/RISCVTargetParserTableGen.dir
+/workspaces/span/build/CMakeFiles/clang-tablegen-targets.dir
+/workspaces/span/build/CMakeFiles/slang.dir
+/workspaces/span/build/CMakeFiles/edit_cache.dir
+/workspaces/span/build/CMakeFiles/rebuild_cache.dir

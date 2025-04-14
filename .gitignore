@@ -10,3 +10,7 @@
 # Build and log files
 build-*
 *.tmp.log
+*/bin/*
+
+# Generated protobuf file(s)
+*.pg.go

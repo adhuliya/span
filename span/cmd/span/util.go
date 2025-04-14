@@ -6,7 +6,7 @@ package main
 //
 // It runs the function and returns its error only if the given error is nil.
 // Otherwise, it returns the given error.
-func Run(f func() error, err error) error {
+func FirstError(f func() error, err error) error {
 	if err != nil {
 		return err
 	}
