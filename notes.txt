@@ -1,4 +1,0 @@
-## Meeting Notes Sun Mar  2 10:37:23 IST 2025
-
-* More SPEC benchmarks
-* Automatic combination of Liveness and Points-to

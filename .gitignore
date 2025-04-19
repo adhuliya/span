@@ -8,6 +8,7 @@
 .history/
 
 # Build and log files
+build/
 build-*
 *.tmp.log
 */bin/*

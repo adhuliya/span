@@ -32,6 +32,7 @@ RUN apt-get update && apt-get install -y \
 
 # Install protoc-gen-go
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+RUN go install golang.org/x/tools/cmd/stringer@latest
 
 # Set working directory
 WORKDIR /span
