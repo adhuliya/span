@@ -8,35 +8,35 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[TY_CHAR-0]
-	_ = x[TY_INT8-1]
-	_ = x[TY_INT16-2]
-	_ = x[TY_INT32-3]
-	_ = x[TY_INT64-4]
-	_ = x[TY_UINT8-5]
-	_ = x[TY_UCHAR-5]
-	_ = x[TY_UINT16-6]
-	_ = x[TY_UINT32-7]
-	_ = x[TY_UINT64-8]
-	_ = x[TY_N_BITS-9]
-	_ = x[TY_N_UBITS-10]
-	_ = x[TY_BOOL-11]
-	_ = x[TY_FLOAT16-12]
-	_ = x[TY_FLOAT32-13]
-	_ = x[TY_FLOAT-13]
-	_ = x[TY_FLOAT64-14]
-	_ = x[TY_DOUBLE-14]
-	_ = x[TY_PTR_TO_VOID-15]
-	_ = x[TY_PTR_TO_PTR-16]
-	_ = x[TY_PTR_TO_ARR-17]
-	_ = x[TY_PTR_TO_CHAR-18]
-	_ = x[TY_PTR_TO_INT-19]
-	_ = x[TY_PTR_TO_FLOAT-20]
-	_ = x[TY_PTR_TO_RECORD-21]
-	_ = x[TY_PTR_TO_FUNC-22]
-	_ = x[TY_ARR-23]
-	_ = x[TY_UNION-24]
-	_ = x[TY_STRUCT-25]
+	_ = x[TY_CHAR-1]
+	_ = x[TY_INT8-2]
+	_ = x[TY_INT16-3]
+	_ = x[TY_INT32-4]
+	_ = x[TY_INT64-5]
+	_ = x[TY_UINT8-6]
+	_ = x[TY_UCHAR-6]
+	_ = x[TY_UINT16-7]
+	_ = x[TY_UINT32-8]
+	_ = x[TY_UINT64-9]
+	_ = x[TY_N_BITS-10]
+	_ = x[TY_N_UBITS-11]
+	_ = x[TY_BOOL-12]
+	_ = x[TY_FLOAT16-13]
+	_ = x[TY_FLOAT32-14]
+	_ = x[TY_FLOAT-14]
+	_ = x[TY_FLOAT64-15]
+	_ = x[TY_DOUBLE-15]
+	_ = x[TY_PTR_TO_VOID-16]
+	_ = x[TY_PTR_TO_PTR-17]
+	_ = x[TY_PTR_TO_ARR-18]
+	_ = x[TY_PTR_TO_CHAR-19]
+	_ = x[TY_PTR_TO_INT-20]
+	_ = x[TY_PTR_TO_FLOAT-21]
+	_ = x[TY_PTR_TO_RECORD-22]
+	_ = x[TY_PTR_TO_FUNC-23]
+	_ = x[TY_ARR-24]
+	_ = x[TY_UNION-25]
+	_ = x[TY_STRUCT-26]
 	_ = x[TY_OTHER-31]
 }
 
@@ -51,7 +51,8 @@ var (
 
 func (i ValueTypeKind) String() string {
 	switch {
-	case i <= 25:
+	case 1 <= i && i <= 26:
+		i -= 1
 		return _ValueTypeKind_name_0[_ValueTypeKind_index_0[i]:_ValueTypeKind_index_0[i+1]]
 	case i == 31:
 		return _ValueTypeKind_name_1

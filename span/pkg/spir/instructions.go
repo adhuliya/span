@@ -8,10 +8,10 @@ type InsnId EntityId
 // The instruction type decides the encoding used for the instruction.
 type InstructionKind uint8
 
-const InstructionKindPosition32 uint32 = 0x01F00000
-const InstructionKindPosition64 uint64 = 0x01F0000000000000
-const InstructionIdPosition32 uint64 = 0x3FFFFFFF
-const InstructionIdPosition64 uint64 = 0x3FFFFFFF00000000
+const InstructionKindPlacement32 uint32 = 0x01F00000
+const InstructionKindPlacement64 uint64 = 0x01F0000000000000
+const InstructionIdPlacement32 uint64 = 0x3FFFFFFF
+const InstructionIdPlacement64 uint64 = 0x3FFFFFFF00000000
 
 //go:generate stringer -type=InstructionKind
 const (
@@ -50,14 +50,14 @@ const (
 	INSN_RESERVE_31 InstructionKind = 31 // Reserved for use at runtime
 )
 
-func positionInsnKindBits32(insnKind InstructionKind) uint32 {
+func placeInsnKindBits32(insnKind InstructionKind) uint32 {
 	// InstructionKind is in bits 24..20 (5 bits)
 	return uint32(insnKind) << 20
 }
 
-func positionInsnKindBits64(insnKind InstructionKind) uint64 {
+func placeInsnKindBits64(insnKind InstructionKind) uint64 {
 	// InstructionKind is in bits 56..52 (5 bits)
-	return uint64(positionInsnKindBits32(insnKind)) << 32
+	return uint64(placeInsnKindBits32(insnKind)) << 32
 }
 
 // Each instruction is at most 128 bits long.
@@ -69,9 +69,13 @@ type Instruction struct {
 	secondHalf uint64
 }
 
+func NewInsnNop() Instruction {
+	return Instruction{}
+}
+
 func NewInsnSimpleAssign(lhs EntityId, rhs EntityId) Instruction {
 	insn := Instruction{}
-	insn.firstHalf |= positionInsnKindBits64(INSN_ASSIGN_SIMPLE) | positionEntityKindBits64(ENTITY_INSTRUCTION)
+	insn.firstHalf |= placeInsnKindBits64(INSN_ASSIGN_SIMPLE) | placeEntityKindBits64(ENTITY_INSTRUCTION)
 
 	insn.firstHalf |= uint64(NewExprValue(lhs)) & 0x00000000FFFFFFFF
 	insn.secondHalf |= uint64(NewExprValue(rhs))
@@ -81,7 +85,7 @@ func NewInsnSimpleAssign(lhs EntityId, rhs EntityId) Instruction {
 
 func NewInsnUnaryOpAssign(lhs EntityId, rhs EntityId, unaryExprKind ExpressionKind) Instruction {
 	insn := Instruction{}
-	insn.firstHalf |= positionInsnKindBits64(INSN_ASSIGN_UNARY_OP) | positionEntityKindBits64(ENTITY_INSTRUCTION)
+	insn.firstHalf |= placeInsnKindBits64(INSN_ASSIGN_UNARY_OP) | placeEntityKindBits64(ENTITY_INSTRUCTION)
 
 	insn.firstHalf |= uint64(NewExprValue(lhs)) & 0x00000000FFFFFFFF
 	insn.secondHalf |= uint64(NewExprUnaryOp(rhs, unaryExprKind))
@@ -92,7 +96,7 @@ func NewInsnUnaryOpAssign(lhs EntityId, rhs EntityId, unaryExprKind ExpressionKi
 func NewInsnBinOpAssign(lhs EntityId, rhsOpr1 EntityId, rhsOpr2 EntityId,
 	binExprKind ExpressionKind) Instruction {
 	insn := Instruction{}
-	insn.firstHalf |= positionInsnKindBits64(INSN_ASSIGN_BINARY_OP) | positionEntityKindBits64(ENTITY_INSTRUCTION)
+	insn.firstHalf |= placeInsnKindBits64(INSN_ASSIGN_BINARY_OP) | placeEntityKindBits64(ENTITY_INSTRUCTION)
 
 	insn.firstHalf |= uint64(NewExprValue(lhs)) & 0x00000000FFFFFFFF
 	insn.secondHalf |= uint64(NewExprBinaryOp(rhsOpr1, rhsOpr2, binExprKind))
@@ -116,7 +120,7 @@ func (i InsnInfo) BBId() BasicBlockId {
 }
 
 func (i Instruction) Id() InsnId {
-	return InsnId((i.firstHalf & InstructionIdPosition64) >> 32)
+	return InsnId((i.firstHalf & InstructionIdPlacement64) >> 32)
 }
 
 func (i Instruction) InsnKind() InstructionKind {

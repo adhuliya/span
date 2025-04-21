@@ -109,12 +109,11 @@ func (ipa *IntraProceduralAnalysis) analyzeGraphForward() {
 	// Visit each basic block
 	for !ipa.wl.IsEmpty() {
 		blockId := ipa.wl.Pop()
-		block := ipa.graph.BasicBlock(blockId)
-		insnCount := len(block.Insns())
+		bb := ipa.graph.BasicBlock(blockId)
 
 		// Visit each instruction in the basic block
-		for i := 0; i < insnCount; i++ {
-			insn := block.Insns()[i]
+		for i := 0; i < bb.InsnCount(); i++ {
+			insn := bb.Insn(i)
 			inout, change := analyze(insn, factMap[insn.Id()], context)
 
 			if change == NoChange {
@@ -123,14 +122,14 @@ func (ipa *IntraProceduralAnalysis) analyzeGraphForward() {
 
 			if change != NoChange {
 				// If here, then the out fact did not change from its previous value
-				ipa.propagateFactForward(block, insn, inout, factMap, i, insnCount)
+				ipa.propagateFactForward(bb, insn, inout, factMap, i, bb.InsnCount())
 			}
 		}
 	}
 }
 
 func (ipa *IntraProceduralAnalysis) propagateFactForward(
-	block *spir.BasicBlock, insn spir.Instruction,
+	bb *spir.BasicBlock, insn spir.Instruction,
 	inout LatticePair, factMap map[spir.InsnId]LatticePair,
 	insnIdx int, insnCount int) {
 	// STEP 1: Save the computed fact for the current instruction
@@ -139,38 +138,36 @@ func (ipa *IntraProceduralAnalysis) propagateFactForward(
 	// STEP 2: Propagate the fact to the successors
 	if insnIdx != insnCount-1 {
 		// CASE 2.1: Successor is within the basic block
-		nextInsnId := block.Insns()[insnIdx+1].Id()
+		nextInsnId := bb.Insn(insnIdx + 1).Id()
 		nextInOut := ipa.initializeInsnFact(nextInsnId, factMap)
 		nextInOut.SetL1(inout.L2())
 		return
 	}
 
 	// CASE 2.2: Next insn is in the successor basic block
-	succs, count := block.Successors(), len(block.Successors())
 	outFact := inout.L2()
 	trueOut, falseOut := outFact, outFact
-	if count == 2 {
+	if bb.SuccCount() == 2 {
 		if trueFalseOutFact, ok := outFact.(*LatticePair); ok {
 			// If the outFact is a LatticePair, set it as the incoming fact
 			trueOut, falseOut = trueFalseOutFact.L1(), trueFalseOutFact.L2()
 		}
 	}
 
-	for i := 0; i < len(succs); i++ {
-		succBB := ipa.graph.BasicBlock(succs[i])
-		nextInsnId := succBB.Insns()[0].Id()
-		nextInOut := ipa.initializeInsnFact(nextInsnId, factMap)
+	for i := 0; i < bb.SuccCount(); i++ {
+		succBB := ipa.graph.BasicBlock(bb.Succ(i))
+		nextInOut := ipa.initializeInsnFact(succBB.Insn(i).Id(), factMap)
 		// Check and add the successor basic block to the worklist
-		if count == 1 {
+		if bb.SuccCount() == 1 {
 			nextInOut.SetL1(outFact)
-			ipa.wl.Push(succs[i])
+			ipa.wl.Push(bb.Succ(i))
 		} else {
 			if i == 0 && !IsTop(trueOut) && !Equals(nextInOut.L1(), trueOut) { // True edge successor
 				nextInOut.SetL1(Meet(nextInOut.L1(), trueOut))
-				ipa.wl.Push(succs[i])
+				ipa.wl.Push(bb.Succ(i))
 			} else if i == 1 && !IsTop(falseOut) && !Equals(nextInOut.L2(), falseOut) { // False edge successor
 				nextInOut.SetL1(Meet(nextInOut.L2(), falseOut))
-				ipa.wl.Push(succs[i])
+				ipa.wl.Push(bb.Succ(i))
 			}
 		}
 	}

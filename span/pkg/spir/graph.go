@@ -84,23 +84,34 @@ func (bb *BasicBlock) Id() BasicBlockId {
 	return bb.id
 }
 
-func (bb *BasicBlock) Insns() []Instruction {
-	return bb.insns
+func (bb *BasicBlock) InsnCount() int {
+	return len(bb.insns)
 }
 
-func (bb *BasicBlock) Predecessors() []BasicBlockId {
-	return bb.predecessors
+func (bb *BasicBlock) Insn(idx int) Instruction {
+	return bb.insns[idx]
 }
 
-func (bb *BasicBlock) Successors() []BasicBlockId {
-	return bb.successors
+func (bb *BasicBlock) PredCount() int {
+	return len(bb.predecessors)
+}
+
+func (bb *BasicBlock) Pred(idx int) BasicBlockId {
+	return bb.predecessors[idx]
+}
+
+func (bb *BasicBlock) SuccCount() int {
+	return len(bb.successors)
+}
+
+func (bb *BasicBlock) Succ(idx int) BasicBlockId {
+	return bb.successors[idx]
 }
 
 // This function takes a Graph and returns ReversePostOrder of the graph.
 func ReversePostOrder(graph Graph, reverse bool) []BasicBlockId {
 	visited := make(map[BasicBlockId]bool)
 	var order []BasicBlockId
-	order = make([]BasicBlockId, 8)
 
 	var dfs func(blockId BasicBlockId)
 	dfs = func(blockId BasicBlockId) {

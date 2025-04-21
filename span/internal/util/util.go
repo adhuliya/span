@@ -29,7 +29,7 @@ func HandlePanicAndPrintStackTrace() {
 		// Capture up to 32 stack frames
 		const size = 32
 		var pcs [size]uintptr
-		n := runtime.Callers(3, pcs[:]) // skip 3 frames: Callers, handlePanic, and defer
+		n := runtime.Callers(3, pcs[:]) // skip 3 frames: Callers, HandlePanic, and defer
 
 		frames := runtime.CallersFrames(pcs[:n])
 
