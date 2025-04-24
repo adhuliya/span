@@ -3,19 +3,20 @@ package analysis
 import (
 	"slices"
 
+	"github.com/adhuliya/span/pkg/logger"
 	"github.com/adhuliya/span/pkg/spir"
 )
 
 type VisitId uint32
 
 type WorklistBB struct {
-	graph *spir.ControlFlowGraph
+	graph spir.Graph
 	// The worklist of Basic Blocks to be analyzed.
 	worklist []spir.BasicBlockId
 	stackTop int
 }
 
-func NewWorklistBB(graph *spir.ControlFlowGraph,
+func NewWorklistBB(graph spir.Graph,
 	visitOrder GraphVisitingOrder) *WorklistBB {
 	wl := spir.ReversePostOrder(graph, visitOrder != ReversePostOrder)
 	return &WorklistBB{
@@ -29,17 +30,17 @@ func (wl *WorklistBB) Pop() spir.BasicBlockId {
 	if wl.stackTop < 0 {
 		return spir.BasicBlockId(0)
 	}
-	blockId := wl.worklist[wl.stackTop]
+	bbId := wl.worklist[wl.stackTop]
 	wl.stackTop--
-	return blockId
+	return bbId
 }
 
-func (wl *WorklistBB) Push(blockId spir.BasicBlockId) bool {
-	if wl.stackTop >= len(wl.worklist)-1 || slices.Contains(wl.worklist, blockId) {
+func (wl *WorklistBB) Push(bbId spir.BasicBlockId) bool {
+	if wl.stackTop >= len(wl.worklist)-1 || slices.Contains(wl.worklist, bbId) {
 		return false
 	}
 	wl.stackTop++
-	wl.worklist[wl.stackTop] = blockId
+	wl.worklist[wl.stackTop] = bbId
 	return true
 }
 
@@ -56,8 +57,8 @@ type IntraProceduralAnalysis struct {
 	visitId VisitId
 	// The analysis object used to perform the analysis.
 	analysis Analysis
-	// The grpah object to perform the analysis on.
-	graph *spir.ControlFlowGraph
+	// The graph object to perform the analysis on.
+	graph spir.Graph
 	// The context object used to store the state of the analysis.
 	context *spir.Context
 	// The worklist of Basic Blocks to be analyzed.
@@ -65,7 +66,7 @@ type IntraProceduralAnalysis struct {
 }
 
 func NewIntraProceduralAnalysis(visitId VisitId, analysis Analysis,
-	graph *spir.ControlFlowGraph, context *spir.Context) *IntraProceduralAnalysis {
+	graph spir.Graph, context *spir.Context) *IntraProceduralAnalysis {
 	return &IntraProceduralAnalysis{
 		visitId:  visitId,
 		analysis: analysis,
@@ -75,32 +76,34 @@ func NewIntraProceduralAnalysis(visitId VisitId, analysis Analysis,
 	}
 }
 
-func (ipa *IntraProceduralAnalysis) analyzeGraph() {
+func (ipa *IntraProceduralAnalysis) AnalyzeGraph() {
 	ipa.initializeContext()
 
 	if ipa.analysis.VisitingOrder() == ReversePostOrder {
-		ipa.analyzeGraphBackward()
-	} else {
 		ipa.analyzeGraphForward()
+	} else {
+		ipa.analyzeGraphBackward()
 	}
 }
 
 func (ipa *IntraProceduralAnalysis) initializeContext() {
-	ipa.context.GetInfo(uint32(ipa.visitId))
 	if _, ok := ipa.context.GetInfo(uint32(ipa.visitId)); ok {
 		return
 	} else {
 		factMap := make(map[spir.InsnId]LatticePair)
 		//entryBBId, exitBBId := ipa.graph.EntryBlock(), ipa.graph.ExitBlock()
-		//boundaryFact := ipa.analysis.BoundaryFact(ipa.graph, ipa.context)
+		boundaryFact := ipa.analysis.BoundaryFact(ipa.graph, ipa.context)
+		factMap[ipa.graph.EntryBlock().Insn(0).Id()] = LatticePair{l1: boundaryFact.l1, l2: nil}
 		ipa.context.SetInfo(uint32(ipa.visitId), factMap)
 	}
 }
 
 func (ipa *IntraProceduralAnalysis) analyzeGraphBackward() {
+	logger.Get().Info("Analyzing graph in forward direction")
 }
 
 func (ipa *IntraProceduralAnalysis) analyzeGraphForward() {
+	logger.Get().Info("Analyzing graph in forward direction")
 	tmp, _ := ipa.context.GetInfo(uint32(ipa.visitId))
 	factMap := tmp.(map[spir.InsnId]LatticePair)
 
@@ -108,12 +111,14 @@ func (ipa *IntraProceduralAnalysis) analyzeGraphForward() {
 
 	// Visit each basic block
 	for !ipa.wl.IsEmpty() {
-		blockId := ipa.wl.Pop()
-		bb := ipa.graph.BasicBlock(blockId)
+		bbId := ipa.wl.Pop()
+		bb := ipa.graph.BasicBlock(bbId)
+		logger.Get().Debug("Visiting ", "BB", bbId)
 
 		// Visit each instruction in the basic block
 		for i := 0; i < bb.InsnCount(); i++ {
 			insn := bb.Insn(i)
+			logger.Get().Debug("Visiting instruction ", "Insn", insn)
 			inout, change := analyze(insn, factMap[insn.Id()], context)
 
 			if change == NoChange {

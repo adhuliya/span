@@ -9,7 +9,7 @@ type CFGId EntityId
 
 type Graph interface {
 	Scope() ScopeId
-	Function() *Function
+	FunctionId() FunctionId
 	EntryBlock() *BasicBlock
 	ExitBlock() *BasicBlock
 	BasicBlock(id BasicBlockId) *BasicBlock
@@ -25,6 +25,8 @@ const (
 
 type BasicBlock struct {
 	id           BasicBlockId
+	scope        ScopeId
+	fid          FunctionId
 	insns        []Instruction
 	predecessors []BasicBlockId
 	// First successor is the true edge
@@ -32,50 +34,42 @@ type BasicBlock struct {
 	successors []BasicBlockId
 }
 
-type ControlFlowGraph struct {
-	id          CFGId
-	scope       ScopeId
-	function    *Function
-	basicBlocks []BasicBlock
-	entryBlock  BasicBlockId
-	exitBlock   BasicBlockId
-}
-
-func (cfg *ControlFlowGraph) Id() CFGId {
-	return cfg.id
-}
-
-func (cfg *ControlFlowGraph) Scope() ScopeId {
-	return cfg.scope
-}
-
-func (cfg *ControlFlowGraph) Function() *Function {
-	return cfg.function
-}
-
-func (cfg *ControlFlowGraph) EntryBlock() *BasicBlock {
-	for i := 0; i < len(cfg.basicBlocks); i++ {
-		if cfg.basicBlocks[i].id == cfg.entryBlock {
-			return &cfg.basicBlocks[i]
-		}
+func NewBasicBlock(id BasicBlockId, scope ScopeId, fid FunctionId,
+	insnCount int) *BasicBlock {
+	bb := &BasicBlock{
+		id:           id,
+		scope:        scope,
+		fid:          fid,
+		insns:        nil,
+		predecessors: nil,
+		successors:   nil,
 	}
-	return nil
-}
 
-func (cfg *ControlFlowGraph) ExitBlock() *BasicBlock {
-	for i := 0; i < len(cfg.basicBlocks); i++ {
-		if cfg.basicBlocks[i].id == cfg.exitBlock {
-			return &cfg.basicBlocks[i]
-		}
+	if insnCount > 0 {
+		bb.insns = make([]Instruction, 0, insnCount)
 	}
-	return nil
+	return bb
 }
 
-func (cfg *ControlFlowGraph) BasicBlock(id BasicBlockId) *BasicBlock {
-	for i := 0; i < len(cfg.basicBlocks); i++ {
-		if cfg.basicBlocks[i].id == id {
-			return &cfg.basicBlocks[i]
-		}
+func (bb *BasicBlock) Scope() ScopeId {
+	return bb.scope
+}
+
+func (bb *BasicBlock) FunctionId() FunctionId {
+	return bb.fid
+}
+
+func (bb *BasicBlock) EntryBlock() *BasicBlock {
+	return bb
+}
+
+func (bb *BasicBlock) ExitBlock() *BasicBlock {
+	return bb
+}
+
+func (bb *BasicBlock) BasicBlock(id BasicBlockId) *BasicBlock {
+	if bb.id == id {
+		return bb
 	}
 	return nil
 }
@@ -106,6 +100,54 @@ func (bb *BasicBlock) SuccCount() int {
 
 func (bb *BasicBlock) Succ(idx int) BasicBlockId {
 	return bb.successors[idx]
+}
+
+type ControlFlowGraph struct {
+	id          CFGId
+	scope       ScopeId
+	fid         FunctionId
+	basicBlocks []BasicBlock
+	entryBlock  BasicBlockId
+	exitBlock   BasicBlockId
+}
+
+func (cfg *ControlFlowGraph) Id() CFGId {
+	return cfg.id
+}
+
+func (cfg *ControlFlowGraph) Scope() ScopeId {
+	return cfg.scope
+}
+
+func (cfg *ControlFlowGraph) FunctionId() FunctionId {
+	return cfg.fid
+}
+
+func (cfg *ControlFlowGraph) EntryBlock() *BasicBlock {
+	for i := 0; i < len(cfg.basicBlocks); i++ {
+		if cfg.basicBlocks[i].id == cfg.entryBlock {
+			return &cfg.basicBlocks[i]
+		}
+	}
+	return nil
+}
+
+func (cfg *ControlFlowGraph) ExitBlock() *BasicBlock {
+	for i := 0; i < len(cfg.basicBlocks); i++ {
+		if cfg.basicBlocks[i].id == cfg.exitBlock {
+			return &cfg.basicBlocks[i]
+		}
+	}
+	return nil
+}
+
+func (cfg *ControlFlowGraph) BasicBlock(id BasicBlockId) *BasicBlock {
+	for i := 0; i < len(cfg.basicBlocks); i++ {
+		if cfg.basicBlocks[i].id == id {
+			return &cfg.basicBlocks[i]
+		}
+	}
+	return nil
 }
 
 // This function takes a Graph and returns ReversePostOrder of the graph.

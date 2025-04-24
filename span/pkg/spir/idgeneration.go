@@ -42,7 +42,9 @@ type IDGenerator struct {
 
 // NewIDGenerator creates a new IDGenerator with an empty pool of IDs.
 func NewIDGenerator() *IDGenerator {
-	return &IDGenerator{}
+	return &IDGenerator{
+		idPools: make(map[PoolId]*IDPool),
+	}
 }
 
 // newIDPool creates a new IDPool with an initial pool of contiguous IDs.
@@ -88,8 +90,8 @@ func maxIdValue(seqIdBitLength uint8) uint32 {
 }
 
 func (gen *IDGenerator) getOrCreatePool(poolId PoolId) *IDPool {
-	pool := gen.idPools[poolId]
-	if pool == nil {
+	pool, ok := gen.idPools[poolId]
+	if !ok || pool == nil {
 		pool = createIDPool(uint8(poolId))
 		gen.idPools[poolId] = pool
 	}

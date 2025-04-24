@@ -5,6 +5,13 @@ import (
 	"runtime"
 )
 
+// Assert is a simple assertion function that panics if the condition is false.
+func Assert(cond bool, msg string) {
+	if !cond {
+		panic(msg)
+	}
+}
+
 func HandlePanic(skip int) {
 	if r := recover(); r != nil {
 		// Print the recovered error

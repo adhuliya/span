@@ -37,7 +37,7 @@ func (m *mockBasicBlock) basicBlockAdapter() *BasicBlock {
 
 type mockGraph struct {
 	mockScope      ScopeId
-	mockFunc       *Function // Can be nil for these tests
+	mockFuncId     FunctionId // Can be nil for these tests
 	mockEntryBlock BasicBlockId
 	mockExitBlock  BasicBlockId // Not directly used by RPO, but part of the interface
 	mockBlocks     map[BasicBlockId]*mockBasicBlock
@@ -87,8 +87,8 @@ func (mg *mockGraph) addBlock(id BasicBlockId, successors ...BasicBlockId) {
 	}
 }
 
-func (mg *mockGraph) Scope() ScopeId      { return mg.mockScope }
-func (mg *mockGraph) Function() *Function { return mg.mockFunc }
+func (mg *mockGraph) Scope() ScopeId         { return mg.mockScope }
+func (mg *mockGraph) FunctionId() FunctionId { return mg.mockFuncId }
 func (mg *mockGraph) EntryBlock() *BasicBlock {
 	if bb, ok := mg.mockBlocks[mg.mockEntryBlock]; ok {
 		return bb.basicBlockAdapter()

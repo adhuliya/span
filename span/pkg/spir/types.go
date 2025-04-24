@@ -8,6 +8,9 @@ type ValueTypeAlign uint8
 type QualType uint16
 type RecordId EntityId
 
+const ValueTypeKindMask uint32 = 0x1F        // Mask to get the ValueTypeKind bits
+const ValueTypeKindMask32 uint32 = 0x1F_0000 // Mask to get the ValueTypeKind bits
+
 // ValueTypeKind is an integer type that represents the kind of a value type.
 // It is an integer type in the range of 0 to 31 (5 bits).
 //
@@ -42,6 +45,7 @@ const (
 	TY_ARR           ValueTypeKind = 24
 	TY_UNION         ValueTypeKind = 25
 	TY_STRUCT        ValueTypeKind = 26
+	TY_VOID          ValueTypeKind = 27
 
 	TY_OTHER ValueTypeKind = 31
 )
@@ -121,8 +125,9 @@ func (v *ValueTypeBase) GetAlign() ValueTypeAlign {
 	return v.align
 }
 
-func NewValueTypeBase(qtype QualType, kind ValueTypeKind, size ValueTypeSize, align ValueTypeAlign) *ValueTypeBase {
-	return &ValueTypeBase{
+func NewValueTypeBase(kind ValueTypeKind, qtype QualType,
+	size ValueTypeSize, align ValueTypeAlign) ValueTypeBase {
+	return ValueTypeBase{
 		qtype: qtype,
 		kind:  kind,
 		size:  size,
@@ -130,23 +135,108 @@ func NewValueTypeBase(qtype QualType, kind ValueTypeKind, size ValueTypeSize, al
 	}
 }
 
-func IsInteger(kind ValueTypeKind) bool {
-	if kind <= TY_BOOL && kind >= TY_CHAR {
-		return true
+func NewBasicValueType(kind ValueTypeKind, qtype QualType) *ValueTypeBase {
+	if kind.IsInteger() && kind != TY_N_BITS && kind != TY_N_UBITS {
+		return &ValueTypeBase{
+			qtype: qtype,
+			kind:  kind,
+			size:  kind.IntegerSizeInBytes(),
+			align: kind.IntegerAlignInBytes(),
+		}
+	} else if kind.IsFloating() {
+		return &ValueTypeBase{
+			qtype: qtype,
+			kind:  kind,
+			size:  kind.FloatingSizeInBytes(),
+			align: kind.FloatingAlignInBytes(),
+		}
+	} else if kind.IsVoid() {
+		return &ValueTypeBase{
+			qtype: qtype,
+			kind:  kind,
+			size:  0,
+			align: 0,
+		}
 	}
-	return false
+	return nil
 }
 
-func IsPointer(kind ValueTypeKind) bool {
-	if kind >= TY_PTR_TO_VOID && kind <= TY_ARR {
-		return true
+func (kind ValueTypeKind) FloatingAlignInBytes() ValueTypeAlign {
+	switch kind {
+	case TY_FLOAT16:
+		return 2
+	case TY_FLOAT32:
+		return 4
+	case TY_FLOAT64:
+		return 8
+	default:
+		return 0
 	}
-	return false
 }
 
-func IsArray(kind ValueTypeKind) bool {
-	if kind == TY_ARR {
-		return true
+func (kind ValueTypeKind) FloatingSizeInBytes() ValueTypeSize {
+	switch kind {
+	case TY_FLOAT16:
+		return 2
+	case TY_FLOAT32:
+		return 4
+	case TY_FLOAT64:
+		return 8
+	default:
+		return 0
 	}
-	return false
+}
+
+func (kind ValueTypeKind) IsFloating() bool {
+	return kind >= TY_FLOAT16 && kind <= TY_DOUBLE
+}
+
+func (kind ValueTypeKind) IsVoid() bool {
+	return kind == TY_VOID
+}
+
+func (kind ValueTypeKind) IsInteger() bool {
+	return kind <= TY_BOOL && kind >= TY_CHAR
+}
+
+func (kind ValueTypeKind) IsPointer() bool {
+	return kind >= TY_PTR_TO_VOID && kind <= TY_ARR
+}
+
+func (kind ValueTypeKind) IsArray() bool {
+	return kind == TY_ARR
+}
+
+func (kind ValueTypeKind) IntegerSizeInBytes() ValueTypeSize {
+	switch kind {
+	case TY_CHAR: // TY_UCHAR == TY_UINT8
+		return 1
+	case TY_INT8, TY_UINT8:
+		return 1
+	case TY_INT16, TY_UINT16:
+		return 2
+	case TY_INT32, TY_UINT32:
+		return 4
+	case TY_INT64, TY_UINT64:
+		return 8
+	default:
+		return 0
+	}
+}
+
+func (kind ValueTypeKind) IntegerAlignInBytes() ValueTypeAlign {
+	switch kind {
+	case TY_CHAR: // TY_UCHAR == TY_UINT8
+		return 1
+	case TY_INT8, TY_UINT8:
+		return 1
+	case TY_INT16, TY_UINT16:
+		return 2
+	case TY_INT32, TY_UINT32:
+		return 4
+	case TY_INT64, TY_UINT64:
+		return 8
+	default:
+		return 0
+	}
 }

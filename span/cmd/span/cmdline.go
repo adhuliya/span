@@ -62,7 +62,7 @@ func processCmdLine(args []string) *cobra.Command {
 
 	// Initialize the logger
 	err := FirstError(func() error {
-		return logger.Initialize(cmdLine.LogConfig)
+		return logger.Initialize(&cmdLine.LogConfig)
 	}, nil)
 
 	if err != nil {

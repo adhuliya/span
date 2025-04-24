@@ -6,13 +6,13 @@ package spir
 
 type Context struct {
 	translationUnit *TranslationUnit
-	info            map[uint32]interface{}
+	info            map[uint32]any
 }
 
 func NewContext(tu *TranslationUnit) *Context {
 	return &Context{
 		translationUnit: tu,
-		info:            make(map[uint32]interface{}),
+		info:            make(map[uint32]any),
 	}
 }
 
@@ -20,7 +20,7 @@ func (c *Context) TranslationUnit() *TranslationUnit {
 	return c.translationUnit
 }
 
-func (c *Context) SetInfo(key uint32, value interface{}) bool {
+func (c *Context) SetInfo(key uint32, value any) bool {
 	if _, ok := c.info[key]; ok {
 		return false
 	}
@@ -29,7 +29,7 @@ func (c *Context) SetInfo(key uint32, value interface{}) bool {
 	return true
 }
 
-func (c *Context) GetInfo(key uint32) (interface{}, bool) {
+func (c *Context) GetInfo(key uint32) (any, bool) {
 	value, ok := c.info[key]
 	return value, ok
 }

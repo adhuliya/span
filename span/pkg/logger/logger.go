@@ -15,7 +15,17 @@ type LogConfig struct {
 	UseJSON      bool
 }
 
-func Initialize(config LogConfig) error {
+func NewLogConfig(level string) *LogConfig {
+	return &LogConfig{
+		Level:        level,
+		ShowTime:     false,
+		ShowSource:   true,
+		ShowFunction: false,
+		UseJSON:      false,
+	}
+}
+
+func Initialize(config *LogConfig) error {
 	var level slog.Level
 	switch config.Level {
 	case "debug":
@@ -33,6 +43,13 @@ func Initialize(config LogConfig) error {
 	opts := &slog.HandlerOptions{
 		Level:     level,
 		AddSource: config.ShowSource,
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			// Remove the time attribute
+			if a.Key == slog.TimeKey && !config.ShowTime {
+				return slog.Attr{}
+			}
+			return a
+		},
 	}
 	var handler slog.Handler
 

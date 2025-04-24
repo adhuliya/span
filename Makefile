@@ -1,4 +1,4 @@
-.PHONY: all clean build devbuild test vet fmt proto docker tidy gen
+.PHONY: all clean build devbuild test vtest vet fmt proto docker tidy gen
 
 GO=go
 PROTOC=protoc
@@ -18,6 +18,10 @@ gen:
 
 test:
 	cd span && $(GO) test ./...
+
+# Verbose tests
+vtest:
+	cd span && $(GO) test ./... -test.v
 
 vet:
 	cd span && $(GO) vet ./...
