@@ -120,13 +120,14 @@ func (ipa *IntraProceduralAnalysis) analyzeGraphForward() {
 			insn := bb.Insn(i)
 			logger.Get().Debug("Visiting instruction ", "Insn", insn)
 			inout, change := analyze(insn, factMap[insn.Id()], context)
+			logger.Get().Debug("After analysis:", "InoutFact", Stringify(&inout), "change", change)
 
 			if change == NoChange {
 				break
 			}
 
 			if change != NoChange {
-				// If here, then the out fact did not change from its previous value
+				// If here, then the out fact changed from its previous value
 				ipa.propagateFactForward(bb, insn, inout, factMap, i, bb.InsnCount())
 			}
 		}
@@ -145,7 +146,7 @@ func (ipa *IntraProceduralAnalysis) propagateFactForward(
 		// CASE 2.1: Successor is within the basic block
 		nextInsnId := bb.Insn(insnIdx + 1).Id()
 		nextInOut := ipa.initializeInsnFact(nextInsnId, factMap)
-		nextInOut.SetL1(inout.L2())
+		factMap[nextInsnId] = NewLatticePair(inout.L2(), nextInOut.L2())
 		return
 	}
 
@@ -159,29 +160,31 @@ func (ipa *IntraProceduralAnalysis) propagateFactForward(
 		}
 	}
 
-	for i := 0; i < bb.SuccCount(); i++ {
+	for i := range bb.SuccCount() {
 		succBB := ipa.graph.BasicBlock(bb.Succ(i))
-		nextInOut := ipa.initializeInsnFact(succBB.Insn(i).Id(), factMap)
+		nextInsnId := succBB.Insn(0).Id()
+		nextInOut := ipa.initializeInsnFact(nextInsnId, factMap)
 		// Check and add the successor basic block to the worklist
 		if bb.SuccCount() == 1 {
-			nextInOut.SetL1(outFact)
+			nextInOut = NewLatticePair(outFact, nextInOut.L2())
 			ipa.wl.Push(bb.Succ(i))
 		} else {
 			if i == 0 && !IsTop(trueOut) && !Equals(nextInOut.L1(), trueOut) { // True edge successor
-				nextInOut.SetL1(Meet(nextInOut.L1(), trueOut))
+				nextInOut = NewLatticePair(Meet(nextInOut.L1(), trueOut), nextInOut.L2())
 				ipa.wl.Push(bb.Succ(i))
 			} else if i == 1 && !IsTop(falseOut) && !Equals(nextInOut.L2(), falseOut) { // False edge successor
-				nextInOut.SetL1(Meet(nextInOut.L2(), falseOut))
+				nextInOut = NewLatticePair(Meet(nextInOut.L2(), falseOut), nextInOut.L2())
 				ipa.wl.Push(bb.Succ(i))
 			}
 		}
+		factMap[nextInsnId] = nextInOut
 	}
 }
 
 func (ipa *IntraProceduralAnalysis) initializeInsnFact(insnId spir.InsnId,
 	factMap map[spir.InsnId]LatticePair) LatticePair {
 	if _, ok := factMap[insnId]; !ok {
-		factMap[insnId] = *NewLatticePair(nil, nil)
+		factMap[insnId] = NewLatticePair(nil, nil)
 	}
 	return factMap[insnId]
 }

@@ -1,5 +1,7 @@
 package analysis
 
+import "fmt"
+
 // This file contains the lattice data structure used in the SPAN program analysis engine.
 
 type Lattice interface {
@@ -9,6 +11,7 @@ type Lattice interface {
 	join(other Lattice) Lattice
 	meet(other Lattice) Lattice
 	equals(other Lattice) bool
+	String() string
 }
 
 func Meet(l1, l2 Lattice) Lattice {
@@ -55,9 +58,29 @@ func IsBot(l Lattice) bool {
 	return l.isBot()
 }
 
+func Stringify(l Lattice) string {
+	if l == nil {
+		return "nil"
+	}
+	return l.String()
+}
+
 type TopBotLattice struct {
 	top bool // Most precise value
 	bot bool // Most approximate value
+}
+
+func (l *TopBotLattice) String() string {
+	if l.top && l.bot {
+		return "Top and Bot"
+	}
+	if l.top {
+		return "Top"
+	}
+	if l.bot {
+		return "Bot"
+	}
+	return "Unknown"
 }
 
 func NewTopBotLattice(top, bot bool) TopBotLattice {
@@ -127,19 +150,15 @@ type LatticePair struct {
 	l2 Lattice
 }
 
-func NewLatticePair(in, out Lattice) *LatticePair {
-	return &LatticePair{
+func (l *LatticePair) String() string {
+	return fmt.Sprintf("LatticePair(%s, %s)", Stringify(l.l1), Stringify(l.l2))
+}
+
+func NewLatticePair(in, out Lattice) LatticePair {
+	return LatticePair{
 		l1: in,
 		l2: out,
 	}
-}
-
-func (l *LatticePair) SetL1(in Lattice) {
-	l.l1 = in
-}
-
-func (l *LatticePair) SetL2(out Lattice) {
-	l.l2 = out
 }
 
 func (l *LatticePair) L1() Lattice {

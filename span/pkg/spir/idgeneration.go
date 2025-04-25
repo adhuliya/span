@@ -2,6 +2,23 @@ package spir
 
 // This file defines the ID generation structure and functions.
 
+// First, the most basic ID generation structure is defined.
+var idCounter uint32 = 0
+
+func GetNextId() uint32 {
+	idCounter++
+	return idCounter
+}
+
+// Second, a more complex ID generation structure is defined,
+// which can generate IDs and also free them.
+
+// IDGenerator is a structure that helps generates unique IDs for SPAN IR entities.
+// It maintains a linked list of pool ids that are available for allocation.
+type IDGenerator struct {
+	idPools map[PoolId]*IDPool // generic pool for arbirary bit IDs
+}
+
 // A pool of free IDs available for allocation which points to the next pool of free IDs.
 // Each pool has a range of IDs from `from` to `to`.
 // The `next` field points to the next pool of free IDs.
@@ -32,12 +49,6 @@ func (p PoolId) getSeqIdBitLength() uint8 {
 
 func constructFullId(poolId PoolId, id uint32) uint32 {
 	return uint32((uint32(poolId.getPrefix()) << poolId.getSeqIdBitLength()) | id)
-}
-
-// IDGenerator is a structure that helps generates unique IDs for SPAN IR entities.
-// It maintains a linked list of pool ids that are available for allocation.
-type IDGenerator struct {
-	idPools map[PoolId]*IDPool // generic pool for arbirary bit IDs
 }
 
 // NewIDGenerator creates a new IDGenerator with an empty pool of IDs.

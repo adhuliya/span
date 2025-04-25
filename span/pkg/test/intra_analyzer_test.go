@@ -25,9 +25,10 @@ func TestBotBotAnalysis(t *testing.T) {
 	tu := spir.NewExampleTU_A()
 	ctx := spir.NewContext(tu)
 	botbotAn := clients.NewForwardTopBotClient()
+	aid := analysis.VisitId(spir.GetNextId())
 
 	intraAnalysis := analysis.NewIntraProceduralAnalysis(
-		1,
+		aid,
 		botbotAn,
 		tu.GetFunction("main").GetBody(),
 		ctx,
@@ -37,16 +38,17 @@ func TestBotBotAnalysis(t *testing.T) {
 
 	// Get the expected and actual results
 	expected := analysis.TopBotLatticeBot
-	result, ok := ctx.GetInfo(1)
+	result, ok := ctx.GetInfo(uint32(aid))
 	if !ok {
-		t.Fatalf("Expected info with key 1 not found in context")
+		t.Fatalf("Expected info with key %d not found in context", aid)
 	}
 
 	res := result.(map[spir.InsnId]analysis.LatticePair)
-	res2 := res[spir.InsnId(tu.GetFunction("main").GetBody().EntryBlock().Insn(0).Id())]
-	actual, ok := res2.L1().(*analysis.TopBotLattice)
+	entryBB := tu.GetFunction("main").GetBody().EntryBlock()
+	res2 := res[entryBB.Insn(entryBB.InsnCount()-1).Id()]
+	actual, ok := res2.L2().(*analysis.TopBotLattice)
 	if !ok {
-		t.Fatalf("Expected L1 to be of type *TopBotLattice, but got %T", res2.L1())
+		t.Fatalf("Expected L2 to be of type *TopBotLattice, but got %T", res2.L2())
 	}
 
 	// Perform test
