@@ -3,11 +3,10 @@ package analysis
 import (
 	"slices"
 
+	"github.com/adhuliya/span/pkg/analysis/lattice"
 	"github.com/adhuliya/span/pkg/logger"
 	"github.com/adhuliya/span/pkg/spir"
 )
-
-type VisitId uint32
 
 type WorklistBB struct {
 	graph spir.Graph
@@ -54,7 +53,7 @@ func (wl *WorklistBB) IsEmpty() bool {
 
 type IntraProceduralAnalysis struct {
 	// Visitation Identifier for the analysis.
-	visitId VisitId
+	ctxId spir.ContextId
 	// The analysis object used to perform the analysis.
 	analysis Analysis
 	// The graph object to perform the analysis on.
@@ -65,10 +64,10 @@ type IntraProceduralAnalysis struct {
 	wl *WorklistBB
 }
 
-func NewIntraProceduralAnalysis(visitId VisitId, analysis Analysis,
+func NewIntraProceduralAnalysis(ctxId spir.ContextId, analysis Analysis,
 	graph spir.Graph, context *spir.Context) *IntraProceduralAnalysis {
 	return &IntraProceduralAnalysis{
-		visitId:  visitId,
+		ctxId:    ctxId,
 		analysis: analysis,
 		graph:    graph,
 		context:  context,
@@ -76,121 +75,104 @@ func NewIntraProceduralAnalysis(visitId VisitId, analysis Analysis,
 	}
 }
 
-func (ipa *IntraProceduralAnalysis) AnalyzeGraph() {
-	ipa.initializeContext()
+func (intraPA *IntraProceduralAnalysis) AnalyzeGraph() {
+	intraPA.initializeContext()
 
-	if ipa.analysis.VisitingOrder() == ReversePostOrder {
-		ipa.analyzeGraphForward()
+	if intraPA.analysis.VisitingOrder() == ReversePostOrder {
+		intraPA.analyzeGraphForward()
 	} else {
-		ipa.analyzeGraphBackward()
+		intraPA.analyzeGraphBackward()
 	}
 }
 
-func (ipa *IntraProceduralAnalysis) initializeContext() {
-	if _, ok := ipa.context.GetInfo(uint32(ipa.visitId)); ok {
+func (intraPA *IntraProceduralAnalysis) initializeContext() {
+	if _, ok := intraPA.context.GetInfo(intraPA.ctxId); ok {
 		return
 	} else {
-		factMap := make(map[spir.InsnId]LatticePair)
-		//entryBBId, exitBBId := ipa.graph.EntryBlock(), ipa.graph.ExitBlock()
-		boundaryFact := ipa.analysis.BoundaryFact(ipa.graph, ipa.context)
-		factMap[ipa.graph.EntryBlock().Insn(0).Id()] = LatticePair{l1: boundaryFact.l1, l2: nil}
-		ipa.context.SetInfo(uint32(ipa.visitId), factMap)
+		factMap := make(map[spir.InsnId]lattice.Pair)
+		//entryBBId, exitBBId := intraPA.graph.EntryBlock(), intraPA.graph.ExitBlock()
+		boundaryFact := intraPA.analysis.BoundaryFact(intraPA.graph, intraPA.context)
+		factMap[intraPA.graph.EntryBlock().Insn(0).Id()] = lattice.NewPair(boundaryFact.L1(), nil)
+		intraPA.context.SetInfo(intraPA.ctxId, factMap)
 	}
 }
 
-func (ipa *IntraProceduralAnalysis) analyzeGraphBackward() {
-	logger.Get().Info("Analyzing graph in forward direction")
+func (intraPA *IntraProceduralAnalysis) analyzeGraphBackward() {
+	logger.Get().Info("Analyzing graph in backward direction")
 }
 
-func (ipa *IntraProceduralAnalysis) analyzeGraphForward() {
-	logger.Get().Info("Analyzing graph in forward direction")
-	tmp, _ := ipa.context.GetInfo(uint32(ipa.visitId))
-	factMap := tmp.(map[spir.InsnId]LatticePair)
+func (intraPA *IntraProceduralAnalysis) analyzeGraphForward() {
+	logger.Get().Info("Analyzing graph in forward direction",
+		"CtxId", intraPA.ctxId, "AnalysisName", intraPA.analysis.Name())
+	tmp, _ := intraPA.context.GetInfo(intraPA.ctxId)
+	factMap := tmp.(map[spir.InsnId]lattice.Pair)
 
-	analyze, context := ipa.analysis.Analyze, ipa.context
+	analyze, context := intraPA.analysis.Analyze, intraPA.context
 
 	// Visit each basic block
-	for !ipa.wl.IsEmpty() {
-		bbId := ipa.wl.Pop()
-		bb := ipa.graph.BasicBlock(bbId)
-		logger.Get().Debug("Visiting ", "BB", bbId)
+	for !intraPA.wl.IsEmpty() {
+		bbId := intraPA.wl.Pop()
+		bb := intraPA.graph.BasicBlock(bbId)
+		logger.Get().Debug("Visiting", "BB", bbId)
 
 		// Visit each instruction in the basic block
-		for i := 0; i < bb.InsnCount(); i++ {
+		for i := range bb.InsnCount() {
 			insn := bb.Insn(i)
-			logger.Get().Debug("Visiting instruction ", "Insn", insn)
+			logger.Get().Debug("Visiting instruction", "Insn", insn, "InFact", factMap[insn.Id()].L1())
 			inout, change := analyze(insn, factMap[insn.Id()], context)
-			logger.Get().Debug("After analysis:", "InoutFact", Stringify(&inout), "change", change)
+			logger.Get().Debug("After analysis:", "OutFact", lattice.Stringify(inout.L2()), "change", change)
 
-			if change == NoChange {
-				break
-			}
-
-			if change != NoChange {
-				// If here, then the out fact changed from its previous value
-				ipa.propagateFactForward(bb, insn, inout, factMap, i, bb.InsnCount())
-			}
+			intraPA.propagateFactForward(bb, insn.Id(), inout, factMap, i)
 		}
 	}
 }
 
-func (ipa *IntraProceduralAnalysis) propagateFactForward(
-	bb *spir.BasicBlock, insn spir.Instruction,
-	inout LatticePair, factMap map[spir.InsnId]LatticePair,
-	insnIdx int, insnCount int) {
+func (intraPA *IntraProceduralAnalysis) propagateFactForward(
+	bb *spir.BasicBlock, insnId spir.InsnId,
+	inout lattice.Pair, factMap map[spir.InsnId]lattice.Pair,
+	insnIdx int) {
 	// STEP 1: Save the computed fact for the current instruction
-	factMap[insn.Id()] = inout
+	factMap[insnId] = inout
 
 	// STEP 2: Propagate the fact to the successors
-	if insnIdx != insnCount-1 {
-		// CASE 2.1: Successor is within the basic block
+	// CASE 2.1: Next instruction is within the basic block
+	if insnIdx != bb.InsnCount()-1 {
 		nextInsnId := bb.Insn(insnIdx + 1).Id()
-		nextInOut := ipa.initializeInsnFact(nextInsnId, factMap)
-		factMap[nextInsnId] = NewLatticePair(inout.L2(), nextInOut.L2())
+		factMap[nextInsnId] = lattice.NewPair(inout.L2(), factMap[nextInsnId].L2())
 		return
 	}
 
-	// CASE 2.2: Next insn is in the successor basic block
+	// CASE 2.2: Next instruction is in the successor basic block
 	outFact := inout.L2()
-	trueOut, falseOut := outFact, outFact
+	var tfFact = [2]lattice.Lattice{outFact, outFact}
 	if bb.SuccCount() == 2 {
-		if trueFalseOutFact, ok := outFact.(*LatticePair); ok {
-			// If the outFact is a LatticePair, set it as the incoming fact
-			trueOut, falseOut = trueFalseOutFact.L1(), trueFalseOutFact.L2()
+		// If the outFact is a LatticePair, set it as the incoming fact
+		if trueFalseOutFact, ok := outFact.(*lattice.Pair); ok {
+			tfFact[0], tfFact[1] = trueFalseOutFact.L1(), trueFalseOutFact.L2()
 		}
 	}
 
 	for i := range bb.SuccCount() {
-		succBB := ipa.graph.BasicBlock(bb.Succ(i))
-		nextInsnId := succBB.Insn(0).Id()
-		nextInOut := ipa.initializeInsnFact(nextInsnId, factMap)
-		// Check and add the successor basic block to the worklist
-		if bb.SuccCount() == 1 {
-			nextInOut = NewLatticePair(outFact, nextInOut.L2())
-			ipa.wl.Push(bb.Succ(i))
-		} else {
-			if i == 0 && !IsTop(trueOut) && !Equals(nextInOut.L1(), trueOut) { // True edge successor
-				nextInOut = NewLatticePair(Meet(nextInOut.L1(), trueOut), nextInOut.L2())
-				ipa.wl.Push(bb.Succ(i))
-			} else if i == 1 && !IsTop(falseOut) && !Equals(nextInOut.L2(), falseOut) { // False edge successor
-				nextInOut = NewLatticePair(Meet(nextInOut.L2(), falseOut), nextInOut.L2())
-				ipa.wl.Push(bb.Succ(i))
-			}
+		nextInsnId := intraPA.graph.BasicBlock(bb.Succ(i)).Insn(0).Id()
+		nextInOut := factMap[nextInsnId]
+		val, chg := lattice.Meet(nextInOut.L1(), tfFact[i])
+		factMap[nextInsnId] = lattice.NewPair(val, nextInOut.L2())
+		if chg {
+			intraPA.wl.Push(bb.Succ(i))
 		}
-		factMap[nextInsnId] = nextInOut
 	}
 }
 
-func (ipa *IntraProceduralAnalysis) initializeInsnFact(insnId spir.InsnId,
-	factMap map[spir.InsnId]LatticePair) LatticePair {
+func (intraPA *IntraProceduralAnalysis) initializeInsnFact(insnId spir.InsnId,
+	factMap map[spir.InsnId]lattice.Pair) lattice.Pair {
 	if _, ok := factMap[insnId]; !ok {
-		factMap[insnId] = NewLatticePair(nil, nil)
+		factMap[insnId] = lattice.NewPair(nil, nil)
 	}
 	return factMap[insnId]
 }
 
-func (ipa *IntraProceduralAnalysis) GetAnalysis() Analysis {
-	return ipa.analysis
+func (intraPA *IntraProceduralAnalysis) GetAnalysis() Analysis {
+	return intraPA.analysis
 }
 
 type Analyzer interface {

@@ -2,6 +2,7 @@ package clients
 
 import (
 	"github.com/adhuliya/span/pkg/analysis"
+	"github.com/adhuliya/span/pkg/analysis/lattice"
 	"github.com/adhuliya/span/pkg/spir"
 )
 
@@ -29,27 +30,17 @@ func (c *ForwardBotBotClient) VisitingOrder() analysis.GraphVisitingOrder {
 	return c.visitOrder
 }
 
-func (c *ForwardBotBotClient) BoundaryFact(graph spir.Graph, context *spir.Context) analysis.LatticePair {
-	return analysis.NewLatticePair(
-		&analysis.TopBotLatticeBot,
-		&analysis.TopBotLatticeTop,
-	)
+func (c *ForwardBotBotClient) BoundaryFact(graph spir.Graph, context *spir.Context) lattice.Pair {
+	return lattice.NewPair(&lattice.TopBotLatticeBot, &lattice.TopBotLatticeTop)
 }
 
 // Just propagate the bot to the out fact.
 func (c *ForwardBotBotClient) Analyze(instruction spir.Instruction,
-	inOut analysis.LatticePair, context *spir.Context) (analysis.LatticePair, analysis.FactChanged) {
-	factChange := analysis.NoChange
-	if analysis.IsTop(inOut.L2()) {
-		factChange = analysis.OnlyOutChanged
+	inOut lattice.Pair, context *spir.Context) (lattice.Pair, lattice.FactChanged) {
+	factChange := lattice.NoChange
+	if lattice.IsTop(inOut.L2()) {
+		factChange = lattice.OnlyOutChanged
 	}
-	inOut = analysis.NewLatticePair(inOut.L1(), &analysis.TopBotLatticeBot)
+	inOut = lattice.NewPair(inOut.L1(), &lattice.TopBotLatticeBot)
 	return inOut, factChange
-}
-
-func (c *ForwardBotBotClient) StmtView(instruction spir.Instruction,
-	inOut analysis.LatticePair, view analysis.StmtViewType,
-	context *spir.Context) []spir.Instruction {
-	// No views for this client.
-	return nil
 }

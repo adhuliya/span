@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/adhuliya/span/pkg/analysis"
+	"github.com/adhuliya/span/pkg/analysis/lattice"
 	"github.com/adhuliya/span/pkg/clients"
 	"github.com/adhuliya/span/pkg/logger"
 	"github.com/adhuliya/span/pkg/spir"
@@ -25,10 +26,10 @@ func TestBotBotAnalysis(t *testing.T) {
 	tu := spir.NewExampleTU_A()
 	ctx := spir.NewContext(tu)
 	botbotAn := clients.NewForwardTopBotClient()
-	aid := analysis.VisitId(spir.GetNextId())
+	ctxId := spir.GetNextContextId()
 
 	intraAnalysis := analysis.NewIntraProceduralAnalysis(
-		aid,
+		ctxId,
 		botbotAn,
 		tu.GetFunction("main").GetBody(),
 		ctx,
@@ -37,22 +38,22 @@ func TestBotBotAnalysis(t *testing.T) {
 	intraAnalysis.AnalyzeGraph()
 
 	// Get the expected and actual results
-	expected := analysis.TopBotLatticeBot
-	result, ok := ctx.GetInfo(uint32(aid))
+	expected := lattice.TopBotLatticeBot
+	result, ok := ctx.GetInfo(ctxId)
 	if !ok {
-		t.Fatalf("Expected info with key %d not found in context", aid)
+		t.Fatalf("Expected info with key %d not found in context", ctxId)
 	}
 
-	res := result.(map[spir.InsnId]analysis.LatticePair)
+	res := result.(map[spir.InsnId]lattice.Pair)
 	entryBB := tu.GetFunction("main").GetBody().EntryBlock()
 	res2 := res[entryBB.Insn(entryBB.InsnCount()-1).Id()]
-	actual, ok := res2.L2().(*analysis.TopBotLattice)
+	actual, ok := res2.L2().(*lattice.TopBotLattice)
 	if !ok {
 		t.Fatalf("Expected L2 to be of type *TopBotLattice, but got %T", res2.L2())
 	}
 
 	// Perform test
-	if !analysis.Equals(&expected, actual) {
+	if !lattice.Equals(&expected, actual) {
 		t.Errorf("Expected %v, but got %v", expected, actual)
 	}
 }

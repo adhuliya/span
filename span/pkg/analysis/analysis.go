@@ -1,19 +1,12 @@
 package analysis
 
-import "github.com/adhuliya/span/pkg/spir"
-
-// This file defined the analysis interface used in the SPAN program analysis engine.
+import (
+	"github.com/adhuliya/span/pkg/analysis/lattice"
+	"github.com/adhuliya/span/pkg/spir" // This file defined the analysis interface used in the SPAN program analysis engine.
+)
 
 type GraphVisitingOrder uint8
 type StmtViewType uint32
-type FactChanged uint8
-
-const (
-	OnlyInChanged  FactChanged = 0
-	OnlyOutChanged FactChanged = 1
-	InOutChanged   FactChanged = 2
-	NoChange       FactChanged = 3
-)
 
 const (
 	// A view from x = RHS to x = Top
@@ -33,10 +26,18 @@ const (
 type Analysis interface {
 	Name() string
 	VisitingOrder() GraphVisitingOrder
-	BoundaryFact(graph spir.Graph, context *spir.Context) LatticePair
-	Analyze(instruction spir.Instruction,
-		inOut LatticePair, context *spir.Context) (LatticePair, FactChanged)
-	StmtView(instruction spir.Instruction,
-		inOut LatticePair, view StmtViewType,
-		context *spir.Context) []spir.Instruction
+	BoundaryFact(graph spir.Graph, context *spir.Context) lattice.Pair
+	Analyze(insn spir.Instruction, inOut lattice.Pair,
+		context *spir.Context) (lattice.Pair, lattice.FactChanged)
+}
+
+type SpanAnalysis interface {
+	Analysis
+	StmtView(insn spir.Instruction, inOut lattice.Pair,
+		view StmtViewType, context *spir.Context) []spir.Instruction
+}
+
+type LernersAnalysis interface {
+	Analysis
+	StmtGraph(insn spir.Instruction, inOut lattice.Pair, context *spir.Context) spir.Graph
 }
