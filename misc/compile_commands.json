@@ -1,0 +1,7 @@
+[
+  {
+    "directory": "/workspaces/span",
+    "command": "gcc /workspaces/span/misc/test_prog_00.c -o /workspaces/span/misc/test_prog_00",
+    "file": "/workspaces/span/misc/test_prog_00.c"
+  }
+]

@@ -5,6 +5,7 @@ import (
 	"github.com/adhuliya/span/pkg/spir" // This file defined the analysis interface used in the SPAN program analysis engine.
 )
 
+type AnalysisId uint32
 type GraphVisitingOrder uint8
 type StmtViewType uint32
 
@@ -24,6 +25,7 @@ const (
 )
 
 type Analysis interface {
+	Id() AnalysisId
 	Name() string
 	VisitingOrder() GraphVisitingOrder
 	BoundaryFact(graph spir.Graph, context *spir.Context) lattice.Pair
@@ -39,5 +41,6 @@ type SpanAnalysis interface {
 
 type LernersAnalysis interface {
 	Analysis
-	StmtGraph(insn spir.Instruction, inOut lattice.Pair, context *spir.Context) spir.Graph
+	StmtGraph(insn spir.Instruction, inOut lattice.Pair,
+		context *spir.Context) spir.Graph
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/adhuliya/span/pkg/spir"
 )
 
-type WorklistBB struct {
+type BBWorklist struct {
 	graph spir.Graph
 	// The worklist of Basic Blocks to be analyzed.
 	worklist []spir.BasicBlockId
@@ -16,16 +16,16 @@ type WorklistBB struct {
 }
 
 func NewWorklistBB(graph spir.Graph,
-	visitOrder GraphVisitingOrder) *WorklistBB {
+	visitOrder GraphVisitingOrder) *BBWorklist {
 	wl := spir.ReversePostOrder(graph, visitOrder != ReversePostOrder)
-	return &WorklistBB{
+	return &BBWorklist{
 		graph:    graph,
 		worklist: wl,
 		stackTop: len(wl) - 1,
 	}
 }
 
-func (wl *WorklistBB) Pop() spir.BasicBlockId {
+func (wl *BBWorklist) Pop() spir.BasicBlockId {
 	if wl.stackTop < 0 {
 		return spir.BasicBlockId(0)
 	}
@@ -34,7 +34,7 @@ func (wl *WorklistBB) Pop() spir.BasicBlockId {
 	return bbId
 }
 
-func (wl *WorklistBB) Push(bbId spir.BasicBlockId) bool {
+func (wl *BBWorklist) Push(bbId spir.BasicBlockId) bool {
 	if wl.stackTop >= len(wl.worklist)-1 || slices.Contains(wl.worklist, bbId) {
 		return false
 	}
@@ -43,7 +43,7 @@ func (wl *WorklistBB) Push(bbId spir.BasicBlockId) bool {
 	return true
 }
 
-func (wl *WorklistBB) IsEmpty() bool {
+func (wl *BBWorklist) IsEmpty() bool {
 	return wl.stackTop < 0
 }
 
@@ -51,7 +51,7 @@ func (wl *WorklistBB) IsEmpty() bool {
 // The intraprocedural analysis is used to analyze the program within a single procedure.
 // It is used to analyze the program without considering the control flow between procedures.
 
-type IntraProceduralAnalysis struct {
+type IntraPAN struct {
 	// Visitation Identifier for the analysis.
 	ctxId spir.ContextId
 	// The analysis object used to perform the analysis.
@@ -61,12 +61,12 @@ type IntraProceduralAnalysis struct {
 	// The context object used to store the state of the analysis.
 	context *spir.Context
 	// The worklist of Basic Blocks to be analyzed.
-	wl *WorklistBB
+	wl *BBWorklist
 }
 
 func NewIntraProceduralAnalysis(ctxId spir.ContextId, analysis Analysis,
-	graph spir.Graph, context *spir.Context) *IntraProceduralAnalysis {
-	return &IntraProceduralAnalysis{
+	graph spir.Graph, context *spir.Context) *IntraPAN {
+	return &IntraPAN{
 		ctxId:    ctxId,
 		analysis: analysis,
 		graph:    graph,
@@ -75,44 +75,44 @@ func NewIntraProceduralAnalysis(ctxId spir.ContextId, analysis Analysis,
 	}
 }
 
-func (intraPA *IntraProceduralAnalysis) AnalyzeGraph() {
-	intraPA.initializeContext()
+func (intraPAN *IntraPAN) AnalyzeGraph() {
+	intraPAN.initializeContext()
 
-	if intraPA.analysis.VisitingOrder() == ReversePostOrder {
-		intraPA.analyzeGraphForward()
+	if intraPAN.analysis.VisitingOrder() == ReversePostOrder {
+		intraPAN.analyzeGraphForward()
 	} else {
-		intraPA.analyzeGraphBackward()
+		intraPAN.analyzeGraphBackward()
 	}
 }
 
-func (intraPA *IntraProceduralAnalysis) initializeContext() {
-	if _, ok := intraPA.context.GetInfo(intraPA.ctxId); ok {
+func (intraPAN *IntraPAN) initializeContext() {
+	if _, ok := intraPAN.context.GetInfo(intraPAN.ctxId); ok {
 		return
 	} else {
 		factMap := make(map[spir.InsnId]lattice.Pair)
-		//entryBBId, exitBBId := intraPA.graph.EntryBlock(), intraPA.graph.ExitBlock()
-		boundaryFact := intraPA.analysis.BoundaryFact(intraPA.graph, intraPA.context)
-		factMap[intraPA.graph.EntryBlock().Insn(0).Id()] = lattice.NewPair(boundaryFact.L1(), nil)
-		intraPA.context.SetInfo(intraPA.ctxId, factMap)
+		//entryBBId, exitBBId := intraPAN.graph.EntryBlock(), intraPAN.graph.ExitBlock()
+		boundaryFact := intraPAN.analysis.BoundaryFact(intraPAN.graph, intraPAN.context)
+		factMap[intraPAN.graph.EntryBlock().Insn(0).Id()] = lattice.NewPair(boundaryFact.L1(), nil)
+		intraPAN.context.SetInfo(intraPAN.ctxId, factMap)
 	}
 }
 
-func (intraPA *IntraProceduralAnalysis) analyzeGraphBackward() {
+func (intraPAN *IntraPAN) analyzeGraphBackward() {
 	logger.Get().Info("Analyzing graph in backward direction")
 }
 
-func (intraPA *IntraProceduralAnalysis) analyzeGraphForward() {
+func (intraPAN *IntraPAN) analyzeGraphForward() {
 	logger.Get().Info("Analyzing graph in forward direction",
-		"CtxId", intraPA.ctxId, "AnalysisName", intraPA.analysis.Name())
-	tmp, _ := intraPA.context.GetInfo(intraPA.ctxId)
+		"CtxId", intraPAN.ctxId, "AnalysisName", intraPAN.analysis.Name())
+	tmp, _ := intraPAN.context.GetInfo(intraPAN.ctxId)
 	factMap := tmp.(map[spir.InsnId]lattice.Pair)
 
-	analyze, context := intraPA.analysis.Analyze, intraPA.context
+	analyze, context := intraPAN.analysis.Analyze, intraPAN.context
 
 	// Visit each basic block
-	for !intraPA.wl.IsEmpty() {
-		bbId := intraPA.wl.Pop()
-		bb := intraPA.graph.BasicBlock(bbId)
+	for !intraPAN.wl.IsEmpty() {
+		bbId := intraPAN.wl.Pop()
+		bb := intraPAN.graph.BasicBlock(bbId)
 		logger.Get().Debug("Visiting", "BB", bbId)
 
 		// Visit each instruction in the basic block
@@ -122,12 +122,12 @@ func (intraPA *IntraProceduralAnalysis) analyzeGraphForward() {
 			inout, change := analyze(insn, factMap[insn.Id()], context)
 			logger.Get().Debug("After analysis:", "OutFact", lattice.Stringify(inout.L2()), "change", change)
 
-			intraPA.propagateFactForward(bb, insn.Id(), inout, factMap, i)
+			intraPAN.propagateFactForward(bb, insn.Id(), inout, factMap, i)
 		}
 	}
 }
 
-func (intraPA *IntraProceduralAnalysis) propagateFactForward(
+func (intraPAN *IntraPAN) propagateFactForward(
 	bb *spir.BasicBlock, insnId spir.InsnId,
 	inout lattice.Pair, factMap map[spir.InsnId]lattice.Pair,
 	insnIdx int) {
@@ -153,17 +153,17 @@ func (intraPA *IntraProceduralAnalysis) propagateFactForward(
 	}
 
 	for i := range bb.SuccCount() {
-		nextInsnId := intraPA.graph.BasicBlock(bb.Succ(i)).Insn(0).Id()
+		nextInsnId := intraPAN.graph.BasicBlock(bb.Succ(i)).Insn(0).Id()
 		nextInOut := factMap[nextInsnId]
 		val, chg := lattice.Meet(nextInOut.L1(), tfFact[i])
 		factMap[nextInsnId] = lattice.NewPair(val, nextInOut.L2())
 		if chg {
-			intraPA.wl.Push(bb.Succ(i))
+			intraPAN.wl.Push(bb.Succ(i))
 		}
 	}
 }
 
-func (intraPA *IntraProceduralAnalysis) initializeInsnFact(insnId spir.InsnId,
+func (intraPAN *IntraPAN) initializeInsnFact(insnId spir.InsnId,
 	factMap map[spir.InsnId]lattice.Pair) lattice.Pair {
 	if _, ok := factMap[insnId]; !ok {
 		factMap[insnId] = lattice.NewPair(nil, nil)
@@ -171,8 +171,8 @@ func (intraPA *IntraProceduralAnalysis) initializeInsnFact(insnId spir.InsnId,
 	return factMap[insnId]
 }
 
-func (intraPA *IntraProceduralAnalysis) GetAnalysis() Analysis {
-	return intraPA.analysis
+func (intraPAN *IntraPAN) GetAnalysis() Analysis {
+	return intraPAN.analysis
 }
 
 type Analyzer interface {

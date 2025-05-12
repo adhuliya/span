@@ -28,6 +28,9 @@ RUN apt-get update && apt-get install -y \
     llvm-19-dev \
     protobuf-compiler \
     libprotobuf-dev \
+    libedit-dev \
+    libzstd-dev \
+    libcurl4-openssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install protoc-gen-go

@@ -14,18 +14,18 @@ func GetNextContextId() ContextId {
 }
 
 type Context struct {
-	translationUnit *TranslationUnit
+	translationUnit *TU
 	info            map[ContextId]any
 }
 
-func NewContext(tu *TranslationUnit) *Context {
+func NewContext(tu *TU) *Context {
 	return &Context{
 		translationUnit: tu,
 		info:            make(map[ContextId]any),
 	}
 }
 
-func (c *Context) TranslationUnit() *TranslationUnit {
+func (c *Context) TU() *TU {
 	return c.translationUnit
 }
 

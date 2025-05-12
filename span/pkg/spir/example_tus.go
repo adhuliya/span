@@ -13,21 +13,21 @@ package spir
 //
 // There are no global initializations, so the global function is empty.
 // The main function has a single basic block with a single instruction.
-func NewExampleTU_A() *TranslationUnit {
-	tu := NewTranslationUnit()
+func NewExampleTU_A() *TU {
+	tu := NewTU()
 
 	main := tu.NewFunction(
 		"main",
-		NewBasicValueType(TY_INT32, QUAL_TYPE_NONE),
+		NewBasicValueType(K_VK_INT32, K_QK_QNONE),
 		nil,
 		nil)
 
-	x := tu.NewVar("x", ENTITY_VAR, NewBasicValueType(TY_INT32, QUAL_TYPE_NONE), main.id)
-	y := tu.NewVar("y", ENTITY_VAR, NewBasicValueType(TY_INT32, QUAL_TYPE_NONE), main.id)
-	c := tu.NewConst(10, NewBasicValueType(TY_INT32, QUAL_TYPE_NONE))
+	x := tu.NewVar("x", K_EK_VAR, NewBasicValueType(K_VK_INT32, K_QK_QNONE), main.id)
+	y := tu.NewVar("y", K_EK_VAR, NewBasicValueType(K_VK_INT32, K_QK_QNONE), main.id)
+	c10 := tu.NewConst(10, NewBasicValueType(K_VK_INT32, K_QK_QNONE))
 
 	bb := NewBasicBlock(tu.NewBBId(), 0, main.id, 2)
-	tu.AddInsn(bb, NewInsnBinOpAssign(x, y, c, EXPR_BINARY_ADD))
+	tu.AddInsn(bb, NewInsnBinOpAssign(x, y, c10, K_XK_ADD))
 	tu.AddInsn(bb, NewInsnReturn(x))
 	main.body = bb // a single basic block is a Graph
 

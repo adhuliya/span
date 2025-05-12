@@ -1,6 +1,8 @@
 package spir
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // This file defines the TranslationUnit type.
 // The TranslationUnit type is used to represent a single SPAN IR translation unit.
@@ -17,7 +19,12 @@ import "fmt"
 type EntityId uint32
 type FunctionId EntityId
 
-const ENTITY_ID_NONE EntityId = 0
+const ID_NONE uint32 = 0
+
+// The EntityKind type is used to represent the kind of an entity in the SPAN IR.
+// It is an integer type in the range of 0 to 31 (5 bits)
+// that can take on various values to indicate different kinds of entities.
+type EntityKind = K_EK
 
 const EntityIdMask32 EntityId = 0x3FFF_FFFF
 const EntityIdShift32 uint8 = 0
@@ -67,7 +74,7 @@ type Function struct {
 	body       Graph
 }
 
-type TranslationUnit struct {
+type TU struct {
 	// This is a special function with one basic block
 	// with all the initialization of global variables.
 	globalInit     FunctionId
@@ -85,52 +92,9 @@ type TranslationUnit struct {
 	namesToId      map[string]EntityId
 }
 
-// The EntityKind type is used to represent the kind of an entity in the SPAN IR.
-// It is an integer type in the range of 0 to 31 (5 bits)
-// that can take on various values to indicate different kinds of entities.
-type EntityKind uint8
-
-const (
-	// Entity kinds which can be in an expression (4 bit values)
-	ENTITY_VAR           EntityKind = 1 // The function locals, static vars, and parameters.
-	ENTITY_VAR_GLOBAL    EntityKind = 2 // A global variable, function etc.
-	ENTITY_VAR_TMP       EntityKind = 3
-	ENTITY_VAR_SSA       EntityKind = 4
-	ENTITY_VAR_PSEUDO    EntityKind = 5 // To give names to memory allocations
-	ENTITY_CONST         EntityKind = 6
-	ENTITY_CONST_IMM     EntityKind = 7
-	ENTITY_VALUE_TYPE    EntityKind = 8 // A type, like int, float, record etc.
-	ENTITY_FUNC          EntityKind = 9
-	ENTITY_FUNC_VAR_ARGS EntityKind = 10
-	ENTITY_FUNC_NO_DEF   EntityKind = 11
-	ENTITY_CLASS         EntityKind = 12 // A class type; for future use.
-	ENTITY_LABEL         EntityKind = 13 // In if-then-else statements
-	ENTITY_EXPR1         EntityKind = 14 // Reserved for future use
-	ENTITY_EXPR2         EntityKind = 15 // Reserved for future use
-
-	// Entity kinds which cannot be in an expression (5 bit values)
-	ENTITY_BB    EntityKind = 16
-	ENTITY_CFG   EntityKind = 17
-	ENTITY_SCOPE EntityKind = 18
-	ENTITY_TU    EntityKind = 19
-	ENTITY_INSN  EntityKind = 20
-
-	// Reserved entity kinds (5 bit values)
-	ENTITY_RESERVED_22 EntityKind = 22 // Reserved for use at runtime
-	ENTITY_RESERVED_23 EntityKind = 23 // Reserved for use at runtime
-	ENTITY_RESERVED_24 EntityKind = 24 // Reserved for use at runtime
-	ENTITY_RESERVED_25 EntityKind = 25 // Reserved for use at runtime
-	ENTITY_RESERVED_26 EntityKind = 26 // Reserved for use at runtime
-	ENTITY_RESERVED_27 EntityKind = 27 // Reserved for use at runtime
-	ENTITY_RESERVED_28 EntityKind = 28 // Reserved for use at runtime
-	ENTITY_RESERVED_29 EntityKind = 29 // Reserved for use at runtime
-	ENTITY_RESERVED_30 EntityKind = 30 // Reserved for use at runtime
-	ENTITY_RESERVED_31 EntityKind = 31 // Reserved for use at runtime
-)
-
-func NewTranslationUnit() *TranslationUnit {
-	tu := &TranslationUnit{
-		globalInit:     FunctionId(ENTITY_ID_NONE),
+func NewTU() *TU {
+	tu := &TU{
+		globalInit:     FunctionId(ID_NONE),
 		entityInfo:     make(map[EntityId]interface{}),
 		functions:      make(map[FunctionId]*Function),
 		constants:      make(map[EntityId]ConstantInfo),
@@ -145,8 +109,8 @@ func NewTranslationUnit() *TranslationUnit {
 		namesToId:      make(map[string]EntityId),
 	}
 
-	tu.globalInit = tu.NewFunction("global_init",
-		NewBasicValueType(TY_VOID, QUAL_TYPE_NONE), nil, nil).id
+	tu.globalInit = tu.NewFunction(K_FUNC_GLOBAL_INIT,
+		NewBasicValueType(K_VK_VOID, K_QK_QNONE), nil, nil).id
 	return tu
 }
 
@@ -160,20 +124,20 @@ func NewValueInfo(name string, eKind EntityKind,
 	}
 }
 
-func (tu *TranslationUnit) AddInsn(bb *BasicBlock, insn Instruction) {
+func (tu *TU) AddInsn(bb *BasicBlock, insn Instruction) {
 	insnId := InsnId(tu.idGen.AllocateID(insn.GetInsnPrefix16(),
-		ENTITY_INSN.SeqIdBitLength()))
+		K_EK_INSN.SeqIdBitLength()))
 	tu.entityInfo[EntityId(insnId)] = &InsnInfo{bbId: bb.id}
 	bb.insns = append(bb.insns, insn)
 }
 
-func (tu *TranslationUnit) NewBBId() BasicBlockId {
-	id := BasicBlockId(tu.idGen.AllocateID(GenPrefix16(ENTITY_BB, 0),
-		ENTITY_BB.SeqIdBitLength()))
+func (tu *TU) NewBBId() BasicBlockId {
+	id := BasicBlockId(tu.idGen.AllocateID(GenPrefix16(K_EK_BB, 0),
+		K_EK_BB.SeqIdBitLength()))
 	return id
 }
 
-func (tu *TranslationUnit) GetEntityId(name string) EntityId {
+func (tu *TU) GetEntityId(name string) EntityId {
 	// Check if the name is already in the map
 	if id, ok := tu.namesToId[name]; ok {
 		return id
@@ -185,7 +149,7 @@ func (tu *TranslationUnit) GetEntityId(name string) EntityId {
 // Each value is associated with a name, a function ID, an entity kind,
 // and a value type. The function ID is used to identify the function
 // to which the value belongs. If fid is 0, it means the value is global.
-func (tu *TranslationUnit) NewVar(name string, eKind EntityKind,
+func (tu *TU) NewVar(name string, eKind EntityKind,
 	vType ValueType, fid FunctionId) EntityId {
 	valInfo := NewValueInfo(name, eKind, vType, fid)
 	id := tu.idGen.AllocateID(GenPrefix16(eKind, uint8(vType.GetType())),
@@ -196,12 +160,12 @@ func (tu *TranslationUnit) NewVar(name string, eKind EntityKind,
 	return entityId
 }
 
-func (tu *TranslationUnit) NewConst(val uint64, vType ValueType) EntityId {
+func (tu *TU) NewConst(val uint64, vType ValueType) EntityId {
 	imm, ok := GenImmediate20(val, vType.GetType())
-	eKind := ENTITY_CONST
+	eKind := K_EK_LIT_NUM
 	var id uint32 = 0
 	if ok {
-		eKind = ENTITY_CONST_IMM
+		eKind = K_EK_LIT_NUM_IMM
 		id = GenPrefix32(eKind, uint8(vType.GetType()))<<eKind.SeqIdBitLength() | uint32(imm)
 	} else {
 		id = tu.idGen.AllocateID(GenPrefix16(eKind, uint8(vType.GetType())),
@@ -216,7 +180,7 @@ func (tu *TranslationUnit) NewConst(val uint64, vType ValueType) EntityId {
 	return entityId
 }
 
-func GenImmediate20(val uint64, vType ValueTypeKind) (uint32, bool) {
+func GenImmediate20(val uint64, vType ValKind) (uint32, bool) {
 	if vType.IsInteger() && val == val&ImmConstMask64 {
 		return uint32(val & ImmConstMask64), true
 	}
@@ -239,10 +203,10 @@ func GenPrefix32(eKind EntityKind, eSubKind uint8) uint32 {
 	}
 }
 
-func (tu *TranslationUnit) NewFunction(name string, returnType ValueType,
+func (tu *TU) NewFunction(name string, returnType ValueType,
 	paramIds []EntityId, body Graph) *Function {
-	id := FunctionId(tu.idGen.AllocateID(GenPrefix16(ENTITY_FUNC, uint8(returnType.GetType())),
-		ENTITY_FUNC.SeqIdBitLength()))
+	id := FunctionId(tu.idGen.AllocateID(GenPrefix16(K_EK_FUNC, uint8(returnType.GetType())),
+		K_EK_FUNC.SeqIdBitLength()))
 
 	fun := &Function{
 		id:         id,
@@ -279,11 +243,11 @@ func (fun *Function) GetBody() Graph {
 	return fun.body
 }
 
-func (tu *TranslationUnit) GetGlobalInit() FunctionId {
+func (tu *TU) GetGlobalInit() FunctionId {
 	return tu.globalInit
 }
 
-func (tu *TranslationUnit) GetFunction(name string) *Function {
+func (tu *TU) GetFunction(name string) *Function {
 	if id, ok := tu.namesToId[name]; ok {
 		if fun, ok := tu.functions[FunctionId(id)]; ok {
 			return fun
@@ -292,14 +256,14 @@ func (tu *TranslationUnit) GetFunction(name string) *Function {
 	return nil
 }
 
-func (tu *TranslationUnit) GetFunctionById(id FunctionId) *Function {
+func (tu *TU) GetFunctionById(id FunctionId) *Function {
 	if fun, ok := tu.functions[id]; ok {
 		return fun
 	}
 	return nil
 }
 
-func (tu *TranslationUnit) GenerateEntityId(eKind EntityKind) EntityId {
+func (tu *TU) GenerateEntityId(eKind EntityKind) EntityId {
 	return EntityId(tu.idGen.AllocateID(uint16(eKind), eKind.SeqIdBitLength()))
 }
 
@@ -317,8 +281,8 @@ func (entityId EntityId) EKind() EntityKind {
 // Does the entity kind have a sub-kind?
 // A sub-kind uses another 5 bits to represent the sub type of the entity.
 func (eKind EntityKind) HasSubKind() bool {
-	if (eKind >= ENTITY_BB && eKind <= ENTITY_TU) ||
-		eKind == ENTITY_LABEL || eKind == ENTITY_CLASS {
+	if (eKind >= K_EK_BB && eKind <= K_EK_TU) ||
+		eKind == K_EK_LABEL || eKind == K_EK_CLASS {
 		return false
 	}
 	return true
@@ -344,21 +308,21 @@ func (eKind EntityKind) place64() uint64 {
 }
 
 func (eKind EntityKind) IsVariable() bool {
-	if eKind >= ENTITY_VAR && eKind <= ENTITY_VAR_PSEUDO {
+	if eKind >= K_EK_VAR && eKind <= K_EK_VAR_PSEUDO {
 		return true
 	}
 	return false
 }
 
 func (eKind EntityKind) IsConstant() bool {
-	if eKind == ENTITY_CONST || eKind == ENTITY_CONST_IMM {
+	if eKind == K_EK_LIT_NUM || eKind == K_EK_LIT_STR {
 		return true
 	}
 	return false
 }
 
 func (eKind EntityKind) IsFunction() bool {
-	if eKind >= ENTITY_FUNC && eKind <= ENTITY_FUNC_NO_DEF {
+	if eKind == K_EK_FUNC || eKind == K_EK_FUNC_VAR_ARGS {
 		return true
 	}
 	return false

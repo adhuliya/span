@@ -1,6 +1,6 @@
 package lattice
 
-import "github.com/adhuliya/span/internal/util"
+import "github.com/adhuliya/span/internal/util/errs"
 
 type TopBotLattice struct {
 	top bool // Most precise value
@@ -63,7 +63,7 @@ func (l *TopBotLattice) Join(other Lattice) (Lattice, bool) {
 func (l *TopBotLattice) ConstJoin(other ConstLattice) (ConstLattice, bool) {
 	j, change := l.Join(other)
 	if change {
-		util.Assert(l != j, "Constant lattice should not change")
+		errs.Assert(l != j, "Constant lattice should not change")
 	}
 	return j.(ConstLattice), change
 }
@@ -82,7 +82,7 @@ func (l *TopBotLattice) Meet(other Lattice) (Lattice, bool) {
 func (l *TopBotLattice) ConstMeet(other ConstLattice) (ConstLattice, bool) {
 	j, change := l.Meet(other)
 	if change {
-		util.Assert(l != j, "Constant lattice should not change")
+		errs.Assert(l != j, "Constant lattice should not change")
 	}
 	return j.(ConstLattice), change
 }

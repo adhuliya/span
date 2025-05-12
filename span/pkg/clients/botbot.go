@@ -11,15 +11,21 @@ import (
 // bot values from Entry to Exit of a given CFGraph.
 
 type ForwardBotBotClient struct {
+	id         analysis.AnalysisId
 	name       string
 	visitOrder analysis.GraphVisitingOrder
 }
 
 func NewForwardTopBotClient() *ForwardBotBotClient {
 	return &ForwardBotBotClient{
+		id:         0,
 		name:       "ForwardBotBotClient",
 		visitOrder: analysis.ReversePostOrder,
 	}
+}
+
+func (c *ForwardBotBotClient) Id() analysis.AnalysisId {
+	return c.id
 }
 
 func (c *ForwardBotBotClient) Name() string {

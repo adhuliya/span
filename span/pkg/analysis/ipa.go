@@ -5,19 +5,19 @@ import (
 	"github.com/adhuliya/span/pkg/spir"
 )
 
-// This file defines the inter-procedural analysis for the SPAN program analysis engine.
+// This file defines the inter-procedural analysis interface.
 
-type IpaContext interface {
-	Equals(other IpaContext) bool
-	GetBoundaryFact() lattice.Pair
-	GetNewContext(callSite spir.Instruction, lp lattice.Pair) IpaContext
-	GetAnalyzer() *IntraProceduralAnalysis
+type InterPACtx interface {
+	Equals(other InterPACtx) bool
+	GetFact() lattice.Pair
+	NewContext(callSite spir.Instruction, lp lattice.Pair, ipaCtx InterPACtx) InterPACtx
+	GetCallSite() spir.Instruction
+	GetParentCtx() InterPACtx
 }
 
-type IPA interface {
+type InterPA interface {
 	Analysis
-	// Get the first context for the analysis
-	GetInitialContext() IpaContext
 	// Get the context for the analysis of a call site
-	GetContext(callSite spir.Instruction, lp lattice.Pair, ipaCtx IpaContext) IpaContext
+	// Use GetContext(nil, nil, nil) to get the context for the main (entry) function.
+	GetContext(callSite *spir.Instruction, lp lattice.Pair, ipaCtx InterPACtx) InterPACtx
 }

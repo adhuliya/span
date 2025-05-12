@@ -9,9 +9,12 @@
 
 # Build and log files
 build/
+*/built/*
 build-*
 *.tmp.log
 */bin/*
+*.o
+*.out
 
 # Generated protobuf file(s)
 *.pg.go

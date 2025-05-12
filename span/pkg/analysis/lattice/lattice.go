@@ -1,7 +1,7 @@
 package lattice
 
 import (
-	"github.com/adhuliya/span/internal/util"
+	"github.com/adhuliya/span/internal/util/errs"
 )
 
 // This file contains the base lattice interface used in the SPAN program analysis engine.
@@ -68,7 +68,7 @@ func Meet(l1, l2 Lattice) (Lattice, bool) {
 func ConstMeet(l1, l2 ConstLattice) (ConstLattice, bool) {
 	lat, change := l1.Meet(l2)
 	if change {
-		util.Assert(l1 != lat, "Constant lattice should not change")
+		errs.Assert(l1 != lat, "Constant lattice should not change")
 	}
 	return lat.(ConstLattice), change
 }
@@ -76,9 +76,19 @@ func ConstMeet(l1, l2 ConstLattice) (ConstLattice, bool) {
 func ConstJoin(l1, l2 ConstLattice) (ConstLattice, bool) {
 	lat, change := l1.Join(l2)
 	if change {
-		util.Assert(l1 != lat, "Constant lattice should not change")
+		errs.Assert(l1 != lat, "Constant lattice should not change")
 	}
 	return lat.(ConstLattice), change
+}
+
+func WeakerThan(l1, l2 Lattice) bool {
+	if l2 == nil {
+		return true
+	}
+	if l1 == nil {
+		return false
+	}
+	return l1.WeakerThan(l2)
 }
 
 func Equals(l1, l2 Lattice) bool {

@@ -1,4 +1,4 @@
-.PHONY: all clean build devbuild test vtest vet fmt proto docker tidy gen
+.PHONY: all clean build devbuild test vtest vet fmt proto docker tidy gen generate slang
 
 GO=go
 PROTOC=protoc
@@ -34,7 +34,15 @@ tidy:
 
 proto:
 	$(PROTOC) --go_out=. --go_opt=paths=source_relative \
-		span/pkg/spir/bitcode/spir.proto
+		span/pkg/spir/spir.proto
+	$(PROTOC) --cpp_out=slang/src --proto_path=span/pkg/spir \
+		span/pkg/spir/spir.proto
+
+slang:
+	cd slang && mkdir -p build && cd build && cmake .. && make
+
+generate: gen proto
+	echo "Generating code..."
 
 clean:
 	rm -rf bin/
