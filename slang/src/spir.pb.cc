@@ -21,6 +21,20 @@ namespace _pb = ::PROTOBUF_NAMESPACE_ID;
 namespace _pbi = _pb::internal;
 
 namespace spir {
+PROTOBUF_CONSTEXPR BitSrcLoc::BitSrcLoc(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.line_)*/0u
+  , /*decltype(_impl_.col_)*/0u
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct BitSrcLocDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR BitSrcLocDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~BitSrcLocDefaultTypeInternal() {}
+  union {
+    BitSrcLoc _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 BitSrcLocDefaultTypeInternal _BitSrcLoc_default_instance_;
 PROTOBUF_CONSTEXPR BitTU_EntitiesEntry_DoNotUse::BitTU_EntitiesEntry_DoNotUse(
     ::_pbi::ConstantInitialized) {}
 struct BitTU_EntitiesEntry_DoNotUseDefaultTypeInternal {
@@ -102,6 +116,7 @@ PROTOBUF_CONSTEXPR BitEntity::BitEntity(
     /*decltype(_impl_._has_bits_)*/{}
   , /*decltype(_impl_._cached_size_)*/{}
   , /*decltype(_impl_.str_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.loc_)*/nullptr
   , /*decltype(_impl_.id_)*/uint64_t{0u}
   , /*decltype(_impl_.num_)*/uint64_t{0u}
   , /*decltype(_impl_.kind_)*/0} {}
@@ -121,6 +136,7 @@ PROTOBUF_CONSTEXPR BitExpr::BitExpr(
   , /*decltype(_impl_.exprs_)*/{}
   , /*decltype(_impl_.opr1_)*/nullptr
   , /*decltype(_impl_.opr2_)*/nullptr
+  , /*decltype(_impl_.loc_)*/nullptr
   , /*decltype(_impl_.kind_)*/0} {}
 struct BitExprDefaultTypeInternal {
   PROTOBUF_CONSTEXPR BitExprDefaultTypeInternal()
@@ -148,11 +164,19 @@ struct BitInsnDefaultTypeInternal {
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 BitInsnDefaultTypeInternal _BitInsn_default_instance_;
 }  // namespace spir
-static ::_pb::Metadata file_level_metadata_spir_2eproto[8];
+static ::_pb::Metadata file_level_metadata_spir_2eproto[9];
 static const ::_pb::EnumDescriptor* file_level_enum_descriptors_spir_2eproto[5];
 static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_spir_2eproto = nullptr;
 
 const uint32_t TableStruct_spir_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::spir::BitSrcLoc, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::spir::BitSrcLoc, _impl_.line_),
+  PROTOBUF_FIELD_OFFSET(::spir::BitSrcLoc, _impl_.col_),
   PROTOBUF_FIELD_OFFSET(::spir::BitTU_EntitiesEntry_DoNotUse, _has_bits_),
   PROTOBUF_FIELD_OFFSET(::spir::BitTU_EntitiesEntry_DoNotUse, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -225,10 +249,12 @@ const uint32_t TableStruct_spir_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(pro
   PROTOBUF_FIELD_OFFSET(::spir::BitEntity, _impl_.id_),
   PROTOBUF_FIELD_OFFSET(::spir::BitEntity, _impl_.num_),
   PROTOBUF_FIELD_OFFSET(::spir::BitEntity, _impl_.str_),
+  PROTOBUF_FIELD_OFFSET(::spir::BitEntity, _impl_.loc_),
   ~0u,
   ~0u,
-  1,
+  2,
   0,
+  1,
   PROTOBUF_FIELD_OFFSET(::spir::BitExpr, _impl_._has_bits_),
   PROTOBUF_FIELD_OFFSET(::spir::BitExpr, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -239,10 +265,12 @@ const uint32_t TableStruct_spir_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(pro
   PROTOBUF_FIELD_OFFSET(::spir::BitExpr, _impl_.opr1_),
   PROTOBUF_FIELD_OFFSET(::spir::BitExpr, _impl_.opr2_),
   PROTOBUF_FIELD_OFFSET(::spir::BitExpr, _impl_.exprs_),
+  PROTOBUF_FIELD_OFFSET(::spir::BitExpr, _impl_.loc_),
   ~0u,
   0,
   1,
   ~0u,
+  2,
   PROTOBUF_FIELD_OFFSET(::spir::BitInsn, _impl_._has_bits_),
   PROTOBUF_FIELD_OFFSET(::spir::BitInsn, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -257,17 +285,19 @@ const uint32_t TableStruct_spir_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(pro
   1,
 };
 static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
-  { 0, 8, -1, sizeof(::spir::BitTU_EntitiesEntry_DoNotUse)},
-  { 10, 18, -1, sizeof(::spir::BitTU_EntityTypesEntry_DoNotUse)},
-  { 20, -1, -1, sizeof(::spir::BitTU)},
-  { 30, -1, -1, sizeof(::spir::BitFunc)},
-  { 40, 54, -1, sizeof(::spir::BitValueType)},
-  { 62, 72, -1, sizeof(::spir::BitEntity)},
-  { 76, 86, -1, sizeof(::spir::BitExpr)},
-  { 90, 99, -1, sizeof(::spir::BitInsn)},
+  { 0, -1, -1, sizeof(::spir::BitSrcLoc)},
+  { 8, 16, -1, sizeof(::spir::BitTU_EntitiesEntry_DoNotUse)},
+  { 18, 26, -1, sizeof(::spir::BitTU_EntityTypesEntry_DoNotUse)},
+  { 28, -1, -1, sizeof(::spir::BitTU)},
+  { 38, -1, -1, sizeof(::spir::BitFunc)},
+  { 48, 62, -1, sizeof(::spir::BitValueType)},
+  { 70, 81, -1, sizeof(::spir::BitEntity)},
+  { 86, 97, -1, sizeof(::spir::BitExpr)},
+  { 102, 111, -1, sizeof(::spir::BitInsn)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
+  &::spir::_BitSrcLoc_default_instance_._instance,
   &::spir::_BitTU_EntitiesEntry_DoNotUse_default_instance_._instance,
   &::spir::_BitTU_EntityTypesEntry_DoNotUse_default_instance_._instance,
   &::spir::_BitTU_default_instance_._instance,
@@ -279,7 +309,8 @@ static const ::_pb::Message* const file_default_instances[] = {
 };
 
 const char descriptor_table_protodef_spir_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
-  "\n\nspir.proto\022\004spir\"\241\002\n\005BitTU\022\014\n\004name\030\001 \001"
+  "\n\nspir.proto\022\004spir\"&\n\tBitSrcLoc\022\014\n\004line\030"
+  "\001 \001(\r\022\013\n\003col\030\002 \001(\r\"\241\002\n\005BitTU\022\014\n\004name\030\001 \001"
   "(\t\022+\n\010entities\030\002 \003(\0132\031.spir.BitTU.Entiti"
   "esEntry\0221\n\013entityTypes\030\003 \003(\0132\034.spir.BitT"
   "U.EntityTypesEntry\022 \n\tfunctions\030\004 \003(\0132\r."
@@ -296,58 +327,60 @@ const char descriptor_table_protodef_spir_2eproto[] PROTOBUF_SECTION_VARIABLE(pr
   "Name\030\006 \001(\tH\004\210\001\001\022\r\n\005names\030\007 \003(\t\022!\n\005types\030"
   "\010 \003(\0132\022.spir.BitValueTypeB\010\n\006_qtypeB\007\n\005_"
   "sizeB\010\n\006_alignB\n\n\010_subTypeB\016\n\014_valTypeNa"
-  "me\"e\n\tBitEntity\022\030\n\004kind\030\001 \001(\0162\n.spir.K_E"
-  "K\022\n\n\002id\030\002 \001(\004\022\020\n\003num\030\003 \001(\004H\000\210\001\001\022\020\n\003str\030\004"
-  " \001(\tH\001\210\001\001B\006\n\004_numB\006\n\004_str\"\235\001\n\007BitExpr\022\030\n"
-  "\004kind\030\001 \001(\0162\n.spir.K_XK\022\"\n\004opr1\030\002 \001(\0132\017."
-  "spir.BitEntityH\000\210\001\001\022\"\n\004opr2\030\003 \001(\0132\017.spir"
-  ".BitEntityH\001\210\001\001\022\036\n\005exprs\030\004 \003(\0132\017.spir.Bi"
-  "tEntityB\007\n\005_opr1B\007\n\005_opr2\"u\n\007BitInsn\022\030\n\004"
-  "kind\030\001 \001(\0162\n.spir.K_IK\022\037\n\003rhs\030\002 \001(\0132\r.sp"
-  "ir.BitExprH\000\210\001\001\022\037\n\003lhs\030\003 \001(\0132\r.spir.BitE"
-  "xprH\001\210\001\001B\006\n\004_rhsB\006\n\004_lhs*\203\002\n\004K_EK\022\010\n\004NON"
-  "E\020\000\022\007\n\003VAR\020\001\022\016\n\nVAR_GLOBAL\020\002\022\013\n\007VAR_TMP\020"
-  "\003\022\013\n\007VAR_SSA\020\004\022\016\n\nVAR_PSEUDO\020\005\022\013\n\007LIT_NU"
-  "M\020\006\022\017\n\013LIT_NUM_IMM\020\007\022\013\n\007LIT_STR\020\010\022\016\n\nVAL"
-  "UE_TYPE\020\t\022\010\n\004FUNC\020\n\022\021\n\rFUNC_VAR_ARGS\020\013\022\t"
-  "\n\005CLASS\020\014\022\t\n\005LABEL\020\r\022\010\n\004ENT1\020\016\022\010\n\004ENT2\020\017"
-  "\022\010\n\004INSN\020\020\022\006\n\002BB\020\021\022\007\n\003CFG\020\022\022\t\n\005SCOPE\020\023\022\006"
-  "\n\002TU\020\024*\373\001\n\004K_IK\022\010\n\004INOP\020\000\022\014\n\010IBARRIER\020\001\022"
-  "\020\n\014IASGN_SIMPLE\020\002\022\r\n\tIASGN_BOP\020\003\022\r\n\tIASG"
-  "N_UOP\020\004\022\023\n\017IASGN_RHS_DEREF\020\005\022\023\n\017IASGN_LH"
-  "S_DEREF\020\006\022\023\n\017IASGN_RHS_ARRAY\020\007\022\023\n\017IASGN_"
-  "LHS_ARRAY\020\010\022\016\n\nIASGN_CALL\020\t\022\r\n\tIASGN_PHI"
-  "\020\n\022\t\n\005ICALL\020\013\022\t\n\005IGOTO\020\014\022\t\n\005ICOND\020\r\022\n\n\006I"
-  "LABEL\020\016\022\013\n\007IRETURN\020\017*\314\002\n\004K_XK\022\007\n\003NIL\020\000\022\007"
-  "\n\003VAL\020\001\022\007\n\003ADD\020\002\022\007\n\003SUB\020\003\022\007\n\003MUL\020\004\022\007\n\003DI"
-  "V\020\005\022\007\n\003MOD\020\006\022\007\n\003AND\020\007\022\006\n\002OR\020\010\022\007\n\003XOR\020\t\022\007"
-  "\n\003SHL\020\n\022\007\n\003SHR\020\013\022\010\n\004SHRL\020\014\022\013\n\007BIT_NOT\020\r\022"
-  "\n\n\006NEGATE\020\016\022\007\n\003NOT\020\017\022\t\n\005DEREF\020\020\022\n\n\006ADDRO"
-  "F\020\021\022\n\n\006SIZEOF\020\022\022\013\n\007ALIGNOF\020\023\022\023\n\017ARRAY_SU"
-  "BSCRIPT\020\024\022\021\n\rMEMBER_ACCESS\020\025\022\025\n\021MEMBER_P"
-  "TR_ACCESS\020\026\022\010\n\004CALL\020\027\022\n\n\006CALL_0\020\030\022\010\n\004CAS"
-  "T\020\031\022\006\n\002EQ\020\032\022\006\n\002NE\020\033\022\006\n\002LT\020\034\022\006\n\002LE\020\035*\214\003\n\004"
-  "K_VK\022\010\n\004VOID\020\000\022\010\n\004CHAR\020\001\022\010\n\004INT8\020\002\022\t\n\005IN"
-  "T16\020\003\022\t\n\005INT32\020\004\022\t\n\005INT64\020\005\022\t\n\005UINT8\020\006\022\t"
-  "\n\005UCHAR\020\006\022\n\n\006UINT16\020\007\022\n\n\006UINT32\020\010\022\n\n\006UIN"
-  "T64\020\t\022\n\n\006N_BITS\020\n\022\013\n\007N_UBITS\020\013\022\010\n\004BOOL\020\014"
-  "\022\013\n\007FLOAT16\020\r\022\013\n\007FLOAT32\020\016\022\t\n\005FLOAT\020\016\022\013\n"
-  "\007FLOAT64\020\017\022\n\n\006DOUBLE\020\017\022\017\n\013PTR_TO_VOID\020\020\022"
-  "\016\n\nPTR_TO_PTR\020\021\022\016\n\nPTR_TO_ARR\020\022\022\017\n\013PTR_T"
-  "O_CHAR\020\023\022\016\n\nPTR_TO_INT\020\024\022\020\n\014PTR_TO_FLOAT"
-  "\020\025\022\021\n\rPTR_TO_RECORD\020\026\022\017\n\013PTR_TO_FUNC\020\027\022\007"
-  "\n\003ARR\020\030\022\t\n\005UNION\020\031\022\n\n\006STRUCT\020\032\032\002\020\001*\262\001\n\004K"
-  "_QK\022\t\n\005QNONE\020\000\022\n\n\006QCONST\020\001\022\017\n\013QCONST_DES"
-  "T\020\002\022\020\n\014QFUNC_STATIC\020\004\022\022\n\016QGLOBAL_STATIC\020"
-  "\010\022\r\n\tQVOLATILE\020\020\022\t\n\005QWEAK\020 \022\021\n\rQTHREAD_L"
-  "OCAL\020@\022\r\n\010QNO_INIT\020\200\001\022\016\n\tQEXTERNAL\020\200\002\022\014\n"
-  "\007QNO_DEF\020\200\002\032\002\020\001B\010Z\006./spirb\006proto3"
+  "me\"\220\001\n\tBitEntity\022\030\n\004kind\030\001 \001(\0162\n.spir.K_"
+  "EK\022\n\n\002id\030\002 \001(\004\022\020\n\003num\030\003 \001(\004H\000\210\001\001\022\020\n\003str\030"
+  "\004 \001(\tH\001\210\001\001\022!\n\003loc\030\005 \001(\0132\017.spir.BitSrcLoc"
+  "H\002\210\001\001B\006\n\004_numB\006\n\004_strB\006\n\004_loc\"\310\001\n\007BitExp"
+  "r\022\030\n\004kind\030\001 \001(\0162\n.spir.K_XK\022\"\n\004opr1\030\002 \001("
+  "\0132\017.spir.BitEntityH\000\210\001\001\022\"\n\004opr2\030\003 \001(\0132\017."
+  "spir.BitEntityH\001\210\001\001\022\036\n\005exprs\030\004 \003(\0132\017.spi"
+  "r.BitEntity\022!\n\003loc\030\005 \001(\0132\017.spir.BitSrcLo"
+  "cH\002\210\001\001B\007\n\005_opr1B\007\n\005_opr2B\006\n\004_loc\"u\n\007BitI"
+  "nsn\022\030\n\004kind\030\001 \001(\0162\n.spir.K_IK\022\037\n\003rhs\030\002 \001"
+  "(\0132\r.spir.BitExprH\000\210\001\001\022\037\n\003lhs\030\003 \001(\0132\r.sp"
+  "ir.BitExprH\001\210\001\001B\006\n\004_rhsB\006\n\004_lhs*\203\002\n\004K_EK"
+  "\022\010\n\004NONE\020\000\022\007\n\003VAR\020\001\022\016\n\nVAR_GLOBAL\020\002\022\013\n\007V"
+  "AR_TMP\020\003\022\013\n\007VAR_SSA\020\004\022\016\n\nVAR_PSEUDO\020\005\022\013\n"
+  "\007LIT_NUM\020\006\022\017\n\013LIT_NUM_IMM\020\007\022\013\n\007LIT_STR\020\010"
+  "\022\016\n\nVALUE_TYPE\020\t\022\010\n\004FUNC\020\n\022\021\n\rFUNC_VAR_A"
+  "RGS\020\013\022\t\n\005CLASS\020\014\022\t\n\005LABEL\020\r\022\010\n\004ENT1\020\016\022\010\n"
+  "\004ENT2\020\017\022\010\n\004INSN\020\020\022\006\n\002BB\020\021\022\007\n\003CFG\020\022\022\t\n\005SC"
+  "OPE\020\023\022\006\n\002TU\020\024*\373\001\n\004K_IK\022\010\n\004INOP\020\000\022\014\n\010IBAR"
+  "RIER\020\001\022\020\n\014IASGN_SIMPLE\020\002\022\r\n\tIASGN_BOP\020\003\022"
+  "\r\n\tIASGN_UOP\020\004\022\023\n\017IASGN_RHS_DEREF\020\005\022\023\n\017I"
+  "ASGN_LHS_DEREF\020\006\022\023\n\017IASGN_RHS_ARRAY\020\007\022\023\n"
+  "\017IASGN_LHS_ARRAY\020\010\022\016\n\nIASGN_CALL\020\t\022\r\n\tIA"
+  "SGN_PHI\020\n\022\t\n\005ICALL\020\013\022\t\n\005IGOTO\020\014\022\t\n\005ICOND"
+  "\020\r\022\n\n\006ILABEL\020\016\022\013\n\007IRETURN\020\017*\314\002\n\004K_XK\022\007\n\003"
+  "NIL\020\000\022\007\n\003VAL\020\001\022\007\n\003ADD\020\002\022\007\n\003SUB\020\003\022\007\n\003MUL\020"
+  "\004\022\007\n\003DIV\020\005\022\007\n\003MOD\020\006\022\007\n\003AND\020\007\022\006\n\002OR\020\010\022\007\n\003"
+  "XOR\020\t\022\007\n\003SHL\020\n\022\007\n\003SHR\020\013\022\010\n\004SHRL\020\014\022\013\n\007BIT"
+  "_NOT\020\r\022\n\n\006NEGATE\020\016\022\007\n\003NOT\020\017\022\t\n\005DEREF\020\020\022\n"
+  "\n\006ADDROF\020\021\022\n\n\006SIZEOF\020\022\022\013\n\007ALIGNOF\020\023\022\023\n\017A"
+  "RRAY_SUBSCRIPT\020\024\022\021\n\rMEMBER_ACCESS\020\025\022\025\n\021M"
+  "EMBER_PTR_ACCESS\020\026\022\010\n\004CALL\020\027\022\n\n\006CALL_0\020\030"
+  "\022\010\n\004CAST\020\031\022\006\n\002EQ\020\032\022\006\n\002NE\020\033\022\006\n\002LT\020\034\022\006\n\002LE"
+  "\020\035*\214\003\n\004K_VK\022\010\n\004VOID\020\000\022\010\n\004CHAR\020\001\022\010\n\004INT8\020"
+  "\002\022\t\n\005INT16\020\003\022\t\n\005INT32\020\004\022\t\n\005INT64\020\005\022\t\n\005UI"
+  "NT8\020\006\022\t\n\005UCHAR\020\006\022\n\n\006UINT16\020\007\022\n\n\006UINT32\020\010"
+  "\022\n\n\006UINT64\020\t\022\n\n\006N_BITS\020\n\022\013\n\007N_UBITS\020\013\022\010\n"
+  "\004BOOL\020\014\022\013\n\007FLOAT16\020\r\022\013\n\007FLOAT32\020\016\022\t\n\005FLO"
+  "AT\020\016\022\013\n\007FLOAT64\020\017\022\n\n\006DOUBLE\020\017\022\017\n\013PTR_TO_"
+  "VOID\020\020\022\016\n\nPTR_TO_PTR\020\021\022\016\n\nPTR_TO_ARR\020\022\022\017"
+  "\n\013PTR_TO_CHAR\020\023\022\016\n\nPTR_TO_INT\020\024\022\020\n\014PTR_T"
+  "O_FLOAT\020\025\022\021\n\rPTR_TO_RECORD\020\026\022\017\n\013PTR_TO_F"
+  "UNC\020\027\022\007\n\003ARR\020\030\022\t\n\005UNION\020\031\022\n\n\006STRUCT\020\032\032\002\020"
+  "\001*\262\001\n\004K_QK\022\t\n\005QNONE\020\000\022\n\n\006QCONST\020\001\022\017\n\013QCO"
+  "NST_DEST\020\002\022\020\n\014QFUNC_STATIC\020\004\022\022\n\016QGLOBAL_"
+  "STATIC\020\010\022\r\n\tQVOLATILE\020\020\022\t\n\005QWEAK\020 \022\021\n\rQT"
+  "HREAD_LOCAL\020@\022\r\n\010QNO_INIT\020\200\001\022\016\n\tQEXTERNA"
+  "L\020\200\002\022\014\n\007QNO_DEF\020\200\002\032\002\020\001B\010Z\006./spirb\006proto3"
   ;
 static ::_pbi::once_flag descriptor_table_spir_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_spir_2eproto = {
-    false, false, 2513, descriptor_table_protodef_spir_2eproto,
+    false, false, 2640, descriptor_table_protodef_spir_2eproto,
     "spir.proto",
-    &descriptor_table_spir_2eproto_once, nullptr, 0, 8,
+    &descriptor_table_spir_2eproto_once, nullptr, 0, 9,
     schemas, file_default_instances, TableStruct_spir_2eproto::offsets,
     file_level_metadata_spir_2eproto, file_level_enum_descriptors_spir_2eproto,
     file_level_service_descriptors_spir_2eproto,
@@ -526,6 +559,217 @@ bool K_QK_IsValid(int value) {
 
 // ===================================================================
 
+class BitSrcLoc::_Internal {
+ public:
+};
+
+BitSrcLoc::BitSrcLoc(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:spir.BitSrcLoc)
+}
+BitSrcLoc::BitSrcLoc(const BitSrcLoc& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  BitSrcLoc* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.line_){}
+    , decltype(_impl_.col_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  ::memcpy(&_impl_.line_, &from._impl_.line_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.col_) -
+    reinterpret_cast<char*>(&_impl_.line_)) + sizeof(_impl_.col_));
+  // @@protoc_insertion_point(copy_constructor:spir.BitSrcLoc)
+}
+
+inline void BitSrcLoc::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.line_){0u}
+    , decltype(_impl_.col_){0u}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+}
+
+BitSrcLoc::~BitSrcLoc() {
+  // @@protoc_insertion_point(destructor:spir.BitSrcLoc)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void BitSrcLoc::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+}
+
+void BitSrcLoc::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void BitSrcLoc::Clear() {
+// @@protoc_insertion_point(message_clear_start:spir.BitSrcLoc)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  ::memset(&_impl_.line_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.col_) -
+      reinterpret_cast<char*>(&_impl_.line_)) + sizeof(_impl_.col_));
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* BitSrcLoc::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // uint32 line = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
+          _impl_.line_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // uint32 col = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
+          _impl_.col_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* BitSrcLoc::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:spir.BitSrcLoc)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint32 line = 1;
+  if (this->_internal_line() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(1, this->_internal_line(), target);
+  }
+
+  // uint32 col = 2;
+  if (this->_internal_col() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(2, this->_internal_col(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:spir.BitSrcLoc)
+  return target;
+}
+
+size_t BitSrcLoc::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:spir.BitSrcLoc)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // uint32 line = 1;
+  if (this->_internal_line() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_line());
+  }
+
+  // uint32 col = 2;
+  if (this->_internal_col() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_col());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData BitSrcLoc::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    BitSrcLoc::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*BitSrcLoc::GetClassData() const { return &_class_data_; }
+
+
+void BitSrcLoc::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<BitSrcLoc*>(&to_msg);
+  auto& from = static_cast<const BitSrcLoc&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:spir.BitSrcLoc)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from._internal_line() != 0) {
+    _this->_internal_set_line(from._internal_line());
+  }
+  if (from._internal_col() != 0) {
+    _this->_internal_set_col(from._internal_col());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void BitSrcLoc::CopyFrom(const BitSrcLoc& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:spir.BitSrcLoc)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool BitSrcLoc::IsInitialized() const {
+  return true;
+}
+
+void BitSrcLoc::InternalSwap(BitSrcLoc* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(BitSrcLoc, _impl_.col_)
+      + sizeof(BitSrcLoc::_impl_.col_)
+      - PROTOBUF_FIELD_OFFSET(BitSrcLoc, _impl_.line_)>(
+          reinterpret_cast<char*>(&_impl_.line_),
+          reinterpret_cast<char*>(&other->_impl_.line_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata BitSrcLoc::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_spir_2eproto_getter, &descriptor_table_spir_2eproto_once,
+      file_level_metadata_spir_2eproto[0]);
+}
+
+// ===================================================================
+
 BitTU_EntitiesEntry_DoNotUse::BitTU_EntitiesEntry_DoNotUse() {}
 BitTU_EntitiesEntry_DoNotUse::BitTU_EntitiesEntry_DoNotUse(::PROTOBUF_NAMESPACE_ID::Arena* arena)
     : SuperType(arena) {}
@@ -535,7 +779,7 @@ void BitTU_EntitiesEntry_DoNotUse::MergeFrom(const BitTU_EntitiesEntry_DoNotUse&
 ::PROTOBUF_NAMESPACE_ID::Metadata BitTU_EntitiesEntry_DoNotUse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_spir_2eproto_getter, &descriptor_table_spir_2eproto_once,
-      file_level_metadata_spir_2eproto[0]);
+      file_level_metadata_spir_2eproto[1]);
 }
 
 // ===================================================================
@@ -549,7 +793,7 @@ void BitTU_EntityTypesEntry_DoNotUse::MergeFrom(const BitTU_EntityTypesEntry_DoN
 ::PROTOBUF_NAMESPACE_ID::Metadata BitTU_EntityTypesEntry_DoNotUse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_spir_2eproto_getter, &descriptor_table_spir_2eproto_once,
-      file_level_metadata_spir_2eproto[1]);
+      file_level_metadata_spir_2eproto[2]);
 }
 
 // ===================================================================
@@ -898,7 +1142,7 @@ void BitTU::InternalSwap(BitTU* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata BitTU::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_spir_2eproto_getter, &descriptor_table_spir_2eproto_once,
-      file_level_metadata_spir_2eproto[2]);
+      file_level_metadata_spir_2eproto[3]);
 }
 
 // ===================================================================
@@ -1204,7 +1448,7 @@ void BitFunc::InternalSwap(BitFunc* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata BitFunc::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_spir_2eproto_getter, &descriptor_table_spir_2eproto_once,
-      file_level_metadata_spir_2eproto[3]);
+      file_level_metadata_spir_2eproto[4]);
 }
 
 // ===================================================================
@@ -1678,7 +1922,7 @@ void BitValueType::InternalSwap(BitValueType* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata BitValueType::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_spir_2eproto_getter, &descriptor_table_spir_2eproto_once,
-      file_level_metadata_spir_2eproto[4]);
+      file_level_metadata_spir_2eproto[5]);
 }
 
 // ===================================================================
@@ -1687,13 +1931,21 @@ class BitEntity::_Internal {
  public:
   using HasBits = decltype(std::declval<BitEntity>()._impl_._has_bits_);
   static void set_has_num(HasBits* has_bits) {
-    (*has_bits)[0] |= 2u;
+    (*has_bits)[0] |= 4u;
   }
   static void set_has_str(HasBits* has_bits) {
     (*has_bits)[0] |= 1u;
   }
+  static const ::spir::BitSrcLoc& loc(const BitEntity* msg);
+  static void set_has_loc(HasBits* has_bits) {
+    (*has_bits)[0] |= 2u;
+  }
 };
 
+const ::spir::BitSrcLoc&
+BitEntity::_Internal::loc(const BitEntity* msg) {
+  return *msg->_impl_.loc_;
+}
 BitEntity::BitEntity(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
@@ -1707,6 +1959,7 @@ BitEntity::BitEntity(const BitEntity& from)
       decltype(_impl_._has_bits_){from._impl_._has_bits_}
     , /*decltype(_impl_._cached_size_)*/{}
     , decltype(_impl_.str_){}
+    , decltype(_impl_.loc_){nullptr}
     , decltype(_impl_.id_){}
     , decltype(_impl_.num_){}
     , decltype(_impl_.kind_){}};
@@ -1719,6 +1972,9 @@ BitEntity::BitEntity(const BitEntity& from)
   if (from._internal_has_str()) {
     _this->_impl_.str_.Set(from._internal_str(), 
       _this->GetArenaForAllocation());
+  }
+  if (from._internal_has_loc()) {
+    _this->_impl_.loc_ = new ::spir::BitSrcLoc(*from._impl_.loc_);
   }
   ::memcpy(&_impl_.id_, &from._impl_.id_,
     static_cast<size_t>(reinterpret_cast<char*>(&_impl_.kind_) -
@@ -1734,6 +1990,7 @@ inline void BitEntity::SharedCtor(
       decltype(_impl_._has_bits_){}
     , /*decltype(_impl_._cached_size_)*/{}
     , decltype(_impl_.str_){}
+    , decltype(_impl_.loc_){nullptr}
     , decltype(_impl_.id_){uint64_t{0u}}
     , decltype(_impl_.num_){uint64_t{0u}}
     , decltype(_impl_.kind_){0}
@@ -1756,6 +2013,7 @@ BitEntity::~BitEntity() {
 inline void BitEntity::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
   _impl_.str_.Destroy();
+  if (this != internal_default_instance()) delete _impl_.loc_;
 }
 
 void BitEntity::SetCachedSize(int size) const {
@@ -1769,8 +2027,14 @@ void BitEntity::Clear() {
   (void) cached_has_bits;
 
   cached_has_bits = _impl_._has_bits_[0];
-  if (cached_has_bits & 0x00000001u) {
-    _impl_.str_.ClearNonDefaultToEmpty();
+  if (cached_has_bits & 0x00000003u) {
+    if (cached_has_bits & 0x00000001u) {
+      _impl_.str_.ClearNonDefaultToEmpty();
+    }
+    if (cached_has_bits & 0x00000002u) {
+      GOOGLE_DCHECK(_impl_.loc_ != nullptr);
+      _impl_.loc_->Clear();
+    }
   }
   _impl_.id_ = uint64_t{0u};
   _impl_.num_ = uint64_t{0u};
@@ -1819,6 +2083,14 @@ const char* BitEntity::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
           CHK_(::_pbi::VerifyUTF8(str, "spir.BitEntity.str"));
+        } else
+          goto handle_unusual;
+        continue;
+      // optional .spir.BitSrcLoc loc = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 42)) {
+          ptr = ctx->ParseMessage(_internal_mutable_loc(), ptr);
+          CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
@@ -1881,6 +2153,13 @@ uint8_t* BitEntity::_InternalSerialize(
         4, this->_internal_str(), target);
   }
 
+  // optional .spir.BitSrcLoc loc = 5;
+  if (_internal_has_loc()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(5, _Internal::loc(this),
+        _Internal::loc(this).GetCachedSize(), target, stream);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -1897,21 +2176,30 @@ size_t BitEntity::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // optional string str = 4;
   cached_has_bits = _impl_._has_bits_[0];
-  if (cached_has_bits & 0x00000001u) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_str());
-  }
+  if (cached_has_bits & 0x00000003u) {
+    // optional string str = 4;
+    if (cached_has_bits & 0x00000001u) {
+      total_size += 1 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+          this->_internal_str());
+    }
 
+    // optional .spir.BitSrcLoc loc = 5;
+    if (cached_has_bits & 0x00000002u) {
+      total_size += 1 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+          *_impl_.loc_);
+    }
+
+  }
   // uint64 id = 2;
   if (this->_internal_id() != 0) {
     total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_id());
   }
 
   // optional uint64 num = 3;
-  if (cached_has_bits & 0x00000002u) {
+  if (cached_has_bits & 0x00000004u) {
     total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_num());
   }
 
@@ -1939,13 +2227,20 @@ void BitEntity::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROT
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from._internal_has_str()) {
-    _this->_internal_set_str(from._internal_str());
+  cached_has_bits = from._impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    if (cached_has_bits & 0x00000001u) {
+      _this->_internal_set_str(from._internal_str());
+    }
+    if (cached_has_bits & 0x00000002u) {
+      _this->_internal_mutable_loc()->::spir::BitSrcLoc::MergeFrom(
+          from._internal_loc());
+    }
   }
   if (from._internal_id() != 0) {
     _this->_internal_set_id(from._internal_id());
   }
-  if (from._internal_has_num()) {
+  if (cached_has_bits & 0x00000004u) {
     _this->_internal_set_num(from._internal_num());
   }
   if (from._internal_kind() != 0) {
@@ -1978,15 +2273,15 @@ void BitEntity::InternalSwap(BitEntity* other) {
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
       PROTOBUF_FIELD_OFFSET(BitEntity, _impl_.kind_)
       + sizeof(BitEntity::_impl_.kind_)
-      - PROTOBUF_FIELD_OFFSET(BitEntity, _impl_.id_)>(
-          reinterpret_cast<char*>(&_impl_.id_),
-          reinterpret_cast<char*>(&other->_impl_.id_));
+      - PROTOBUF_FIELD_OFFSET(BitEntity, _impl_.loc_)>(
+          reinterpret_cast<char*>(&_impl_.loc_),
+          reinterpret_cast<char*>(&other->_impl_.loc_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata BitEntity::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_spir_2eproto_getter, &descriptor_table_spir_2eproto_once,
-      file_level_metadata_spir_2eproto[5]);
+      file_level_metadata_spir_2eproto[6]);
 }
 
 // ===================================================================
@@ -2002,6 +2297,10 @@ class BitExpr::_Internal {
   static void set_has_opr2(HasBits* has_bits) {
     (*has_bits)[0] |= 2u;
   }
+  static const ::spir::BitSrcLoc& loc(const BitExpr* msg);
+  static void set_has_loc(HasBits* has_bits) {
+    (*has_bits)[0] |= 4u;
+  }
 };
 
 const ::spir::BitEntity&
@@ -2011,6 +2310,10 @@ BitExpr::_Internal::opr1(const BitExpr* msg) {
 const ::spir::BitEntity&
 BitExpr::_Internal::opr2(const BitExpr* msg) {
   return *msg->_impl_.opr2_;
+}
+const ::spir::BitSrcLoc&
+BitExpr::_Internal::loc(const BitExpr* msg) {
+  return *msg->_impl_.loc_;
 }
 BitExpr::BitExpr(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
@@ -2027,6 +2330,7 @@ BitExpr::BitExpr(const BitExpr& from)
     , decltype(_impl_.exprs_){from._impl_.exprs_}
     , decltype(_impl_.opr1_){nullptr}
     , decltype(_impl_.opr2_){nullptr}
+    , decltype(_impl_.loc_){nullptr}
     , decltype(_impl_.kind_){}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
@@ -2035,6 +2339,9 @@ BitExpr::BitExpr(const BitExpr& from)
   }
   if (from._internal_has_opr2()) {
     _this->_impl_.opr2_ = new ::spir::BitEntity(*from._impl_.opr2_);
+  }
+  if (from._internal_has_loc()) {
+    _this->_impl_.loc_ = new ::spir::BitSrcLoc(*from._impl_.loc_);
   }
   _this->_impl_.kind_ = from._impl_.kind_;
   // @@protoc_insertion_point(copy_constructor:spir.BitExpr)
@@ -2050,6 +2357,7 @@ inline void BitExpr::SharedCtor(
     , decltype(_impl_.exprs_){arena}
     , decltype(_impl_.opr1_){nullptr}
     , decltype(_impl_.opr2_){nullptr}
+    , decltype(_impl_.loc_){nullptr}
     , decltype(_impl_.kind_){0}
   };
 }
@@ -2068,6 +2376,7 @@ inline void BitExpr::SharedDtor() {
   _impl_.exprs_.~RepeatedPtrField();
   if (this != internal_default_instance()) delete _impl_.opr1_;
   if (this != internal_default_instance()) delete _impl_.opr2_;
+  if (this != internal_default_instance()) delete _impl_.loc_;
 }
 
 void BitExpr::SetCachedSize(int size) const {
@@ -2082,7 +2391,7 @@ void BitExpr::Clear() {
 
   _impl_.exprs_.Clear();
   cached_has_bits = _impl_._has_bits_[0];
-  if (cached_has_bits & 0x00000003u) {
+  if (cached_has_bits & 0x00000007u) {
     if (cached_has_bits & 0x00000001u) {
       GOOGLE_DCHECK(_impl_.opr1_ != nullptr);
       _impl_.opr1_->Clear();
@@ -2090,6 +2399,10 @@ void BitExpr::Clear() {
     if (cached_has_bits & 0x00000002u) {
       GOOGLE_DCHECK(_impl_.opr2_ != nullptr);
       _impl_.opr2_->Clear();
+    }
+    if (cached_has_bits & 0x00000004u) {
+      GOOGLE_DCHECK(_impl_.loc_ != nullptr);
+      _impl_.loc_->Clear();
     }
   }
   _impl_.kind_ = 0;
@@ -2139,6 +2452,14 @@ const char* BitExpr::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) 
             CHK_(ptr);
             if (!ctx->DataAvailable(ptr)) break;
           } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<34>(ptr));
+        } else
+          goto handle_unusual;
+        continue;
+      // optional .spir.BitSrcLoc loc = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 42)) {
+          ptr = ctx->ParseMessage(_internal_mutable_loc(), ptr);
+          CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
@@ -2201,6 +2522,13 @@ uint8_t* BitExpr::_InternalSerialize(
         InternalWriteMessage(4, repfield, repfield.GetCachedSize(), target, stream);
   }
 
+  // optional .spir.BitSrcLoc loc = 5;
+  if (_internal_has_loc()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(5, _Internal::loc(this),
+        _Internal::loc(this).GetCachedSize(), target, stream);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -2225,7 +2553,7 @@ size_t BitExpr::ByteSizeLong() const {
   }
 
   cached_has_bits = _impl_._has_bits_[0];
-  if (cached_has_bits & 0x00000003u) {
+  if (cached_has_bits & 0x00000007u) {
     // optional .spir.BitEntity opr1 = 2;
     if (cached_has_bits & 0x00000001u) {
       total_size += 1 +
@@ -2238,6 +2566,13 @@ size_t BitExpr::ByteSizeLong() const {
       total_size += 1 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
           *_impl_.opr2_);
+    }
+
+    // optional .spir.BitSrcLoc loc = 5;
+    if (cached_has_bits & 0x00000004u) {
+      total_size += 1 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+          *_impl_.loc_);
     }
 
   }
@@ -2267,7 +2602,7 @@ void BitExpr::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOB
 
   _this->_impl_.exprs_.MergeFrom(from._impl_.exprs_);
   cached_has_bits = from._impl_._has_bits_[0];
-  if (cached_has_bits & 0x00000003u) {
+  if (cached_has_bits & 0x00000007u) {
     if (cached_has_bits & 0x00000001u) {
       _this->_internal_mutable_opr1()->::spir::BitEntity::MergeFrom(
           from._internal_opr1());
@@ -2275,6 +2610,10 @@ void BitExpr::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOB
     if (cached_has_bits & 0x00000002u) {
       _this->_internal_mutable_opr2()->::spir::BitEntity::MergeFrom(
           from._internal_opr2());
+    }
+    if (cached_has_bits & 0x00000004u) {
+      _this->_internal_mutable_loc()->::spir::BitSrcLoc::MergeFrom(
+          from._internal_loc());
     }
   }
   if (from._internal_kind() != 0) {
@@ -2310,7 +2649,7 @@ void BitExpr::InternalSwap(BitExpr* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata BitExpr::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_spir_2eproto_getter, &descriptor_table_spir_2eproto_once,
-      file_level_metadata_spir_2eproto[6]);
+      file_level_metadata_spir_2eproto[7]);
 }
 
 // ===================================================================
@@ -2600,12 +2939,16 @@ void BitInsn::InternalSwap(BitInsn* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata BitInsn::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_spir_2eproto_getter, &descriptor_table_spir_2eproto_once,
-      file_level_metadata_spir_2eproto[7]);
+      file_level_metadata_spir_2eproto[8]);
 }
 
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace spir
 PROTOBUF_NAMESPACE_OPEN
+template<> PROTOBUF_NOINLINE ::spir::BitSrcLoc*
+Arena::CreateMaybeMessage< ::spir::BitSrcLoc >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::spir::BitSrcLoc >(arena);
+}
 template<> PROTOBUF_NOINLINE ::spir::BitTU_EntitiesEntry_DoNotUse*
 Arena::CreateMaybeMessage< ::spir::BitTU_EntitiesEntry_DoNotUse >(Arena* arena) {
   return Arena::CreateMessageInternal< ::spir::BitTU_EntitiesEntry_DoNotUse >(arena);

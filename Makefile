@@ -39,10 +39,10 @@ proto:
 		span/pkg/spir/spir.proto
 
 slang:
-	cd slang && mkdir -p build && cd build && cmake .. && make
+	cd slang && mkdir -p built && cd built && cmake .. && make -j 4
 
-generate: gen proto
-	echo "Generating code..."
+genall: gen proto
+	echo "Generating auto-generated code..."
 
 clean:
 	rm -rf bin/

@@ -61,6 +61,9 @@ extern BitFuncDefaultTypeInternal _BitFunc_default_instance_;
 class BitInsn;
 struct BitInsnDefaultTypeInternal;
 extern BitInsnDefaultTypeInternal _BitInsn_default_instance_;
+class BitSrcLoc;
+struct BitSrcLocDefaultTypeInternal;
+extern BitSrcLocDefaultTypeInternal _BitSrcLoc_default_instance_;
 class BitTU;
 struct BitTUDefaultTypeInternal;
 extern BitTUDefaultTypeInternal _BitTU_default_instance_;
@@ -79,6 +82,7 @@ template<> ::spir::BitEntity* Arena::CreateMaybeMessage<::spir::BitEntity>(Arena
 template<> ::spir::BitExpr* Arena::CreateMaybeMessage<::spir::BitExpr>(Arena*);
 template<> ::spir::BitFunc* Arena::CreateMaybeMessage<::spir::BitFunc>(Arena*);
 template<> ::spir::BitInsn* Arena::CreateMaybeMessage<::spir::BitInsn>(Arena*);
+template<> ::spir::BitSrcLoc* Arena::CreateMaybeMessage<::spir::BitSrcLoc>(Arena*);
 template<> ::spir::BitTU* Arena::CreateMaybeMessage<::spir::BitTU>(Arena*);
 template<> ::spir::BitTU_EntitiesEntry_DoNotUse* Arena::CreateMaybeMessage<::spir::BitTU_EntitiesEntry_DoNotUse>(Arena*);
 template<> ::spir::BitTU_EntityTypesEntry_DoNotUse* Arena::CreateMaybeMessage<::spir::BitTU_EntityTypesEntry_DoNotUse>(Arena*);
@@ -311,6 +315,165 @@ inline bool K_QK_Parse(
 }
 // ===================================================================
 
+class BitSrcLoc final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:spir.BitSrcLoc) */ {
+ public:
+  inline BitSrcLoc() : BitSrcLoc(nullptr) {}
+  ~BitSrcLoc() override;
+  explicit PROTOBUF_CONSTEXPR BitSrcLoc(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  BitSrcLoc(const BitSrcLoc& from);
+  BitSrcLoc(BitSrcLoc&& from) noexcept
+    : BitSrcLoc() {
+    *this = ::std::move(from);
+  }
+
+  inline BitSrcLoc& operator=(const BitSrcLoc& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline BitSrcLoc& operator=(BitSrcLoc&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const BitSrcLoc& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const BitSrcLoc* internal_default_instance() {
+    return reinterpret_cast<const BitSrcLoc*>(
+               &_BitSrcLoc_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    0;
+
+  friend void swap(BitSrcLoc& a, BitSrcLoc& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(BitSrcLoc* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(BitSrcLoc* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  BitSrcLoc* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<BitSrcLoc>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const BitSrcLoc& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const BitSrcLoc& from) {
+    BitSrcLoc::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(BitSrcLoc* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "spir.BitSrcLoc";
+  }
+  protected:
+  explicit BitSrcLoc(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kLineFieldNumber = 1,
+    kColFieldNumber = 2,
+  };
+  // uint32 line = 1;
+  void clear_line();
+  uint32_t line() const;
+  void set_line(uint32_t value);
+  private:
+  uint32_t _internal_line() const;
+  void _internal_set_line(uint32_t value);
+  public:
+
+  // uint32 col = 2;
+  void clear_col();
+  uint32_t col() const;
+  void set_col(uint32_t value);
+  private:
+  uint32_t _internal_col() const;
+  void _internal_set_col(uint32_t value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:spir.BitSrcLoc)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    uint32_t line_;
+    uint32_t col_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_spir_2eproto;
+};
+// -------------------------------------------------------------------
+
 class BitTU_EntitiesEntry_DoNotUse : public ::PROTOBUF_NAMESPACE_ID::internal::MapEntry<BitTU_EntitiesEntry_DoNotUse, 
     std::string, ::spir::BitEntity,
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::TYPE_STRING,
@@ -409,7 +572,7 @@ class BitTU final :
                &_BitTU_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    2;
+    3;
 
   friend void swap(BitTU& a, BitTU& b) {
     a.Swap(&b);
@@ -631,7 +794,7 @@ class BitFunc final :
                &_BitFunc_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    3;
+    4;
 
   friend void swap(BitFunc& a, BitFunc& b) {
     a.Swap(&b);
@@ -840,7 +1003,7 @@ class BitValueType final :
                &_BitValueType_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    4;
+    5;
 
   friend void swap(BitValueType& a, BitValueType& b) {
     a.Swap(&b);
@@ -1120,7 +1283,7 @@ class BitEntity final :
                &_BitEntity_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    5;
+    6;
 
   friend void swap(BitEntity& a, BitEntity& b) {
     a.Swap(&b);
@@ -1194,6 +1357,7 @@ class BitEntity final :
 
   enum : int {
     kStrFieldNumber = 4,
+    kLocFieldNumber = 5,
     kIdFieldNumber = 2,
     kNumFieldNumber = 3,
     kKindFieldNumber = 1,
@@ -1215,6 +1379,24 @@ class BitEntity final :
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_str(const std::string& value);
   std::string* _internal_mutable_str();
   public:
+
+  // optional .spir.BitSrcLoc loc = 5;
+  bool has_loc() const;
+  private:
+  bool _internal_has_loc() const;
+  public:
+  void clear_loc();
+  const ::spir::BitSrcLoc& loc() const;
+  PROTOBUF_NODISCARD ::spir::BitSrcLoc* release_loc();
+  ::spir::BitSrcLoc* mutable_loc();
+  void set_allocated_loc(::spir::BitSrcLoc* loc);
+  private:
+  const ::spir::BitSrcLoc& _internal_loc() const;
+  ::spir::BitSrcLoc* _internal_mutable_loc();
+  public:
+  void unsafe_arena_set_allocated_loc(
+      ::spir::BitSrcLoc* loc);
+  ::spir::BitSrcLoc* unsafe_arena_release_loc();
 
   // uint64 id = 2;
   void clear_id();
@@ -1258,6 +1440,7 @@ class BitEntity final :
     ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr str_;
+    ::spir::BitSrcLoc* loc_;
     uint64_t id_;
     uint64_t num_;
     int kind_;
@@ -1315,7 +1498,7 @@ class BitExpr final :
                &_BitExpr_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    6;
+    7;
 
   friend void swap(BitExpr& a, BitExpr& b) {
     a.Swap(&b);
@@ -1391,6 +1574,7 @@ class BitExpr final :
     kExprsFieldNumber = 4,
     kOpr1FieldNumber = 2,
     kOpr2FieldNumber = 3,
+    kLocFieldNumber = 5,
     kKindFieldNumber = 1,
   };
   // repeated .spir.BitEntity exprs = 4;
@@ -1447,6 +1631,24 @@ class BitExpr final :
       ::spir::BitEntity* opr2);
   ::spir::BitEntity* unsafe_arena_release_opr2();
 
+  // optional .spir.BitSrcLoc loc = 5;
+  bool has_loc() const;
+  private:
+  bool _internal_has_loc() const;
+  public:
+  void clear_loc();
+  const ::spir::BitSrcLoc& loc() const;
+  PROTOBUF_NODISCARD ::spir::BitSrcLoc* release_loc();
+  ::spir::BitSrcLoc* mutable_loc();
+  void set_allocated_loc(::spir::BitSrcLoc* loc);
+  private:
+  const ::spir::BitSrcLoc& _internal_loc() const;
+  ::spir::BitSrcLoc* _internal_mutable_loc();
+  public:
+  void unsafe_arena_set_allocated_loc(
+      ::spir::BitSrcLoc* loc);
+  ::spir::BitSrcLoc* unsafe_arena_release_loc();
+
   // .spir.K_XK kind = 1;
   void clear_kind();
   ::spir::K_XK kind() const;
@@ -1469,6 +1671,7 @@ class BitExpr final :
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::spir::BitEntity > exprs_;
     ::spir::BitEntity* opr1_;
     ::spir::BitEntity* opr2_;
+    ::spir::BitSrcLoc* loc_;
     int kind_;
   };
   union { Impl_ _impl_; };
@@ -1524,7 +1727,7 @@ class BitInsn final :
                &_BitInsn_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    7;
+    8;
 
   friend void swap(BitInsn& a, BitInsn& b) {
     a.Swap(&b);
@@ -1672,6 +1875,50 @@ class BitInsn final :
   #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wstrict-aliasing"
 #endif  // __GNUC__
+// BitSrcLoc
+
+// uint32 line = 1;
+inline void BitSrcLoc::clear_line() {
+  _impl_.line_ = 0u;
+}
+inline uint32_t BitSrcLoc::_internal_line() const {
+  return _impl_.line_;
+}
+inline uint32_t BitSrcLoc::line() const {
+  // @@protoc_insertion_point(field_get:spir.BitSrcLoc.line)
+  return _internal_line();
+}
+inline void BitSrcLoc::_internal_set_line(uint32_t value) {
+  
+  _impl_.line_ = value;
+}
+inline void BitSrcLoc::set_line(uint32_t value) {
+  _internal_set_line(value);
+  // @@protoc_insertion_point(field_set:spir.BitSrcLoc.line)
+}
+
+// uint32 col = 2;
+inline void BitSrcLoc::clear_col() {
+  _impl_.col_ = 0u;
+}
+inline uint32_t BitSrcLoc::_internal_col() const {
+  return _impl_.col_;
+}
+inline uint32_t BitSrcLoc::col() const {
+  // @@protoc_insertion_point(field_get:spir.BitSrcLoc.col)
+  return _internal_col();
+}
+inline void BitSrcLoc::_internal_set_col(uint32_t value) {
+  
+  _impl_.col_ = value;
+}
+inline void BitSrcLoc::set_col(uint32_t value) {
+  _internal_set_col(value);
+  // @@protoc_insertion_point(field_set:spir.BitSrcLoc.col)
+}
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------
@@ -2414,7 +2661,7 @@ inline void BitEntity::set_id(uint64_t value) {
 
 // optional uint64 num = 3;
 inline bool BitEntity::_internal_has_num() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000002u) != 0;
+  bool value = (_impl_._has_bits_[0] & 0x00000004u) != 0;
   return value;
 }
 inline bool BitEntity::has_num() const {
@@ -2422,7 +2669,7 @@ inline bool BitEntity::has_num() const {
 }
 inline void BitEntity::clear_num() {
   _impl_.num_ = uint64_t{0u};
-  _impl_._has_bits_[0] &= ~0x00000002u;
+  _impl_._has_bits_[0] &= ~0x00000004u;
 }
 inline uint64_t BitEntity::_internal_num() const {
   return _impl_.num_;
@@ -2432,7 +2679,7 @@ inline uint64_t BitEntity::num() const {
   return _internal_num();
 }
 inline void BitEntity::_internal_set_num(uint64_t value) {
-  _impl_._has_bits_[0] |= 0x00000002u;
+  _impl_._has_bits_[0] |= 0x00000004u;
   _impl_.num_ = value;
 }
 inline void BitEntity::set_num(uint64_t value) {
@@ -2506,6 +2753,96 @@ inline void BitEntity::set_allocated_str(std::string* str) {
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   // @@protoc_insertion_point(field_set_allocated:spir.BitEntity.str)
+}
+
+// optional .spir.BitSrcLoc loc = 5;
+inline bool BitEntity::_internal_has_loc() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000002u) != 0;
+  PROTOBUF_ASSUME(!value || _impl_.loc_ != nullptr);
+  return value;
+}
+inline bool BitEntity::has_loc() const {
+  return _internal_has_loc();
+}
+inline void BitEntity::clear_loc() {
+  if (_impl_.loc_ != nullptr) _impl_.loc_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000002u;
+}
+inline const ::spir::BitSrcLoc& BitEntity::_internal_loc() const {
+  const ::spir::BitSrcLoc* p = _impl_.loc_;
+  return p != nullptr ? *p : reinterpret_cast<const ::spir::BitSrcLoc&>(
+      ::spir::_BitSrcLoc_default_instance_);
+}
+inline const ::spir::BitSrcLoc& BitEntity::loc() const {
+  // @@protoc_insertion_point(field_get:spir.BitEntity.loc)
+  return _internal_loc();
+}
+inline void BitEntity::unsafe_arena_set_allocated_loc(
+    ::spir::BitSrcLoc* loc) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.loc_);
+  }
+  _impl_.loc_ = loc;
+  if (loc) {
+    _impl_._has_bits_[0] |= 0x00000002u;
+  } else {
+    _impl_._has_bits_[0] &= ~0x00000002u;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:spir.BitEntity.loc)
+}
+inline ::spir::BitSrcLoc* BitEntity::release_loc() {
+  _impl_._has_bits_[0] &= ~0x00000002u;
+  ::spir::BitSrcLoc* temp = _impl_.loc_;
+  _impl_.loc_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::spir::BitSrcLoc* BitEntity::unsafe_arena_release_loc() {
+  // @@protoc_insertion_point(field_release:spir.BitEntity.loc)
+  _impl_._has_bits_[0] &= ~0x00000002u;
+  ::spir::BitSrcLoc* temp = _impl_.loc_;
+  _impl_.loc_ = nullptr;
+  return temp;
+}
+inline ::spir::BitSrcLoc* BitEntity::_internal_mutable_loc() {
+  _impl_._has_bits_[0] |= 0x00000002u;
+  if (_impl_.loc_ == nullptr) {
+    auto* p = CreateMaybeMessage<::spir::BitSrcLoc>(GetArenaForAllocation());
+    _impl_.loc_ = p;
+  }
+  return _impl_.loc_;
+}
+inline ::spir::BitSrcLoc* BitEntity::mutable_loc() {
+  ::spir::BitSrcLoc* _msg = _internal_mutable_loc();
+  // @@protoc_insertion_point(field_mutable:spir.BitEntity.loc)
+  return _msg;
+}
+inline void BitEntity::set_allocated_loc(::spir::BitSrcLoc* loc) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete _impl_.loc_;
+  }
+  if (loc) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(loc);
+    if (message_arena != submessage_arena) {
+      loc = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, loc, submessage_arena);
+    }
+    _impl_._has_bits_[0] |= 0x00000002u;
+  } else {
+    _impl_._has_bits_[0] &= ~0x00000002u;
+  }
+  _impl_.loc_ = loc;
+  // @@protoc_insertion_point(field_set_allocated:spir.BitEntity.loc)
 }
 
 // -------------------------------------------------------------------
@@ -2752,6 +3089,96 @@ BitExpr::exprs() const {
   return _impl_.exprs_;
 }
 
+// optional .spir.BitSrcLoc loc = 5;
+inline bool BitExpr::_internal_has_loc() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000004u) != 0;
+  PROTOBUF_ASSUME(!value || _impl_.loc_ != nullptr);
+  return value;
+}
+inline bool BitExpr::has_loc() const {
+  return _internal_has_loc();
+}
+inline void BitExpr::clear_loc() {
+  if (_impl_.loc_ != nullptr) _impl_.loc_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000004u;
+}
+inline const ::spir::BitSrcLoc& BitExpr::_internal_loc() const {
+  const ::spir::BitSrcLoc* p = _impl_.loc_;
+  return p != nullptr ? *p : reinterpret_cast<const ::spir::BitSrcLoc&>(
+      ::spir::_BitSrcLoc_default_instance_);
+}
+inline const ::spir::BitSrcLoc& BitExpr::loc() const {
+  // @@protoc_insertion_point(field_get:spir.BitExpr.loc)
+  return _internal_loc();
+}
+inline void BitExpr::unsafe_arena_set_allocated_loc(
+    ::spir::BitSrcLoc* loc) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.loc_);
+  }
+  _impl_.loc_ = loc;
+  if (loc) {
+    _impl_._has_bits_[0] |= 0x00000004u;
+  } else {
+    _impl_._has_bits_[0] &= ~0x00000004u;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:spir.BitExpr.loc)
+}
+inline ::spir::BitSrcLoc* BitExpr::release_loc() {
+  _impl_._has_bits_[0] &= ~0x00000004u;
+  ::spir::BitSrcLoc* temp = _impl_.loc_;
+  _impl_.loc_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::spir::BitSrcLoc* BitExpr::unsafe_arena_release_loc() {
+  // @@protoc_insertion_point(field_release:spir.BitExpr.loc)
+  _impl_._has_bits_[0] &= ~0x00000004u;
+  ::spir::BitSrcLoc* temp = _impl_.loc_;
+  _impl_.loc_ = nullptr;
+  return temp;
+}
+inline ::spir::BitSrcLoc* BitExpr::_internal_mutable_loc() {
+  _impl_._has_bits_[0] |= 0x00000004u;
+  if (_impl_.loc_ == nullptr) {
+    auto* p = CreateMaybeMessage<::spir::BitSrcLoc>(GetArenaForAllocation());
+    _impl_.loc_ = p;
+  }
+  return _impl_.loc_;
+}
+inline ::spir::BitSrcLoc* BitExpr::mutable_loc() {
+  ::spir::BitSrcLoc* _msg = _internal_mutable_loc();
+  // @@protoc_insertion_point(field_mutable:spir.BitExpr.loc)
+  return _msg;
+}
+inline void BitExpr::set_allocated_loc(::spir::BitSrcLoc* loc) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete _impl_.loc_;
+  }
+  if (loc) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(loc);
+    if (message_arena != submessage_arena) {
+      loc = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, loc, submessage_arena);
+    }
+    _impl_._has_bits_[0] |= 0x00000004u;
+  } else {
+    _impl_._has_bits_[0] &= ~0x00000004u;
+  }
+  _impl_.loc_ = loc;
+  // @@protoc_insertion_point(field_set_allocated:spir.BitExpr.loc)
+}
+
 // -------------------------------------------------------------------
 
 // BitInsn
@@ -2959,6 +3386,8 @@ inline void BitInsn::set_allocated_lhs(::spir::BitExpr* lhs) {
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

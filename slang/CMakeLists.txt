@@ -13,6 +13,7 @@ include_directories(${Protobuf_INCLUDE_DIRS})
 add_executable(slang
     src/main.cpp
     src/spir.pb.cc
+    src/util.cpp
 )
 
 target_link_libraries(slang

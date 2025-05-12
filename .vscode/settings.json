@@ -1,4 +1,22 @@
 {
-    "makefile.configureOnOpen": false,
-    "cmake.sourceDirectory": "/workspaces/span/slang"
+    "workbench.iconTheme": "material-icon-theme",
+
+    "editor.minimap.enabled": false,
+    "[cpp]": {
+        "editor.defaultFormatter": "xaver.clang-format"
+    },
+
+    "diffEditor.codeLens": true,
+
+    "github.copilot.nextEditSuggestions.enabled": false,
+
+    "cmake.pinnedCommands": [
+        "workbench.action.tasks.configureTaskRunner",
+        "workbench.action.tasks.runTask"
+    ],
+    "cmake.buildDirectory": "${workspaceFolder}/slang/.vscode_cmake_built",
+    "cmake.configureSettings": {},
+    "cmake.sourceDirectory": "${workspaceFolder}/slang",
+
+    "makefile.configureOnOpen": false
 }

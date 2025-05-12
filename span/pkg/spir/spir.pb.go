@@ -557,6 +557,59 @@ func (K_QK) EnumDescriptor() ([]byte, []int) {
 	return file_span_pkg_spir_spir_proto_rawDescGZIP(), []int{4}
 }
 
+// The location of an entity.
+type BitSrcLoc struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Line          uint32                 `protobuf:"varint,1,opt,name=line,proto3" json:"line,omitempty"`
+	Col           uint32                 `protobuf:"varint,2,opt,name=col,proto3" json:"col,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BitSrcLoc) Reset() {
+	*x = BitSrcLoc{}
+	mi := &file_span_pkg_spir_spir_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BitSrcLoc) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BitSrcLoc) ProtoMessage() {}
+
+func (x *BitSrcLoc) ProtoReflect() protoreflect.Message {
+	mi := &file_span_pkg_spir_spir_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BitSrcLoc.ProtoReflect.Descriptor instead.
+func (*BitSrcLoc) Descriptor() ([]byte, []int) {
+	return file_span_pkg_spir_spir_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *BitSrcLoc) GetLine() uint32 {
+	if x != nil {
+		return x.Line
+	}
+	return 0
+}
+
+func (x *BitSrcLoc) GetCol() uint32 {
+	if x != nil {
+		return x.Col
+	}
+	return 0
+}
+
 // The Translation Unit
 type BitTU struct {
 	state         protoimpl.MessageState   `protogen:"open.v1"`
@@ -570,7 +623,7 @@ type BitTU struct {
 
 func (x *BitTU) Reset() {
 	*x = BitTU{}
-	mi := &file_span_pkg_spir_spir_proto_msgTypes[0]
+	mi := &file_span_pkg_spir_spir_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -582,7 +635,7 @@ func (x *BitTU) String() string {
 func (*BitTU) ProtoMessage() {}
 
 func (x *BitTU) ProtoReflect() protoreflect.Message {
-	mi := &file_span_pkg_spir_spir_proto_msgTypes[0]
+	mi := &file_span_pkg_spir_spir_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -595,7 +648,7 @@ func (x *BitTU) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BitTU.ProtoReflect.Descriptor instead.
 func (*BitTU) Descriptor() ([]byte, []int) {
-	return file_span_pkg_spir_spir_proto_rawDescGZIP(), []int{0}
+	return file_span_pkg_spir_spir_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *BitTU) GetName() string {
@@ -642,7 +695,7 @@ type BitFunc struct {
 
 func (x *BitFunc) Reset() {
 	*x = BitFunc{}
-	mi := &file_span_pkg_spir_spir_proto_msgTypes[1]
+	mi := &file_span_pkg_spir_spir_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -654,7 +707,7 @@ func (x *BitFunc) String() string {
 func (*BitFunc) ProtoMessage() {}
 
 func (x *BitFunc) ProtoReflect() protoreflect.Message {
-	mi := &file_span_pkg_spir_spir_proto_msgTypes[1]
+	mi := &file_span_pkg_spir_spir_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -667,7 +720,7 @@ func (x *BitFunc) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BitFunc.ProtoReflect.Descriptor instead.
 func (*BitFunc) Descriptor() ([]byte, []int) {
-	return file_span_pkg_spir_spir_proto_rawDescGZIP(), []int{1}
+	return file_span_pkg_spir_spir_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *BitFunc) GetName() string {
@@ -720,7 +773,7 @@ type BitValueType struct {
 
 func (x *BitValueType) Reset() {
 	*x = BitValueType{}
-	mi := &file_span_pkg_spir_spir_proto_msgTypes[2]
+	mi := &file_span_pkg_spir_spir_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -732,7 +785,7 @@ func (x *BitValueType) String() string {
 func (*BitValueType) ProtoMessage() {}
 
 func (x *BitValueType) ProtoReflect() protoreflect.Message {
-	mi := &file_span_pkg_spir_spir_proto_msgTypes[2]
+	mi := &file_span_pkg_spir_spir_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -745,7 +798,7 @@ func (x *BitValueType) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BitValueType.ProtoReflect.Descriptor instead.
 func (*BitValueType) Descriptor() ([]byte, []int) {
-	return file_span_pkg_spir_spir_proto_rawDescGZIP(), []int{2}
+	return file_span_pkg_spir_spir_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *BitValueType) GetKind() K_VK {
@@ -809,15 +862,16 @@ type BitEntity struct {
 	Kind  K_EK                   `protobuf:"varint,1,opt,name=kind,proto3,enum=spir.K_EK" json:"kind,omitempty"`
 	Id    uint64                 `protobuf:"varint,2,opt,name=id,proto3" json:"id,omitempty"`
 	// Store value if entity is a constant value.
-	Num           *uint64 `protobuf:"varint,3,opt,name=num,proto3,oneof" json:"num,omitempty"` // for a numeric literal (int, float, etc.)
-	Str           *string `protobuf:"bytes,4,opt,name=str,proto3,oneof" json:"str,omitempty"`  // for a string literal
+	Num           *uint64    `protobuf:"varint,3,opt,name=num,proto3,oneof" json:"num,omitempty"` // for a numeric literal (int, float, etc.)
+	Str           *string    `protobuf:"bytes,4,opt,name=str,proto3,oneof" json:"str,omitempty"`  // for a string literal
+	Loc           *BitSrcLoc `protobuf:"bytes,5,opt,name=loc,proto3,oneof" json:"loc,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *BitEntity) Reset() {
 	*x = BitEntity{}
-	mi := &file_span_pkg_spir_spir_proto_msgTypes[3]
+	mi := &file_span_pkg_spir_spir_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -829,7 +883,7 @@ func (x *BitEntity) String() string {
 func (*BitEntity) ProtoMessage() {}
 
 func (x *BitEntity) ProtoReflect() protoreflect.Message {
-	mi := &file_span_pkg_spir_spir_proto_msgTypes[3]
+	mi := &file_span_pkg_spir_spir_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -842,7 +896,7 @@ func (x *BitEntity) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BitEntity.ProtoReflect.Descriptor instead.
 func (*BitEntity) Descriptor() ([]byte, []int) {
-	return file_span_pkg_spir_spir_proto_rawDescGZIP(), []int{3}
+	return file_span_pkg_spir_spir_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *BitEntity) GetKind() K_EK {
@@ -873,6 +927,13 @@ func (x *BitEntity) GetStr() string {
 	return ""
 }
 
+func (x *BitEntity) GetLoc() *BitSrcLoc {
+	if x != nil {
+		return x.Loc
+	}
+	return nil
+}
+
 type BitExpr struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Kind  K_XK                   `protobuf:"varint,1,opt,name=kind,proto3,enum=spir.K_XK" json:"kind,omitempty"`
@@ -880,13 +941,14 @@ type BitExpr struct {
 	Opr2  *BitEntity             `protobuf:"bytes,3,opt,name=opr2,proto3,oneof" json:"opr2,omitempty"`
 	// More expressions, like call arguments.
 	Exprs         []*BitEntity `protobuf:"bytes,4,rep,name=exprs,proto3" json:"exprs,omitempty"`
+	Loc           *BitSrcLoc   `protobuf:"bytes,5,opt,name=loc,proto3,oneof" json:"loc,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *BitExpr) Reset() {
 	*x = BitExpr{}
-	mi := &file_span_pkg_spir_spir_proto_msgTypes[4]
+	mi := &file_span_pkg_spir_spir_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -898,7 +960,7 @@ func (x *BitExpr) String() string {
 func (*BitExpr) ProtoMessage() {}
 
 func (x *BitExpr) ProtoReflect() protoreflect.Message {
-	mi := &file_span_pkg_spir_spir_proto_msgTypes[4]
+	mi := &file_span_pkg_spir_spir_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -911,7 +973,7 @@ func (x *BitExpr) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BitExpr.ProtoReflect.Descriptor instead.
 func (*BitExpr) Descriptor() ([]byte, []int) {
-	return file_span_pkg_spir_spir_proto_rawDescGZIP(), []int{4}
+	return file_span_pkg_spir_spir_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *BitExpr) GetKind() K_XK {
@@ -942,6 +1004,13 @@ func (x *BitExpr) GetExprs() []*BitEntity {
 	return nil
 }
 
+func (x *BitExpr) GetLoc() *BitSrcLoc {
+	if x != nil {
+		return x.Loc
+	}
+	return nil
+}
+
 type BitInsn struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Kind          K_IK                   `protobuf:"varint,1,opt,name=kind,proto3,enum=spir.K_IK" json:"kind,omitempty"`
@@ -953,7 +1022,7 @@ type BitInsn struct {
 
 func (x *BitInsn) Reset() {
 	*x = BitInsn{}
-	mi := &file_span_pkg_spir_spir_proto_msgTypes[5]
+	mi := &file_span_pkg_spir_spir_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -965,7 +1034,7 @@ func (x *BitInsn) String() string {
 func (*BitInsn) ProtoMessage() {}
 
 func (x *BitInsn) ProtoReflect() protoreflect.Message {
-	mi := &file_span_pkg_spir_spir_proto_msgTypes[5]
+	mi := &file_span_pkg_spir_spir_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -978,7 +1047,7 @@ func (x *BitInsn) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BitInsn.ProtoReflect.Descriptor instead.
 func (*BitInsn) Descriptor() ([]byte, []int) {
-	return file_span_pkg_spir_spir_proto_rawDescGZIP(), []int{5}
+	return file_span_pkg_spir_spir_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *BitInsn) GetKind() K_IK {
@@ -1006,7 +1075,10 @@ var File_span_pkg_spir_spir_proto protoreflect.FileDescriptor
 
 const file_span_pkg_spir_spir_proto_rawDesc = "" +
 	"\n" +
-	"\x18span/pkg/spir/spir.proto\x12\x04spir\"\xe1\x02\n" +
+	"\x18span/pkg/spir/spir.proto\x12\x04spir\"1\n" +
+	"\tBitSrcLoc\x12\x12\n" +
+	"\x04line\x18\x01 \x01(\rR\x04line\x12\x10\n" +
+	"\x03col\x18\x02 \x01(\rR\x03col\"\xe1\x02\n" +
 	"\x05BitTU\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x125\n" +
 	"\bentities\x18\x02 \x03(\v2\x19.spir.BitTU.EntitiesEntryR\bentities\x12>\n" +
@@ -1039,23 +1111,27 @@ const file_span_pkg_spir_spir_proto_rawDesc = "" +
 	"\x06_alignB\n" +
 	"\n" +
 	"\b_subTypeB\x0e\n" +
-	"\f_valTypeName\"y\n" +
+	"\f_valTypeName\"\xa9\x01\n" +
 	"\tBitEntity\x12\x1e\n" +
 	"\x04kind\x18\x01 \x01(\x0e2\n" +
 	".spir.K_EKR\x04kind\x12\x0e\n" +
 	"\x02id\x18\x02 \x01(\x04R\x02id\x12\x15\n" +
 	"\x03num\x18\x03 \x01(\x04H\x00R\x03num\x88\x01\x01\x12\x15\n" +
-	"\x03str\x18\x04 \x01(\tH\x01R\x03str\x88\x01\x01B\x06\n" +
+	"\x03str\x18\x04 \x01(\tH\x01R\x03str\x88\x01\x01\x12&\n" +
+	"\x03loc\x18\x05 \x01(\v2\x0f.spir.BitSrcLocH\x02R\x03loc\x88\x01\x01B\x06\n" +
 	"\x04_numB\x06\n" +
-	"\x04_str\"\xb6\x01\n" +
+	"\x04_strB\x06\n" +
+	"\x04_loc\"\xe6\x01\n" +
 	"\aBitExpr\x12\x1e\n" +
 	"\x04kind\x18\x01 \x01(\x0e2\n" +
 	".spir.K_XKR\x04kind\x12(\n" +
 	"\x04opr1\x18\x02 \x01(\v2\x0f.spir.BitEntityH\x00R\x04opr1\x88\x01\x01\x12(\n" +
 	"\x04opr2\x18\x03 \x01(\v2\x0f.spir.BitEntityH\x01R\x04opr2\x88\x01\x01\x12%\n" +
-	"\x05exprs\x18\x04 \x03(\v2\x0f.spir.BitEntityR\x05exprsB\a\n" +
+	"\x05exprs\x18\x04 \x03(\v2\x0f.spir.BitEntityR\x05exprs\x12&\n" +
+	"\x03loc\x18\x05 \x01(\v2\x0f.spir.BitSrcLocH\x02R\x03loc\x88\x01\x01B\a\n" +
 	"\x05_opr1B\a\n" +
-	"\x05_opr2\"\x85\x01\n" +
+	"\x05_opr2B\x06\n" +
+	"\x04_loc\"\x85\x01\n" +
 	"\aBitInsn\x12\x1e\n" +
 	"\x04kind\x18\x01 \x01(\x0e2\n" +
 	".spir.K_IKR\x04kind\x12$\n" +
@@ -1213,46 +1289,49 @@ func file_span_pkg_spir_spir_proto_rawDescGZIP() []byte {
 }
 
 var file_span_pkg_spir_spir_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_span_pkg_spir_spir_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_span_pkg_spir_spir_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_span_pkg_spir_spir_proto_goTypes = []any{
 	(K_EK)(0),            // 0: spir.K_EK
 	(K_IK)(0),            // 1: spir.K_IK
 	(K_XK)(0),            // 2: spir.K_XK
 	(K_VK)(0),            // 3: spir.K_VK
 	(K_QK)(0),            // 4: spir.K_QK
-	(*BitTU)(nil),        // 5: spir.BitTU
-	(*BitFunc)(nil),      // 6: spir.BitFunc
-	(*BitValueType)(nil), // 7: spir.BitValueType
-	(*BitEntity)(nil),    // 8: spir.BitEntity
-	(*BitExpr)(nil),      // 9: spir.BitExpr
-	(*BitInsn)(nil),      // 10: spir.BitInsn
-	nil,                  // 11: spir.BitTU.EntitiesEntry
-	nil,                  // 12: spir.BitTU.EntityTypesEntry
+	(*BitSrcLoc)(nil),    // 5: spir.BitSrcLoc
+	(*BitTU)(nil),        // 6: spir.BitTU
+	(*BitFunc)(nil),      // 7: spir.BitFunc
+	(*BitValueType)(nil), // 8: spir.BitValueType
+	(*BitEntity)(nil),    // 9: spir.BitEntity
+	(*BitExpr)(nil),      // 10: spir.BitExpr
+	(*BitInsn)(nil),      // 11: spir.BitInsn
+	nil,                  // 12: spir.BitTU.EntitiesEntry
+	nil,                  // 13: spir.BitTU.EntityTypesEntry
 }
 var file_span_pkg_spir_spir_proto_depIdxs = []int32{
-	11, // 0: spir.BitTU.entities:type_name -> spir.BitTU.EntitiesEntry
-	12, // 1: spir.BitTU.entityTypes:type_name -> spir.BitTU.EntityTypesEntry
-	6,  // 2: spir.BitTU.functions:type_name -> spir.BitFunc
-	10, // 3: spir.BitFunc.insns:type_name -> spir.BitInsn
+	12, // 0: spir.BitTU.entities:type_name -> spir.BitTU.EntitiesEntry
+	13, // 1: spir.BitTU.entityTypes:type_name -> spir.BitTU.EntityTypesEntry
+	7,  // 2: spir.BitTU.functions:type_name -> spir.BitFunc
+	11, // 3: spir.BitFunc.insns:type_name -> spir.BitInsn
 	3,  // 4: spir.BitValueType.kind:type_name -> spir.K_VK
 	4,  // 5: spir.BitValueType.qtype:type_name -> spir.K_QK
-	7,  // 6: spir.BitValueType.subType:type_name -> spir.BitValueType
-	7,  // 7: spir.BitValueType.types:type_name -> spir.BitValueType
+	8,  // 6: spir.BitValueType.subType:type_name -> spir.BitValueType
+	8,  // 7: spir.BitValueType.types:type_name -> spir.BitValueType
 	0,  // 8: spir.BitEntity.kind:type_name -> spir.K_EK
-	2,  // 9: spir.BitExpr.kind:type_name -> spir.K_XK
-	8,  // 10: spir.BitExpr.opr1:type_name -> spir.BitEntity
-	8,  // 11: spir.BitExpr.opr2:type_name -> spir.BitEntity
-	8,  // 12: spir.BitExpr.exprs:type_name -> spir.BitEntity
-	1,  // 13: spir.BitInsn.kind:type_name -> spir.K_IK
-	9,  // 14: spir.BitInsn.rhs:type_name -> spir.BitExpr
-	9,  // 15: spir.BitInsn.lhs:type_name -> spir.BitExpr
-	8,  // 16: spir.BitTU.EntitiesEntry.value:type_name -> spir.BitEntity
-	7,  // 17: spir.BitTU.EntityTypesEntry.value:type_name -> spir.BitValueType
-	18, // [18:18] is the sub-list for method output_type
-	18, // [18:18] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	5,  // 9: spir.BitEntity.loc:type_name -> spir.BitSrcLoc
+	2,  // 10: spir.BitExpr.kind:type_name -> spir.K_XK
+	9,  // 11: spir.BitExpr.opr1:type_name -> spir.BitEntity
+	9,  // 12: spir.BitExpr.opr2:type_name -> spir.BitEntity
+	9,  // 13: spir.BitExpr.exprs:type_name -> spir.BitEntity
+	5,  // 14: spir.BitExpr.loc:type_name -> spir.BitSrcLoc
+	1,  // 15: spir.BitInsn.kind:type_name -> spir.K_IK
+	10, // 16: spir.BitInsn.rhs:type_name -> spir.BitExpr
+	10, // 17: spir.BitInsn.lhs:type_name -> spir.BitExpr
+	9,  // 18: spir.BitTU.EntitiesEntry.value:type_name -> spir.BitEntity
+	8,  // 19: spir.BitTU.EntityTypesEntry.value:type_name -> spir.BitValueType
+	20, // [20:20] is the sub-list for method output_type
+	20, // [20:20] is the sub-list for method input_type
+	20, // [20:20] is the sub-list for extension type_name
+	20, // [20:20] is the sub-list for extension extendee
+	0,  // [0:20] is the sub-list for field type_name
 }
 
 func init() { file_span_pkg_spir_spir_proto_init() }
@@ -1260,17 +1339,17 @@ func file_span_pkg_spir_spir_proto_init() {
 	if File_span_pkg_spir_spir_proto != nil {
 		return
 	}
-	file_span_pkg_spir_spir_proto_msgTypes[2].OneofWrappers = []any{}
 	file_span_pkg_spir_spir_proto_msgTypes[3].OneofWrappers = []any{}
 	file_span_pkg_spir_spir_proto_msgTypes[4].OneofWrappers = []any{}
 	file_span_pkg_spir_spir_proto_msgTypes[5].OneofWrappers = []any{}
+	file_span_pkg_spir_spir_proto_msgTypes[6].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_span_pkg_spir_spir_proto_rawDesc), len(file_span_pkg_spir_spir_proto_rawDesc)),
 			NumEnums:      5,
-			NumMessages:   8,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

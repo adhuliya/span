@@ -150,6 +150,12 @@ enum K_QK {
     QNO_DEF = 256;
 }
 
+// The location of an entity.
+message BitSrcLoc {
+	uint32 line = 1;
+	uint32 col = 2;
+}
+
 // The Translation Unit
 message BitTU {
     string name = 1;
@@ -194,6 +200,7 @@ message BitEntity {
     // Store value if entity is a constant value.
     optional uint64 num = 3; // for a numeric literal (int, float, etc.)
     optional string str = 4; // for a string literal
+	optional BitSrcLoc loc = 5;
 }
 
 message BitExpr {
@@ -202,6 +209,7 @@ message BitExpr {
     optional BitEntity opr2 = 3;
     // More expressions, like call arguments.
     repeated BitEntity exprs = 4;
+	optional BitSrcLoc loc = 5;
 }
 
 message BitInsn {
