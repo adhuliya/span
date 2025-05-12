@@ -1,5 +1,5 @@
 // idgeneration_test.go
-package spir
+package idgen
 
 import (
 	"testing"

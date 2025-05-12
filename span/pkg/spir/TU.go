@@ -2,6 +2,8 @@ package spir
 
 import (
 	"fmt"
+
+	"github.com/adhuliya/span/pkg/idgen"
 )
 
 // This file defines the TranslationUnit type.
@@ -85,7 +87,7 @@ type TU struct {
 	insnInfo       map[InsnId]InsnInfo
 	callExpr       map[CallId][]EntityId
 	recordTypes    map[RecordId]RecordValueType
-	idGen          *IDGenerator
+	idGen          *idgen.IDGenerator
 	sourceInfo     *SourceLocationInfo
 	sourceLocation map[EntitySrcId]SourceLocation
 	labelNames     map[LabelId]string
@@ -103,7 +105,7 @@ func NewTU() *TU {
 		insnInfo:       make(map[InsnId]InsnInfo),
 		callExpr:       make(map[CallId][]EntityId),
 		recordTypes:    make(map[RecordId]RecordValueType),
-		idGen:          NewIDGenerator(),
+		idGen:          idgen.NewIDGenerator(),
 		sourceInfo:     NewSourceLocationInfo(),
 		labelNames:     make(map[LabelId]string),
 		namesToId:      make(map[string]EntityId),

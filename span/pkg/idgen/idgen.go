@@ -1,4 +1,4 @@
-package spir
+package idgen
 
 // This file defines the ID generation structure and functions.
 
