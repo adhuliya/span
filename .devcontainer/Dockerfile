@@ -24,6 +24,8 @@ RUN apt-get update && apt-get install -y \
     cmake \
     clang-19 \
     llvm-19 \
+    clang-tools-19 \
+    clang-format-19 \
     libclang-19-dev \
     llvm-19-dev \
     protobuf-compiler \

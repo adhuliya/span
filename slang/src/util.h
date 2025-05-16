@@ -14,6 +14,8 @@
 #include <string>
 #include "llvm/Support/Process.h"
 
+#define ENAME "slang" // Executable name
+
 // TRACE < DEBUG < INFO < EVENT < ERROR < FATAL
 #define SLANG_TRACE_LEVEL 10
 #define SLANG_DEBUG_LEVEL 20
