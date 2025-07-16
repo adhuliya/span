@@ -1,7 +1,13 @@
 [
   {
-    "directory": "/workspaces/span",
+    "directory": "/workspaces/span/misc",
     "command": "gcc /workspaces/span/misc/test_prog_00.c -o /workspaces/span/misc/test_prog_00",
-    "file": "/workspaces/span/misc/test_prog_00.c"
+    "file": "test_prog_00.c"
+  },
+
+  {
+    "directory": "/workspaces/span/misc",
+    "command": "gcc -O2 test_prog_01.c -o test_prog_01",
+    "file": "test_prog_01.c"
   }
 ]

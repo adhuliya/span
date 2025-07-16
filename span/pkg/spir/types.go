@@ -152,11 +152,11 @@ func (kind ValKind) IsInteger() bool {
 }
 
 func (kind ValKind) IsPointer() bool {
-	return kind >= K_VK_PTR_TO_VOID && kind <= K_VK_ARR
+	return kind >= K_VK_PTR_TO_VOID && kind <= K_VK_PTR_TO_FUNC
 }
 
 func (kind ValKind) IsArray() bool {
-	return kind == K_VK_ARR
+	return kind >= K_VK_ARR_FIXED && kind <= K_VK_ARR_PARTIAL
 }
 
 func (kind ValKind) IntegerSizeInBytes() ValueTypeSize {

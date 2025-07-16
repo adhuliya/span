@@ -1,5 +1,10 @@
 // Version = 0.0.1
-// Note of caution: *The seqeunce of enum values may be significant.*
+// Note of caution: *The sequence of enum values may be significant.*
+
+// To compile this proto file, run from project root:
+// protoc --go_out=. --go_opt=paths=source_relative span/pkg/spir/spir.proto
+// protoc --cpp_out=slang/src --proto_path=span/pkg/spir span/pkg/spir/spir.proto
+// or run the Makefile target "proto" from project root.
 
 syntax = "proto3";
 package spir;
@@ -103,7 +108,7 @@ enum K_XK {
 	LT = 29; // Less than comparison.
 	GE = 30; // Greater than or equal to comparison.
 
-	XOTHER = 31; // Other expression.
+	OTHER_EXPR = 31; // Other expression.
 }
 
 // Value kinds, i.e. the data types.
@@ -152,7 +157,7 @@ enum K_VK {
 	UNION		= 29; // An unclassified union (a record)
 	STRUCT	= 30; // An unclassified struct (a record)
 
-	VALUE_OTHER	= 31; // Other value type
+	OTHER_TYPE	= 31; // Other value type
 }
 
 // All values must fit in 16 bits.

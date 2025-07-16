@@ -19,3 +19,10 @@ build-*
 
 # Generated protobuf file(s)
 *.pg.go
+
+# temporary lit test files
+.test_output
+
+# golang related
+span/pkg/mod
+span/pkg/sumdb

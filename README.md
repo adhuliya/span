@@ -17,7 +17,7 @@ analysis algorithms and techniques.
 
 ## How is a C program converted to SPIR?
 
-SPAN uses a special Clang/LLVM based tool `slang` which converts an input C program
+SPAN uses the Clang/LLVM based tool `slang` which converts an input C program
 into a Clang AST, which is then visited and serialized to SPIR
 using the specification in `spir.proto` protobuf file.
 The output of `slang` is a binary/text protobuf message that becomes an input
@@ -27,7 +27,7 @@ to `span` program analyzer.
 
 A single C file is converted to a single SPIR Translation Unit (SPIR TU or just TU).
 SPAN supports a rudimentary static linker which can combine two or more TUs into one.
-One can use Clang's cross translation unit feature to create a single AST for the entire
+One can also use Clang's cross translation unit feature to create a single AST for the entire
 project and convert that into a single SPIR TU (TODO).
 
 ## How to setup Docker container?
@@ -40,7 +40,7 @@ or file a bug.
 ## What are the project design guidelines followed in SPAN?
 
 SPAN is a modular project where each component is developed like a library which can be reused.
-Our goal is to define simple components and compose them to achieve the desired result.
+Our goal is to define simple components and compose them to achieve the functionality.
 We extensively use the interface programming style as encouraged by the Go community.
 Wherever possible, SPAN uses standard Go programming practices and SOLID programming
 principles to develop a bug free and maintainable project.

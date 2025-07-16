@@ -1,4 +1,4 @@
-.PHONY: all clean build devbuild test vtest vet fmt proto docker tidy gen generate slang
+.PHONY: all clean build devbuild test vtest vet fmt proto docker tidy gen generate slang slang-dbg
 
 GO=go
 PROTOC=protoc
@@ -18,6 +18,7 @@ gen:
 
 test:
 	cd span && $(GO) test ./...
+	cd slang && python3 run-tests.py --verbose
 
 # Verbose tests
 vtest:
@@ -39,14 +40,20 @@ proto:
 		span/pkg/spir/spir.proto
 
 slang:
-	cd slang && mkdir -p built && cd built && cmake .. && make -j 4
+	cd slang && mkdir -p built/rel && cd built/rel && cmake ../.. && make -j 4
+
+slang-dbg:
+	cd slang && mkdir -p built/dbg && cd built/dbg && cmake ../.. -DCMAKE_BUILD_TYPE=Debug && make -j 4
 
 genall: gen proto
 	echo "Generating auto-generated code..."
 
 clean:
-	rm -rf bin/
+	rm -rf span/bin
 	rm -f span/pkg/spir/*.pb.go
+	rm -f slang/src/spir.pb.h
+	rm -f slang/src/spir.pb.cc
+	rm -rf slang/built/
 
 docker-build:
 	cd docker && $(DOCKER) build -t span-dev .

@@ -1,5 +1,3 @@
-// ./slang test_prog_00.c -p compile_commands.json test_prog_00.c
-
 int x;
 
 int foo(int a) {

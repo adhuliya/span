@@ -1,3 +1,5 @@
+// This file is a copy of main.cpp for safelty while using genAI.
+
 // Example invocation:
 // ./slang test_prog_00.c -p compile_commands.json
 

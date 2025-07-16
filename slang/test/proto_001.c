@@ -1,4 +1,5 @@
 // g++ -std=c++17 -I. -o proto_001 proto_001.c spir.pb.cc `pkg-config --cflags --libs protobuf`
+// RUN: true
 
 #include <iostream>
 #include "spir.pb.h"

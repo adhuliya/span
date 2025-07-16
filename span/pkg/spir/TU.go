@@ -324,7 +324,7 @@ func (eKind EntityKind) IsConstant() bool {
 }
 
 func (eKind EntityKind) IsFunction() bool {
-	if eKind == K_EK_FUNC || eKind == K_EK_FUNC_VAR_ARGS {
+	if eKind == K_EK_FUNC || eKind == K_EK_FUNC_VARGS {
 		return true
 	}
 	return false

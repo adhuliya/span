@@ -12,6 +12,8 @@ func Assert(cond bool, msg string) {
 	}
 }
 
+// Handles panic by skipping the given number of call frames,
+// to reach the function that caused the panic.
 func HandlePanic(skip int) {
 	if r := recover(); r != nil {
 		// Print the recovered error
@@ -29,6 +31,7 @@ func HandlePanic(skip int) {
 	}
 }
 
+// Print the stack trace in case of a panic.
 func HandlePanicAndPrintStackTrace() {
 	if r := recover(); r != nil {
 		fmt.Println("Recovered from panic:", r)
