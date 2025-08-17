@@ -34,6 +34,8 @@ RUN apt-get update && apt-get install -y \
     libzstd-dev \
     libcurl4-openssl-dev \
     gdb \
+    python3 \
+    python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
 # Install protoc-gen-go

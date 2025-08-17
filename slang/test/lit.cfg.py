@@ -32,8 +32,15 @@ slang_bin = os.path.join(config.test_source_root, '..', 'built', 'rel', 'slang')
 if not os.path.exists(slang_bin):
     lit_config.fatal(f"Tool not found: {slang_bin}")
 
+slang_dbg_bin = os.path.join(config.test_source_root, '..', 'built', 'dbg', 'slang')
+if not os.path.exists(slang_dbg_bin):
+    lit_config.warning(f"Debug build not found: {slang_dbg_bin}. Using release build.")
+    slang_dbg_bin = slang_bin
+
 # Set up the slang tool substitution
 config.substitutions.append(('%slang', slang_bin))
+config.substitutions.append(('%dslang', slang_dbg_bin))
+config.substitutions.append(('%gdb', "/usr/bin/gdb"))
 
 # Get LLVM tool paths
 config.clang = lit.util.which('clang')
@@ -60,6 +67,7 @@ config.substitutions.append(('%clang', config.clang))
 config.substitutions.append(('%llvm-as', config.llvm_as))
 config.substitutions.append(('%llvm-dis', config.llvm_dis))
 config.substitutions.append(('%FileCheck', config.filecheck_path))
+config.substitutions.append(('%protoc', "/usr/bin/protoc"))
 
 # Add features for different platforms
 if platform.system() == 'Darwin':

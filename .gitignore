@@ -17,12 +17,25 @@ build-*
 *.o
 *.out
 
-# Generated protobuf file(s)
-*.pg.go
-
 # temporary lit test files
 .test_output
 
-# golang related
+# Go specific ignores
 span/pkg/mod
 span/pkg/sumdb
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+*.prof
+*.cgo1.go
+*.cgo2.c
+_cgo_defun.c
+_cgo_gotypes.go
+_cgo_export.*
+_testmain.go
+go.work
+

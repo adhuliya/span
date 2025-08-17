@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //  MIT License.
-//  Copyright (c) 2020 The SLANG Authors.
+//  Copyright (c) 2020-2025 The SLANG Authors.
 //
 //  Author: Anshuman Dhuliya (dhuliya@cse.iitb.ac.in)
 //
@@ -27,9 +27,39 @@
 // The macros for the five logging levels.
 // TRACE < DEBUG < INFO < EVENT < ERROR < FATAL
 
+#define SLANG_TRACE_GUARD(XX)                         \
+    if (slang::Util::LogLevel <= SLANG_TRACE_LEVEL) { \
+        XX;                                           \
+    }
+
+#define SLANG_DEBUG_GUARD(XX)                         \
+    if (slang::Util::LogLevel <= SLANG_DEBUG_LEVEL) { \
+        XX;                                           \
+    }
+
+#define SLANG_INFO_GUARD(XX)                          \
+    if (slang::Util::LogLevel <= SLANG_INFO_LEVEL) {  \
+        XX;                                           \
+    }
+
+#define SLANG_EVENT_GUARD(XX)                         \
+    if (slang::Util::LogLevel <= SLANG_EVENT_LEVEL) { \
+        XX;                                           \
+    }
+
+#define SLANG_ERROR_GUARD(XX)                         \
+    if (slang::Util::LogLevel <= SLANG_ERROR_LEVEL) { \
+        XX;                                           \
+    }
+
+#define SLANG_FATAL_GUARD(XX)                         \
+    if (slang::Util::LogLevel <= SLANG_FATAL_LEVEL) { \
+        XX;                                           \
+    }
+
 #define SLANG_TRACE(XX)                                                            \
     if (slang::Util::LogLevel <= SLANG_TRACE_LEVEL) {                              \
-        llvm::errs() << "\n  " << slang::Util::getDateTimeString() << ": TRACE: ("  \
+        llvm::errs() << "\n  " << slang::Util::getDateTimeString() << ": TRACE: (" \
                      << SLANG_TRACE_LEVEL << "):" << __FILE__ << ":" << __func__   \
                      << "():" << __LINE__ << ":\n"                                 \
                      << XX << "\n";                                                \
@@ -37,7 +67,7 @@
 
 #define SLANG_DEBUG(XX)                                                            \
     if (slang::Util::LogLevel <= SLANG_DEBUG_LEVEL) {                              \
-        llvm::errs() << "\n  " << slang::Util::getDateTimeString() << ": DEBUG: ("  \
+        llvm::errs() << "\n  " << slang::Util::getDateTimeString() << ": DEBUG: (" \
                      << SLANG_DEBUG_LEVEL << "):" << __FILE__ << ":" << __func__   \
                      << "():" << __LINE__ << ":\n"                                 \
                      << XX << "\n";                                                \
@@ -45,7 +75,7 @@
 
 #define SLANG_INFO(XX)                                                             \
     if (slang::Util::LogLevel <= SLANG_INFO_LEVEL) {                               \
-        llvm::errs() << "\n  " << slang::Util::getDateTimeString() << ": INFO:  ("  \
+        llvm::errs() << "\n  " << slang::Util::getDateTimeString() << ": INFO:  (" \
                      << SLANG_INFO_LEVEL << "):" << __FILE__ << ":" << __func__    \
                      << "():" << __LINE__ << ":\n"                                 \
                      << XX << "\n";                                                \
@@ -53,7 +83,7 @@
 
 #define SLANG_EVENT(XX)                                                            \
     if (slang::Util::LogLevel <= SLANG_EVENT_LEVEL) {                              \
-        llvm::errs() << "\n  " << slang::Util::getDateTimeString() << ": EVENT: ("  \
+        llvm::errs() << "\n  " << slang::Util::getDateTimeString() << ": EVENT: (" \
                      << SLANG_EVENT_LEVEL << "):" << __FILE__ << ":" << __func__   \
                      << "():" << __LINE__ << ":\n"                                 \
                      << XX << "\n";                                                \
@@ -61,7 +91,7 @@
 
 #define SLANG_ERROR(XX)                                                            \
     if (slang::Util::LogLevel <= SLANG_ERROR_LEVEL) {                              \
-        llvm::errs() << "\n  " << slang::Util::getDateTimeString() << ": ERROR: ("  \
+        llvm::errs() << "\n  " << slang::Util::getDateTimeString() << ": ERROR: (" \
                      << SLANG_ERROR_LEVEL << "):" << __FILE__ << ":" << __func__   \
                      << "():" << __LINE__ << ":\n"                                 \
                      << XX << "\n";                                                \

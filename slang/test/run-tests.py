@@ -15,7 +15,7 @@ def find_lit():
         '/usr/local/lib/llvm*/share/llvm/lit.py',
         '/opt/llvm*/share/llvm/lit.py',
     ]
-    
+
     for path in possible_paths:
         if '*' in path:
             import glob
@@ -24,7 +24,7 @@ def find_lit():
                 return matches[0]
         elif os.path.exists(path):
             return path
-    
+
     # Try to find lit via pip
     try:
         result = subprocess.run(['python3', '-m', 'lit', '--version'], 
@@ -33,7 +33,7 @@ def find_lit():
             return 'python3 -m lit'
     except:
         pass
-    
+
     return None
 
 def main():
@@ -46,39 +46,39 @@ def main():
                        help='Number of parallel jobs')
     parser.add_argument('--build-dir', type=str, default='built/rel',
                        help='Build directory')
-    
+
     args = parser.parse_args()
-    
+
     # Find lit
     lit_path = find_lit()
     if not lit_path:
         print("Error: Could not find lit.py. Please install LLVM or lit.")
         sys.exit(1)
-    
+
     # Set up environment
     slang_obj_root = os.path.abspath(args.build_dir)
-    test_dir = os.path.join(os.path.dirname(__file__), 'test')
-    
+    test_dir = os.path.dirname(__file__)
+
     # Build lit command
     cmd = [lit_path, test_dir]
-    
+
     if args.verbose:
         cmd.append('--verbose')
-    
+
     if args.filter:
         cmd.extend(['--filter', args.filter])
-    
+
     if args.jobs > 1:
         cmd.extend(['--jobs', str(args.jobs)])
-    
+
     # Set environment variables
     env = os.environ.copy()
     env['SLANG_OBJ_ROOT'] = slang_obj_root
-    
+
     # Run tests
     print(f"Running tests with command: {' '.join(cmd)}")
     result = subprocess.run(cmd, env=env)
-    
+
     sys.exit(result.returncode)
 
 if __name__ == '__main__':
