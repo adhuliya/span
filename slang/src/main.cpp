@@ -32,28 +32,28 @@ using namespace clang;
 #define K_00_INITS_FUNC_NAME "f:00_inits:optional,comma,separated,flags"
 #define K_00_INITS_FUNC_ID 1
 
-static llvm::cl::OptionCategory ToolCategory("slang options");
+static llvm::cl::OptionCategory SlangOptions("slang options");
 
 static llvm::cl::opt<std::string> OptOutputDir(
     "o",
     llvm::cl::desc("Must specify output directory for output."
     " The .spir extension is automatically added to each output file."),
     llvm::cl::value_desc("directory"),
-    llvm::cl::cat(ToolCategory));
+    llvm::cl::cat(SlangOptions));
 
 // Command line option for protobuf output
 static llvm::cl::opt<bool> OptProtoOutputKnob(
     "proto",
     llvm::cl::desc("Output SPAN IR in protobuf format (default: true)"),
     llvm::cl::init(true),
-    llvm::cl::cat(ToolCategory));
+    llvm::cl::cat(SlangOptions));
 
 // Command line option for Python SPAN IR output
 static llvm::cl::opt<bool> OptPySpanIrOutputKnob(
     "py-spanir", 
     llvm::cl::desc("Output SPAN IR in Python format (default: false)"),
     llvm::cl::init(false),
-    llvm::cl::cat(ToolCategory));
+    llvm::cl::cat(SlangOptions));
 
 namespace spir {
 
@@ -749,7 +749,7 @@ public:
     stu.tuDirectory = fullPath.substr(0, lastSlash);
     
     // Store the translation unit name in the protobuf message
-    stu.bittu.set_name(stu.tuName); // FIXME: this is not the full path
+    stu.bittu.set_name(stu.tuName);
     stu.bittu.set_directory(stu.tuDirectory);
 
     // Add the origin and version of the TU
@@ -2879,13 +2879,13 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
       ss << ")";
 
     } else if (type->isRecordType()) {
-      SlangRecord *getBackSlangRecord;
+      SlangRecord *slangRecordType;
       if (type->isStructureType()) {
         return convertClangRecordType(type->getAsStructureType()->getDecl(),
-            getBackSlangRecord);
+            slangRecordType);
       } else if (type->isUnionType()) {
         return convertClangRecordType(type->getAsUnionType()->getDecl(),
-            getBackSlangRecord);
+            slangRecordType);
       } else {
         ss << "ERROR:RecordType";
       }
@@ -2894,7 +2894,7 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
       return convertClangArrayType(qt);
 
     } else if (type->isFunctionProtoType()) {
-      return convertFunctionProtoType(qt);
+      return convertFunctionPrototype(qt);
 
     } else {
       ss << "ERROR:UnknownType.";
@@ -2930,7 +2930,6 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
 
     } else if (type->isFunctionPointerType()) {
       // should be before ->isPointerType() check below
-      dt->set_kind(K_VK::PTR_TO_FUNC);
       return convertFunctionPointerTypeBit(qt, dt);
 
     } else if (type->isPointerType()) {
@@ -2944,23 +2943,22 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
       dt->set_allocated_subtype(pdt);
 
     } else if (type->isRecordType()) {
-      SlangRecord *getBackSlangRecord;
       if (type->isStructureType()) {
         success = convertClangRecordTypeBit(type->getAsStructureType()->getDecl(), dt);
       } else if (type->isUnionType()) {
         success = convertClangRecordTypeBit(type->getAsUnionType()->getDecl(), dt);
       } else {
-        success = 198;
+        success = 120;
       }
 
     } else if (type->isArrayType()) {
-      //TODO: success = convertClangArrayTypeBit(qt, dt);
+      success = convertClangArrayTypeBit(qt, dt);
 
     } else if (type->isFunctionProtoType()) {
-      //TODO: success = convertFunctionProtoTypeBit(qt, dt);
+      success = convertFunctionPrototypeBit(qt, dt);
 
     } else {
-      success = 199;
+      success = 121;
     }
 
     return success;
@@ -3095,7 +3093,7 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
       return convertClangRecordType(lastAnonymousRecordDecl, returnSlangRecord);
     }
 
-    if (stu.isRecordPresentBit((uint64_t)recordDecl)) {
+    if (stu.isRecordPresent((uint64_t)recordDecl)) {
       returnSlangRecord = &stu.getRecord((uint64_t)recordDecl); // return pointer back
       return stu.getRecord((uint64_t)recordDecl).toShortString();
     }
@@ -3191,9 +3189,11 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
       return convertClangRecordTypeBit(lastAnonymousRecordDecl, dt);
     }
 
-    if (stu.isRecordPresent((uint64_t)recordDecl)) {
-      //returnSlangRecord = &stu.getRecord((uint64_t)recordDecl); // return pointer back
-      //return stu.getRecord((uint64_t)recordDecl).toShortString();
+    if (stu.isRecordPresentBit((uint64_t)recordDecl)) {
+      // Get existing record
+      const auto& bitEntityInfo = stu.bittu.entityinfo().at((uint64_t)recordDecl);
+      dt->set_typeid_(bitEntityInfo.dt().typeid_());
+      dt->set_typename_(bitEntityInfo.dt().typename_());
       return 0;
     }
 
@@ -3202,77 +3202,87 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
 
     if (recordDecl->isStruct()) {
       namePrefix = "s:";
-      slangRecord.recordKind = Struct;
+      dt->set_kind(K_VK::STRUCT);
     } else if (recordDecl->isUnion()) {
       namePrefix = "u:";
-      slangRecord.recordKind = Union;
+      dt->set_kind(K_VK::UNION);
     }
 
     if (recordDecl->getNameAsString() == "") {
-      slangRecord.anonymous = true;
-      slangRecord.name = namePrefix + stu.getNextRecordIdStr();
+      dt->set_anonymous(true);
+      dt->set_typename_(namePrefix + stu.getNextRecordIdStr());
     } else {
-      slangRecord.anonymous = false;
-      slangRecord.name = namePrefix + recordDecl->getNameAsString();
+      dt->set_anonymous(false);
+      dt->set_typename_(namePrefix + recordDecl->getNameAsString());
     }
 
-    slangRecord.locStr = getLocationString(recordDecl);
+    BitEntityInfo bitEntityInfo;
+    bitEntityInfo.set_kind(K_EK::DATA_TYPE);
+    bitEntityInfo.set_id((uint64_t)recordDecl);
+    bitEntityInfo.set_allocated_dt(dt);
+    bitEntityInfo.set_allocated_loc(getSrcLocBit(recordDecl));
+    bitEntityInfo.set_strval(dt->typename_());
+    stu.bittu.mutable_entityinfo()->emplace((uint64_t)recordDecl, bitEntityInfo);
 
-    stu.addRecord((uint64_t)recordDecl, slangRecord);                  // IMPORTANT
-    SlangRecord &newSlangRecord = stu.getRecord((uint64_t)recordDecl); // IMPORTANT
+    BitDataType* recordedDT = stu.bittu.mutable_entityinfo()->at((uint64_t)recordDecl).mutable_dt();
+
+    //stu.addRecord((uint64_t)recordDecl, slangRecord);                  // IMPORTANT
+    //SlangRecord &newSlangRecord = stu.getRecord((uint64_t)recordDecl); // IMPORTANT
     //returnSlangRecord = &newSlangRecord; // IMPORTANT
 
     SlangRecordField slangRecordField;
 
-    SlangRecord *getBackSlangRecord;
     for (auto it = recordDecl->decls_begin(); it != recordDecl->decls_end(); ++it) {
       if (isa<RecordDecl>(*it)) {
-        convertClangRecordType(cast<RecordDecl>(*it), getBackSlangRecord);
+        BitDataType* subRecordDT = new BitDataType();
+        convertClangRecordTypeBit(cast<RecordDecl>(*it), subRecordDT);
       } else if (isa<FieldDecl>(*it)) {
         const FieldDecl *fieldDecl = cast<FieldDecl>(*it);
-
-        slangRecordField.clear();
+        BitDataType* fieldDT = new BitDataType();
+        std::string fieldName;
 
         if (fieldDecl->getNameAsString() == "") {
-          slangRecordField.name = newSlangRecord.getNextAnonymousFieldIdStr() + "a";
-          slangRecordField.anonymous = true;
+          fieldDT->set_anonymous(true);
+          fieldName = ::slang::Util::getNextUniqueIdStr() + "a";
         } else {
-          slangRecordField.name = fieldDecl->getNameAsString();
-          slangRecordField.anonymous = false;
+          fieldDT->set_anonymous(false);
+          fieldName = fieldDecl->getNameAsString();
         }
+        fieldDT->set_typename_(fieldName);
 
-        slangRecordField.type = fieldDecl->getType();
-        if (slangRecordField.anonymous) {
-          auto slangVar = SlangVar((uint64_t) fieldDecl, slangRecordField.name);
-          stu.addVar((uint64_t) fieldDecl, slangVar);
-          slangRecordField.typeStr = convertClangRecordType(nullptr,
-              slangRecordField.slangRecord);
-
+        if (fieldDT->anonymous()) {
+          success = convertClangRecordTypeBit(nullptr, fieldDT);
+          if (success != 0) {
+            return success;
+          }
+          BitEntityInfo *bitEntityInfo = new BitEntityInfo();
+          bitEntityInfo->set_id((uint64_t) fieldDecl);
+          bitEntityInfo->set_allocated_dt(fieldDT);
+          stu.bittu.mutable_entityinfo()->emplace((uint64_t) fieldDecl, *bitEntityInfo);
+          delete bitEntityInfo;
         } else if (fieldDecl->getType()->isRecordType()) {
           auto type = fieldDecl->getType();
           if (type->isStructureType()) {
-            slangRecordField.typeStr =
-                convertClangRecordType(type->getAsStructureType()->getDecl(),
-                   slangRecordField.slangRecord);
+            success = convertClangRecordTypeBit(type->getAsStructureType()->getDecl(), fieldDT);
           } else if (type->isUnionType()) {
-            slangRecordField.typeStr =
-                convertClangRecordType(type->getAsUnionType()->getDecl(),
-                    slangRecordField.slangRecord);
+            success = convertClangRecordTypeBit(type->getAsUnionType()->getDecl(), fieldDT);
+          }
+          if (success != 0) {
+            return success;
           }
         } else {
-          slangRecordField.typeStr = convertClangType(slangRecordField.type);
+          success = convertClangTypeBit(fieldDecl->getType(), fieldDT);
         }
 
-        newSlangRecord.members.push_back(slangRecordField);
+        recordedDT->mutable_names()->AddAllocated(new std::string(fieldName));
+        recordedDT->mutable_types()->AddAllocated(fieldDT);
       }
     }
 
     // store for later use (part-of-hack1))
     lastAnonymousRecordDecl = recordDecl;
 
-    // no need to add newSlangRecord, its a reference to its entry in the stu.recordMap
-    //return newSlangRecord.toShortString();
-    return 0;
+    return success;
   } // convertClangRecordTypeBit()
 
   std::string convertClangArrayType(QualType qt) {
@@ -3307,7 +3317,43 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
     return ss.str();
   } // convertClangArrayType()
 
-  std::string convertFunctionProtoType(QualType qt) {
+  int convertClangArrayTypeBit(QualType qt, BitDataType *dt) {
+    int success = 0;
+
+    const Type *type = qt.getTypePtr();
+    const ArrayType *arrayType = type->getAsArrayTypeUnsafe();
+
+    if (isa<ConstantArrayType>(arrayType)) {
+      dt->set_kind(K_VK::ARR_FIXED);
+      auto constArrType = cast<ConstantArrayType>(arrayType);
+      auto size = constArrType->getSize();
+      // Convert llvm::APInt to uint32_t safely
+      uint64_t sizeVal = size.getLimitedValue(UINT32_MAX);
+      if (sizeVal > UINT32_MAX) {
+        SLANG_FATAL("Array size too large");
+        return 106;
+      }
+      dt->set_len(static_cast<uint32_t>(sizeVal));
+    } else if (isa<VariableArrayType>(arrayType)) {
+      dt->set_kind(K_VK::ARR_VARIABLE);
+    } else if (isa<IncompleteArrayType>(arrayType)) {
+      dt->set_kind(K_VK::ARR_PARTIAL);
+    } else {
+      SLANG_FATAL("Unknown array type");
+      success = 105;
+    }
+
+    BitDataType *elemType = new BitDataType();
+    success = convertClangTypeBit(arrayType->getElementType(), elemType);
+    if (success != 0) {
+      return success;
+    }
+    dt->set_allocated_subtype(elemType);
+
+    return success;
+  } // convertClangArrayType()
+
+  std::string convertFunctionPrototype(QualType qt) {
     std::stringstream ss;
 
     const Type *funcType = qt.getTypePtr();
@@ -3336,7 +3382,42 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
     }
 
     return ss.str();
-  } // convertFunctionProtoType()
+  } // convertFunctionPrototype()
+
+  int convertFunctionPrototypeBit(QualType qt, BitDataType *dt) {
+    int success = 0;
+    const Type *funcType = qt.getTypePtr();
+
+    funcType = funcType->getUnqualifiedDesugaredType();
+    if (isa<FunctionProtoType>(funcType)) {
+      auto funcProtoType = cast<FunctionProtoType>(funcType);
+      BitDataType *retType = new BitDataType();
+      success = convertClangTypeBit(funcProtoType->getReturnType(), retType);
+      if (success != 0) {
+        return success;
+      }
+      dt->set_allocated_subtype(retType);
+
+      for (auto qType : funcProtoType->getParamTypes()) {
+        BitDataType *paramType = new BitDataType();
+        success = convertClangTypeBit(qType, paramType);
+        if (success != 0) {
+          return success;
+        }
+        dt->mutable_types()->AddAllocated(paramType);
+      }
+
+      if (funcProtoType->isVariadic()) {
+        dt->set_variadic(true);
+      }
+
+    } else {
+      SLANG_FATAL("Unknown function prototype type");
+      success = 112;
+    }
+
+    return success;
+  } // convertFunctionPrototypeBit()
 
   std::string convertFunctionPointerType(QualType qt) {
     std::stringstream ss;
@@ -3382,31 +3463,15 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
   // Returns 0 if successful, non-zero if error
   int convertFunctionPointerTypeBit(QualType qt, BitDataType *dt) {
     int success = 0;
-    BitDataType *bitFuncType = new BitDataType();
     const Type *type = qt.getTypePtr();
     const Type *funcType = type->getPointeeType().getTypePtr();
     funcType = funcType->getUnqualifiedDesugaredType();
 
+    BitDataType *bitFuncType = new BitDataType();
     if (isa<FunctionProtoType>(funcType)) {
-      auto funcProtoType = cast<FunctionProtoType>(funcType);
-      BitDataType *retType = new BitDataType();
-      success = convertClangTypeBit(funcProtoType->getReturnType(), retType);
+      success = convertFunctionPrototypeBit(qt, bitFuncType);
       if (success != 0) {
         return success;
-      }
-      bitFuncType->set_allocated_subtype(retType);
-
-      for (auto qType : funcProtoType->getParamTypes()) {
-        BitDataType *paramType = new BitDataType();
-        success = convertClangTypeBit(qType, paramType);
-        if (success != 0) {
-          return success;
-        }
-        bitFuncType->mutable_types()->AddAllocated(paramType);
-      }
-
-      if (funcProtoType->isVariadic()) {
-        bitFuncType->set_variadic(true);
       }
 
     } else if (isa<FunctionNoProtoType>(funcType)) {
@@ -3422,6 +3487,7 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
       success = 111; // Unknown function pointer type
     }
 
+    dt->set_kind(K_VK::PTR_TO_FUNC);
     dt->set_allocated_subtype(bitFuncType);
     return success;
   } // convertFunctionPointerTypeBit()
@@ -3767,7 +3833,7 @@ private:
 
 class SpanASTConsumer : public ASTConsumer {
 public:
-  // Main Entry point for the ASTConsumer
+  // Main Entry point for the ASTConsumer (entrypoint for the Slang tool)
   void HandleTranslationUnit(ASTContext &Context) override {
     this->irgen = new spir::SpirGenerator(&Context);
     Visitor = new FunctionVisitor(irgen);
@@ -3807,7 +3873,7 @@ public:
 // Entry point for the Slang tool that generates Span IR (spir) from the Clang AST
 int main(int argc, const char **argv) {
   // Parse command-line options
-  auto ExpectedParser = CommonOptionsParser::create(argc, argv, ToolCategory);
+  auto ExpectedParser = CommonOptionsParser::create(argc, argv, SlangOptions);
   if (!ExpectedParser) {
     llvm::errs() << ExpectedParser.takeError();
     return 1;

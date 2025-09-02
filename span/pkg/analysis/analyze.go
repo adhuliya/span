@@ -153,12 +153,12 @@ func (intraPAN *IntraPAN) propagateFactForward(
 	}
 
 	for i := range bb.SuccCount() {
-		nextInsnId := intraPAN.graph.BasicBlock(bb.Succ(i)).Insn(0).Id()
+		nextInsnId := intraPAN.graph.BasicBlock(bb.Succ(i).Id()).Insn(0).Id()
 		nextInOut := factMap[nextInsnId]
 		val, chg := lattice.Meet(nextInOut.L1(), tfFact[i])
 		factMap[nextInsnId] = lattice.NewPair(val, nextInOut.L2())
 		if chg {
-			intraPAN.wl.Push(bb.Succ(i))
+			intraPAN.wl.Push(bb.Succ(i).Id())
 		}
 	}
 }

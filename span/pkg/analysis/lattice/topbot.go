@@ -17,7 +17,7 @@ func (l *TopBotLattice) String() string {
 	if l.bot {
 		return "Bot"
 	}
-	return "Unknown"
+	return "NotTopNotBot"
 }
 
 func NewTopBotLattice(top, bot bool) TopBotLattice {
@@ -75,6 +75,13 @@ func (l *TopBotLattice) Meet(other Lattice) (Lattice, bool) {
 
 	if other.IsBot() {
 		return other, true
+	}
+	return l, false
+}
+
+func (l *TopBotLattice) Widen(other Lattice) (Lattice, bool) {
+	if other == nil || l.bot {
+		return l, false
 	}
 	return l, false
 }

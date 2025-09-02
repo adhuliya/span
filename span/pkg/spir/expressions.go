@@ -5,130 +5,169 @@ package spir
 import "fmt"
 
 // Each expression is 64 bits long.
-// Some simple expression maybe stripped to only 32 bits, like ones with EXPR_VALUE kind.
+// An expression can be call, binary op, unary op or no operator.
+// A binary operand format:      <one bit>-<29 bits Opr2  >-<5 bits XK       >-<29 bits Opr1>
+// A unary operand expr format:  <one bit>-<29 bits unused>-<5 bits XK       >-<29 bits Opr>
+// A value expr format: 		 <one bit>-<29 bits unused>-<5 bits K_XK_VAL >-<29 bits Opr> (for constants, variables, etc.)
+// A call expression format: 	 <one bit>-<29 bits SiteId>-<5 bits XK_CALL_0>-<29 bits callee> (for functions with zero arguments)
+// A call expression format: 	 <one bit>-<29 bits SiteId>-<5 bits XK_CALL  >-<29 bits callee> (for functions with non-zero arguments)
+// For non-zero arguments the arguments are stored in a map in the Translation Unit separately.
+// Hence the CallSiteId is required to uniquely identify the call site with its arguments.
 type Expr uint64
 
 type ExprKind = K_XK
 
-const ExprKindMask uint64 = 0x7C00_0000_0000_0000       // Mask to get the expression kind
-const ExprKindShift uint8 = 58                          // Shift to get the expression kind
-const TwoOprExprOpr1Mask uint64 = 0x02FF_FFFF_E000_0000 // Mask to get the first operand
-const TwoOprExprOpr1Shift uint8 = 29                    // Shift to get the first operand
-const TwoOprExprOpr2Mask uint64 = 0x0000_0000_1FFF_FFFF // Mask to get the second operand
-const TwoOprExprOpr2Shift uint8 = 0                     // Shift to get the second operand
-const TwoOprExprOprIdMask uint32 = 0x1FFF_FFFF          // Mask to get the relevant operand bits
-const OneOprExprOprMask uint64 = 0x0000_0000_FFFF_FFFF  // Mask to get the operand in a single operand expression
+const NIL_X Expr = 0
 
-type CallId uint32 // Its not the same as EntityId, but still a 32 bit value
+const XKMask uint8 = 0x1F                           // Mask to get the expression kind (5 bits)
+const XKMask64 uint64 = 0x0000_0003_E000_0000       // Mask to get the expression kind (5 bits)
+const XKShift64 uint8 = 29                          // Shift to get the expression kind
+const XOprIdMask32 uint32 = 0x1FFF_FFFF             // Mask to get the relevant operand bits
+const UnaryOprMask64 uint64 = 0x0000_0000_1FFF_FFFF // Mask to get the operand in a simple expression
+const BinXOpr1Mask64 uint64 = 0x0000_0000_1FFF_FFFF // Mask to get the first operand in a binary expression
+const BinXOpr1Shift64 uint8 = 0                     // Shift to get the first operand in a binary expression
+const BinXOpr2Mask64 uint64 = 0x7FFF_FFFC_0000_0000 // Mask to get the second operand in a binary expression
+const BinXOpr2Shift64 uint8 = 5 + 29                // Shift to get the second operand in a binary expression
 
-const CallExprSeqIdLength uint8 = 26                     // The number of bits used to store the sequence ID in a call expression
-const CallExprSeqIdMask32 uint32 = 0x03FF_FFFF           // Mask to get the sequence ID in a call expression
-const CallExprSeqIdMask64 uint64 = 0x03FF_FFFF_0000_0000 // Mask to get the sequence ID in a call expression
-const CallExprIdShift64 uint8 = 32                       // Shift to get the sequence ID in a call expression
+type CallSiteId uint32 // A 29 bit unsigned integer, uniquely identifying a call site
 
-func IsCallExprKind(exprKind ExprKind) bool {
-	return exprKind == K_XK_CALL || exprKind == K_XK_CALL_0
+const CalleeIdMask64 uint64 = 0x0000_0000_1FFF_FFFF // Mask to get the callee in a call expression
+const CalleeIdShift64 uint8 = 0
+const CallSiteIdMask32 uint32 = 0x1FFF_FFFF // Mask to get the call site id in a call expression
+const CallSiteIdShift32 uint8 = 0
+const CallSiteIdPosMask64 uint64 = 0x7FFF_FFFC_0000_0000 // Mask to get the call site id in a call expression
+const CallSiteIdShift64 uint8 = 5 + 29
+
+const TopBitMask64 uint64 = 0x8000_0000_0000_0000 // Mask to get/set the top bit
+const TopBitShift64 uint8 = 63                    // Shift to get/set the top bit
+
+func (xk ExprKind) IsCall() bool {
+	return xk == K_XK_CALL || xk == K_XK_CALL_0
 }
 
-func IsOneOprExprKind(exprKind ExprKind) bool {
-	return exprKind == K_XK_VAL ||
-		(exprKind >= K_XK_BIT_NOT && exprKind <= K_XK_ALIGNOF)
+// IsSingleOpr returns true if the expression kind is a single operand expression.
+// Except a CALL_0 call expression, which is a special case.
+func (xk ExprKind) IsSingleOprnd() bool {
+	return xk == K_XK_VAL ||
+		(xk >= K_XK_BIT_NOT && xk <= K_XK_ALIGNOF)
 }
 
-func IsTwoOprExprKind(exprKind ExprKind) bool {
-	return !IsOneOprExprKind(exprKind) && !IsCallExprKind(exprKind)
+func (xk ExprKind) IsTwoOprnd() bool {
+	return !xk.IsSingleOprnd() && !xk.IsCall()
 }
 
-func placeExpressionKindBits64(exprKind ExprKind) uint64 {
-	return uint64(exprKind) << ExprKindShift
+func placeExprOpr1(operand EntityId) uint64 {
+	opr := uint32(operand) & XOprIdMask32 // zero out most significant 3 bits
+	return uint64(opr) << BinXOpr1Shift64
 }
 
-func placeOperand1InTwoOperandExpr(operand EntityId) uint64 {
-	opr := uint32(operand) & TwoOprExprOprIdMask // zero out most significant 3 bits
-	return uint64(opr) << TwoOprExprOpr1Shift
+func placeExprOpr2(operand EntityId) uint64 {
+	opr := uint32(operand) & XOprIdMask32 // zero out most significant 3 bits
+	return uint64(opr) << BinXOpr2Shift64
 }
 
-func placeOperand2InTwoOperandExpr(operand EntityId) uint64 {
-	opr := uint32(operand) & TwoOprExprOprIdMask // zero out most significant 3 bits
-	return uint64(opr)
+func placeXK(exprKind ExprKind) uint64 {
+	return uint64(exprKind) << XKShift64
 }
 
-func placeOperandInOneOperandExpr(operand EntityId) uint64 {
-	return uint64(operand)
+func placeCallSiteId(siteId CallSiteId) uint64 {
+	sid := uint32(siteId) & CallSiteIdMask32 // zero out most significant 3 bits
+	return uint64(sid) << CallSiteIdShift64
 }
 
-func NewValueExpr(value EntityId) Expr {
-	return NewExpr(value, 0, K_XK_VAL)
+// Simple value without any operator.
+func ValX(value EntityId) Expr {
+	return UnaryX(K_XK_VAL, value)
 }
 
-func NewExpr(opr1 EntityId, opr2 EntityId, exprKind ExprKind) Expr {
-	expr := (uint64(exprKind) & ExprKindMask) >> ExprKindShift
-	if IsOneOprExprKind(exprKind) {
-		return Expr(expr | placeOperandInOneOperandExpr(opr1))
-	} else if IsTwoOprExprKind(exprKind) {
-		return Expr(expr | placeOperand1InTwoOperandExpr(opr1) | placeOperand2InTwoOperandExpr(opr2))
+func UnaryX(xk ExprKind, opr EntityId) Expr {
+	return Expr(placeXK(xk) | placeExprOpr1(opr))
+}
+
+func CallX(zeroArgs bool, callSiteId CallSiteId, callee EntityId) Expr {
+	var expr uint64
+	if zeroArgs {
+		expr = placeXK(K_XK_CALL_0)
+	} else {
+		expr = placeXK(K_XK_CALL)
+	}
+	return Expr(expr | placeCallSiteId(callSiteId) | placeExprOpr1(callee))
+}
+
+// Creates a 64 bit expression from two operands and an expression kind.
+func BinX(exprKind ExprKind, opr1 EntityId, opr2 EntityId) Expr {
+	expr := placeXK(exprKind)
+	if exprKind.IsSingleOprnd() {
+		return Expr(expr | placeExprOpr1(opr1))
+	}
+	if exprKind.IsTwoOprnd() {
+		return Expr(expr | placeExprOpr1(opr1) | placeExprOpr2(opr2))
 	}
 	panic(fmt.Sprintf("Invalid expression kind: %s", exprKind))
 }
 
-func GetExprKind(expr Expr) ExprKind {
-	return ExprKind((uint64(expr) & ExprKindMask) >> ExprKindShift)
+// Creates a 64 bit expression from an operand and an expression kind.
+func (expr Expr) GetXK() ExprKind {
+	return ExprKind((uint64(expr) & XKMask64) >> XKShift64)
+}
+
+func (expr Expr) GetCallSiteId() CallSiteId {
+	return CallSiteId((uint64(expr) & CallSiteIdPosMask64) >> CallSiteIdShift64)
+}
+
+func (expr Expr) GetCallee() EntityId {
+	return EntityId((uint64(expr) & CalleeIdMask64) >> CalleeIdShift64)
+}
+
+// A simple expression has no operator.
+func (expr Expr) IsSimple() bool {
+	return expr.GetXK() == K_XK_VAL
+}
+
+func (expr Expr) IsCall() bool {
+	return expr.GetXK() == K_XK_CALL || expr.GetXK() == K_XK_CALL_0
+}
+
+func (expr Expr) IsCall0() bool {
+	return expr.GetXK() == K_XK_CALL_0
 }
 
 // Returns one or two operands.
-// For expression with only one operand, the second operand is invalid.
-func GetOperands(expr Expr) (EntityId, EntityId) {
-	exprKind := GetExprKind(expr)
-	if IsOneOprExprKind(exprKind) {
-		return EntityId(expr & Expr(OneOprExprOprMask)), EntityId(ID_NONE)
-	} else if IsTwoOprExprKind(exprKind) {
-		return GetOpr1(expr), GetOpr2(expr)
+// For expression with only one operand, the second operand is a NULL_ID.
+func (expr Expr) GetOperands() (EntityId, EntityId) {
+	exprKind := expr.GetXK()
+	if exprKind.IsSingleOprnd() {
+		return expr.GetOpr1(), NIL_ID
+	} else if exprKind.IsTwoOprnd() {
+		return expr.GetOpr1(), expr.GetOpr2()
 	}
 	panic(fmt.Sprintf("Invalid expression kind: %s", exprKind))
 }
 
-func NewOneOprExpr(opr EntityId, oneOprExprKind ExprKind) Expr {
-	var expr uint64
-	if IsOneOprExprKind(oneOprExprKind) {
-		expr = placeExpressionKindBits64(oneOprExprKind)
-	} else {
-		panic(fmt.Sprintf("Invalid single operand expression kind: %s", oneOprExprKind))
-	}
-	expr |= placeOperandInOneOperandExpr(opr)
-	return Expr(expr)
-}
-
-func NewTwoOprExpr(opr1 EntityId, opr2 EntityId, twoOprExprKind ExprKind) Expr {
-	var expr uint64
-	if IsTwoOprExprKind(twoOprExprKind) {
-		expr = placeExpressionKindBits64(twoOprExprKind)
-	} else {
-		panic(fmt.Sprintf("Invalid two operand expression kind: %s", twoOprExprKind))
-	}
-	expr |= placeOperand1InTwoOperandExpr(opr1) | placeOperand2InTwoOperandExpr(opr2)
-	return Expr(expr)
-}
-
-func GetOpr1(expr Expr) EntityId {
-	exprKind := ExprKind((uint64(expr) & ExprKindMask) >> ExprKindShift)
-	if IsOneOprExprKind(exprKind) {
-		return EntityId(expr & Expr(OneOprExprOprMask))
-	} else if IsTwoOprExprKind(exprKind) {
-		return EntityId((uint64(expr) & TwoOprExprOpr1Mask) >> TwoOprExprOpr1Shift)
+func (expr Expr) GetOpr1() EntityId {
+	exprKind := expr.GetXK()
+	if exprKind.IsSingleOprnd() {
+		return EntityId(uint64(expr) & UnaryOprMask64)
+	} else if exprKind.IsTwoOprnd() {
+		return EntityId((uint64(expr) & BinXOpr1Mask64) >> BinXOpr1Shift64)
 	}
 	panic(fmt.Sprintf("Invalid expression kind: %s", exprKind))
 }
 
-func GetOpr2(expr Expr) EntityId {
-	exprKind := ExprKind((uint64(expr) & ExprKindMask) >> ExprKindShift)
-	if IsOneOprExprKind(exprKind) {
-		return EntityId(ID_NONE)
-	} else if IsTwoOprExprKind(exprKind) {
-		return EntityId(uint64(expr) & TwoOprExprOpr2Mask)
+func (expr Expr) GetOpr2() EntityId {
+	exprKind := expr.GetXK()
+	if exprKind.IsSingleOprnd() {
+		return NIL_ID
+	} else if exprKind.IsTwoOprnd() {
+		return EntityId((uint64(expr) & BinXOpr2Mask64) >> BinXOpr2Shift64)
 	}
 	panic(fmt.Sprintf("Invalid expression kind: %s", exprKind))
 }
 
-func GetExpressionKind(expr Expr) ExprKind {
-	return ExprKind((uint64(expr) & ExprKindMask) >> ExprKindShift)
+func (expr *Expr) SetTopBit() {
+	*expr |= Expr(TopBitMask64)
+}
+
+func (expr *Expr) ClearTopBit() {
+	*expr &= Expr(^TopBitMask64)
 }

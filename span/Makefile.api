@@ -1,0 +1,76 @@
+# API Documentation Makefile
+
+.PHONY: api-docs api-list api-exported api-commands api-types api-functions
+
+# Generate comprehensive API documentation
+api-docs:
+	@echo "Generating comprehensive API documentation..."
+	@chmod +x scripts/list_apis_simple.sh
+	@./scripts/list_apis_simple.sh . api_documentation.md
+	@echo "API documentation generated: api_documentation.md"
+
+# List all packages in the project
+api-list:
+	@echo "=== All Packages ==="
+	@go list ./... 2>/dev/null || echo "No packages found"
+
+# List only exported (public) APIs
+api-exported:
+	@echo "=== Exported APIs ==="
+	@find . -name "*.go" -not -name "*_test.go" -not -path "./vendor/*" | \
+		xargs grep -h "^func [A-Z]\|^type [A-Z]\|^const [A-Z]\|^var [A-Z]" 2>/dev/null | \
+		sort -u
+
+# List all commands (Cobra commands)
+api-commands:
+	@echo "=== Available Commands ==="
+	@cd cmd/span && go run . --help 2>/dev/null || echo "Commands not available"
+
+# List all types
+api-types:
+	@echo "=== All Types ==="
+	@find . -name "*.go" -not -name "*_test.go" -not -path "./vendor/*" | \
+		xargs grep -h "^type " 2>/dev/null | \
+		sort -u
+
+# List all functions
+api-functions:
+	@echo "=== All Functions ==="
+	@find . -name "*.go" -not -name "*_test.go" -not -path "./vendor/*" | \
+		xargs grep -h "^func " 2>/dev/null | \
+		sort -u
+
+# Generate Go documentation using go doc
+api-godoc:
+	@echo "=== Go Documentation ==="
+	@go doc -all ./... 2>/dev/null || echo "No documentation available"
+
+# List APIs by package
+api-by-package:
+	@echo "=== APIs by Package ==="
+	@for pkg in $(shell go list ./... 2>/dev/null); do \
+		echo "Package: $$pkg"; \
+		go list -f '{{range .GoFiles}}{{.}} {{end}}' $$pkg 2>/dev/null | \
+		xargs grep -h "^func [A-Z]\|^type [A-Z]" 2>/dev/null | \
+		sed 's/^/  /' || true; \
+		echo ""; \
+	done
+
+# Quick API summary
+api-summary:
+	@echo "=== API Summary ==="
+	@echo "Total packages: $(shell go list ./... 2>/dev/null | wc -l)"
+	@echo "Exported functions: $(shell find . -name "*.go" -not -name "*_test.go" -not -path "./vendor/*" | xargs grep -h "^func [A-Z]" 2>/dev/null | wc -l)"
+	@echo "Exported types: $(shell find . -name "*.go" -not -name "*_test.go" -not -path "./vendor/*" | xargs grep -h "^type [A-Z]" 2>/dev/null | wc -l)"
+	@echo "Commands: $(shell find . -name "main.go" -type f | wc -l)"
+
+# Generate API documentation in JSON format
+api-json:
+	@echo "Generating API documentation in JSON format..."
+	@go run scripts/list_apis.go . > api_documentation.json 2>/dev/null || echo "JSON generation not available"
+
+# Interactive API browser (requires godoc to be installed)
+api-serve:
+	@echo "Starting API documentation server..."
+	@echo "Visit http://localhost:6060/pkg/ to browse APIs"
+	@godoc -http=:6060 2>/dev/null || echo "godoc not available. Install with: go install golang.org/x/tools/cmd/godoc@latest" 

@@ -16,10 +16,10 @@
     "customizations": {
         "vscode": {
           "settings": {
-            "terminal.integrated.defaultProfile.linux": "zsh",
+            "terminal.integrated.defaultProfile.linux": "bash",
             "terminal.integrated.profiles.linux": { 
-              "zsh": { 
-                "path": "/bin/zsh" 
+              "bash": { 
+                "path": "/bin/bash" 
               } 
             }
           },

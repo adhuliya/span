@@ -12,11 +12,13 @@ type StmtViewType uint32
 const (
 	// A view from x = RHS to x = Top
 	DeadAssignmentView StmtViewType = 0
-	// A view from *x = RHS to [a = RHS, b = RHS, ...]
-	// or 			x = *y  to [x = a, x = b, ...]
+	// A view from *x = RHS to {a = RHS, b = RHS, ...}
+	// or 			x = *y  to {x = a, x = b, ...}
 	DereferencedView StmtViewType = 1
-	// A view from x = y to [x = 10, x = 11, ...]
+	// A view from x = y to {x = 10, x = 11, ...}
 	ConstantView StmtViewType = 2
+	// A view from if(x) to {if(true)} or {if(false)}
+	ConditionView StmtViewType = 3
 )
 
 const (
@@ -29,18 +31,20 @@ type Analysis interface {
 	Name() string
 	VisitingOrder() GraphVisitingOrder
 	BoundaryFact(graph spir.Graph, context *spir.Context) lattice.Pair
-	Analyze(insn spir.Instruction, inOut lattice.Pair,
+	Analyze(insn spir.Insn, inOut lattice.Pair,
 		context *spir.Context) (lattice.Pair, lattice.FactChanged)
 }
 
 type SpanAnalysis interface {
 	Analysis
-	StmtView(insn spir.Instruction, inOut lattice.Pair,
-		view StmtViewType, context *spir.Context) []spir.Instruction
+	StmtView(insn spir.Insn, inOut lattice.Pair,
+		viewType StmtViewType, context *spir.Context) []spir.Insn
+	Policy(insn spir.Insn, viewType StmtViewType, view []spir.Insn,
+		context *spir.Context) []spir.Insn
 }
 
 type LernersAnalysis interface {
 	Analysis
-	StmtGraph(insn spir.Instruction, inOut lattice.Pair,
+	StmtGraph(insn spir.Insn, inOut lattice.Pair,
 		context *spir.Context) spir.Graph
 }

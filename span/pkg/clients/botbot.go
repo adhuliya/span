@@ -41,7 +41,7 @@ func (c *ForwardBotBotClient) BoundaryFact(graph spir.Graph, context *spir.Conte
 }
 
 // Just propagate the bot to the out fact.
-func (c *ForwardBotBotClient) Analyze(instruction spir.Instruction,
+func (c *ForwardBotBotClient) Analyze(instruction spir.Insn,
 	inOut lattice.Pair, context *spir.Context) (lattice.Pair, lattice.FactChanged) {
 	factChange := lattice.NoChange
 	if lattice.IsTop(inOut.L2()) {

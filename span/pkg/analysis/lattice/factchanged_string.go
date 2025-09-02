@@ -12,9 +12,9 @@ func _() {
 	_ = x[Changed-1]
 	_ = x[OnlyInChanged-2]
 	_ = x[OnlyOutChanged-3]
+	_ = x[InOutChanged-4]
 	_ = x[OnlyTrueOutChanged-5]
 	_ = x[OnlyFalseOutChanged-6]
-	_ = x[InOutChanged-4]
 }
 
 const _FactChanged_name = "NoChangeChangedOnlyInChangedOnlyOutChangedInOutChangedOnlyTrueOutChangedOnlyFalseOutChanged"

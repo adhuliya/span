@@ -1,0 +1,42 @@
+PhD work items
+
+Clarify the use of policy() and explicate that the usage is not analysis specific — add examples.
+
+Publish/Submit a paper — Target paper — decide on the content.
+
+Some examples may be very helpful to the reader.
+
+Rewrite introduction to better introduce and compare with Lerner’s approach + manual approach.
+
+Treat the related work with more detail in the related works section.
+
+Make the background section more concise, removing redundant details.
+
+Add formal proof for forward-backward analysis and show its benefits.
+
+Add proof of equivalence between SPAN and a couple of analyses pair?
+
+Show experimental comparisons with manually written super-analyses.
+    - [ ] Show results on some SPEC benchmarks.
+
+
+Does Lerner’s approach work for inter-procedural?
+* Some feature that doesn’t work in Lerner’s but works in ours.
+
+
+Difference with Lerner/Craig/Groov's approach:
+1. Transformations preserve relation to the source program.
+2. Termination and MFP guarantee.
+3. On-demand vs forced transformation.
+4. Forward-Backward analysis -- or live variables can work with other analyses.
+
+
+
+### Mon Jul 21 14:56:22 IST 2025
+* Finish the implementation and get the numbers -- +forward-backward
+  * Highlight the rows where SPAN is better.
+* Revert to the previous paper structures -- with improvements as per reviews.
+	* policy, lerner's comparison, background, manual analyses etc.
+* Formalization of forward-backward. Move forward-backward to a later chapter (possbily separate chapter).
+* Add deadlines to the tasks.
+* TO DISCUSS: Is SPAN approximate the reduced cross-product?

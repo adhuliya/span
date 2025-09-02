@@ -42,14 +42,15 @@ PROTOBUF_CONSTEXPR BitDataType::BitDataType(
   , /*decltype(_impl_.names_)*/{}
   , /*decltype(_impl_.types_)*/{}
   , /*decltype(_impl_.attributes_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.str_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.typename__)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.subtype_)*/nullptr
+  , /*decltype(_impl_.loc_)*/nullptr
   , /*decltype(_impl_.typeid__)*/uint64_t{0u}
   , /*decltype(_impl_.kind_)*/0
   , /*decltype(_impl_.qtype_)*/0u
-  , /*decltype(_impl_.bits_)*/0u
-  , /*decltype(_impl_.size_)*/0u
+  , /*decltype(_impl_.len_)*/0u
   , /*decltype(_impl_.align_)*/0u
+  , /*decltype(_impl_.anonymous_)*/false
   , /*decltype(_impl_.variadic_)*/false} {}
 struct BitDataTypeDefaultTypeInternal {
   PROTOBUF_CONSTEXPR BitDataTypeDefaultTypeInternal()
@@ -213,26 +214,28 @@ const uint32_t TableStruct_spir_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(pro
   PROTOBUF_FIELD_OFFSET(::spir::BitDataType, _impl_.typeid__),
   PROTOBUF_FIELD_OFFSET(::spir::BitDataType, _impl_.qtype_),
   PROTOBUF_FIELD_OFFSET(::spir::BitDataType, _impl_.attributes_),
-  PROTOBUF_FIELD_OFFSET(::spir::BitDataType, _impl_.bits_),
-  PROTOBUF_FIELD_OFFSET(::spir::BitDataType, _impl_.size_),
+  PROTOBUF_FIELD_OFFSET(::spir::BitDataType, _impl_.len_),
   PROTOBUF_FIELD_OFFSET(::spir::BitDataType, _impl_.align_),
   PROTOBUF_FIELD_OFFSET(::spir::BitDataType, _impl_.subtype_),
-  PROTOBUF_FIELD_OFFSET(::spir::BitDataType, _impl_.str_),
+  PROTOBUF_FIELD_OFFSET(::spir::BitDataType, _impl_.typename__),
+  PROTOBUF_FIELD_OFFSET(::spir::BitDataType, _impl_.anonymous_),
   PROTOBUF_FIELD_OFFSET(::spir::BitDataType, _impl_.names_),
   PROTOBUF_FIELD_OFFSET(::spir::BitDataType, _impl_.types_),
   PROTOBUF_FIELD_OFFSET(::spir::BitDataType, _impl_.variadic_),
+  PROTOBUF_FIELD_OFFSET(::spir::BitDataType, _impl_.loc_),
   ~0u,
-  3,
   4,
-  0,
   5,
+  0,
   6,
   7,
   2,
   1,
-  ~0u,
-  ~0u,
   8,
+  ~0u,
+  ~0u,
+  9,
+  3,
   PROTOBUF_FIELD_OFFSET(::spir::BitEntityInfo, _impl_._has_bits_),
   PROTOBUF_FIELD_OFFSET(::spir::BitEntityInfo, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -348,15 +351,15 @@ const uint32_t TableStruct_spir_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(pro
 };
 static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, -1, sizeof(::spir::BitSrcLoc)},
-  { 8, 26, -1, sizeof(::spir::BitDataType)},
-  { 38, 50, -1, sizeof(::spir::BitEntityInfo)},
-  { 56, 64, -1, sizeof(::spir::BitEntity)},
-  { 66, 77, -1, sizeof(::spir::BitExpr)},
-  { 82, 91, -1, sizeof(::spir::BitInsn)},
-  { 94, 106, -1, sizeof(::spir::BitFunc)},
-  { 112, 120, -1, sizeof(::spir::BitTU_EntitiesEntry_DoNotUse)},
-  { 122, 130, -1, sizeof(::spir::BitTU_EntityInfoEntry_DoNotUse)},
-  { 132, 144, -1, sizeof(::spir::BitTU)},
+  { 8, 27, -1, sizeof(::spir::BitDataType)},
+  { 40, 52, -1, sizeof(::spir::BitEntityInfo)},
+  { 58, 66, -1, sizeof(::spir::BitEntity)},
+  { 68, 79, -1, sizeof(::spir::BitExpr)},
+  { 84, 93, -1, sizeof(::spir::BitInsn)},
+  { 96, 108, -1, sizeof(::spir::BitFunc)},
+  { 114, 122, -1, sizeof(::spir::BitTU_EntitiesEntry_DoNotUse)},
+  { 124, 132, -1, sizeof(::spir::BitTU_EntityInfoEntry_DoNotUse)},
+  { 134, 146, -1, sizeof(::spir::BitTU)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -374,89 +377,90 @@ static const ::_pb::Message* const file_default_instances[] = {
 
 const char descriptor_table_protodef_spir_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
   "\n\nspir.proto\022\004spir\"&\n\tBitSrcLoc\022\014\n\004line\030"
-  "\001 \001(\r\022\013\n\003col\030\002 \001(\r\"\207\003\n\013BitDataType\022\030\n\004ki"
+  "\001 \001(\r\022\013\n\003col\030\002 \001(\r\"\304\003\n\013BitDataType\022\030\n\004ki"
   "nd\030\001 \001(\0162\n.spir.K_VK\022\023\n\006typeId\030\002 \001(\004H\000\210\001"
   "\001\022\022\n\005qtype\030\003 \001(\rH\001\210\001\001\022\027\n\nattributes\030\004 \001("
-  "\tH\002\210\001\001\022\021\n\004bits\030\005 \001(\rH\003\210\001\001\022\021\n\004size\030\006 \001(\rH"
-  "\004\210\001\001\022\022\n\005align\030\007 \001(\rH\005\210\001\001\022\'\n\007subType\030\010 \001("
-  "\0132\021.spir.BitDataTypeH\006\210\001\001\022\020\n\003str\030\t \001(\tH\007"
-  "\210\001\001\022\r\n\005names\030\n \003(\t\022 \n\005types\030\013 \003(\0132\021.spir"
-  ".BitDataType\022\025\n\010variadic\030\014 \001(\010H\010\210\001\001B\t\n\007_"
-  "typeIdB\010\n\006_qtypeB\r\n\013_attributesB\007\n\005_bits"
-  "B\007\n\005_sizeB\010\n\006_alignB\n\n\010_subTypeB\006\n\004_strB"
-  "\013\n\t_variadic\"\313\001\n\rBitEntityInfo\022\030\n\004kind\030\001"
-  " \001(\0162\n.spir.K_EK\022\n\n\002id\030\002 \001(\004\022\"\n\002dt\030\003 \001(\013"
-  "2\021.spir.BitDataTypeH\000\210\001\001\022\023\n\006numVal\030\004 \001(\004"
-  "H\001\210\001\001\022\023\n\006strVal\030\005 \001(\tH\002\210\001\001\022!\n\003loc\030\006 \001(\0132"
-  "\017.spir.BitSrcLocH\003\210\001\001B\005\n\003_dtB\t\n\007_numValB"
-  "\t\n\007_strValB\006\n\004_loc\"B\n\tBitEntity\022\n\n\002id\030\001 "
-  "\001(\004\022!\n\003loc\030\002 \001(\0132\017.spir.BitSrcLocH\000\210\001\001B\006"
-  "\n\004_loc\"\310\001\n\007BitExpr\022\030\n\004kind\030\001 \001(\0162\n.spir."
-  "K_XK\022\"\n\004opr1\030\002 \001(\0132\017.spir.BitEntityH\000\210\001\001"
-  "\022\"\n\004opr2\030\003 \001(\0132\017.spir.BitEntityH\001\210\001\001\022!\n\003"
-  "loc\030\004 \001(\0132\017.spir.BitSrcLocH\002\210\001\001\022\036\n\005exprs"
-  "\030\005 \003(\0132\017.spir.BitEntityB\007\n\005_opr1B\007\n\005_opr"
-  "2B\006\n\004_loc\"}\n\007BitInsn\022\030\n\004kind\030\001 \001(\0162\n.spi"
-  "r.K_IK\022!\n\005expr1\030\002 \001(\0132\r.spir.BitExprH\000\210\001"
-  "\001\022!\n\005expr2\030\003 \001(\0132\r.spir.BitExprH\001\210\001\001B\010\n\006"
-  "_expr1B\010\n\006_expr2\"\236\001\n\007BitFunc\022\n\n\002id\030\001 \001(\004"
-  "\022\023\n\013is_variadic\030\002 \001(\010\022\014\n\004name\030\003 \001(\t\022\037\n\022c"
-  "alling_convention\030\004 \001(\tH\000\210\001\001\022\034\n\005insns\030\005 "
-  "\003(\0132\r.spir.BitInsn\022\016\n\006locals\030\006 \003(\004B\025\n\023_c"
-  "alling_convention\"\345\002\n\005BitTU\022\014\n\004name\030\001 \001("
-  "\t\022\026\n\tdirectory\030\002 \001(\tH\000\210\001\001\022\023\n\006origin\030\003 \001("
-  "\tH\001\210\001\001\022+\n\010entities\030\004 \003(\0132\031.spir.BitTU.En"
-  "titiesEntry\022/\n\nentityInfo\030\005 \003(\0132\033.spir.B"
-  "itTU.EntityInfoEntry\022 \n\tfunctions\030\006 \003(\0132"
-  "\r.spir.BitFunc\032@\n\rEntitiesEntry\022\013\n\003key\030\001"
-  " \001(\t\022\036\n\005value\030\002 \001(\0132\017.spir.BitEntity:\0028\001"
-  "\032F\n\017EntityInfoEntry\022\013\n\003key\030\001 \001(\004\022\"\n\005valu"
-  "e\030\002 \001(\0132\023.spir.BitEntityInfo:\0028\001B\014\n\n_dir"
-  "ectoryB\t\n\007_origin*\214\002\n\004K_EK\022\010\n\004NONE\020\000\022\007\n\003"
-  "VAR\020\001\022\014\n\010VAR_GLBL\020\002\022\023\n\017VAR_STATIC_LOCL\020\003"
-  "\022\014\n\010VAR_LOCL\020\004\022\013\n\007VAR_TMP\020\005\022\013\n\007VAR_SSA\020\006"
-  "\022\016\n\nVAR_PSEUDO\020\007\022\013\n\007LIT_NUM\020\010\022\017\n\013LIT_NUM"
-  "_IMM\020\t\022\013\n\007LIT_STR\020\n\022\r\n\tDATA_TYPE\020\013\022\010\n\004FU"
-  "NC\020\014\022\016\n\nFUNC_VARGS\020\r\022\t\n\005LABEL\020\016\022\t\n\005OTHER"
-  "\020\017\022\010\n\004INSN\020\020\022\006\n\002BB\020\021\022\007\n\003CFG\020\022\022\t\n\005SCOPE\020\023"
-  "\022\006\n\002TU\020\024*\255\001\n\004K_IK\022\010\n\004INOP\020\000\022\014\n\010IBARRIER\020"
-  "\001\022\020\n\014IASGN_SIMPLE\020\002\022\020\n\014IASGN_RHS_OP\020\003\022\020\n"
-  "\014IASGN_LHS_OP\020\004\022\016\n\nIASGN_CALL\020\005\022\r\n\tIASGN"
-  "_PHI\020\006\022\t\n\005ICALL\020\007\022\t\n\005IGOTO\020\010\022\t\n\005ICOND\020\t\022"
-  "\n\n\006ILABEL\020\n\022\013\n\007IRETURN\020\013*\357\002\n\004K_XK\022\007\n\003NIL"
-  "\020\000\022\007\n\003VAL\020\001\022\007\n\003ADD\020\002\022\007\n\003SUB\020\003\022\007\n\003MUL\020\004\022\007"
-  "\n\003DIV\020\005\022\007\n\003MOD\020\006\022\007\n\003AND\020\007\022\006\n\002OR\020\010\022\007\n\003XOR"
-  "\020\t\022\007\n\003SHL\020\n\022\007\n\003SHR\020\013\022\010\n\004SHRL\020\014\022\006\n\002EQ\020\r\022\006"
-  "\n\002NE\020\016\022\006\n\002LT\020\017\022\006\n\002GE\020\020\022\017\n\013ARRAY_INDEX\020\021\022"
-  "\021\n\rMEMBER_ACCESS\020\022\022\025\n\021MEMBER_PTR_ACCESS\020"
-  "\023\022\025\n\021MEMBER_PTR_ADDROF\020\024\022\010\n\004CALL\020\025\022\n\n\006CA"
-  "LL_0\020\026\022\010\n\004CAST\020\027\022\013\n\007BIT_NOT\020\030\022\n\n\006NEGATE\020"
-  "\031\022\007\n\003NOT\020\032\022\t\n\005DEREF\020\033\022\n\n\006ADDROF\020\034\022\n\n\006SIZ"
-  "EOF\020\035\022\013\n\007ALIGNOF\020\036\022\016\n\nOTHER_EXPR\020\037*\202\004\n\004K"
-  "_VK\022\010\n\004VOID\020\000\022\010\n\004CHAR\020\001\022\010\n\004INT8\020\002\022\t\n\005INT"
-  "16\020\003\022\t\n\005INT32\020\004\022\t\n\005INT64\020\005\022\t\n\005UINT8\020\006\022\t\n"
-  "\005UCHAR\020\006\022\n\n\006UINT16\020\007\022\n\n\006UINT32\020\010\022\n\n\006UINT"
-  "64\020\t\022\n\n\006CHAR16\020\007\022\t\n\005WCHAR\020\010\022\n\n\006CHAR32\020\010\022"
-  "\n\n\006N_BITS\020\n\022\013\n\007N_UBITS\020\013\022\010\n\004BOOL\020\014\022\013\n\007FL"
-  "OAT16\020\r\022\013\n\007FLOAT32\020\016\022\t\n\005FLOAT\020\016\022\013\n\007FLOAT"
-  "64\020\017\022\n\n\006DOUBLE\020\017\022\017\n\013LONG_DOUBLE\020\020\022\007\n\003PTR"
-  "\020\021\022\017\n\013PTR_TO_VOID\020\022\022\016\n\nPTR_TO_PTR\020\023\022\016\n\nP"
-  "TR_TO_ARR\020\024\022\017\n\013PTR_TO_CHAR\020\025\022\016\n\nPTR_TO_I"
-  "NT\020\026\022\020\n\014PTR_TO_FLOAT\020\027\022\021\n\rPTR_TO_RECORD\020"
-  "\030\022\017\n\013PTR_TO_FUNC\020\031\022\r\n\tARR_FIXED\020\032\022\020\n\014ARR"
-  "_VARIABLE\020\033\022\017\n\013ARR_PARTIAL\020\034\022\t\n\005UNION\020\035\022"
-  "\n\n\006STRUCT\020\036\022\016\n\nOTHER_TYPE\020\037\032\002\020\001*\366\001\n\004K_QK"
-  "\022\t\n\005QNONE\020\000\022\n\n\006QCONST\020\001\022\017\n\013QCONST_DEST\020\002"
-  "\022\020\n\014QFUNC_STATIC\020\004\022\020\n\014QGLBL_STATIC\020\010\022\r\n\t"
-  "QVOLATILE\020\020\022\t\n\005QWEAK\020 \022\021\n\rQTHREAD_LOCAL\020"
-  "@\022\r\n\010QNO_INIT\020\200\001\022\016\n\tQEXTERNAL\020\200\002\022\014\n\007QNO_"
-  "DEF\020\200\004\022\016\n\tQRESTRICT\020\200\010\022\014\n\007QINLINE\020\200\020\022\014\n\007"
-  "QATOMIC\020\200 \022\016\n\tQREGISTER\020\200@\022\014\n\006QOTHER\020\200\200\001"
-  "B\010Z\006./spirb\006proto3"
+  "\tH\002\210\001\001\022\020\n\003len\030\005 \001(\rH\003\210\001\001\022\022\n\005align\030\006 \001(\rH"
+  "\004\210\001\001\022\'\n\007subType\030\007 \001(\0132\021.spir.BitDataType"
+  "H\005\210\001\001\022\025\n\010typeName\030\010 \001(\tH\006\210\001\001\022\026\n\tanonymou"
+  "s\030\t \001(\010H\007\210\001\001\022\r\n\005names\030\n \003(\t\022 \n\005types\030\013 \003"
+  "(\0132\021.spir.BitDataType\022\025\n\010variadic\030\014 \001(\010H"
+  "\010\210\001\001\022!\n\003loc\030\r \001(\0132\017.spir.BitSrcLocH\t\210\001\001B"
+  "\t\n\007_typeIdB\010\n\006_qtypeB\r\n\013_attributesB\006\n\004_"
+  "lenB\010\n\006_alignB\n\n\010_subTypeB\013\n\t_typeNameB\014"
+  "\n\n_anonymousB\013\n\t_variadicB\006\n\004_loc\"\313\001\n\rBi"
+  "tEntityInfo\022\030\n\004kind\030\001 \001(\0162\n.spir.K_EK\022\n\n"
+  "\002id\030\002 \001(\004\022\"\n\002dt\030\003 \001(\0132\021.spir.BitDataType"
+  "H\000\210\001\001\022\023\n\006numVal\030\004 \001(\004H\001\210\001\001\022\023\n\006strVal\030\005 \001"
+  "(\tH\002\210\001\001\022!\n\003loc\030\006 \001(\0132\017.spir.BitSrcLocH\003\210"
+  "\001\001B\005\n\003_dtB\t\n\007_numValB\t\n\007_strValB\006\n\004_loc\""
+  "B\n\tBitEntity\022\n\n\002id\030\001 \001(\004\022!\n\003loc\030\002 \001(\0132\017."
+  "spir.BitSrcLocH\000\210\001\001B\006\n\004_loc\"\310\001\n\007BitExpr\022"
+  "\030\n\004kind\030\001 \001(\0162\n.spir.K_XK\022\"\n\004opr1\030\002 \001(\0132"
+  "\017.spir.BitEntityH\000\210\001\001\022\"\n\004opr2\030\003 \001(\0132\017.sp"
+  "ir.BitEntityH\001\210\001\001\022!\n\003loc\030\004 \001(\0132\017.spir.Bi"
+  "tSrcLocH\002\210\001\001\022\036\n\005exprs\030\005 \003(\0132\017.spir.BitEn"
+  "tityB\007\n\005_opr1B\007\n\005_opr2B\006\n\004_loc\"}\n\007BitIns"
+  "n\022\030\n\004kind\030\001 \001(\0162\n.spir.K_IK\022!\n\005expr1\030\002 \001"
+  "(\0132\r.spir.BitExprH\000\210\001\001\022!\n\005expr2\030\003 \001(\0132\r."
+  "spir.BitExprH\001\210\001\001B\010\n\006_expr1B\010\n\006_expr2\"\236\001"
+  "\n\007BitFunc\022\n\n\002id\030\001 \001(\004\022\023\n\013is_variadic\030\002 \001"
+  "(\010\022\014\n\004name\030\003 \001(\t\022\037\n\022calling_convention\030\004"
+  " \001(\tH\000\210\001\001\022\034\n\005insns\030\005 \003(\0132\r.spir.BitInsn\022"
+  "\016\n\006locals\030\006 \003(\004B\025\n\023_calling_convention\"\345"
+  "\002\n\005BitTU\022\014\n\004name\030\001 \001(\t\022\026\n\tdirectory\030\002 \001("
+  "\tH\000\210\001\001\022\023\n\006origin\030\003 \001(\tH\001\210\001\001\022+\n\010entities\030"
+  "\004 \003(\0132\031.spir.BitTU.EntitiesEntry\022/\n\nenti"
+  "tyInfo\030\005 \003(\0132\033.spir.BitTU.EntityInfoEntr"
+  "y\022 \n\tfunctions\030\006 \003(\0132\r.spir.BitFunc\032@\n\rE"
+  "ntitiesEntry\022\013\n\003key\030\001 \001(\t\022\036\n\005value\030\002 \001(\013"
+  "2\017.spir.BitEntity:\0028\001\032F\n\017EntityInfoEntry"
+  "\022\013\n\003key\030\001 \001(\004\022\"\n\005value\030\002 \001(\0132\023.spir.BitE"
+  "ntityInfo:\0028\001B\014\n\n_directoryB\t\n\007_origin*\214"
+  "\002\n\004K_EK\022\010\n\004NONE\020\000\022\007\n\003VAR\020\001\022\014\n\010VAR_GLBL\020\002"
+  "\022\023\n\017VAR_STATIC_LOCL\020\003\022\014\n\010VAR_LOCL\020\004\022\013\n\007V"
+  "AR_TMP\020\005\022\013\n\007VAR_SSA\020\006\022\016\n\nVAR_PSEUDO\020\007\022\013\n"
+  "\007LIT_NUM\020\010\022\017\n\013LIT_NUM_IMM\020\t\022\013\n\007LIT_STR\020\n"
+  "\022\r\n\tDATA_TYPE\020\013\022\010\n\004FUNC\020\014\022\016\n\nFUNC_VARGS\020"
+  "\r\022\t\n\005LABEL\020\016\022\t\n\005OTHER\020\017\022\010\n\004INSN\020\020\022\006\n\002BB\020"
+  "\021\022\007\n\003CFG\020\022\022\t\n\005SCOPE\020\023\022\006\n\002TU\020\024*\255\001\n\004K_IK\022\010"
+  "\n\004INOP\020\000\022\014\n\010IBARRIER\020\001\022\020\n\014IASGN_SIMPLE\020\002"
+  "\022\020\n\014IASGN_RHS_OP\020\003\022\020\n\014IASGN_LHS_OP\020\004\022\016\n\n"
+  "IASGN_CALL\020\005\022\r\n\tIASGN_PHI\020\006\022\t\n\005ICALL\020\007\022\t"
+  "\n\005IGOTO\020\010\022\t\n\005ICOND\020\t\022\n\n\006ILABEL\020\n\022\013\n\007IRET"
+  "URN\020\013*\357\002\n\004K_XK\022\007\n\003NIL\020\000\022\007\n\003VAL\020\001\022\007\n\003ADD\020"
+  "\002\022\007\n\003SUB\020\003\022\007\n\003MUL\020\004\022\007\n\003DIV\020\005\022\007\n\003MOD\020\006\022\007\n"
+  "\003AND\020\007\022\006\n\002OR\020\010\022\007\n\003XOR\020\t\022\007\n\003SHL\020\n\022\007\n\003SHR\020"
+  "\013\022\010\n\004SHRL\020\014\022\006\n\002EQ\020\r\022\006\n\002NE\020\016\022\006\n\002LT\020\017\022\006\n\002G"
+  "E\020\020\022\017\n\013ARRAY_INDEX\020\021\022\021\n\rMEMBER_ACCESS\020\022\022"
+  "\025\n\021MEMBER_PTR_ACCESS\020\023\022\025\n\021MEMBER_PTR_ADD"
+  "ROF\020\024\022\010\n\004CALL\020\025\022\n\n\006CALL_0\020\026\022\010\n\004CAST\020\027\022\013\n"
+  "\007BIT_NOT\020\030\022\n\n\006NEGATE\020\031\022\007\n\003NOT\020\032\022\t\n\005DEREF"
+  "\020\033\022\n\n\006ADDROF\020\034\022\n\n\006SIZEOF\020\035\022\013\n\007ALIGNOF\020\036\022"
+  "\016\n\nOTHER_EXPR\020\037*\202\004\n\004K_VK\022\010\n\004VOID\020\000\022\010\n\004CH"
+  "AR\020\001\022\010\n\004INT8\020\002\022\t\n\005INT16\020\003\022\t\n\005INT32\020\004\022\t\n\005"
+  "INT64\020\005\022\t\n\005UINT8\020\006\022\t\n\005UCHAR\020\006\022\n\n\006UINT16\020"
+  "\007\022\n\n\006UINT32\020\010\022\n\n\006UINT64\020\t\022\n\n\006CHAR16\020\007\022\t\n"
+  "\005WCHAR\020\010\022\n\n\006CHAR32\020\010\022\n\n\006N_BITS\020\n\022\013\n\007N_UB"
+  "ITS\020\013\022\010\n\004BOOL\020\014\022\013\n\007FLOAT16\020\r\022\013\n\007FLOAT32\020"
+  "\016\022\t\n\005FLOAT\020\016\022\013\n\007FLOAT64\020\017\022\n\n\006DOUBLE\020\017\022\017\n"
+  "\013LONG_DOUBLE\020\020\022\007\n\003PTR\020\021\022\017\n\013PTR_TO_VOID\020\022"
+  "\022\016\n\nPTR_TO_PTR\020\023\022\016\n\nPTR_TO_ARR\020\024\022\017\n\013PTR_"
+  "TO_CHAR\020\025\022\016\n\nPTR_TO_INT\020\026\022\020\n\014PTR_TO_FLOA"
+  "T\020\027\022\021\n\rPTR_TO_RECORD\020\030\022\017\n\013PTR_TO_FUNC\020\031\022"
+  "\r\n\tARR_FIXED\020\032\022\020\n\014ARR_VARIABLE\020\033\022\017\n\013ARR_"
+  "PARTIAL\020\034\022\t\n\005UNION\020\035\022\n\n\006STRUCT\020\036\022\016\n\nOTHE"
+  "R_TYPE\020\037\032\002\020\001*\366\001\n\004K_QK\022\t\n\005QNONE\020\000\022\n\n\006QCON"
+  "ST\020\001\022\017\n\013QCONST_DEST\020\002\022\020\n\014QFUNC_STATIC\020\004\022"
+  "\020\n\014QGLBL_STATIC\020\010\022\r\n\tQVOLATILE\020\020\022\t\n\005QWEA"
+  "K\020 \022\021\n\rQTHREAD_LOCAL\020@\022\r\n\010QNO_INIT\020\200\001\022\016\n"
+  "\tQEXTERNAL\020\200\002\022\014\n\007QNO_DEF\020\200\004\022\016\n\tQRESTRICT"
+  "\020\200\010\022\014\n\007QINLINE\020\200\020\022\014\n\007QATOMIC\020\200 \022\016\n\tQREGI"
+  "STER\020\200@\022\014\n\006QOTHER\020\200\200\001B\010Z\006./spirb\006proto3"
   ;
 static ::_pbi::once_flag descriptor_table_spir_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_spir_2eproto = {
-    false, false, 3178, descriptor_table_protodef_spir_2eproto,
+    false, false, 3239, descriptor_table_protodef_spir_2eproto,
     "spir.proto",
     &descriptor_table_spir_2eproto_once, nullptr, 0, 10,
     schemas, file_default_instances, TableStruct_spir_2eproto::offsets,
@@ -861,18 +865,15 @@ class BitDataType::_Internal {
  public:
   using HasBits = decltype(std::declval<BitDataType>()._impl_._has_bits_);
   static void set_has_typeid_(HasBits* has_bits) {
-    (*has_bits)[0] |= 8u;
+    (*has_bits)[0] |= 16u;
   }
   static void set_has_qtype(HasBits* has_bits) {
-    (*has_bits)[0] |= 16u;
+    (*has_bits)[0] |= 32u;
   }
   static void set_has_attributes(HasBits* has_bits) {
     (*has_bits)[0] |= 1u;
   }
-  static void set_has_bits(HasBits* has_bits) {
-    (*has_bits)[0] |= 32u;
-  }
-  static void set_has_size(HasBits* has_bits) {
+  static void set_has_len(HasBits* has_bits) {
     (*has_bits)[0] |= 64u;
   }
   static void set_has_align(HasBits* has_bits) {
@@ -882,17 +883,28 @@ class BitDataType::_Internal {
   static void set_has_subtype(HasBits* has_bits) {
     (*has_bits)[0] |= 4u;
   }
-  static void set_has_str(HasBits* has_bits) {
+  static void set_has_typename_(HasBits* has_bits) {
     (*has_bits)[0] |= 2u;
   }
-  static void set_has_variadic(HasBits* has_bits) {
+  static void set_has_anonymous(HasBits* has_bits) {
     (*has_bits)[0] |= 256u;
+  }
+  static void set_has_variadic(HasBits* has_bits) {
+    (*has_bits)[0] |= 512u;
+  }
+  static const ::spir::BitSrcLoc& loc(const BitDataType* msg);
+  static void set_has_loc(HasBits* has_bits) {
+    (*has_bits)[0] |= 8u;
   }
 };
 
 const ::spir::BitDataType&
 BitDataType::_Internal::subtype(const BitDataType* msg) {
   return *msg->_impl_.subtype_;
+}
+const ::spir::BitSrcLoc&
+BitDataType::_Internal::loc(const BitDataType* msg) {
+  return *msg->_impl_.loc_;
 }
 BitDataType::BitDataType(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
@@ -909,14 +921,15 @@ BitDataType::BitDataType(const BitDataType& from)
     , decltype(_impl_.names_){from._impl_.names_}
     , decltype(_impl_.types_){from._impl_.types_}
     , decltype(_impl_.attributes_){}
-    , decltype(_impl_.str_){}
+    , decltype(_impl_.typename__){}
     , decltype(_impl_.subtype_){nullptr}
+    , decltype(_impl_.loc_){nullptr}
     , decltype(_impl_.typeid__){}
     , decltype(_impl_.kind_){}
     , decltype(_impl_.qtype_){}
-    , decltype(_impl_.bits_){}
-    , decltype(_impl_.size_){}
+    , decltype(_impl_.len_){}
     , decltype(_impl_.align_){}
+    , decltype(_impl_.anonymous_){}
     , decltype(_impl_.variadic_){}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
@@ -928,16 +941,19 @@ BitDataType::BitDataType(const BitDataType& from)
     _this->_impl_.attributes_.Set(from._internal_attributes(), 
       _this->GetArenaForAllocation());
   }
-  _impl_.str_.InitDefault();
+  _impl_.typename__.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.str_.Set("", GetArenaForAllocation());
+    _impl_.typename__.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (from._internal_has_str()) {
-    _this->_impl_.str_.Set(from._internal_str(), 
+  if (from._internal_has_typename_()) {
+    _this->_impl_.typename__.Set(from._internal_typename_(), 
       _this->GetArenaForAllocation());
   }
   if (from._internal_has_subtype()) {
     _this->_impl_.subtype_ = new ::spir::BitDataType(*from._impl_.subtype_);
+  }
+  if (from._internal_has_loc()) {
+    _this->_impl_.loc_ = new ::spir::BitSrcLoc(*from._impl_.loc_);
   }
   ::memcpy(&_impl_.typeid__, &from._impl_.typeid__,
     static_cast<size_t>(reinterpret_cast<char*>(&_impl_.variadic_) -
@@ -955,23 +971,24 @@ inline void BitDataType::SharedCtor(
     , decltype(_impl_.names_){arena}
     , decltype(_impl_.types_){arena}
     , decltype(_impl_.attributes_){}
-    , decltype(_impl_.str_){}
+    , decltype(_impl_.typename__){}
     , decltype(_impl_.subtype_){nullptr}
+    , decltype(_impl_.loc_){nullptr}
     , decltype(_impl_.typeid__){uint64_t{0u}}
     , decltype(_impl_.kind_){0}
     , decltype(_impl_.qtype_){0u}
-    , decltype(_impl_.bits_){0u}
-    , decltype(_impl_.size_){0u}
+    , decltype(_impl_.len_){0u}
     , decltype(_impl_.align_){0u}
+    , decltype(_impl_.anonymous_){false}
     , decltype(_impl_.variadic_){false}
   };
   _impl_.attributes_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
     _impl_.attributes_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  _impl_.str_.InitDefault();
+  _impl_.typename__.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.str_.Set("", GetArenaForAllocation());
+    _impl_.typename__.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
@@ -989,8 +1006,9 @@ inline void BitDataType::SharedDtor() {
   _impl_.names_.~RepeatedPtrField();
   _impl_.types_.~RepeatedPtrField();
   _impl_.attributes_.Destroy();
-  _impl_.str_.Destroy();
+  _impl_.typename__.Destroy();
   if (this != internal_default_instance()) delete _impl_.subtype_;
+  if (this != internal_default_instance()) delete _impl_.loc_;
 }
 
 void BitDataType::SetCachedSize(int size) const {
@@ -1006,26 +1024,34 @@ void BitDataType::Clear() {
   _impl_.names_.Clear();
   _impl_.types_.Clear();
   cached_has_bits = _impl_._has_bits_[0];
-  if (cached_has_bits & 0x00000007u) {
+  if (cached_has_bits & 0x0000000fu) {
     if (cached_has_bits & 0x00000001u) {
       _impl_.attributes_.ClearNonDefaultToEmpty();
     }
     if (cached_has_bits & 0x00000002u) {
-      _impl_.str_.ClearNonDefaultToEmpty();
+      _impl_.typename__.ClearNonDefaultToEmpty();
     }
     if (cached_has_bits & 0x00000004u) {
       GOOGLE_DCHECK(_impl_.subtype_ != nullptr);
       _impl_.subtype_->Clear();
     }
+    if (cached_has_bits & 0x00000008u) {
+      GOOGLE_DCHECK(_impl_.loc_ != nullptr);
+      _impl_.loc_->Clear();
+    }
   }
   _impl_.typeid__ = uint64_t{0u};
   _impl_.kind_ = 0;
-  if (cached_has_bits & 0x000000f0u) {
+  if (cached_has_bits & 0x000000e0u) {
     ::memset(&_impl_.qtype_, 0, static_cast<size_t>(
         reinterpret_cast<char*>(&_impl_.align_) -
         reinterpret_cast<char*>(&_impl_.qtype_)) + sizeof(_impl_.align_));
   }
-  _impl_.variadic_ = false;
+  if (cached_has_bits & 0x00000300u) {
+    ::memset(&_impl_.anonymous_, 0, static_cast<size_t>(
+        reinterpret_cast<char*>(&_impl_.variadic_) -
+        reinterpret_cast<char*>(&_impl_.anonymous_)) + sizeof(_impl_.variadic_));
+  }
   _impl_._has_bits_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
@@ -1074,48 +1100,48 @@ const char* BitDataType::_InternalParse(const char* ptr, ::_pbi::ParseContext* c
         } else
           goto handle_unusual;
         continue;
-      // optional uint32 bits = 5;
+      // optional uint32 len = 5;
       case 5:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 40)) {
-          _Internal::set_has_bits(&has_bits);
-          _impl_.bits_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          _Internal::set_has_len(&has_bits);
+          _impl_.len_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // optional uint32 size = 6;
+      // optional uint32 align = 6;
       case 6:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 48)) {
-          _Internal::set_has_size(&has_bits);
-          _impl_.size_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // optional uint32 align = 7;
-      case 7:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 56)) {
           _Internal::set_has_align(&has_bits);
           _impl_.align_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // optional .spir.BitDataType subType = 8;
-      case 8:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 66)) {
+      // optional .spir.BitDataType subType = 7;
+      case 7:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 58)) {
           ptr = ctx->ParseMessage(_internal_mutable_subtype(), ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // optional string str = 9;
-      case 9:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 74)) {
-          auto str = _internal_mutable_str();
+      // optional string typeName = 8;
+      case 8:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 66)) {
+          auto str = _internal_mutable_typename_();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "spir.BitDataType.str"));
+          CHK_(::_pbi::VerifyUTF8(str, "spir.BitDataType.typeName"));
+        } else
+          goto handle_unusual;
+        continue;
+      // optional bool anonymous = 9;
+      case 9:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 72)) {
+          _Internal::set_has_anonymous(&has_bits);
+          _impl_.anonymous_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
@@ -1152,6 +1178,14 @@ const char* BitDataType::_InternalParse(const char* ptr, ::_pbi::ParseContext* c
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 96)) {
           _Internal::set_has_variadic(&has_bits);
           _impl_.variadic_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // optional .spir.BitSrcLoc loc = 13;
+      case 13:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 106)) {
+          ptr = ctx->ParseMessage(_internal_mutable_loc(), ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -1215,39 +1249,39 @@ uint8_t* BitDataType::_InternalSerialize(
         4, this->_internal_attributes(), target);
   }
 
-  // optional uint32 bits = 5;
-  if (_internal_has_bits()) {
+  // optional uint32 len = 5;
+  if (_internal_has_len()) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(5, this->_internal_bits(), target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(5, this->_internal_len(), target);
   }
 
-  // optional uint32 size = 6;
-  if (_internal_has_size()) {
-    target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(6, this->_internal_size(), target);
-  }
-
-  // optional uint32 align = 7;
+  // optional uint32 align = 6;
   if (_internal_has_align()) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(7, this->_internal_align(), target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(6, this->_internal_align(), target);
   }
 
-  // optional .spir.BitDataType subType = 8;
+  // optional .spir.BitDataType subType = 7;
   if (_internal_has_subtype()) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(8, _Internal::subtype(this),
+      InternalWriteMessage(7, _Internal::subtype(this),
         _Internal::subtype(this).GetCachedSize(), target, stream);
   }
 
-  // optional string str = 9;
-  if (_internal_has_str()) {
+  // optional string typeName = 8;
+  if (_internal_has_typename_()) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_str().data(), static_cast<int>(this->_internal_str().length()),
+      this->_internal_typename_().data(), static_cast<int>(this->_internal_typename_().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "spir.BitDataType.str");
+      "spir.BitDataType.typeName");
     target = stream->WriteStringMaybeAliased(
-        9, this->_internal_str(), target);
+        8, this->_internal_typename_(), target);
+  }
+
+  // optional bool anonymous = 9;
+  if (_internal_has_anonymous()) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteBoolToArray(9, this->_internal_anonymous(), target);
   }
 
   // repeated string names = 10;
@@ -1272,6 +1306,13 @@ uint8_t* BitDataType::_InternalSerialize(
   if (_internal_has_variadic()) {
     target = stream->EnsureSpace(target);
     target = ::_pbi::WireFormatLite::WriteBoolToArray(12, this->_internal_variadic(), target);
+  }
+
+  // optional .spir.BitSrcLoc loc = 13;
+  if (_internal_has_loc()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(13, _Internal::loc(this),
+        _Internal::loc(this).GetCachedSize(), target, stream);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -1306,7 +1347,7 @@ size_t BitDataType::ByteSizeLong() const {
   }
 
   cached_has_bits = _impl_._has_bits_[0];
-  if (cached_has_bits & 0x0000000fu) {
+  if (cached_has_bits & 0x0000001fu) {
     // optional string attributes = 4;
     if (cached_has_bits & 0x00000001u) {
       total_size += 1 +
@@ -1314,22 +1355,29 @@ size_t BitDataType::ByteSizeLong() const {
           this->_internal_attributes());
     }
 
-    // optional string str = 9;
+    // optional string typeName = 8;
     if (cached_has_bits & 0x00000002u) {
       total_size += 1 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-          this->_internal_str());
+          this->_internal_typename_());
     }
 
-    // optional .spir.BitDataType subType = 8;
+    // optional .spir.BitDataType subType = 7;
     if (cached_has_bits & 0x00000004u) {
       total_size += 1 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
           *_impl_.subtype_);
     }
 
-    // optional uint64 typeId = 2;
+    // optional .spir.BitSrcLoc loc = 13;
     if (cached_has_bits & 0x00000008u) {
+      total_size += 1 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+          *_impl_.loc_);
+    }
+
+    // optional uint64 typeId = 2;
+    if (cached_has_bits & 0x00000010u) {
       total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_typeid_());
     }
 
@@ -1340,33 +1388,35 @@ size_t BitDataType::ByteSizeLong() const {
       ::_pbi::WireFormatLite::EnumSize(this->_internal_kind());
   }
 
-  if (cached_has_bits & 0x000000f0u) {
+  if (cached_has_bits & 0x000000e0u) {
     // optional uint32 qtype = 3;
-    if (cached_has_bits & 0x00000010u) {
+    if (cached_has_bits & 0x00000020u) {
       total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_qtype());
     }
 
-    // optional uint32 bits = 5;
-    if (cached_has_bits & 0x00000020u) {
-      total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_bits());
-    }
-
-    // optional uint32 size = 6;
+    // optional uint32 len = 5;
     if (cached_has_bits & 0x00000040u) {
-      total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_size());
+      total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_len());
     }
 
-    // optional uint32 align = 7;
+    // optional uint32 align = 6;
     if (cached_has_bits & 0x00000080u) {
       total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_align());
     }
 
   }
-  // optional bool variadic = 12;
-  if (cached_has_bits & 0x00000100u) {
-    total_size += 1 + 1;
-  }
+  if (cached_has_bits & 0x00000300u) {
+    // optional bool anonymous = 9;
+    if (cached_has_bits & 0x00000100u) {
+      total_size += 1 + 1;
+    }
 
+    // optional bool variadic = 12;
+    if (cached_has_bits & 0x00000200u) {
+      total_size += 1 + 1;
+    }
+
+  }
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
@@ -1388,18 +1438,22 @@ void BitDataType::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PR
   _this->_impl_.names_.MergeFrom(from._impl_.names_);
   _this->_impl_.types_.MergeFrom(from._impl_.types_);
   cached_has_bits = from._impl_._has_bits_[0];
-  if (cached_has_bits & 0x0000000fu) {
+  if (cached_has_bits & 0x0000001fu) {
     if (cached_has_bits & 0x00000001u) {
       _this->_internal_set_attributes(from._internal_attributes());
     }
     if (cached_has_bits & 0x00000002u) {
-      _this->_internal_set_str(from._internal_str());
+      _this->_internal_set_typename_(from._internal_typename_());
     }
     if (cached_has_bits & 0x00000004u) {
       _this->_internal_mutable_subtype()->::spir::BitDataType::MergeFrom(
           from._internal_subtype());
     }
     if (cached_has_bits & 0x00000008u) {
+      _this->_internal_mutable_loc()->::spir::BitSrcLoc::MergeFrom(
+          from._internal_loc());
+    }
+    if (cached_has_bits & 0x00000010u) {
       _this->_impl_.typeid__ = from._impl_.typeid__;
     }
     _this->_impl_._has_bits_[0] |= cached_has_bits;
@@ -1407,23 +1461,26 @@ void BitDataType::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PR
   if (from._internal_kind() != 0) {
     _this->_internal_set_kind(from._internal_kind());
   }
-  if (cached_has_bits & 0x000000f0u) {
-    if (cached_has_bits & 0x00000010u) {
+  if (cached_has_bits & 0x000000e0u) {
+    if (cached_has_bits & 0x00000020u) {
       _this->_impl_.qtype_ = from._impl_.qtype_;
     }
-    if (cached_has_bits & 0x00000020u) {
-      _this->_impl_.bits_ = from._impl_.bits_;
-    }
     if (cached_has_bits & 0x00000040u) {
-      _this->_impl_.size_ = from._impl_.size_;
+      _this->_impl_.len_ = from._impl_.len_;
     }
     if (cached_has_bits & 0x00000080u) {
       _this->_impl_.align_ = from._impl_.align_;
     }
     _this->_impl_._has_bits_[0] |= cached_has_bits;
   }
-  if (cached_has_bits & 0x00000100u) {
-    _this->_internal_set_variadic(from._internal_variadic());
+  if (cached_has_bits & 0x00000300u) {
+    if (cached_has_bits & 0x00000100u) {
+      _this->_impl_.anonymous_ = from._impl_.anonymous_;
+    }
+    if (cached_has_bits & 0x00000200u) {
+      _this->_impl_.variadic_ = from._impl_.variadic_;
+    }
+    _this->_impl_._has_bits_[0] |= cached_has_bits;
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -1452,8 +1509,8 @@ void BitDataType::InternalSwap(BitDataType* other) {
       &other->_impl_.attributes_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.str_, lhs_arena,
-      &other->_impl_.str_, rhs_arena
+      &_impl_.typename__, lhs_arena,
+      &other->_impl_.typename__, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
       PROTOBUF_FIELD_OFFSET(BitDataType, _impl_.variadic_)

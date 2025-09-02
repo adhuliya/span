@@ -67,3 +67,13 @@ func (l *Pair) WeakerThan(other Lattice) bool {
 	}
 	return false
 }
+
+func (l *Pair) Widen(other Lattice) (Lattice, bool) {
+	if oth := other.(*Pair); oth != nil {
+		change1, change2 := false, false
+		l.l1, change1 = l.l1.Widen(oth.L1())
+		l.l2, change2 = l.l2.Widen(oth.L2())
+		return l, change1 || change2
+	}
+	return l, false
+}

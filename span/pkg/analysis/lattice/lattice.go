@@ -10,12 +10,18 @@ type Lattice interface {
 	IsTop() bool
 	IsBot() bool
 	WeakerThan(other Lattice) bool
+
 	// Meet to get a more approximate value (unlike in Abstract Interpretation)
 	// bool indicates if the value changed during the meet operation
 	Meet(other Lattice) (Lattice, bool)
+
 	// Join to get a more precise value (unlike in Abstract Interpretation)
 	// bool indicates if the value changed during the join operation
 	Join(other Lattice) (Lattice, bool)
+
+	// Widening operator to allow termination of the analysis
+	Widen(other Lattice) (Lattice, bool)
+
 	Equals(other Lattice) bool
 	String() string
 }
@@ -38,9 +44,9 @@ const (
 	Changed             FactChanged = 1
 	OnlyInChanged       FactChanged = 2
 	OnlyOutChanged      FactChanged = 3
+	InOutChanged        FactChanged = 4
 	OnlyTrueOutChanged  FactChanged = 5
 	OnlyFalseOutChanged FactChanged = 6
-	InOutChanged        FactChanged = 4
 )
 
 // Join makes the value more precise (but possibly unsound)
@@ -65,6 +71,16 @@ func Meet(l1, l2 Lattice) (Lattice, bool) {
 	return l1.Meet(l2)
 }
 
+func Widen(l1, l2 Lattice) (Lattice, bool) {
+	if l2 == nil {
+		return l1, false
+	}
+	if l1 == nil {
+		return l2, true
+	}
+	return l1.Widen(l2)
+}
+
 func ConstMeet(l1, l2 ConstLattice) (ConstLattice, bool) {
 	lat, change := l1.Meet(l2)
 	if change {
@@ -75,6 +91,14 @@ func ConstMeet(l1, l2 ConstLattice) (ConstLattice, bool) {
 
 func ConstJoin(l1, l2 ConstLattice) (ConstLattice, bool) {
 	lat, change := l1.Join(l2)
+	if change {
+		errs.Assert(l1 != lat, "Constant lattice should not change")
+	}
+	return lat.(ConstLattice), change
+}
+
+func ConstWiden(l1, l2 ConstLattice) (ConstLattice, bool) {
+	lat, change := l1.Widen(l2)
 	if change {
 		errs.Assert(l1 != lat, "Constant lattice should not change")
 	}

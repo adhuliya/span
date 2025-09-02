@@ -2,7 +2,7 @@ package spir
 
 // This file defines the SPAN IR context object.
 // The context object is used to store the state of the SPAN IR.
-// It maintains the necessary state information for the underlying TranslationUnit.
+// It maintains the necessary state information for the underlying TranslationUnit(s)
 
 type ContextId uint32
 

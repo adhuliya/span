@@ -9,7 +9,7 @@ type CFGId EntityId
 
 type Graph interface {
 	Scope() ScopeId
-	FunctionId() FunctionId
+	FuncId() EntityId
 	EntryBlock() *BasicBlock
 	ExitBlock() *BasicBlock
 	BasicBlock(id BasicBlockId) *BasicBlock
@@ -26,15 +26,15 @@ const (
 type BasicBlock struct {
 	id           BasicBlockId
 	scope        ScopeId
-	fid          FunctionId
-	insns        []Instruction
-	predecessors []BasicBlockId
+	fid          EntityId
+	insns        []Insn
+	predecessors []*BasicBlock
 	// First successor is the true edge
 	// Second successor is the false edge
-	successors []BasicBlockId
+	successors []*BasicBlock
 }
 
-func NewBasicBlock(id BasicBlockId, scope ScopeId, fid FunctionId,
+func NewBasicBlock(id BasicBlockId, scope ScopeId, fid EntityId,
 	insnCount int) *BasicBlock {
 	bb := &BasicBlock{
 		id:           id,
@@ -46,7 +46,7 @@ func NewBasicBlock(id BasicBlockId, scope ScopeId, fid FunctionId,
 	}
 
 	if insnCount > 0 {
-		bb.insns = make([]Instruction, 0, insnCount)
+		bb.insns = make([]Insn, 0, insnCount)
 	}
 	return bb
 }
@@ -55,7 +55,7 @@ func (bb *BasicBlock) Scope() ScopeId {
 	return bb.scope
 }
 
-func (bb *BasicBlock) FunctionId() FunctionId {
+func (bb *BasicBlock) FuncId() EntityId {
 	return bb.fid
 }
 
@@ -82,7 +82,7 @@ func (bb *BasicBlock) InsnCount() int {
 	return len(bb.insns)
 }
 
-func (bb *BasicBlock) Insn(idx int) Instruction {
+func (bb *BasicBlock) Insn(idx int) Insn {
 	return bb.insns[idx]
 }
 
@@ -90,7 +90,7 @@ func (bb *BasicBlock) PredCount() int {
 	return len(bb.predecessors)
 }
 
-func (bb *BasicBlock) Pred(idx int) BasicBlockId {
+func (bb *BasicBlock) Pred(idx int) *BasicBlock {
 	return bb.predecessors[idx]
 }
 
@@ -98,17 +98,64 @@ func (bb *BasicBlock) SuccCount() int {
 	return len(bb.successors)
 }
 
-func (bb *BasicBlock) Succ(idx int) BasicBlockId {
+func (bb *BasicBlock) Succ(idx int) *BasicBlock {
 	return bb.successors[idx]
+}
+
+func (bb *BasicBlock) addSucc(succ *BasicBlock) *BasicBlock {
+	bb.successors = append(bb.successors, succ)
+	return bb
+}
+
+func (bb *BasicBlock) addPred(pred *BasicBlock) *BasicBlock {
+	bb.predecessors = append(bb.predecessors, pred)
+	return bb
 }
 
 type ControlFlowGraph struct {
 	id          CFGId
+	tu          *TU
 	scope       ScopeId
-	fid         FunctionId
-	basicBlocks []BasicBlock
-	entryBlock  BasicBlockId
-	exitBlock   BasicBlockId
+	fid         EntityId
+	basicBlocks []*BasicBlock
+	entryBlock  *BasicBlock
+	exitBlock   *BasicBlock
+}
+type CFG = ControlFlowGraph
+
+func (tu *TU) GetUniqueCFGId() CFGId {
+	return CFGId(tu.idGen.AllocateID(GenPrefix16(K_EK_CFG, 0),
+		K_EK_CFG.SeqIdBitLength()))
+}
+
+func NewControlFlowGraph(tu *TU, scope ScopeId, fid EntityId) *ControlFlowGraph {
+	cfg := &ControlFlowGraph{
+		id:    tu.GetUniqueCFGId(),
+		tu:    tu,
+		scope: scope,
+		fid:   fid,
+	}
+	return cfg
+}
+
+func (cfg *ControlFlowGraph) AddBB(bb *BasicBlock) *ControlFlowGraph {
+	cfg.basicBlocks = append(cfg.basicBlocks, bb)
+	return cfg
+}
+
+func (cfg *ControlFlowGraph) AddBBs(bbs ...*BasicBlock) *ControlFlowGraph {
+	cfg.basicBlocks = append(cfg.basicBlocks, bbs...)
+	return cfg
+}
+
+func (cfg *ControlFlowGraph) SetEntryBB(bb *BasicBlock) *ControlFlowGraph {
+	cfg.entryBlock = bb
+	return cfg
+}
+
+func (cfg *ControlFlowGraph) SetExitBB(bb *BasicBlock) *ControlFlowGraph {
+	cfg.exitBlock = bb
+	return cfg
 }
 
 func (cfg *ControlFlowGraph) Id() CFGId {
@@ -119,32 +166,27 @@ func (cfg *ControlFlowGraph) Scope() ScopeId {
 	return cfg.scope
 }
 
-func (cfg *ControlFlowGraph) FunctionId() FunctionId {
+func (cfg *ControlFlowGraph) FuncId() EntityId {
 	return cfg.fid
 }
 
 func (cfg *ControlFlowGraph) EntryBlock() *BasicBlock {
 	for i := 0; i < len(cfg.basicBlocks); i++ {
-		if cfg.basicBlocks[i].id == cfg.entryBlock {
-			return &cfg.basicBlocks[i]
+		if cfg.basicBlocks[i] == cfg.entryBlock {
+			return cfg.basicBlocks[i]
 		}
 	}
 	return nil
 }
 
 func (cfg *ControlFlowGraph) ExitBlock() *BasicBlock {
-	for i := 0; i < len(cfg.basicBlocks); i++ {
-		if cfg.basicBlocks[i].id == cfg.exitBlock {
-			return &cfg.basicBlocks[i]
-		}
-	}
-	return nil
+	return cfg.exitBlock
 }
 
 func (cfg *ControlFlowGraph) BasicBlock(id BasicBlockId) *BasicBlock {
 	for i := 0; i < len(cfg.basicBlocks); i++ {
 		if cfg.basicBlocks[i].id == id {
-			return &cfg.basicBlocks[i]
+			return cfg.basicBlocks[i]
 		}
 	}
 	return nil
@@ -163,7 +205,7 @@ func ReversePostOrder(graph Graph, reverse bool) []BasicBlockId {
 		visited[blockId] = true
 		block := graph.BasicBlock(blockId)
 		for _, succ := range block.successors {
-			dfs(succ)
+			dfs(succ.Id())
 		}
 		order = append(order, blockId)
 	}

@@ -15,8 +15,8 @@ type mockBasicBlock struct {
 }
 
 func (m *mockBasicBlock) Id() BasicBlockId          { return m.mockId }
-func (m *mockBasicBlock) InsnCount() int            { return 0 }             // Not needed for RPO
-func (m *mockBasicBlock) Insn(idx int) Instruction  { return Instruction{} } // Not needed for RPO
+func (m *mockBasicBlock) InsnCount() int            { return 0 }      // Not needed for RPO
+func (m *mockBasicBlock) Insn(idx int) Insn         { return Insn{} } // Not needed for RPO
 func (m *mockBasicBlock) PredCount() int            { return len(m.mockPredecessors) }
 func (m *mockBasicBlock) Pred(idx int) BasicBlockId { return m.mockPredecessors[idx] }
 func (m *mockBasicBlock) SuccCount() int            { return len(m.mockSuccessors) }
@@ -30,14 +30,14 @@ func (m *mockBasicBlock) basicBlockAdapter() *BasicBlock {
 	return &BasicBlock{
 		id:           m.mockId,
 		insns:        nil, // Not needed
-		predecessors: m.mockPredecessors,
-		successors:   m.mockSuccessors,
+		predecessors: make([]*BasicBlock, len(m.mockPredecessors)),
+		successors:   make([]*BasicBlock, len(m.mockSuccessors)),
 	}
 }
 
 type mockGraph struct {
 	mockScope      ScopeId
-	mockFuncId     FunctionId // Can be nil for these tests
+	mockFuncId     EntityId // Can be nil for these tests
 	mockEntryBlock BasicBlockId
 	mockExitBlock  BasicBlockId // Not directly used by RPO, but part of the interface
 	mockBlocks     map[BasicBlockId]*mockBasicBlock
@@ -87,8 +87,8 @@ func (mg *mockGraph) addBlock(id BasicBlockId, successors ...BasicBlockId) {
 	}
 }
 
-func (mg *mockGraph) Scope() ScopeId         { return mg.mockScope }
-func (mg *mockGraph) FunctionId() FunctionId { return mg.mockFuncId }
+func (mg *mockGraph) Scope() ScopeId   { return mg.mockScope }
+func (mg *mockGraph) FuncId() EntityId { return mg.mockFuncId }
 func (mg *mockGraph) EntryBlock() *BasicBlock {
 	if bb, ok := mg.mockBlocks[mg.mockEntryBlock]; ok {
 		return bb.basicBlockAdapter()

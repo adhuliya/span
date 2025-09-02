@@ -1,0 +1,35 @@
+
+# START: A_SPAN_translation_unit!
+
+# eval() the contents of this file.
+# Keep the following imports in effect when calling eval.
+
+# import span.ir.types as types
+# import span.ir.op as op
+# import span.ir.expr as expr
+# import span.ir.instr as instr
+# import span.ir.constructs as constructs
+# import span.ir.tunit as tunit
+# from span.ir.types import Loc
+
+# An instance of span.ir.tunit.TranslationUnit class.
+tunit.TranslationUnit(
+  name = "test_prog_01.c",
+  description = "Auto-Translated from Clang AST.",
+
+  allVars = {
+    "g:x": types.Int32,
+  }, # end allVars dict
+
+  globalInits = [
+  ], # end globalInits.
+
+  allRecords = {
+  }, # end allRecords dict
+
+  allFunctions = {
+  }, # end allFunctions dict
+
+) # tunit.TranslationUnit() ends
+
+# END  : A_SPAN_translation_unit!

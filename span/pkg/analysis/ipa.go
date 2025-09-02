@@ -10,8 +10,8 @@ import (
 type InterPACtx interface {
 	Equals(other InterPACtx) bool
 	GetFact() lattice.Pair
-	NewContext(callSite spir.Instruction, lp lattice.Pair, ipaCtx InterPACtx) InterPACtx
-	GetCallSite() spir.Instruction
+	NewContext(callSite spir.Insn, lp lattice.Pair, ipaCtx InterPACtx) InterPACtx
+	GetCallSite() spir.Insn
 	GetParentCtx() InterPACtx
 }
 
@@ -19,5 +19,5 @@ type InterPA interface {
 	Analysis
 	// Get the context for the analysis of a call site
 	// Use GetContext(nil, nil, nil) to get the context for the main (entry) function.
-	GetContext(callSite *spir.Instruction, lp lattice.Pair, ipaCtx InterPACtx) InterPACtx
+	GetContext(callSite *spir.Insn, lp lattice.Pair, ipaCtx InterPACtx) InterPACtx
 }
