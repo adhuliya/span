@@ -96,10 +96,10 @@ type Function struct {
 type TU struct {
 	// globalInit is a special function with one basic block
 	// with all the initialization of global variables.
-	tuId   EntityId // The TU ID
-	tuName string   // The source file name
-	tuDir  string   // The source file directory
-	origin string   // The origin of the TU (e.g. Clang AST)
+	tuId      EntityId // The TU ID
+	tuName    string   // The TU name
+	tuAbspath string   // The source file path
+	origin    string   // The origin of the TU (e.g. Clang AST)
 
 	mergedTUs map[EntityId]*TU // Map of TU IDs to merged TUs
 
@@ -121,7 +121,7 @@ func NewTU() *TU {
 	tu := &TU{
 		tuId:           NIL_ID,
 		tuName:         "",
-		tuDir:          "",
+		tuAbspath:      "",
 		origin:         "",
 		mergedTUs:      make(map[EntityId]*TU),
 		globalInit:     NIL_ID,
@@ -138,7 +138,7 @@ func NewTU() *TU {
 		namesToId:      make(map[string]EntityId),
 	}
 
-	tu.globalInit = tu.NewFunction(K_00_INITS_FUNC_NAME, &VoidVT, nil, nil).id
+	tu.globalInit = tu.NewFunction(K_00_GLBL_INIT_FUNC_NAME, &VoidVT, nil, nil).fid
 	return tu
 }
 
@@ -153,20 +153,20 @@ func NewValueInfo(name string, eKind EntityKind,
 }
 
 func (tu *TU) GetUniqueLabelId() LabelId {
-	return LabelId(tu.idGen.AllocateID(GenPrefix16(K_EK_LABEL, 0),
-		K_EK_LABEL.SeqIdBitLength()))
+	return LabelId(tu.idGen.AllocateID(GenPrefix16(K_EK_ELABEL, 0),
+		K_EK_ELABEL.SeqIdBitLength()))
 }
 
 func (tu *TU) AddInsn(bb *BasicBlock, insn Insn, srcLoc *SrcLoc) {
 	insnId := InsnId(tu.idGen.AllocateID(insn.GetInsnPrefix16(),
-		K_EK_INSN.SeqIdBitLength()))
+		K_EK_EINSN.SeqIdBitLength()))
 	tu.entityInfo[EntityId(insnId)] = &InsnInfo{bbId: bb.id, srcLoc: srcLoc}
 	bb.insns = append(bb.insns, insn)
 }
 
 func (tu *TU) GetUniqueBBId() BasicBlockId {
-	id := BasicBlockId(tu.idGen.AllocateID(GenPrefix16(K_EK_BB, 0),
-		K_EK_BB.SeqIdBitLength()))
+	id := BasicBlockId(tu.idGen.AllocateID(GenPrefix16(K_EK_EBB, 0),
+		K_EK_EBB.SeqIdBitLength()))
 	return id
 }
 
@@ -195,10 +195,10 @@ func (tu *TU) NewVar(name string, eKind EntityKind,
 
 func (tu *TU) NewConst(val uint64, vType ValueType) EntityId {
 	imm, ok := GenImmediate20(val, vType.GetType())
-	eKind := K_EK_LIT_NUM
+	eKind := K_EK_ELIT_NUM
 	var id uint32 = 0
 	if ok {
-		eKind = K_EK_LIT_NUM_IMM
+		eKind = K_EK_ELIT_NUM_IMM
 		id = GenPrefix32(eKind, uint8(vType.GetType()))<<eKind.SeqIdBitLength() | uint32(imm)
 	} else {
 		id = tu.idGen.AllocateID(GenPrefix16(eKind, uint8(vType.GetType())),
@@ -238,8 +238,8 @@ func GenPrefix32(eKind EntityKind, eSubKind uint8) uint32 {
 
 func (tu *TU) NewFunction(name string, returnType ValueType,
 	paramIds []EntityId, body Graph) *Function {
-	id := EntityId(tu.idGen.AllocateID(GenPrefix16(K_EK_FUNC, uint8(returnType.GetType())),
-		K_EK_FUNC.SeqIdBitLength()))
+	id := EntityId(tu.idGen.AllocateID(GenPrefix16(K_EK_EFUNC, uint8(returnType.GetType())),
+		K_EK_EFUNC.SeqIdBitLength()))
 
 	fun := &Function{
 		fid:        id,
@@ -318,8 +318,8 @@ func (entityId EntityId) EKind() EntityKind {
 // Does the entity kind have a sub-kind?
 // A sub-kind uses another 5 bits to represent the sub type of the entity.
 func (eKind EntityKind) HasSubKind() bool {
-	if (eKind >= K_EK_BB && eKind <= K_EK_TU) ||
-		eKind == K_EK_LABEL {
+	if (eKind >= K_EK_EBB && eKind <= K_EK_ETU) ||
+		eKind == K_EK_ELABEL {
 		return false
 	}
 	return true
@@ -345,21 +345,21 @@ func (eKind EntityKind) place64() uint64 {
 }
 
 func (eKind EntityKind) IsVariable() bool {
-	if eKind >= K_EK_VAR && eKind <= K_EK_VAR_PSEUDO {
+	if eKind >= K_EK_EVAR_GLBL && eKind <= K_EK_EVAR_LOCL_PSEUDO {
 		return true
 	}
 	return false
 }
 
 func (eKind EntityKind) IsLiteral() bool {
-	if eKind == K_EK_LIT_NUM || eKind == K_EK_LIT_STR {
+	if eKind == K_EK_ELIT_NUM || eKind == K_EK_ELIT_STR {
 		return true
 	}
 	return false
 }
 
 func (eKind EntityKind) IsFunction() bool {
-	if eKind == K_EK_FUNC || eKind == K_EK_FUNC_VARGS {
+	if eKind == K_EK_EFUNC || eKind == K_EK_EFUNC_VARGS {
 		return true
 	}
 	return false

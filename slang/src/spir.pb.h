@@ -73,12 +73,12 @@ extern BitSrcLocDefaultTypeInternal _BitSrcLoc_default_instance_;
 class BitTU;
 struct BitTUDefaultTypeInternal;
 extern BitTUDefaultTypeInternal _BitTU_default_instance_;
-class BitTU_EntitiesEntry_DoNotUse;
-struct BitTU_EntitiesEntry_DoNotUseDefaultTypeInternal;
-extern BitTU_EntitiesEntry_DoNotUseDefaultTypeInternal _BitTU_EntitiesEntry_DoNotUse_default_instance_;
 class BitTU_EntityInfoEntry_DoNotUse;
 struct BitTU_EntityInfoEntry_DoNotUseDefaultTypeInternal;
 extern BitTU_EntityInfoEntry_DoNotUseDefaultTypeInternal _BitTU_EntityInfoEntry_DoNotUse_default_instance_;
+class BitTU_NamesToIdsEntry_DoNotUse;
+struct BitTU_NamesToIdsEntry_DoNotUseDefaultTypeInternal;
+extern BitTU_NamesToIdsEntry_DoNotUseDefaultTypeInternal _BitTU_NamesToIdsEntry_DoNotUse_default_instance_;
 }  // namespace spir
 PROTOBUF_NAMESPACE_OPEN
 template<> ::spir::BitDataType* Arena::CreateMaybeMessage<::spir::BitDataType>(Arena*);
@@ -89,39 +89,40 @@ template<> ::spir::BitFunc* Arena::CreateMaybeMessage<::spir::BitFunc>(Arena*);
 template<> ::spir::BitInsn* Arena::CreateMaybeMessage<::spir::BitInsn>(Arena*);
 template<> ::spir::BitSrcLoc* Arena::CreateMaybeMessage<::spir::BitSrcLoc>(Arena*);
 template<> ::spir::BitTU* Arena::CreateMaybeMessage<::spir::BitTU>(Arena*);
-template<> ::spir::BitTU_EntitiesEntry_DoNotUse* Arena::CreateMaybeMessage<::spir::BitTU_EntitiesEntry_DoNotUse>(Arena*);
 template<> ::spir::BitTU_EntityInfoEntry_DoNotUse* Arena::CreateMaybeMessage<::spir::BitTU_EntityInfoEntry_DoNotUse>(Arena*);
+template<> ::spir::BitTU_NamesToIdsEntry_DoNotUse* Arena::CreateMaybeMessage<::spir::BitTU_NamesToIdsEntry_DoNotUse>(Arena*);
 PROTOBUF_NAMESPACE_CLOSE
 namespace spir {
 
 enum K_EK : int {
-  NONE = 0,
-  VAR = 1,
-  VAR_GLBL = 2,
-  VAR_STATIC_LOCL = 3,
-  VAR_LOCL = 4,
-  VAR_TMP = 5,
-  VAR_SSA = 6,
-  VAR_PSEUDO = 7,
-  LIT_NUM = 8,
-  LIT_NUM_IMM = 9,
-  LIT_STR = 10,
-  DATA_TYPE = 11,
-  FUNC = 12,
-  FUNC_VARGS = 13,
-  LABEL = 14,
-  OTHER = 15,
-  INSN = 16,
-  BB = 17,
-  CFG = 18,
-  SCOPE = 19,
-  TU = 20,
+  ENIL = 0,
+  EVAR_GLBL = 1,
+  EVAR_LOCL = 2,
+  EVAR_LOCL_ARG = 3,
+  EVAR_LOCL_STATIC = 4,
+  EVAR_LOCL_TMP = 5,
+  EVAR_LOCL_SSA = 6,
+  EVAR_LOCL_PSEUDO = 7,
+  ELIT_NUM = 8,
+  ELIT_NUM_IMM = 9,
+  ELIT_STR = 10,
+  EDATA_TYPE = 11,
+  EFUNC = 12,
+  EFUNC_VARGS = 13,
+  ELABEL = 14,
+  EOTHER = 15,
+  ERECORD_FIELD = 16,
+  EINSN = 17,
+  EBB = 18,
+  ECFG = 19,
+  ESCOPE = 20,
+  ETU = 21,
   K_EK_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
   K_EK_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
 };
 bool K_EK_IsValid(int value);
-constexpr K_EK K_EK_MIN = NONE;
-constexpr K_EK K_EK_MAX = TU;
+constexpr K_EK K_EK_MIN = ENIL;
+constexpr K_EK K_EK_MAX = ETU;
 constexpr int K_EK_ARRAYSIZE = K_EK_MAX + 1;
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* K_EK_descriptor();
@@ -139,23 +140,24 @@ inline bool K_EK_Parse(
     K_EK_descriptor(), name, value);
 }
 enum K_IK : int {
-  INOP = 0,
-  IBARRIER = 1,
-  IASGN_SIMPLE = 2,
-  IASGN_RHS_OP = 3,
-  IASGN_LHS_OP = 4,
-  IASGN_CALL = 5,
-  IASGN_PHI = 6,
-  ICALL = 7,
-  IGOTO = 8,
-  ICOND = 9,
-  ILABEL = 10,
-  IRETURN = 11,
+  INIL = 0,
+  INOP = 1,
+  IBARRIER = 2,
+  IASGN_SIMPLE = 3,
+  IASGN_RHS_OP = 4,
+  IASGN_LHS_OP = 5,
+  IASGN_CALL = 6,
+  IASGN_PHI = 7,
+  ICALL = 8,
+  IGOTO = 9,
+  ICOND = 10,
+  ILABEL = 11,
+  IRETURN = 12,
   K_IK_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
   K_IK_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
 };
 bool K_IK_IsValid(int value);
-constexpr K_IK K_IK_MIN = INOP;
+constexpr K_IK K_IK_MIN = INIL;
 constexpr K_IK K_IK_MAX = IRETURN;
 constexpr int K_IK_ARRAYSIZE = K_IK_MAX + 1;
 
@@ -174,44 +176,44 @@ inline bool K_IK_Parse(
     K_IK_descriptor(), name, value);
 }
 enum K_XK : int {
-  NIL = 0,
-  VAL = 1,
-  ADD = 2,
-  SUB = 3,
-  MUL = 4,
-  DIV = 5,
-  MOD = 6,
-  AND = 7,
-  OR = 8,
-  XOR = 9,
-  SHL = 10,
-  SHR = 11,
-  SHRL = 12,
-  EQ = 13,
-  NE = 14,
-  LT = 15,
-  GE = 16,
-  ARRAY_INDEX = 17,
-  MEMBER_ACCESS = 18,
-  MEMBER_PTR_ACCESS = 19,
-  MEMBER_PTR_ADDROF = 20,
-  CALL = 21,
-  CALL_0 = 22,
-  CAST = 23,
-  BIT_NOT = 24,
-  NEGATE = 25,
-  NOT = 26,
-  DEREF = 27,
-  ADDROF = 28,
-  SIZEOF = 29,
-  ALIGNOF = 30,
-  OTHER_EXPR = 31,
+  XNIL = 0,
+  XVAL = 1,
+  XADD = 2,
+  XSUB = 3,
+  XMUL = 4,
+  XDIV = 5,
+  XMOD = 6,
+  XAND = 7,
+  XOR = 8,
+  XXOR = 9,
+  XSHL = 10,
+  XSHR = 11,
+  XSHRA = 12,
+  XEQ = 13,
+  XNE = 14,
+  XLT = 15,
+  XGE = 16,
+  XARRAY_INDEX = 17,
+  XMEMBER_ACCESS = 18,
+  XMEMBER_PTR_ACCESS = 19,
+  XMEMBER_PTR_ADDROF = 20,
+  XCALL = 21,
+  XCALL_0 = 22,
+  XCAST = 23,
+  XBIT_NOT = 24,
+  XNEGATE = 25,
+  XNOT = 26,
+  XDEREF = 27,
+  XADDROF = 28,
+  XSIZEOF = 29,
+  XALIGNOF = 30,
+  XOTHER = 31,
   K_XK_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
   K_XK_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
 };
 bool K_XK_IsValid(int value);
-constexpr K_XK K_XK_MIN = NIL;
-constexpr K_XK K_XK_MAX = OTHER_EXPR;
+constexpr K_XK K_XK_MIN = XNIL;
+constexpr K_XK K_XK_MAX = XOTHER;
 constexpr int K_XK_ARRAYSIZE = K_XK_MAX + 1;
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* K_XK_descriptor();
@@ -229,50 +231,52 @@ inline bool K_XK_Parse(
     K_XK_descriptor(), name, value);
 }
 enum K_VK : int {
-  VOID = 0,
-  CHAR = 1,
-  INT8 = 2,
-  INT16 = 3,
-  INT32 = 4,
-  INT64 = 5,
-  UINT8 = 6,
-  UCHAR = 6,
-  UINT16 = 7,
-  UINT32 = 8,
-  UINT64 = 9,
-  CHAR16 = 7,
-  WCHAR = 8,
-  CHAR32 = 8,
-  N_BITS = 10,
-  N_UBITS = 11,
-  BOOL = 12,
-  FLOAT16 = 13,
-  FLOAT32 = 14,
-  FLOAT = 14,
-  FLOAT64 = 15,
-  DOUBLE = 15,
-  LONG_DOUBLE = 16,
-  PTR = 17,
-  PTR_TO_VOID = 18,
-  PTR_TO_PTR = 19,
-  PTR_TO_ARR = 20,
-  PTR_TO_CHAR = 21,
-  PTR_TO_INT = 22,
-  PTR_TO_FLOAT = 23,
-  PTR_TO_RECORD = 24,
-  PTR_TO_FUNC = 25,
-  ARR_FIXED = 26,
-  ARR_VARIABLE = 27,
-  ARR_PARTIAL = 28,
-  UNION = 29,
-  STRUCT = 30,
-  OTHER_TYPE = 31,
+  TNIL = 0,
+  TVOID = 0,
+  TCHAR = 1,
+  TINT8 = 2,
+  TINT16 = 3,
+  TINT32 = 4,
+  TINT64 = 5,
+  TUINT8 = 6,
+  TUCHAR = 6,
+  TUINT16 = 7,
+  TUINT32 = 8,
+  TUINT64 = 9,
+  TCHAR16 = 7,
+  TWCHAR = 8,
+  TCHAR32 = 8,
+  TN_BITS = 10,
+  TN_UBITS = 11,
+  TBOOL = 12,
+  TFLOAT16 = 13,
+  TFLOAT32 = 14,
+  TFLOAT = 14,
+  TFLOAT64 = 15,
+  TDOUBLE = 15,
+  TFLOAT80 = 16,
+  TLONG_DOUBLE = 16,
+  TPTR_TO_VOID = 17,
+  TPTR_TO_PTR = 18,
+  TPTR_TO_ARR = 19,
+  TPTR_TO_CHAR = 20,
+  TPTR_TO_INT = 21,
+  TPTR_TO_FLOAT = 22,
+  TPTR_TO_RECORD = 23,
+  TPTR_TO_FUNC = 24,
+  TARR_FIXED = 25,
+  TARR_VARIABLE = 26,
+  TARR_PARTIAL = 27,
+  TUNION = 28,
+  TSTRUCT = 29,
+  TCLASS = 30,
+  TOTHER = 31,
   K_VK_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
   K_VK_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
 };
 bool K_VK_IsValid(int value);
-constexpr K_VK K_VK_MIN = VOID;
-constexpr K_VK K_VK_MAX = OTHER_TYPE;
+constexpr K_VK K_VK_MIN = TNIL;
+constexpr K_VK K_VK_MAX = TOTHER;
 constexpr int K_VK_ARRAYSIZE = K_VK_MAX + 1;
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* K_VK_descriptor();
@@ -290,10 +294,10 @@ inline bool K_VK_Parse(
     K_VK_descriptor(), name, value);
 }
 enum K_QK : int {
-  QNONE = 0,
+  QNIL = 0,
   QCONST = 1,
   QCONST_DEST = 2,
-  QFUNC_STATIC = 4,
+  QLOCL_STATIC = 4,
   QGLBL_STATIC = 8,
   QVOLATILE = 16,
   QWEAK = 32,
@@ -305,12 +309,13 @@ enum K_QK : int {
   QINLINE = 2048,
   QATOMIC = 4096,
   QREGISTER = 8192,
-  QOTHER = 16384,
+  QRECORD_MEMBER = 16384,
+  QOTHER = 32768,
   K_QK_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
   K_QK_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
 };
 bool K_QK_IsValid(int value);
-constexpr K_QK K_QK_MIN = QNONE;
+constexpr K_QK K_QK_MIN = QNIL;
 constexpr K_QK K_QK_MAX = QOTHER;
 constexpr int K_QK_ARRAYSIZE = K_QK_MAX + 1;
 
@@ -610,61 +615,59 @@ class BitDataType final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kNamesFieldNumber = 10,
-    kTypesFieldNumber = 11,
+    kFopIdsFieldNumber = 10,
+    kFopTypesFieldNumber = 11,
     kAttributesFieldNumber = 4,
     kTypeNameFieldNumber = 8,
     kSubTypeFieldNumber = 7,
     kLocFieldNumber = 13,
     kTypeIdFieldNumber = 2,
-    kKindFieldNumber = 1,
+    kVkindFieldNumber = 1,
     kQtypeFieldNumber = 3,
     kLenFieldNumber = 5,
     kAlignFieldNumber = 6,
     kAnonymousFieldNumber = 9,
     kVariadicFieldNumber = 12,
   };
-  // repeated string names = 10;
-  int names_size() const;
+  // repeated uint64 fopIds = 10;
+  int fopids_size() const;
   private:
-  int _internal_names_size() const;
+  int _internal_fopids_size() const;
   public:
-  void clear_names();
-  const std::string& names(int index) const;
-  std::string* mutable_names(int index);
-  void set_names(int index, const std::string& value);
-  void set_names(int index, std::string&& value);
-  void set_names(int index, const char* value);
-  void set_names(int index, const char* value, size_t size);
-  std::string* add_names();
-  void add_names(const std::string& value);
-  void add_names(std::string&& value);
-  void add_names(const char* value);
-  void add_names(const char* value, size_t size);
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& names() const;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_names();
+  void clear_fopids();
   private:
-  const std::string& _internal_names(int index) const;
-  std::string* _internal_add_names();
+  uint64_t _internal_fopids(int index) const;
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >&
+      _internal_fopids() const;
+  void _internal_add_fopids(uint64_t value);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >*
+      _internal_mutable_fopids();
   public:
+  uint64_t fopids(int index) const;
+  void set_fopids(int index, uint64_t value);
+  void add_fopids(uint64_t value);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >&
+      fopids() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >*
+      mutable_fopids();
 
-  // repeated .spir.BitDataType types = 11;
-  int types_size() const;
+  // repeated .spir.BitDataType fopTypes = 11;
+  int foptypes_size() const;
   private:
-  int _internal_types_size() const;
+  int _internal_foptypes_size() const;
   public:
-  void clear_types();
-  ::spir::BitDataType* mutable_types(int index);
+  void clear_foptypes();
+  ::spir::BitDataType* mutable_foptypes(int index);
   ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::spir::BitDataType >*
-      mutable_types();
+      mutable_foptypes();
   private:
-  const ::spir::BitDataType& _internal_types(int index) const;
-  ::spir::BitDataType* _internal_add_types();
+  const ::spir::BitDataType& _internal_foptypes(int index) const;
+  ::spir::BitDataType* _internal_add_foptypes();
   public:
-  const ::spir::BitDataType& types(int index) const;
-  ::spir::BitDataType* add_types();
+  const ::spir::BitDataType& foptypes(int index) const;
+  ::spir::BitDataType* add_foptypes();
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::spir::BitDataType >&
-      types() const;
+      foptypes() const;
 
   // optional string attributes = 4;
   bool has_attributes() const;
@@ -751,13 +754,13 @@ class BitDataType final :
   void _internal_set_typeid_(uint64_t value);
   public:
 
-  // .spir.K_VK kind = 1;
-  void clear_kind();
-  ::spir::K_VK kind() const;
-  void set_kind(::spir::K_VK value);
+  // .spir.K_VK vkind = 1;
+  void clear_vkind();
+  ::spir::K_VK vkind() const;
+  void set_vkind(::spir::K_VK value);
   private:
-  ::spir::K_VK _internal_kind() const;
-  void _internal_set_kind(::spir::K_VK value);
+  ::spir::K_VK _internal_vkind() const;
+  void _internal_set_vkind(::spir::K_VK value);
   public:
 
   // optional uint32 qtype = 3;
@@ -835,14 +838,15 @@ class BitDataType final :
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
-    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> names_;
-    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::spir::BitDataType > types_;
+    ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t > fopids_;
+    mutable std::atomic<int> _fopids_cached_byte_size_;
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::spir::BitDataType > foptypes_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr attributes_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr typename__;
     ::spir::BitDataType* subtype_;
     ::spir::BitSrcLoc* loc_;
     uint64_t typeid__;
-    int kind_;
+    int vkind_;
     uint32_t qtype_;
     uint32_t len_;
     uint32_t align_;
@@ -975,14 +979,16 @@ class BitEntityInfo final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kStrValFieldNumber = 5,
-    kDtFieldNumber = 3,
-    kLocFieldNumber = 6,
-    kIdFieldNumber = 2,
-    kNumValFieldNumber = 4,
-    kKindFieldNumber = 1,
+    kStrValFieldNumber = 7,
+    kDtFieldNumber = 4,
+    kLocFieldNumber = 8,
+    kEidFieldNumber = 1,
+    kParentIdFieldNumber = 3,
+    kLowValFieldNumber = 5,
+    kHighValFieldNumber = 6,
+    kEkindFieldNumber = 2,
   };
-  // optional string strVal = 5;
+  // optional string strVal = 7;
   bool has_strval() const;
   private:
   bool _internal_has_strval() const;
@@ -1000,7 +1006,7 @@ class BitEntityInfo final :
   std::string* _internal_mutable_strval();
   public:
 
-  // optional .spir.BitDataType dt = 3;
+  // optional .spir.BitDataType dt = 4;
   bool has_dt() const;
   private:
   bool _internal_has_dt() const;
@@ -1018,7 +1024,7 @@ class BitEntityInfo final :
       ::spir::BitDataType* dt);
   ::spir::BitDataType* unsafe_arena_release_dt();
 
-  // optional .spir.BitSrcLoc loc = 6;
+  // optional .spir.BitSrcLoc loc = 8;
   bool has_loc() const;
   private:
   bool _internal_has_loc() const;
@@ -1036,35 +1042,61 @@ class BitEntityInfo final :
       ::spir::BitSrcLoc* loc);
   ::spir::BitSrcLoc* unsafe_arena_release_loc();
 
-  // uint64 id = 2;
-  void clear_id();
-  uint64_t id() const;
-  void set_id(uint64_t value);
+  // uint64 eid = 1;
+  void clear_eid();
+  uint64_t eid() const;
+  void set_eid(uint64_t value);
   private:
-  uint64_t _internal_id() const;
-  void _internal_set_id(uint64_t value);
+  uint64_t _internal_eid() const;
+  void _internal_set_eid(uint64_t value);
   public:
 
-  // optional uint64 numVal = 4;
-  bool has_numval() const;
+  // optional uint64 parentId = 3;
+  bool has_parentid() const;
   private:
-  bool _internal_has_numval() const;
+  bool _internal_has_parentid() const;
   public:
-  void clear_numval();
-  uint64_t numval() const;
-  void set_numval(uint64_t value);
+  void clear_parentid();
+  uint64_t parentid() const;
+  void set_parentid(uint64_t value);
   private:
-  uint64_t _internal_numval() const;
-  void _internal_set_numval(uint64_t value);
+  uint64_t _internal_parentid() const;
+  void _internal_set_parentid(uint64_t value);
   public:
 
-  // .spir.K_EK kind = 1;
-  void clear_kind();
-  ::spir::K_EK kind() const;
-  void set_kind(::spir::K_EK value);
+  // optional uint64 lowVal = 5;
+  bool has_lowval() const;
   private:
-  ::spir::K_EK _internal_kind() const;
-  void _internal_set_kind(::spir::K_EK value);
+  bool _internal_has_lowval() const;
+  public:
+  void clear_lowval();
+  uint64_t lowval() const;
+  void set_lowval(uint64_t value);
+  private:
+  uint64_t _internal_lowval() const;
+  void _internal_set_lowval(uint64_t value);
+  public:
+
+  // optional uint64 highVal = 6;
+  bool has_highval() const;
+  private:
+  bool _internal_has_highval() const;
+  public:
+  void clear_highval();
+  uint64_t highval() const;
+  void set_highval(uint64_t value);
+  private:
+  uint64_t _internal_highval() const;
+  void _internal_set_highval(uint64_t value);
+  public:
+
+  // .spir.K_EK ekind = 2;
+  void clear_ekind();
+  ::spir::K_EK ekind() const;
+  void set_ekind(::spir::K_EK value);
+  private:
+  ::spir::K_EK _internal_ekind() const;
+  void _internal_set_ekind(::spir::K_EK value);
   public:
 
   // @@protoc_insertion_point(class_scope:spir.BitEntityInfo)
@@ -1080,9 +1112,11 @@ class BitEntityInfo final :
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr strval_;
     ::spir::BitDataType* dt_;
     ::spir::BitSrcLoc* loc_;
-    uint64_t id_;
-    uint64_t numval_;
-    int kind_;
+    uint64_t eid_;
+    uint64_t parentid_;
+    uint64_t lowval_;
+    uint64_t highval_;
+    int ekind_;
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_spir_2eproto;
@@ -1211,7 +1245,7 @@ class BitEntity final :
 
   enum : int {
     kLocFieldNumber = 2,
-    kIdFieldNumber = 1,
+    kEidFieldNumber = 1,
   };
   // optional .spir.BitSrcLoc loc = 2;
   bool has_loc() const;
@@ -1231,13 +1265,13 @@ class BitEntity final :
       ::spir::BitSrcLoc* loc);
   ::spir::BitSrcLoc* unsafe_arena_release_loc();
 
-  // uint64 id = 1;
-  void clear_id();
-  uint64_t id() const;
-  void set_id(uint64_t value);
+  // uint64 eid = 1;
+  void clear_eid();
+  uint64_t eid() const;
+  void set_eid(uint64_t value);
   private:
-  uint64_t _internal_id() const;
-  void _internal_set_id(uint64_t value);
+  uint64_t _internal_eid() const;
+  void _internal_set_eid(uint64_t value);
   public:
 
   // @@protoc_insertion_point(class_scope:spir.BitEntity)
@@ -1251,7 +1285,7 @@ class BitEntity final :
     ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
     ::spir::BitSrcLoc* loc_;
-    uint64_t id_;
+    uint64_t eid_;
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_spir_2eproto;
@@ -1379,29 +1413,29 @@ class BitExpr final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kExprsFieldNumber = 5,
+    kOprsFieldNumber = 4,
     kOpr1FieldNumber = 2,
     kOpr2FieldNumber = 3,
-    kLocFieldNumber = 4,
+    kLocFieldNumber = 5,
     kKindFieldNumber = 1,
   };
-  // repeated .spir.BitEntity exprs = 5;
-  int exprs_size() const;
+  // repeated .spir.BitEntity oprs = 4;
+  int oprs_size() const;
   private:
-  int _internal_exprs_size() const;
+  int _internal_oprs_size() const;
   public:
-  void clear_exprs();
-  ::spir::BitEntity* mutable_exprs(int index);
+  void clear_oprs();
+  ::spir::BitEntity* mutable_oprs(int index);
   ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::spir::BitEntity >*
-      mutable_exprs();
+      mutable_oprs();
   private:
-  const ::spir::BitEntity& _internal_exprs(int index) const;
-  ::spir::BitEntity* _internal_add_exprs();
+  const ::spir::BitEntity& _internal_oprs(int index) const;
+  ::spir::BitEntity* _internal_add_oprs();
   public:
-  const ::spir::BitEntity& exprs(int index) const;
-  ::spir::BitEntity* add_exprs();
+  const ::spir::BitEntity& oprs(int index) const;
+  ::spir::BitEntity* add_oprs();
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::spir::BitEntity >&
-      exprs() const;
+      oprs() const;
 
   // optional .spir.BitEntity opr1 = 2;
   bool has_opr1() const;
@@ -1439,7 +1473,7 @@ class BitExpr final :
       ::spir::BitEntity* opr2);
   ::spir::BitEntity* unsafe_arena_release_opr2();
 
-  // optional .spir.BitSrcLoc loc = 4;
+  // optional .spir.BitSrcLoc loc = 5;
   bool has_loc() const;
   private:
   bool _internal_has_loc() const;
@@ -1476,7 +1510,7 @@ class BitExpr final :
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
-    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::spir::BitEntity > exprs_;
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::spir::BitEntity > oprs_;
     ::spir::BitEntity* opr1_;
     ::spir::BitEntity* opr2_;
     ::spir::BitSrcLoc* loc_;
@@ -1610,6 +1644,7 @@ class BitInsn final :
   enum : int {
     kExpr1FieldNumber = 2,
     kExpr2FieldNumber = 3,
+    kLocFieldNumber = 4,
     kKindFieldNumber = 1,
   };
   // optional .spir.BitExpr expr1 = 2;
@@ -1648,6 +1683,24 @@ class BitInsn final :
       ::spir::BitExpr* expr2);
   ::spir::BitExpr* unsafe_arena_release_expr2();
 
+  // optional .spir.BitSrcLoc loc = 4;
+  bool has_loc() const;
+  private:
+  bool _internal_has_loc() const;
+  public:
+  void clear_loc();
+  const ::spir::BitSrcLoc& loc() const;
+  PROTOBUF_NODISCARD ::spir::BitSrcLoc* release_loc();
+  ::spir::BitSrcLoc* mutable_loc();
+  void set_allocated_loc(::spir::BitSrcLoc* loc);
+  private:
+  const ::spir::BitSrcLoc& _internal_loc() const;
+  ::spir::BitSrcLoc* _internal_mutable_loc();
+  public:
+  void unsafe_arena_set_allocated_loc(
+      ::spir::BitSrcLoc* loc);
+  ::spir::BitSrcLoc* unsafe_arena_release_loc();
+
   // .spir.K_IK kind = 1;
   void clear_kind();
   ::spir::K_IK kind() const;
@@ -1669,6 +1722,7 @@ class BitInsn final :
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
     ::spir::BitExpr* expr1_;
     ::spir::BitExpr* expr2_;
+    ::spir::BitSrcLoc* loc_;
     int kind_;
   };
   union { Impl_ _impl_; };
@@ -1799,10 +1853,10 @@ class BitFunc final :
   enum : int {
     kInsnsFieldNumber = 5,
     kLocalsFieldNumber = 6,
-    kNameFieldNumber = 3,
+    kFnameFieldNumber = 2,
     kCallingConventionFieldNumber = 4,
-    kIdFieldNumber = 1,
-    kIsVariadicFieldNumber = 2,
+    kFidFieldNumber = 1,
+    kIsVariadicFieldNumber = 3,
   };
   // repeated .spir.BitInsn insns = 5;
   int insns_size() const;
@@ -1844,18 +1898,18 @@ class BitFunc final :
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >*
       mutable_locals();
 
-  // string name = 3;
-  void clear_name();
-  const std::string& name() const;
+  // string fname = 2;
+  void clear_fname();
+  const std::string& fname() const;
   template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_name(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_name();
-  PROTOBUF_NODISCARD std::string* release_name();
-  void set_allocated_name(std::string* name);
+  void set_fname(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_fname();
+  PROTOBUF_NODISCARD std::string* release_fname();
+  void set_allocated_fname(std::string* fname);
   private:
-  const std::string& _internal_name() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_name(const std::string& value);
-  std::string* _internal_mutable_name();
+  const std::string& _internal_fname() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_fname(const std::string& value);
+  std::string* _internal_mutable_fname();
   public:
 
   // optional string calling_convention = 4;
@@ -1876,16 +1930,16 @@ class BitFunc final :
   std::string* _internal_mutable_calling_convention();
   public:
 
-  // uint64 id = 1;
-  void clear_id();
-  uint64_t id() const;
-  void set_id(uint64_t value);
+  // uint64 fid = 1;
+  void clear_fid();
+  uint64_t fid() const;
+  void set_fid(uint64_t value);
   private:
-  uint64_t _internal_id() const;
-  void _internal_set_id(uint64_t value);
+  uint64_t _internal_fid() const;
+  void _internal_set_fid(uint64_t value);
   public:
 
-  // bool is_variadic = 2;
+  // bool is_variadic = 3;
   void clear_is_variadic();
   bool is_variadic() const;
   void set_is_variadic(bool value);
@@ -1907,9 +1961,9 @@ class BitFunc final :
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::spir::BitInsn > insns_;
     ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t > locals_;
     mutable std::atomic<int> _locals_cached_byte_size_;
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr name_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr fname_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr calling_convention_;
-    uint64_t id_;
+    uint64_t fid_;
     bool is_variadic_;
   };
   union { Impl_ _impl_; };
@@ -1917,23 +1971,23 @@ class BitFunc final :
 };
 // -------------------------------------------------------------------
 
-class BitTU_EntitiesEntry_DoNotUse : public ::PROTOBUF_NAMESPACE_ID::internal::MapEntry<BitTU_EntitiesEntry_DoNotUse, 
-    std::string, ::spir::BitEntity,
+class BitTU_NamesToIdsEntry_DoNotUse : public ::PROTOBUF_NAMESPACE_ID::internal::MapEntry<BitTU_NamesToIdsEntry_DoNotUse, 
+    std::string, uint64_t,
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::TYPE_STRING,
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::TYPE_MESSAGE> {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::TYPE_UINT64> {
 public:
-  typedef ::PROTOBUF_NAMESPACE_ID::internal::MapEntry<BitTU_EntitiesEntry_DoNotUse, 
-    std::string, ::spir::BitEntity,
+  typedef ::PROTOBUF_NAMESPACE_ID::internal::MapEntry<BitTU_NamesToIdsEntry_DoNotUse, 
+    std::string, uint64_t,
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::TYPE_STRING,
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::TYPE_MESSAGE> SuperType;
-  BitTU_EntitiesEntry_DoNotUse();
-  explicit PROTOBUF_CONSTEXPR BitTU_EntitiesEntry_DoNotUse(
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::TYPE_UINT64> SuperType;
+  BitTU_NamesToIdsEntry_DoNotUse();
+  explicit PROTOBUF_CONSTEXPR BitTU_NamesToIdsEntry_DoNotUse(
       ::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
-  explicit BitTU_EntitiesEntry_DoNotUse(::PROTOBUF_NAMESPACE_ID::Arena* arena);
-  void MergeFrom(const BitTU_EntitiesEntry_DoNotUse& other);
-  static const BitTU_EntitiesEntry_DoNotUse* internal_default_instance() { return reinterpret_cast<const BitTU_EntitiesEntry_DoNotUse*>(&_BitTU_EntitiesEntry_DoNotUse_default_instance_); }
+  explicit BitTU_NamesToIdsEntry_DoNotUse(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  void MergeFrom(const BitTU_NamesToIdsEntry_DoNotUse& other);
+  static const BitTU_NamesToIdsEntry_DoNotUse* internal_default_instance() { return reinterpret_cast<const BitTU_NamesToIdsEntry_DoNotUse*>(&_BitTU_NamesToIdsEntry_DoNotUse_default_instance_); }
   static bool ValidateKey(std::string* s) {
-    return ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(s->data(), static_cast<int>(s->size()), ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::PARSE, "spir.BitTU.EntitiesEntry.key");
+    return ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(s->data(), static_cast<int>(s->size()), ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::PARSE, "spir.BitTU.NamesToIdsEntry.key");
  }
   static bool ValidateValue(void*) { return true; }
   using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
@@ -2091,29 +2145,29 @@ class BitTU final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kEntitiesFieldNumber = 4,
+    kNamesToIdsFieldNumber = 4,
     kEntityInfoFieldNumber = 5,
     kFunctionsFieldNumber = 6,
-    kNameFieldNumber = 1,
-    kDirectoryFieldNumber = 2,
+    kTuNameFieldNumber = 1,
+    kAbsPathFieldNumber = 2,
     kOriginFieldNumber = 3,
   };
-  // map<string, .spir.BitEntity> entities = 4;
-  int entities_size() const;
+  // map<string, uint64> namesToIds = 4;
+  int namestoids_size() const;
   private:
-  int _internal_entities_size() const;
+  int _internal_namestoids_size() const;
   public:
-  void clear_entities();
+  void clear_namestoids();
   private:
-  const ::PROTOBUF_NAMESPACE_ID::Map< std::string, ::spir::BitEntity >&
-      _internal_entities() const;
-  ::PROTOBUF_NAMESPACE_ID::Map< std::string, ::spir::BitEntity >*
-      _internal_mutable_entities();
+  const ::PROTOBUF_NAMESPACE_ID::Map< std::string, uint64_t >&
+      _internal_namestoids() const;
+  ::PROTOBUF_NAMESPACE_ID::Map< std::string, uint64_t >*
+      _internal_mutable_namestoids();
   public:
-  const ::PROTOBUF_NAMESPACE_ID::Map< std::string, ::spir::BitEntity >&
-      entities() const;
-  ::PROTOBUF_NAMESPACE_ID::Map< std::string, ::spir::BitEntity >*
-      mutable_entities();
+  const ::PROTOBUF_NAMESPACE_ID::Map< std::string, uint64_t >&
+      namestoids() const;
+  ::PROTOBUF_NAMESPACE_ID::Map< std::string, uint64_t >*
+      mutable_namestoids();
 
   // map<uint64, .spir.BitEntityInfo> entityInfo = 5;
   int entityinfo_size() const;
@@ -2150,36 +2204,36 @@ class BitTU final :
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::spir::BitFunc >&
       functions() const;
 
-  // string name = 1;
-  void clear_name();
-  const std::string& name() const;
+  // string tuName = 1;
+  void clear_tuname();
+  const std::string& tuname() const;
   template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_name(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_name();
-  PROTOBUF_NODISCARD std::string* release_name();
-  void set_allocated_name(std::string* name);
+  void set_tuname(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_tuname();
+  PROTOBUF_NODISCARD std::string* release_tuname();
+  void set_allocated_tuname(std::string* tuname);
   private:
-  const std::string& _internal_name() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_name(const std::string& value);
-  std::string* _internal_mutable_name();
+  const std::string& _internal_tuname() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_tuname(const std::string& value);
+  std::string* _internal_mutable_tuname();
   public:
 
-  // optional string directory = 2;
-  bool has_directory() const;
+  // optional string absPath = 2;
+  bool has_abspath() const;
   private:
-  bool _internal_has_directory() const;
+  bool _internal_has_abspath() const;
   public:
-  void clear_directory();
-  const std::string& directory() const;
+  void clear_abspath();
+  const std::string& abspath() const;
   template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_directory(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_directory();
-  PROTOBUF_NODISCARD std::string* release_directory();
-  void set_allocated_directory(std::string* directory);
+  void set_abspath(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_abspath();
+  PROTOBUF_NODISCARD std::string* release_abspath();
+  void set_allocated_abspath(std::string* abspath);
   private:
-  const std::string& _internal_directory() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_directory(const std::string& value);
-  std::string* _internal_mutable_directory();
+  const std::string& _internal_abspath() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_abspath(const std::string& value);
+  std::string* _internal_mutable_abspath();
   public:
 
   // optional string origin = 3;
@@ -2211,18 +2265,18 @@ class BitTU final :
     ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
     ::PROTOBUF_NAMESPACE_ID::internal::MapField<
-        BitTU_EntitiesEntry_DoNotUse,
-        std::string, ::spir::BitEntity,
+        BitTU_NamesToIdsEntry_DoNotUse,
+        std::string, uint64_t,
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::TYPE_STRING,
-        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::TYPE_MESSAGE> entities_;
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::TYPE_UINT64> namestoids_;
     ::PROTOBUF_NAMESPACE_ID::internal::MapField<
         BitTU_EntityInfoEntry_DoNotUse,
         uint64_t, ::spir::BitEntityInfo,
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::TYPE_UINT64,
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::TYPE_MESSAGE> entityinfo_;
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::spir::BitFunc > functions_;
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr name_;
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr directory_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr tuname_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr abspath_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr origin_;
   };
   union { Impl_ _impl_; };
@@ -2283,24 +2337,24 @@ inline void BitSrcLoc::set_col(uint32_t value) {
 
 // BitDataType
 
-// .spir.K_VK kind = 1;
-inline void BitDataType::clear_kind() {
-  _impl_.kind_ = 0;
+// .spir.K_VK vkind = 1;
+inline void BitDataType::clear_vkind() {
+  _impl_.vkind_ = 0;
 }
-inline ::spir::K_VK BitDataType::_internal_kind() const {
-  return static_cast< ::spir::K_VK >(_impl_.kind_);
+inline ::spir::K_VK BitDataType::_internal_vkind() const {
+  return static_cast< ::spir::K_VK >(_impl_.vkind_);
 }
-inline ::spir::K_VK BitDataType::kind() const {
-  // @@protoc_insertion_point(field_get:spir.BitDataType.kind)
-  return _internal_kind();
+inline ::spir::K_VK BitDataType::vkind() const {
+  // @@protoc_insertion_point(field_get:spir.BitDataType.vkind)
+  return _internal_vkind();
 }
-inline void BitDataType::_internal_set_kind(::spir::K_VK value) {
+inline void BitDataType::_internal_set_vkind(::spir::K_VK value) {
   
-  _impl_.kind_ = value;
+  _impl_.vkind_ = value;
 }
-inline void BitDataType::set_kind(::spir::K_VK value) {
-  _internal_set_kind(value);
-  // @@protoc_insertion_point(field_set:spir.BitDataType.kind)
+inline void BitDataType::set_vkind(::spir::K_VK value) {
+  _internal_set_vkind(value);
+  // @@protoc_insertion_point(field_set:spir.BitDataType.vkind)
 }
 
 // optional uint64 typeId = 2;
@@ -2669,119 +2723,91 @@ inline void BitDataType::set_anonymous(bool value) {
   // @@protoc_insertion_point(field_set:spir.BitDataType.anonymous)
 }
 
-// repeated string names = 10;
-inline int BitDataType::_internal_names_size() const {
-  return _impl_.names_.size();
+// repeated uint64 fopIds = 10;
+inline int BitDataType::_internal_fopids_size() const {
+  return _impl_.fopids_.size();
 }
-inline int BitDataType::names_size() const {
-  return _internal_names_size();
+inline int BitDataType::fopids_size() const {
+  return _internal_fopids_size();
 }
-inline void BitDataType::clear_names() {
-  _impl_.names_.Clear();
+inline void BitDataType::clear_fopids() {
+  _impl_.fopids_.Clear();
 }
-inline std::string* BitDataType::add_names() {
-  std::string* _s = _internal_add_names();
-  // @@protoc_insertion_point(field_add_mutable:spir.BitDataType.names)
-  return _s;
+inline uint64_t BitDataType::_internal_fopids(int index) const {
+  return _impl_.fopids_.Get(index);
 }
-inline const std::string& BitDataType::_internal_names(int index) const {
-  return _impl_.names_.Get(index);
+inline uint64_t BitDataType::fopids(int index) const {
+  // @@protoc_insertion_point(field_get:spir.BitDataType.fopIds)
+  return _internal_fopids(index);
 }
-inline const std::string& BitDataType::names(int index) const {
-  // @@protoc_insertion_point(field_get:spir.BitDataType.names)
-  return _internal_names(index);
+inline void BitDataType::set_fopids(int index, uint64_t value) {
+  _impl_.fopids_.Set(index, value);
+  // @@protoc_insertion_point(field_set:spir.BitDataType.fopIds)
 }
-inline std::string* BitDataType::mutable_names(int index) {
-  // @@protoc_insertion_point(field_mutable:spir.BitDataType.names)
-  return _impl_.names_.Mutable(index);
+inline void BitDataType::_internal_add_fopids(uint64_t value) {
+  _impl_.fopids_.Add(value);
 }
-inline void BitDataType::set_names(int index, const std::string& value) {
-  _impl_.names_.Mutable(index)->assign(value);
-  // @@protoc_insertion_point(field_set:spir.BitDataType.names)
+inline void BitDataType::add_fopids(uint64_t value) {
+  _internal_add_fopids(value);
+  // @@protoc_insertion_point(field_add:spir.BitDataType.fopIds)
 }
-inline void BitDataType::set_names(int index, std::string&& value) {
-  _impl_.names_.Mutable(index)->assign(std::move(value));
-  // @@protoc_insertion_point(field_set:spir.BitDataType.names)
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >&
+BitDataType::_internal_fopids() const {
+  return _impl_.fopids_;
 }
-inline void BitDataType::set_names(int index, const char* value) {
-  GOOGLE_DCHECK(value != nullptr);
-  _impl_.names_.Mutable(index)->assign(value);
-  // @@protoc_insertion_point(field_set_char:spir.BitDataType.names)
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >&
+BitDataType::fopids() const {
+  // @@protoc_insertion_point(field_list:spir.BitDataType.fopIds)
+  return _internal_fopids();
 }
-inline void BitDataType::set_names(int index, const char* value, size_t size) {
-  _impl_.names_.Mutable(index)->assign(
-    reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_set_pointer:spir.BitDataType.names)
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >*
+BitDataType::_internal_mutable_fopids() {
+  return &_impl_.fopids_;
 }
-inline std::string* BitDataType::_internal_add_names() {
-  return _impl_.names_.Add();
-}
-inline void BitDataType::add_names(const std::string& value) {
-  _impl_.names_.Add()->assign(value);
-  // @@protoc_insertion_point(field_add:spir.BitDataType.names)
-}
-inline void BitDataType::add_names(std::string&& value) {
-  _impl_.names_.Add(std::move(value));
-  // @@protoc_insertion_point(field_add:spir.BitDataType.names)
-}
-inline void BitDataType::add_names(const char* value) {
-  GOOGLE_DCHECK(value != nullptr);
-  _impl_.names_.Add()->assign(value);
-  // @@protoc_insertion_point(field_add_char:spir.BitDataType.names)
-}
-inline void BitDataType::add_names(const char* value, size_t size) {
-  _impl_.names_.Add()->assign(reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_add_pointer:spir.BitDataType.names)
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
-BitDataType::names() const {
-  // @@protoc_insertion_point(field_list:spir.BitDataType.names)
-  return _impl_.names_;
-}
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
-BitDataType::mutable_names() {
-  // @@protoc_insertion_point(field_mutable_list:spir.BitDataType.names)
-  return &_impl_.names_;
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >*
+BitDataType::mutable_fopids() {
+  // @@protoc_insertion_point(field_mutable_list:spir.BitDataType.fopIds)
+  return _internal_mutable_fopids();
 }
 
-// repeated .spir.BitDataType types = 11;
-inline int BitDataType::_internal_types_size() const {
-  return _impl_.types_.size();
+// repeated .spir.BitDataType fopTypes = 11;
+inline int BitDataType::_internal_foptypes_size() const {
+  return _impl_.foptypes_.size();
 }
-inline int BitDataType::types_size() const {
-  return _internal_types_size();
+inline int BitDataType::foptypes_size() const {
+  return _internal_foptypes_size();
 }
-inline void BitDataType::clear_types() {
-  _impl_.types_.Clear();
+inline void BitDataType::clear_foptypes() {
+  _impl_.foptypes_.Clear();
 }
-inline ::spir::BitDataType* BitDataType::mutable_types(int index) {
-  // @@protoc_insertion_point(field_mutable:spir.BitDataType.types)
-  return _impl_.types_.Mutable(index);
+inline ::spir::BitDataType* BitDataType::mutable_foptypes(int index) {
+  // @@protoc_insertion_point(field_mutable:spir.BitDataType.fopTypes)
+  return _impl_.foptypes_.Mutable(index);
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::spir::BitDataType >*
-BitDataType::mutable_types() {
-  // @@protoc_insertion_point(field_mutable_list:spir.BitDataType.types)
-  return &_impl_.types_;
+BitDataType::mutable_foptypes() {
+  // @@protoc_insertion_point(field_mutable_list:spir.BitDataType.fopTypes)
+  return &_impl_.foptypes_;
 }
-inline const ::spir::BitDataType& BitDataType::_internal_types(int index) const {
-  return _impl_.types_.Get(index);
+inline const ::spir::BitDataType& BitDataType::_internal_foptypes(int index) const {
+  return _impl_.foptypes_.Get(index);
 }
-inline const ::spir::BitDataType& BitDataType::types(int index) const {
-  // @@protoc_insertion_point(field_get:spir.BitDataType.types)
-  return _internal_types(index);
+inline const ::spir::BitDataType& BitDataType::foptypes(int index) const {
+  // @@protoc_insertion_point(field_get:spir.BitDataType.fopTypes)
+  return _internal_foptypes(index);
 }
-inline ::spir::BitDataType* BitDataType::_internal_add_types() {
-  return _impl_.types_.Add();
+inline ::spir::BitDataType* BitDataType::_internal_add_foptypes() {
+  return _impl_.foptypes_.Add();
 }
-inline ::spir::BitDataType* BitDataType::add_types() {
-  ::spir::BitDataType* _add = _internal_add_types();
-  // @@protoc_insertion_point(field_add:spir.BitDataType.types)
+inline ::spir::BitDataType* BitDataType::add_foptypes() {
+  ::spir::BitDataType* _add = _internal_add_foptypes();
+  // @@protoc_insertion_point(field_add:spir.BitDataType.fopTypes)
   return _add;
 }
 inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::spir::BitDataType >&
-BitDataType::types() const {
-  // @@protoc_insertion_point(field_list:spir.BitDataType.types)
-  return _impl_.types_;
+BitDataType::foptypes() const {
+  // @@protoc_insertion_point(field_list:spir.BitDataType.fopTypes)
+  return _impl_.foptypes_;
 }
 
 // optional bool variadic = 12;
@@ -2906,47 +2932,75 @@ inline void BitDataType::set_allocated_loc(::spir::BitSrcLoc* loc) {
 
 // BitEntityInfo
 
-// .spir.K_EK kind = 1;
-inline void BitEntityInfo::clear_kind() {
-  _impl_.kind_ = 0;
+// uint64 eid = 1;
+inline void BitEntityInfo::clear_eid() {
+  _impl_.eid_ = uint64_t{0u};
 }
-inline ::spir::K_EK BitEntityInfo::_internal_kind() const {
-  return static_cast< ::spir::K_EK >(_impl_.kind_);
+inline uint64_t BitEntityInfo::_internal_eid() const {
+  return _impl_.eid_;
 }
-inline ::spir::K_EK BitEntityInfo::kind() const {
-  // @@protoc_insertion_point(field_get:spir.BitEntityInfo.kind)
-  return _internal_kind();
+inline uint64_t BitEntityInfo::eid() const {
+  // @@protoc_insertion_point(field_get:spir.BitEntityInfo.eid)
+  return _internal_eid();
 }
-inline void BitEntityInfo::_internal_set_kind(::spir::K_EK value) {
+inline void BitEntityInfo::_internal_set_eid(uint64_t value) {
   
-  _impl_.kind_ = value;
+  _impl_.eid_ = value;
 }
-inline void BitEntityInfo::set_kind(::spir::K_EK value) {
-  _internal_set_kind(value);
-  // @@protoc_insertion_point(field_set:spir.BitEntityInfo.kind)
+inline void BitEntityInfo::set_eid(uint64_t value) {
+  _internal_set_eid(value);
+  // @@protoc_insertion_point(field_set:spir.BitEntityInfo.eid)
 }
 
-// uint64 id = 2;
-inline void BitEntityInfo::clear_id() {
-  _impl_.id_ = uint64_t{0u};
+// .spir.K_EK ekind = 2;
+inline void BitEntityInfo::clear_ekind() {
+  _impl_.ekind_ = 0;
 }
-inline uint64_t BitEntityInfo::_internal_id() const {
-  return _impl_.id_;
+inline ::spir::K_EK BitEntityInfo::_internal_ekind() const {
+  return static_cast< ::spir::K_EK >(_impl_.ekind_);
 }
-inline uint64_t BitEntityInfo::id() const {
-  // @@protoc_insertion_point(field_get:spir.BitEntityInfo.id)
-  return _internal_id();
+inline ::spir::K_EK BitEntityInfo::ekind() const {
+  // @@protoc_insertion_point(field_get:spir.BitEntityInfo.ekind)
+  return _internal_ekind();
 }
-inline void BitEntityInfo::_internal_set_id(uint64_t value) {
+inline void BitEntityInfo::_internal_set_ekind(::spir::K_EK value) {
   
-  _impl_.id_ = value;
+  _impl_.ekind_ = value;
 }
-inline void BitEntityInfo::set_id(uint64_t value) {
-  _internal_set_id(value);
-  // @@protoc_insertion_point(field_set:spir.BitEntityInfo.id)
+inline void BitEntityInfo::set_ekind(::spir::K_EK value) {
+  _internal_set_ekind(value);
+  // @@protoc_insertion_point(field_set:spir.BitEntityInfo.ekind)
 }
 
-// optional .spir.BitDataType dt = 3;
+// optional uint64 parentId = 3;
+inline bool BitEntityInfo::_internal_has_parentid() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000008u) != 0;
+  return value;
+}
+inline bool BitEntityInfo::has_parentid() const {
+  return _internal_has_parentid();
+}
+inline void BitEntityInfo::clear_parentid() {
+  _impl_.parentid_ = uint64_t{0u};
+  _impl_._has_bits_[0] &= ~0x00000008u;
+}
+inline uint64_t BitEntityInfo::_internal_parentid() const {
+  return _impl_.parentid_;
+}
+inline uint64_t BitEntityInfo::parentid() const {
+  // @@protoc_insertion_point(field_get:spir.BitEntityInfo.parentId)
+  return _internal_parentid();
+}
+inline void BitEntityInfo::_internal_set_parentid(uint64_t value) {
+  _impl_._has_bits_[0] |= 0x00000008u;
+  _impl_.parentid_ = value;
+}
+inline void BitEntityInfo::set_parentid(uint64_t value) {
+  _internal_set_parentid(value);
+  // @@protoc_insertion_point(field_set:spir.BitEntityInfo.parentId)
+}
+
+// optional .spir.BitDataType dt = 4;
 inline bool BitEntityInfo::_internal_has_dt() const {
   bool value = (_impl_._has_bits_[0] & 0x00000002u) != 0;
   PROTOBUF_ASSUME(!value || _impl_.dt_ != nullptr);
@@ -3036,35 +3090,63 @@ inline void BitEntityInfo::set_allocated_dt(::spir::BitDataType* dt) {
   // @@protoc_insertion_point(field_set_allocated:spir.BitEntityInfo.dt)
 }
 
-// optional uint64 numVal = 4;
-inline bool BitEntityInfo::_internal_has_numval() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000008u) != 0;
+// optional uint64 lowVal = 5;
+inline bool BitEntityInfo::_internal_has_lowval() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000010u) != 0;
   return value;
 }
-inline bool BitEntityInfo::has_numval() const {
-  return _internal_has_numval();
+inline bool BitEntityInfo::has_lowval() const {
+  return _internal_has_lowval();
 }
-inline void BitEntityInfo::clear_numval() {
-  _impl_.numval_ = uint64_t{0u};
-  _impl_._has_bits_[0] &= ~0x00000008u;
+inline void BitEntityInfo::clear_lowval() {
+  _impl_.lowval_ = uint64_t{0u};
+  _impl_._has_bits_[0] &= ~0x00000010u;
 }
-inline uint64_t BitEntityInfo::_internal_numval() const {
-  return _impl_.numval_;
+inline uint64_t BitEntityInfo::_internal_lowval() const {
+  return _impl_.lowval_;
 }
-inline uint64_t BitEntityInfo::numval() const {
-  // @@protoc_insertion_point(field_get:spir.BitEntityInfo.numVal)
-  return _internal_numval();
+inline uint64_t BitEntityInfo::lowval() const {
+  // @@protoc_insertion_point(field_get:spir.BitEntityInfo.lowVal)
+  return _internal_lowval();
 }
-inline void BitEntityInfo::_internal_set_numval(uint64_t value) {
-  _impl_._has_bits_[0] |= 0x00000008u;
-  _impl_.numval_ = value;
+inline void BitEntityInfo::_internal_set_lowval(uint64_t value) {
+  _impl_._has_bits_[0] |= 0x00000010u;
+  _impl_.lowval_ = value;
 }
-inline void BitEntityInfo::set_numval(uint64_t value) {
-  _internal_set_numval(value);
-  // @@protoc_insertion_point(field_set:spir.BitEntityInfo.numVal)
+inline void BitEntityInfo::set_lowval(uint64_t value) {
+  _internal_set_lowval(value);
+  // @@protoc_insertion_point(field_set:spir.BitEntityInfo.lowVal)
 }
 
-// optional string strVal = 5;
+// optional uint64 highVal = 6;
+inline bool BitEntityInfo::_internal_has_highval() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000020u) != 0;
+  return value;
+}
+inline bool BitEntityInfo::has_highval() const {
+  return _internal_has_highval();
+}
+inline void BitEntityInfo::clear_highval() {
+  _impl_.highval_ = uint64_t{0u};
+  _impl_._has_bits_[0] &= ~0x00000020u;
+}
+inline uint64_t BitEntityInfo::_internal_highval() const {
+  return _impl_.highval_;
+}
+inline uint64_t BitEntityInfo::highval() const {
+  // @@protoc_insertion_point(field_get:spir.BitEntityInfo.highVal)
+  return _internal_highval();
+}
+inline void BitEntityInfo::_internal_set_highval(uint64_t value) {
+  _impl_._has_bits_[0] |= 0x00000020u;
+  _impl_.highval_ = value;
+}
+inline void BitEntityInfo::set_highval(uint64_t value) {
+  _internal_set_highval(value);
+  // @@protoc_insertion_point(field_set:spir.BitEntityInfo.highVal)
+}
+
+// optional string strVal = 7;
 inline bool BitEntityInfo::_internal_has_strval() const {
   bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
   return value;
@@ -3132,7 +3214,7 @@ inline void BitEntityInfo::set_allocated_strval(std::string* strval) {
   // @@protoc_insertion_point(field_set_allocated:spir.BitEntityInfo.strVal)
 }
 
-// optional .spir.BitSrcLoc loc = 6;
+// optional .spir.BitSrcLoc loc = 8;
 inline bool BitEntityInfo::_internal_has_loc() const {
   bool value = (_impl_._has_bits_[0] & 0x00000004u) != 0;
   PROTOBUF_ASSUME(!value || _impl_.loc_ != nullptr);
@@ -3226,24 +3308,24 @@ inline void BitEntityInfo::set_allocated_loc(::spir::BitSrcLoc* loc) {
 
 // BitEntity
 
-// uint64 id = 1;
-inline void BitEntity::clear_id() {
-  _impl_.id_ = uint64_t{0u};
+// uint64 eid = 1;
+inline void BitEntity::clear_eid() {
+  _impl_.eid_ = uint64_t{0u};
 }
-inline uint64_t BitEntity::_internal_id() const {
-  return _impl_.id_;
+inline uint64_t BitEntity::_internal_eid() const {
+  return _impl_.eid_;
 }
-inline uint64_t BitEntity::id() const {
-  // @@protoc_insertion_point(field_get:spir.BitEntity.id)
-  return _internal_id();
+inline uint64_t BitEntity::eid() const {
+  // @@protoc_insertion_point(field_get:spir.BitEntity.eid)
+  return _internal_eid();
 }
-inline void BitEntity::_internal_set_id(uint64_t value) {
+inline void BitEntity::_internal_set_eid(uint64_t value) {
   
-  _impl_.id_ = value;
+  _impl_.eid_ = value;
 }
-inline void BitEntity::set_id(uint64_t value) {
-  _internal_set_id(value);
-  // @@protoc_insertion_point(field_set:spir.BitEntity.id)
+inline void BitEntity::set_eid(uint64_t value) {
+  _internal_set_eid(value);
+  // @@protoc_insertion_point(field_set:spir.BitEntity.eid)
 }
 
 // optional .spir.BitSrcLoc loc = 2;
@@ -3540,7 +3622,47 @@ inline void BitExpr::set_allocated_opr2(::spir::BitEntity* opr2) {
   // @@protoc_insertion_point(field_set_allocated:spir.BitExpr.opr2)
 }
 
-// optional .spir.BitSrcLoc loc = 4;
+// repeated .spir.BitEntity oprs = 4;
+inline int BitExpr::_internal_oprs_size() const {
+  return _impl_.oprs_.size();
+}
+inline int BitExpr::oprs_size() const {
+  return _internal_oprs_size();
+}
+inline void BitExpr::clear_oprs() {
+  _impl_.oprs_.Clear();
+}
+inline ::spir::BitEntity* BitExpr::mutable_oprs(int index) {
+  // @@protoc_insertion_point(field_mutable:spir.BitExpr.oprs)
+  return _impl_.oprs_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::spir::BitEntity >*
+BitExpr::mutable_oprs() {
+  // @@protoc_insertion_point(field_mutable_list:spir.BitExpr.oprs)
+  return &_impl_.oprs_;
+}
+inline const ::spir::BitEntity& BitExpr::_internal_oprs(int index) const {
+  return _impl_.oprs_.Get(index);
+}
+inline const ::spir::BitEntity& BitExpr::oprs(int index) const {
+  // @@protoc_insertion_point(field_get:spir.BitExpr.oprs)
+  return _internal_oprs(index);
+}
+inline ::spir::BitEntity* BitExpr::_internal_add_oprs() {
+  return _impl_.oprs_.Add();
+}
+inline ::spir::BitEntity* BitExpr::add_oprs() {
+  ::spir::BitEntity* _add = _internal_add_oprs();
+  // @@protoc_insertion_point(field_add:spir.BitExpr.oprs)
+  return _add;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::spir::BitEntity >&
+BitExpr::oprs() const {
+  // @@protoc_insertion_point(field_list:spir.BitExpr.oprs)
+  return _impl_.oprs_;
+}
+
+// optional .spir.BitSrcLoc loc = 5;
 inline bool BitExpr::_internal_has_loc() const {
   bool value = (_impl_._has_bits_[0] & 0x00000004u) != 0;
   PROTOBUF_ASSUME(!value || _impl_.loc_ != nullptr);
@@ -3628,46 +3750,6 @@ inline void BitExpr::set_allocated_loc(::spir::BitSrcLoc* loc) {
   }
   _impl_.loc_ = loc;
   // @@protoc_insertion_point(field_set_allocated:spir.BitExpr.loc)
-}
-
-// repeated .spir.BitEntity exprs = 5;
-inline int BitExpr::_internal_exprs_size() const {
-  return _impl_.exprs_.size();
-}
-inline int BitExpr::exprs_size() const {
-  return _internal_exprs_size();
-}
-inline void BitExpr::clear_exprs() {
-  _impl_.exprs_.Clear();
-}
-inline ::spir::BitEntity* BitExpr::mutable_exprs(int index) {
-  // @@protoc_insertion_point(field_mutable:spir.BitExpr.exprs)
-  return _impl_.exprs_.Mutable(index);
-}
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::spir::BitEntity >*
-BitExpr::mutable_exprs() {
-  // @@protoc_insertion_point(field_mutable_list:spir.BitExpr.exprs)
-  return &_impl_.exprs_;
-}
-inline const ::spir::BitEntity& BitExpr::_internal_exprs(int index) const {
-  return _impl_.exprs_.Get(index);
-}
-inline const ::spir::BitEntity& BitExpr::exprs(int index) const {
-  // @@protoc_insertion_point(field_get:spir.BitExpr.exprs)
-  return _internal_exprs(index);
-}
-inline ::spir::BitEntity* BitExpr::_internal_add_exprs() {
-  return _impl_.exprs_.Add();
-}
-inline ::spir::BitEntity* BitExpr::add_exprs() {
-  ::spir::BitEntity* _add = _internal_add_exprs();
-  // @@protoc_insertion_point(field_add:spir.BitExpr.exprs)
-  return _add;
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::spir::BitEntity >&
-BitExpr::exprs() const {
-  // @@protoc_insertion_point(field_list:spir.BitExpr.exprs)
-  return _impl_.exprs_;
 }
 
 // -------------------------------------------------------------------
@@ -3874,31 +3956,171 @@ inline void BitInsn::set_allocated_expr2(::spir::BitExpr* expr2) {
   // @@protoc_insertion_point(field_set_allocated:spir.BitInsn.expr2)
 }
 
+// optional .spir.BitSrcLoc loc = 4;
+inline bool BitInsn::_internal_has_loc() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000004u) != 0;
+  PROTOBUF_ASSUME(!value || _impl_.loc_ != nullptr);
+  return value;
+}
+inline bool BitInsn::has_loc() const {
+  return _internal_has_loc();
+}
+inline void BitInsn::clear_loc() {
+  if (_impl_.loc_ != nullptr) _impl_.loc_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000004u;
+}
+inline const ::spir::BitSrcLoc& BitInsn::_internal_loc() const {
+  const ::spir::BitSrcLoc* p = _impl_.loc_;
+  return p != nullptr ? *p : reinterpret_cast<const ::spir::BitSrcLoc&>(
+      ::spir::_BitSrcLoc_default_instance_);
+}
+inline const ::spir::BitSrcLoc& BitInsn::loc() const {
+  // @@protoc_insertion_point(field_get:spir.BitInsn.loc)
+  return _internal_loc();
+}
+inline void BitInsn::unsafe_arena_set_allocated_loc(
+    ::spir::BitSrcLoc* loc) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.loc_);
+  }
+  _impl_.loc_ = loc;
+  if (loc) {
+    _impl_._has_bits_[0] |= 0x00000004u;
+  } else {
+    _impl_._has_bits_[0] &= ~0x00000004u;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:spir.BitInsn.loc)
+}
+inline ::spir::BitSrcLoc* BitInsn::release_loc() {
+  _impl_._has_bits_[0] &= ~0x00000004u;
+  ::spir::BitSrcLoc* temp = _impl_.loc_;
+  _impl_.loc_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::spir::BitSrcLoc* BitInsn::unsafe_arena_release_loc() {
+  // @@protoc_insertion_point(field_release:spir.BitInsn.loc)
+  _impl_._has_bits_[0] &= ~0x00000004u;
+  ::spir::BitSrcLoc* temp = _impl_.loc_;
+  _impl_.loc_ = nullptr;
+  return temp;
+}
+inline ::spir::BitSrcLoc* BitInsn::_internal_mutable_loc() {
+  _impl_._has_bits_[0] |= 0x00000004u;
+  if (_impl_.loc_ == nullptr) {
+    auto* p = CreateMaybeMessage<::spir::BitSrcLoc>(GetArenaForAllocation());
+    _impl_.loc_ = p;
+  }
+  return _impl_.loc_;
+}
+inline ::spir::BitSrcLoc* BitInsn::mutable_loc() {
+  ::spir::BitSrcLoc* _msg = _internal_mutable_loc();
+  // @@protoc_insertion_point(field_mutable:spir.BitInsn.loc)
+  return _msg;
+}
+inline void BitInsn::set_allocated_loc(::spir::BitSrcLoc* loc) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete _impl_.loc_;
+  }
+  if (loc) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(loc);
+    if (message_arena != submessage_arena) {
+      loc = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, loc, submessage_arena);
+    }
+    _impl_._has_bits_[0] |= 0x00000004u;
+  } else {
+    _impl_._has_bits_[0] &= ~0x00000004u;
+  }
+  _impl_.loc_ = loc;
+  // @@protoc_insertion_point(field_set_allocated:spir.BitInsn.loc)
+}
+
 // -------------------------------------------------------------------
 
 // BitFunc
 
-// uint64 id = 1;
-inline void BitFunc::clear_id() {
-  _impl_.id_ = uint64_t{0u};
+// uint64 fid = 1;
+inline void BitFunc::clear_fid() {
+  _impl_.fid_ = uint64_t{0u};
 }
-inline uint64_t BitFunc::_internal_id() const {
-  return _impl_.id_;
+inline uint64_t BitFunc::_internal_fid() const {
+  return _impl_.fid_;
 }
-inline uint64_t BitFunc::id() const {
-  // @@protoc_insertion_point(field_get:spir.BitFunc.id)
-  return _internal_id();
+inline uint64_t BitFunc::fid() const {
+  // @@protoc_insertion_point(field_get:spir.BitFunc.fid)
+  return _internal_fid();
 }
-inline void BitFunc::_internal_set_id(uint64_t value) {
+inline void BitFunc::_internal_set_fid(uint64_t value) {
   
-  _impl_.id_ = value;
+  _impl_.fid_ = value;
 }
-inline void BitFunc::set_id(uint64_t value) {
-  _internal_set_id(value);
-  // @@protoc_insertion_point(field_set:spir.BitFunc.id)
+inline void BitFunc::set_fid(uint64_t value) {
+  _internal_set_fid(value);
+  // @@protoc_insertion_point(field_set:spir.BitFunc.fid)
 }
 
-// bool is_variadic = 2;
+// string fname = 2;
+inline void BitFunc::clear_fname() {
+  _impl_.fname_.ClearToEmpty();
+}
+inline const std::string& BitFunc::fname() const {
+  // @@protoc_insertion_point(field_get:spir.BitFunc.fname)
+  return _internal_fname();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void BitFunc::set_fname(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.fname_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:spir.BitFunc.fname)
+}
+inline std::string* BitFunc::mutable_fname() {
+  std::string* _s = _internal_mutable_fname();
+  // @@protoc_insertion_point(field_mutable:spir.BitFunc.fname)
+  return _s;
+}
+inline const std::string& BitFunc::_internal_fname() const {
+  return _impl_.fname_.Get();
+}
+inline void BitFunc::_internal_set_fname(const std::string& value) {
+  
+  _impl_.fname_.Set(value, GetArenaForAllocation());
+}
+inline std::string* BitFunc::_internal_mutable_fname() {
+  
+  return _impl_.fname_.Mutable(GetArenaForAllocation());
+}
+inline std::string* BitFunc::release_fname() {
+  // @@protoc_insertion_point(field_release:spir.BitFunc.fname)
+  return _impl_.fname_.Release();
+}
+inline void BitFunc::set_allocated_fname(std::string* fname) {
+  if (fname != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.fname_.SetAllocated(fname, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.fname_.IsDefault()) {
+    _impl_.fname_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:spir.BitFunc.fname)
+}
+
+// bool is_variadic = 3;
 inline void BitFunc::clear_is_variadic() {
   _impl_.is_variadic_ = false;
 }
@@ -3916,56 +4138,6 @@ inline void BitFunc::_internal_set_is_variadic(bool value) {
 inline void BitFunc::set_is_variadic(bool value) {
   _internal_set_is_variadic(value);
   // @@protoc_insertion_point(field_set:spir.BitFunc.is_variadic)
-}
-
-// string name = 3;
-inline void BitFunc::clear_name() {
-  _impl_.name_.ClearToEmpty();
-}
-inline const std::string& BitFunc::name() const {
-  // @@protoc_insertion_point(field_get:spir.BitFunc.name)
-  return _internal_name();
-}
-template <typename ArgT0, typename... ArgT>
-inline PROTOBUF_ALWAYS_INLINE
-void BitFunc::set_name(ArgT0&& arg0, ArgT... args) {
- 
- _impl_.name_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:spir.BitFunc.name)
-}
-inline std::string* BitFunc::mutable_name() {
-  std::string* _s = _internal_mutable_name();
-  // @@protoc_insertion_point(field_mutable:spir.BitFunc.name)
-  return _s;
-}
-inline const std::string& BitFunc::_internal_name() const {
-  return _impl_.name_.Get();
-}
-inline void BitFunc::_internal_set_name(const std::string& value) {
-  
-  _impl_.name_.Set(value, GetArenaForAllocation());
-}
-inline std::string* BitFunc::_internal_mutable_name() {
-  
-  return _impl_.name_.Mutable(GetArenaForAllocation());
-}
-inline std::string* BitFunc::release_name() {
-  // @@protoc_insertion_point(field_release:spir.BitFunc.name)
-  return _impl_.name_.Release();
-}
-inline void BitFunc::set_allocated_name(std::string* name) {
-  if (name != nullptr) {
-    
-  } else {
-    
-  }
-  _impl_.name_.SetAllocated(name, GetArenaForAllocation());
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.name_.IsDefault()) {
-    _impl_.name_.Set("", GetArenaForAllocation());
-  }
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:spir.BitFunc.name)
 }
 
 // optional string calling_convention = 4;
@@ -4131,122 +4303,122 @@ BitFunc::mutable_locals() {
 
 // BitTU
 
-// string name = 1;
-inline void BitTU::clear_name() {
-  _impl_.name_.ClearToEmpty();
+// string tuName = 1;
+inline void BitTU::clear_tuname() {
+  _impl_.tuname_.ClearToEmpty();
 }
-inline const std::string& BitTU::name() const {
-  // @@protoc_insertion_point(field_get:spir.BitTU.name)
-  return _internal_name();
+inline const std::string& BitTU::tuname() const {
+  // @@protoc_insertion_point(field_get:spir.BitTU.tuName)
+  return _internal_tuname();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void BitTU::set_name(ArgT0&& arg0, ArgT... args) {
+void BitTU::set_tuname(ArgT0&& arg0, ArgT... args) {
  
- _impl_.name_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:spir.BitTU.name)
+ _impl_.tuname_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:spir.BitTU.tuName)
 }
-inline std::string* BitTU::mutable_name() {
-  std::string* _s = _internal_mutable_name();
-  // @@protoc_insertion_point(field_mutable:spir.BitTU.name)
+inline std::string* BitTU::mutable_tuname() {
+  std::string* _s = _internal_mutable_tuname();
+  // @@protoc_insertion_point(field_mutable:spir.BitTU.tuName)
   return _s;
 }
-inline const std::string& BitTU::_internal_name() const {
-  return _impl_.name_.Get();
+inline const std::string& BitTU::_internal_tuname() const {
+  return _impl_.tuname_.Get();
 }
-inline void BitTU::_internal_set_name(const std::string& value) {
+inline void BitTU::_internal_set_tuname(const std::string& value) {
   
-  _impl_.name_.Set(value, GetArenaForAllocation());
+  _impl_.tuname_.Set(value, GetArenaForAllocation());
 }
-inline std::string* BitTU::_internal_mutable_name() {
+inline std::string* BitTU::_internal_mutable_tuname() {
   
-  return _impl_.name_.Mutable(GetArenaForAllocation());
+  return _impl_.tuname_.Mutable(GetArenaForAllocation());
 }
-inline std::string* BitTU::release_name() {
-  // @@protoc_insertion_point(field_release:spir.BitTU.name)
-  return _impl_.name_.Release();
+inline std::string* BitTU::release_tuname() {
+  // @@protoc_insertion_point(field_release:spir.BitTU.tuName)
+  return _impl_.tuname_.Release();
 }
-inline void BitTU::set_allocated_name(std::string* name) {
-  if (name != nullptr) {
+inline void BitTU::set_allocated_tuname(std::string* tuname) {
+  if (tuname != nullptr) {
     
   } else {
     
   }
-  _impl_.name_.SetAllocated(name, GetArenaForAllocation());
+  _impl_.tuname_.SetAllocated(tuname, GetArenaForAllocation());
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.name_.IsDefault()) {
-    _impl_.name_.Set("", GetArenaForAllocation());
+  if (_impl_.tuname_.IsDefault()) {
+    _impl_.tuname_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:spir.BitTU.name)
+  // @@protoc_insertion_point(field_set_allocated:spir.BitTU.tuName)
 }
 
-// optional string directory = 2;
-inline bool BitTU::_internal_has_directory() const {
+// optional string absPath = 2;
+inline bool BitTU::_internal_has_abspath() const {
   bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
   return value;
 }
-inline bool BitTU::has_directory() const {
-  return _internal_has_directory();
+inline bool BitTU::has_abspath() const {
+  return _internal_has_abspath();
 }
-inline void BitTU::clear_directory() {
-  _impl_.directory_.ClearToEmpty();
+inline void BitTU::clear_abspath() {
+  _impl_.abspath_.ClearToEmpty();
   _impl_._has_bits_[0] &= ~0x00000001u;
 }
-inline const std::string& BitTU::directory() const {
-  // @@protoc_insertion_point(field_get:spir.BitTU.directory)
-  return _internal_directory();
+inline const std::string& BitTU::abspath() const {
+  // @@protoc_insertion_point(field_get:spir.BitTU.absPath)
+  return _internal_abspath();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void BitTU::set_directory(ArgT0&& arg0, ArgT... args) {
+void BitTU::set_abspath(ArgT0&& arg0, ArgT... args) {
  _impl_._has_bits_[0] |= 0x00000001u;
- _impl_.directory_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:spir.BitTU.directory)
+ _impl_.abspath_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:spir.BitTU.absPath)
 }
-inline std::string* BitTU::mutable_directory() {
-  std::string* _s = _internal_mutable_directory();
-  // @@protoc_insertion_point(field_mutable:spir.BitTU.directory)
+inline std::string* BitTU::mutable_abspath() {
+  std::string* _s = _internal_mutable_abspath();
+  // @@protoc_insertion_point(field_mutable:spir.BitTU.absPath)
   return _s;
 }
-inline const std::string& BitTU::_internal_directory() const {
-  return _impl_.directory_.Get();
+inline const std::string& BitTU::_internal_abspath() const {
+  return _impl_.abspath_.Get();
 }
-inline void BitTU::_internal_set_directory(const std::string& value) {
+inline void BitTU::_internal_set_abspath(const std::string& value) {
   _impl_._has_bits_[0] |= 0x00000001u;
-  _impl_.directory_.Set(value, GetArenaForAllocation());
+  _impl_.abspath_.Set(value, GetArenaForAllocation());
 }
-inline std::string* BitTU::_internal_mutable_directory() {
+inline std::string* BitTU::_internal_mutable_abspath() {
   _impl_._has_bits_[0] |= 0x00000001u;
-  return _impl_.directory_.Mutable(GetArenaForAllocation());
+  return _impl_.abspath_.Mutable(GetArenaForAllocation());
 }
-inline std::string* BitTU::release_directory() {
-  // @@protoc_insertion_point(field_release:spir.BitTU.directory)
-  if (!_internal_has_directory()) {
+inline std::string* BitTU::release_abspath() {
+  // @@protoc_insertion_point(field_release:spir.BitTU.absPath)
+  if (!_internal_has_abspath()) {
     return nullptr;
   }
   _impl_._has_bits_[0] &= ~0x00000001u;
-  auto* p = _impl_.directory_.Release();
+  auto* p = _impl_.abspath_.Release();
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.directory_.IsDefault()) {
-    _impl_.directory_.Set("", GetArenaForAllocation());
+  if (_impl_.abspath_.IsDefault()) {
+    _impl_.abspath_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   return p;
 }
-inline void BitTU::set_allocated_directory(std::string* directory) {
-  if (directory != nullptr) {
+inline void BitTU::set_allocated_abspath(std::string* abspath) {
+  if (abspath != nullptr) {
     _impl_._has_bits_[0] |= 0x00000001u;
   } else {
     _impl_._has_bits_[0] &= ~0x00000001u;
   }
-  _impl_.directory_.SetAllocated(directory, GetArenaForAllocation());
+  _impl_.abspath_.SetAllocated(abspath, GetArenaForAllocation());
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.directory_.IsDefault()) {
-    _impl_.directory_.Set("", GetArenaForAllocation());
+  if (_impl_.abspath_.IsDefault()) {
+    _impl_.abspath_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:spir.BitTU.directory)
+  // @@protoc_insertion_point(field_set_allocated:spir.BitTU.absPath)
 }
 
 // optional string origin = 3;
@@ -4317,33 +4489,33 @@ inline void BitTU::set_allocated_origin(std::string* origin) {
   // @@protoc_insertion_point(field_set_allocated:spir.BitTU.origin)
 }
 
-// map<string, .spir.BitEntity> entities = 4;
-inline int BitTU::_internal_entities_size() const {
-  return _impl_.entities_.size();
+// map<string, uint64> namesToIds = 4;
+inline int BitTU::_internal_namestoids_size() const {
+  return _impl_.namestoids_.size();
 }
-inline int BitTU::entities_size() const {
-  return _internal_entities_size();
+inline int BitTU::namestoids_size() const {
+  return _internal_namestoids_size();
 }
-inline void BitTU::clear_entities() {
-  _impl_.entities_.Clear();
+inline void BitTU::clear_namestoids() {
+  _impl_.namestoids_.Clear();
 }
-inline const ::PROTOBUF_NAMESPACE_ID::Map< std::string, ::spir::BitEntity >&
-BitTU::_internal_entities() const {
-  return _impl_.entities_.GetMap();
+inline const ::PROTOBUF_NAMESPACE_ID::Map< std::string, uint64_t >&
+BitTU::_internal_namestoids() const {
+  return _impl_.namestoids_.GetMap();
 }
-inline const ::PROTOBUF_NAMESPACE_ID::Map< std::string, ::spir::BitEntity >&
-BitTU::entities() const {
-  // @@protoc_insertion_point(field_map:spir.BitTU.entities)
-  return _internal_entities();
+inline const ::PROTOBUF_NAMESPACE_ID::Map< std::string, uint64_t >&
+BitTU::namestoids() const {
+  // @@protoc_insertion_point(field_map:spir.BitTU.namesToIds)
+  return _internal_namestoids();
 }
-inline ::PROTOBUF_NAMESPACE_ID::Map< std::string, ::spir::BitEntity >*
-BitTU::_internal_mutable_entities() {
-  return _impl_.entities_.MutableMap();
+inline ::PROTOBUF_NAMESPACE_ID::Map< std::string, uint64_t >*
+BitTU::_internal_mutable_namestoids() {
+  return _impl_.namestoids_.MutableMap();
 }
-inline ::PROTOBUF_NAMESPACE_ID::Map< std::string, ::spir::BitEntity >*
-BitTU::mutable_entities() {
-  // @@protoc_insertion_point(field_mutable_map:spir.BitTU.entities)
-  return _internal_mutable_entities();
+inline ::PROTOBUF_NAMESPACE_ID::Map< std::string, uint64_t >*
+BitTU::mutable_namestoids() {
+  // @@protoc_insertion_point(field_mutable_map:spir.BitTU.namesToIds)
+  return _internal_mutable_namestoids();
 }
 
 // map<uint64, .spir.BitEntityInfo> entityInfo = 5;
