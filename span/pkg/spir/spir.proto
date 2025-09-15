@@ -94,24 +94,24 @@ enum K_XK {
 	// XGT and XLE can be represented using XLT and XGE respectively by reordering operands.
 
 	XARRAY_INDEX		= 17; // An array index expression (binary expr)
-	XMEMBER_ACCESS		= 18; // A member access expression (binary expr)
-	XMEMBER_PTR_ACCESS	= 19; // A member pointer access expression (binary expr)
-	XMEMBER_PTR_ADDROF	= 20; // A member pointer address expression (unary expr)
+	XMEMBER_PTR_ACCESS	= 18; // A member pointer access expression (binary expr)
+	XMEMBER_PTR_ADDROF	= 19; // A member pointer address expression (binary expr)
 
-	XCALL	= 21; // A function call expression (all arguments may be stored separately)
-	XCALL_0	= 22; // A call with zero arguments
+	XCALL	= 20; // A function call expression (all arguments may be stored separately)
+	XCALL_0	= 21; // A call with zero arguments (unary expr)
 
-	XCAST	= 23; // A cast expression
+	XCAST	= 22; // A unary cast expression
 
-	XBIT_NOT = 24; // A unary bitwise NOT expression
-	XNEGATE	 = 25; // A unary minus expression
-	XNOT	 = 26; // A unary logical NOT expression
+	XBIT_NOT = 23; // A unary bitwise NOT expression
+	XNEGATE	 = 24; // A unary minus expression
+	XNOT	 = 25; // A unary logical NOT expression
 
-	XDEREF	= 27; // A dereference expression (unary expr)
-	XADDROF	= 28; // An address expression (unary expr)
+	XDEREF	= 26; // A dereference expression (unary expr)
+	XADDROF	= 27; // An address expression (unary expr)
 
-	XSIZEOF	 = 29; // A sizeof expression
-	XALIGNOF = 30; // An alignof expression
+	XSIZEOF	 = 28; // A unary sizeof expression
+	XALIGNOF = 29; // A unary alignof expression
+	XALLOC	 = 30; // A unary stack allocation expression
 
 	XOTHER  = 31; // Other expression.
 }
@@ -237,17 +237,18 @@ message BitDataType {
 message BitEntityInfo {
 	uint64 eid					= 1; // Entity id
 	K_EK ekind					= 2;
+	K_VK vkind					= 3; // For basic types
 
 	// Id of the parent if this entity is a record field or a function parameter
-	optional uint64 parentId	= 3;
-	optional BitDataType dt		= 4;
+	optional uint64 parentId	= 4;
+	optional BitDataType dt		= 5; // For non-basic types
 
 	// Store value if entity is a constant value.
-	optional uint64 lowVal		= 5; // for a numeric literal (int, float, etc.)
-	optional uint64 highVal		= 6; // Used for more than 64 bit numeric literal
-	optional string strVal		= 7; // for a string literal or entity name
+	optional uint64 lowVal		= 6; // for a numeric literal (int, float, etc.)
+	optional uint64 highVal		= 7; // Used for more than 64 bit numeric literal
+	optional string strVal		= 8; // for a string literal or entity name
 
-	optional BitSrcLoc loc  = 8; // location of the entity in the source file
+	optional BitSrcLoc loc		= 9; // location of the entity in the source file
 }
 
 // A single entity like a variable, constant etc.
@@ -258,7 +259,7 @@ message BitEntity {
 
 // A unary, binary, and call expressions.
 message BitExpr {
-	K_XK kind				= 1;
+	K_XK xkind				= 1;
 	optional BitEntity opr1 = 2;
 	optional BitEntity opr2 = 3;
 	// More expressions, e.g. call arguments, array subscript, etc.

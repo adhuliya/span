@@ -194,19 +194,19 @@ enum K_XK : int {
   XLT = 15,
   XGE = 16,
   XARRAY_INDEX = 17,
-  XMEMBER_ACCESS = 18,
-  XMEMBER_PTR_ACCESS = 19,
-  XMEMBER_PTR_ADDROF = 20,
-  XCALL = 21,
-  XCALL_0 = 22,
-  XCAST = 23,
-  XBIT_NOT = 24,
-  XNEGATE = 25,
-  XNOT = 26,
-  XDEREF = 27,
-  XADDROF = 28,
-  XSIZEOF = 29,
-  XALIGNOF = 30,
+  XMEMBER_PTR_ACCESS = 18,
+  XMEMBER_PTR_ADDROF = 19,
+  XCALL = 20,
+  XCALL_0 = 21,
+  XCAST = 22,
+  XBIT_NOT = 23,
+  XNEGATE = 24,
+  XNOT = 25,
+  XDEREF = 26,
+  XADDROF = 27,
+  XSIZEOF = 28,
+  XALIGNOF = 29,
+  XALLOC = 30,
   XOTHER = 31,
   K_XK_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
   K_XK_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
@@ -1417,7 +1417,7 @@ class BitExpr final :
     kOpr1FieldNumber = 2,
     kOpr2FieldNumber = 3,
     kLocFieldNumber = 5,
-    kKindFieldNumber = 1,
+    kXkindFieldNumber = 1,
   };
   // repeated .spir.BitEntity oprs = 4;
   int oprs_size() const;
@@ -1491,13 +1491,13 @@ class BitExpr final :
       ::spir::BitSrcLoc* loc);
   ::spir::BitSrcLoc* unsafe_arena_release_loc();
 
-  // .spir.K_XK kind = 1;
-  void clear_kind();
-  ::spir::K_XK kind() const;
-  void set_kind(::spir::K_XK value);
+  // .spir.K_XK xkind = 1;
+  void clear_xkind();
+  ::spir::K_XK xkind() const;
+  void set_xkind(::spir::K_XK value);
   private:
-  ::spir::K_XK _internal_kind() const;
-  void _internal_set_kind(::spir::K_XK value);
+  ::spir::K_XK _internal_xkind() const;
+  void _internal_set_xkind(::spir::K_XK value);
   public:
 
   // @@protoc_insertion_point(class_scope:spir.BitExpr)
@@ -1514,7 +1514,7 @@ class BitExpr final :
     ::spir::BitEntity* opr1_;
     ::spir::BitEntity* opr2_;
     ::spir::BitSrcLoc* loc_;
-    int kind_;
+    int xkind_;
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_spir_2eproto;
@@ -3422,24 +3422,24 @@ inline void BitEntity::set_allocated_loc(::spir::BitSrcLoc* loc) {
 
 // BitExpr
 
-// .spir.K_XK kind = 1;
-inline void BitExpr::clear_kind() {
-  _impl_.kind_ = 0;
+// .spir.K_XK xkind = 1;
+inline void BitExpr::clear_xkind() {
+  _impl_.xkind_ = 0;
 }
-inline ::spir::K_XK BitExpr::_internal_kind() const {
-  return static_cast< ::spir::K_XK >(_impl_.kind_);
+inline ::spir::K_XK BitExpr::_internal_xkind() const {
+  return static_cast< ::spir::K_XK >(_impl_.xkind_);
 }
-inline ::spir::K_XK BitExpr::kind() const {
-  // @@protoc_insertion_point(field_get:spir.BitExpr.kind)
-  return _internal_kind();
+inline ::spir::K_XK BitExpr::xkind() const {
+  // @@protoc_insertion_point(field_get:spir.BitExpr.xkind)
+  return _internal_xkind();
 }
-inline void BitExpr::_internal_set_kind(::spir::K_XK value) {
+inline void BitExpr::_internal_set_xkind(::spir::K_XK value) {
   
-  _impl_.kind_ = value;
+  _impl_.xkind_ = value;
 }
-inline void BitExpr::set_kind(::spir::K_XK value) {
-  _internal_set_kind(value);
-  // @@protoc_insertion_point(field_set:spir.BitExpr.kind)
+inline void BitExpr::set_xkind(::spir::K_XK value) {
+  _internal_set_xkind(value);
+  // @@protoc_insertion_point(field_set:spir.BitExpr.xkind)
 }
 
 // optional .spir.BitEntity opr1 = 2;

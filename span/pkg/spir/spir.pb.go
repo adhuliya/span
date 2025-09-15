@@ -245,19 +245,19 @@ const (
 	K_XK_XLT                K_XK = 15 // Less than comparison (binary expr).
 	K_XK_XGE                K_XK = 16 // Greater than or equal to comparison (binary expr).
 	K_XK_XARRAY_INDEX       K_XK = 17 // An array index expression (binary expr)
-	K_XK_XMEMBER_ACCESS     K_XK = 18 // A member access expression (binary expr)
-	K_XK_XMEMBER_PTR_ACCESS K_XK = 19 // A member pointer access expression (binary expr)
-	K_XK_XMEMBER_PTR_ADDROF K_XK = 20 // A member pointer address expression (unary expr)
-	K_XK_XCALL              K_XK = 21 // A function call expression (all arguments may be stored separately)
-	K_XK_XCALL_0            K_XK = 22 // A call with zero arguments
-	K_XK_XCAST              K_XK = 23 // A cast expression
-	K_XK_XBIT_NOT           K_XK = 24 // A unary bitwise NOT expression
-	K_XK_XNEGATE            K_XK = 25 // A unary minus expression
-	K_XK_XNOT               K_XK = 26 // A unary logical NOT expression
-	K_XK_XDEREF             K_XK = 27 // A dereference expression (unary expr)
-	K_XK_XADDROF            K_XK = 28 // An address expression (unary expr)
-	K_XK_XSIZEOF            K_XK = 29 // A sizeof expression
-	K_XK_XALIGNOF           K_XK = 30 // An alignof expression
+	K_XK_XMEMBER_PTR_ACCESS K_XK = 18 // A member pointer access expression (binary expr)
+	K_XK_XMEMBER_PTR_ADDROF K_XK = 19 // A member pointer address expression (binary expr)
+	K_XK_XCALL              K_XK = 20 // A function call expression (all arguments may be stored separately)
+	K_XK_XCALL_0            K_XK = 21 // A call with zero arguments (unary expr)
+	K_XK_XCAST              K_XK = 22 // A unary cast expression
+	K_XK_XBIT_NOT           K_XK = 23 // A unary bitwise NOT expression
+	K_XK_XNEGATE            K_XK = 24 // A unary minus expression
+	K_XK_XNOT               K_XK = 25 // A unary logical NOT expression
+	K_XK_XDEREF             K_XK = 26 // A dereference expression (unary expr)
+	K_XK_XADDROF            K_XK = 27 // An address expression (unary expr)
+	K_XK_XSIZEOF            K_XK = 28 // A unary sizeof expression
+	K_XK_XALIGNOF           K_XK = 29 // A unary alignof expression
+	K_XK_XALLOC             K_XK = 30 // A unary stack allocation expression
 	K_XK_XOTHER             K_XK = 31 // Other expression.
 )
 
@@ -282,19 +282,19 @@ var (
 		15: "XLT",
 		16: "XGE",
 		17: "XARRAY_INDEX",
-		18: "XMEMBER_ACCESS",
-		19: "XMEMBER_PTR_ACCESS",
-		20: "XMEMBER_PTR_ADDROF",
-		21: "XCALL",
-		22: "XCALL_0",
-		23: "XCAST",
-		24: "XBIT_NOT",
-		25: "XNEGATE",
-		26: "XNOT",
-		27: "XDEREF",
-		28: "XADDROF",
-		29: "XSIZEOF",
-		30: "XALIGNOF",
+		18: "XMEMBER_PTR_ACCESS",
+		19: "XMEMBER_PTR_ADDROF",
+		20: "XCALL",
+		21: "XCALL_0",
+		22: "XCAST",
+		23: "XBIT_NOT",
+		24: "XNEGATE",
+		25: "XNOT",
+		26: "XDEREF",
+		27: "XADDROF",
+		28: "XSIZEOF",
+		29: "XALIGNOF",
+		30: "XALLOC",
 		31: "XOTHER",
 	}
 	K_XK_value = map[string]int32{
@@ -316,19 +316,19 @@ var (
 		"XLT":                15,
 		"XGE":                16,
 		"XARRAY_INDEX":       17,
-		"XMEMBER_ACCESS":     18,
-		"XMEMBER_PTR_ACCESS": 19,
-		"XMEMBER_PTR_ADDROF": 20,
-		"XCALL":              21,
-		"XCALL_0":            22,
-		"XCAST":              23,
-		"XBIT_NOT":           24,
-		"XNEGATE":            25,
-		"XNOT":               26,
-		"XDEREF":             27,
-		"XADDROF":            28,
-		"XSIZEOF":            29,
-		"XALIGNOF":           30,
+		"XMEMBER_PTR_ACCESS": 18,
+		"XMEMBER_PTR_ADDROF": 19,
+		"XCALL":              20,
+		"XCALL_0":            21,
+		"XCAST":              22,
+		"XBIT_NOT":           23,
+		"XNEGATE":            24,
+		"XNOT":               25,
+		"XDEREF":             26,
+		"XADDROF":            27,
+		"XSIZEOF":            28,
+		"XALIGNOF":           29,
+		"XALLOC":             30,
 		"XOTHER":             31,
 	}
 )
@@ -981,7 +981,7 @@ func (x *BitEntity) GetLoc() *BitSrcLoc {
 // A unary, binary, and call expressions.
 type BitExpr struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	Kind  K_XK                   `protobuf:"varint,1,opt,name=kind,proto3,enum=spir.K_XK" json:"kind,omitempty"`
+	Xkind K_XK                   `protobuf:"varint,1,opt,name=xkind,proto3,enum=spir.K_XK" json:"xkind,omitempty"`
 	Opr1  *BitEntity             `protobuf:"bytes,2,opt,name=opr1,proto3,oneof" json:"opr1,omitempty"`
 	Opr2  *BitEntity             `protobuf:"bytes,3,opt,name=opr2,proto3,oneof" json:"opr2,omitempty"`
 	// More expressions, e.g. call arguments, array subscript, etc.
@@ -1021,9 +1021,9 @@ func (*BitExpr) Descriptor() ([]byte, []int) {
 	return file_span_pkg_spir_spir_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *BitExpr) GetKind() K_XK {
+func (x *BitExpr) GetXkind() K_XK {
 	if x != nil {
-		return x.Kind
+		return x.Xkind
 	}
 	return K_XK_XNIL
 }
@@ -1363,10 +1363,10 @@ const file_span_pkg_spir_spir_proto_rawDesc = "" +
 	"\tBitEntity\x12\x10\n" +
 	"\x03eid\x18\x01 \x01(\x04R\x03eid\x12&\n" +
 	"\x03loc\x18\x02 \x01(\v2\x0f.spir.BitSrcLocH\x00R\x03loc\x88\x01\x01B\x06\n" +
-	"\x04_loc\"\xe4\x01\n" +
-	"\aBitExpr\x12\x1e\n" +
-	"\x04kind\x18\x01 \x01(\x0e2\n" +
-	".spir.K_XKR\x04kind\x12(\n" +
+	"\x04_loc\"\xe6\x01\n" +
+	"\aBitExpr\x12 \n" +
+	"\x05xkind\x18\x01 \x01(\x0e2\n" +
+	".spir.K_XKR\x05xkind\x12(\n" +
 	"\x04opr1\x18\x02 \x01(\v2\x0f.spir.BitEntityH\x00R\x04opr1\x88\x01\x01\x12(\n" +
 	"\x04opr2\x18\x03 \x01(\v2\x0f.spir.BitEntityH\x01R\x04opr2\x88\x01\x01\x12#\n" +
 	"\x04oprs\x18\x04 \x03(\v2\x0f.spir.BitEntityR\x04oprs\x12&\n" +
@@ -1456,7 +1456,7 @@ const file_span_pkg_spir_spir_proto_rawDesc = "" +
 	"\x12\n" +
 	"\n" +
 	"\x06ILABEL\x10\v\x12\v\n" +
-	"\aIRETURN\x10\f*\x8a\x03\n" +
+	"\aIRETURN\x10\f*\x82\x03\n" +
 	"\x04K_XK\x12\b\n" +
 	"\x04XNIL\x10\x00\x12\b\n" +
 	"\x04XVAL\x10\x01\x12\b\n" +
@@ -1476,21 +1476,22 @@ const file_span_pkg_spir_spir_proto_rawDesc = "" +
 	"\x03XNE\x10\x0e\x12\a\n" +
 	"\x03XLT\x10\x0f\x12\a\n" +
 	"\x03XGE\x10\x10\x12\x10\n" +
-	"\fXARRAY_INDEX\x10\x11\x12\x12\n" +
-	"\x0eXMEMBER_ACCESS\x10\x12\x12\x16\n" +
-	"\x12XMEMBER_PTR_ACCESS\x10\x13\x12\x16\n" +
-	"\x12XMEMBER_PTR_ADDROF\x10\x14\x12\t\n" +
-	"\x05XCALL\x10\x15\x12\v\n" +
-	"\aXCALL_0\x10\x16\x12\t\n" +
-	"\x05XCAST\x10\x17\x12\f\n" +
-	"\bXBIT_NOT\x10\x18\x12\v\n" +
-	"\aXNEGATE\x10\x19\x12\b\n" +
-	"\x04XNOT\x10\x1a\x12\n" +
+	"\fXARRAY_INDEX\x10\x11\x12\x16\n" +
+	"\x12XMEMBER_PTR_ACCESS\x10\x12\x12\x16\n" +
+	"\x12XMEMBER_PTR_ADDROF\x10\x13\x12\t\n" +
+	"\x05XCALL\x10\x14\x12\v\n" +
+	"\aXCALL_0\x10\x15\x12\t\n" +
+	"\x05XCAST\x10\x16\x12\f\n" +
+	"\bXBIT_NOT\x10\x17\x12\v\n" +
+	"\aXNEGATE\x10\x18\x12\b\n" +
+	"\x04XNOT\x10\x19\x12\n" +
 	"\n" +
-	"\x06XDEREF\x10\x1b\x12\v\n" +
-	"\aXADDROF\x10\x1c\x12\v\n" +
-	"\aXSIZEOF\x10\x1d\x12\f\n" +
-	"\bXALIGNOF\x10\x1e\x12\n" +
+	"\x06XDEREF\x10\x1a\x12\v\n" +
+	"\aXADDROF\x10\x1b\x12\v\n" +
+	"\aXSIZEOF\x10\x1c\x12\f\n" +
+	"\bXALIGNOF\x10\x1d\x12\n" +
+	"\n" +
+	"\x06XALLOC\x10\x1e\x12\n" +
 	"\n" +
 	"\x06XOTHER\x10\x1f*\xbd\x04\n" +
 	"\x04K_VK\x12\b\n" +
@@ -1606,7 +1607,7 @@ var file_span_pkg_spir_spir_proto_depIdxs = []int32{
 	6,  // 5: spir.BitEntityInfo.dt:type_name -> spir.BitDataType
 	5,  // 6: spir.BitEntityInfo.loc:type_name -> spir.BitSrcLoc
 	5,  // 7: spir.BitEntity.loc:type_name -> spir.BitSrcLoc
-	2,  // 8: spir.BitExpr.kind:type_name -> spir.K_XK
+	2,  // 8: spir.BitExpr.xkind:type_name -> spir.K_XK
 	8,  // 9: spir.BitExpr.opr1:type_name -> spir.BitEntity
 	8,  // 10: spir.BitExpr.opr2:type_name -> spir.BitEntity
 	8,  // 11: spir.BitExpr.oprs:type_name -> spir.BitEntity

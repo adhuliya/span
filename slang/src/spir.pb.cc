@@ -106,7 +106,7 @@ PROTOBUF_CONSTEXPR BitExpr::BitExpr(
   , /*decltype(_impl_.opr1_)*/nullptr
   , /*decltype(_impl_.opr2_)*/nullptr
   , /*decltype(_impl_.loc_)*/nullptr
-  , /*decltype(_impl_.kind_)*/0} {}
+  , /*decltype(_impl_.xkind_)*/0} {}
 struct BitExprDefaultTypeInternal {
   PROTOBUF_CONSTEXPR BitExprDefaultTypeInternal()
       : _instance(::_pbi::ConstantInitialized{}) {}
@@ -278,7 +278,7 @@ const uint32_t TableStruct_spir_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(pro
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::spir::BitExpr, _impl_.kind_),
+  PROTOBUF_FIELD_OFFSET(::spir::BitExpr, _impl_.xkind_),
   PROTOBUF_FIELD_OFFSET(::spir::BitExpr, _impl_.opr1_),
   PROTOBUF_FIELD_OFFSET(::spir::BitExpr, _impl_.opr2_),
   PROTOBUF_FIELD_OFFSET(::spir::BitExpr, _impl_.oprs_),
@@ -407,78 +407,78 @@ const char descriptor_table_protodef_spir_2eproto[] PROTOBUF_SECTION_VARIABLE(pr
   "BitSrcLocH\005\210\001\001B\013\n\t_parentIdB\005\n\003_dtB\t\n\007_l"
   "owValB\n\n\010_highValB\t\n\007_strValB\006\n\004_loc\"C\n\t"
   "BitEntity\022\013\n\003eid\030\001 \001(\004\022!\n\003loc\030\002 \001(\0132\017.sp"
-  "ir.BitSrcLocH\000\210\001\001B\006\n\004_loc\"\307\001\n\007BitExpr\022\030\n"
-  "\004kind\030\001 \001(\0162\n.spir.K_XK\022\"\n\004opr1\030\002 \001(\0132\017."
-  "spir.BitEntityH\000\210\001\001\022\"\n\004opr2\030\003 \001(\0132\017.spir"
-  ".BitEntityH\001\210\001\001\022\035\n\004oprs\030\004 \003(\0132\017.spir.Bit"
-  "Entity\022!\n\003loc\030\005 \001(\0132\017.spir.BitSrcLocH\002\210\001"
-  "\001B\007\n\005_opr1B\007\n\005_opr2B\006\n\004_loc\"\250\001\n\007BitInsn\022"
-  "\030\n\004kind\030\001 \001(\0162\n.spir.K_IK\022!\n\005expr1\030\002 \001(\013"
-  "2\r.spir.BitExprH\000\210\001\001\022!\n\005expr2\030\003 \001(\0132\r.sp"
-  "ir.BitExprH\001\210\001\001\022!\n\003loc\030\004 \001(\0132\017.spir.BitS"
-  "rcLocH\002\210\001\001B\010\n\006_expr1B\010\n\006_expr2B\006\n\004_loc\"\240"
-  "\001\n\007BitFunc\022\013\n\003fid\030\001 \001(\004\022\r\n\005fname\030\002 \001(\t\022\023"
-  "\n\013is_variadic\030\003 \001(\010\022\037\n\022calling_conventio"
-  "n\030\004 \001(\tH\000\210\001\001\022\034\n\005insns\030\005 \003(\0132\r.spir.BitIn"
-  "sn\022\016\n\006locals\030\006 \003(\004B\025\n\023_calling_conventio"
-  "n\"\330\002\n\005BitTU\022\016\n\006tuName\030\001 \001(\t\022\024\n\007absPath\030\002"
-  " \001(\tH\000\210\001\001\022\023\n\006origin\030\003 \001(\tH\001\210\001\001\022/\n\nnamesT"
-  "oIds\030\004 \003(\0132\033.spir.BitTU.NamesToIdsEntry\022"
-  "/\n\nentityInfo\030\005 \003(\0132\033.spir.BitTU.EntityI"
-  "nfoEntry\022 \n\tfunctions\030\006 \003(\0132\r.spir.BitFu"
-  "nc\0321\n\017NamesToIdsEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005va"
-  "lue\030\002 \001(\004:\0028\001\032F\n\017EntityInfoEntry\022\013\n\003key\030"
-  "\001 \001(\004\022\"\n\005value\030\002 \001(\0132\023.spir.BitEntityInf"
-  "o:\0028\001B\n\n\010_absPathB\t\n\007_origin*\313\002\n\004K_EK\022\010\n"
-  "\004ENIL\020\000\022\r\n\tEVAR_GLBL\020\001\022\r\n\tEVAR_LOCL\020\002\022\021\n"
-  "\rEVAR_LOCL_ARG\020\003\022\024\n\020EVAR_LOCL_STATIC\020\004\022\021"
-  "\n\rEVAR_LOCL_TMP\020\005\022\021\n\rEVAR_LOCL_SSA\020\006\022\024\n\020"
-  "EVAR_LOCL_PSEUDO\020\007\022\014\n\010ELIT_NUM\020\010\022\020\n\014ELIT"
-  "_NUM_IMM\020\t\022\014\n\010ELIT_STR\020\n\022\016\n\nEDATA_TYPE\020\013"
-  "\022\t\n\005EFUNC\020\014\022\017\n\013EFUNC_VARGS\020\r\022\n\n\006ELABEL\020\016"
-  "\022\n\n\006EOTHER\020\017\022\021\n\rERECORD_FIELD\020\020\022\t\n\005EINSN"
-  "\020\021\022\007\n\003EBB\020\022\022\010\n\004ECFG\020\023\022\n\n\006ESCOPE\020\024\022\007\n\003ETU"
-  "\020\025*\267\001\n\004K_IK\022\010\n\004INIL\020\000\022\010\n\004INOP\020\001\022\014\n\010IBARR"
-  "IER\020\002\022\020\n\014IASGN_SIMPLE\020\003\022\020\n\014IASGN_RHS_OP\020"
-  "\004\022\020\n\014IASGN_LHS_OP\020\005\022\016\n\nIASGN_CALL\020\006\022\r\n\tI"
-  "ASGN_PHI\020\007\022\t\n\005ICALL\020\010\022\t\n\005IGOTO\020\t\022\t\n\005ICON"
-  "D\020\n\022\n\n\006ILABEL\020\013\022\013\n\007IRETURN\020\014*\212\003\n\004K_XK\022\010\n"
-  "\004XNIL\020\000\022\010\n\004XVAL\020\001\022\010\n\004XADD\020\002\022\010\n\004XSUB\020\003\022\010\n"
-  "\004XMUL\020\004\022\010\n\004XDIV\020\005\022\010\n\004XMOD\020\006\022\010\n\004XAND\020\007\022\007\n"
-  "\003XOR\020\010\022\010\n\004XXOR\020\t\022\010\n\004XSHL\020\n\022\010\n\004XSHR\020\013\022\t\n\005"
-  "XSHRA\020\014\022\007\n\003XEQ\020\r\022\007\n\003XNE\020\016\022\007\n\003XLT\020\017\022\007\n\003XG"
-  "E\020\020\022\020\n\014XARRAY_INDEX\020\021\022\022\n\016XMEMBER_ACCESS\020"
-  "\022\022\026\n\022XMEMBER_PTR_ACCESS\020\023\022\026\n\022XMEMBER_PTR"
-  "_ADDROF\020\024\022\t\n\005XCALL\020\025\022\013\n\007XCALL_0\020\026\022\t\n\005XCA"
-  "ST\020\027\022\014\n\010XBIT_NOT\020\030\022\013\n\007XNEGATE\020\031\022\010\n\004XNOT\020"
-  "\032\022\n\n\006XDEREF\020\033\022\013\n\007XADDROF\020\034\022\013\n\007XSIZEOF\020\035\022"
-  "\014\n\010XALIGNOF\020\036\022\n\n\006XOTHER\020\037*\275\004\n\004K_VK\022\010\n\004TN"
-  "IL\020\000\022\t\n\005TVOID\020\000\022\t\n\005TCHAR\020\001\022\t\n\005TINT8\020\002\022\n\n"
-  "\006TINT16\020\003\022\n\n\006TINT32\020\004\022\n\n\006TINT64\020\005\022\n\n\006TUI"
-  "NT8\020\006\022\n\n\006TUCHAR\020\006\022\013\n\007TUINT16\020\007\022\013\n\007TUINT3"
-  "2\020\010\022\013\n\007TUINT64\020\t\022\013\n\007TCHAR16\020\007\022\n\n\006TWCHAR\020"
-  "\010\022\013\n\007TCHAR32\020\010\022\013\n\007TN_BITS\020\n\022\014\n\010TN_UBITS\020"
-  "\013\022\t\n\005TBOOL\020\014\022\014\n\010TFLOAT16\020\r\022\014\n\010TFLOAT32\020\016"
-  "\022\n\n\006TFLOAT\020\016\022\014\n\010TFLOAT64\020\017\022\013\n\007TDOUBLE\020\017\022"
-  "\014\n\010TFLOAT80\020\020\022\020\n\014TLONG_DOUBLE\020\020\022\020\n\014TPTR_"
-  "TO_VOID\020\021\022\017\n\013TPTR_TO_PTR\020\022\022\017\n\013TPTR_TO_AR"
-  "R\020\023\022\020\n\014TPTR_TO_CHAR\020\024\022\017\n\013TPTR_TO_INT\020\025\022\021"
-  "\n\rTPTR_TO_FLOAT\020\026\022\022\n\016TPTR_TO_RECORD\020\027\022\020\n"
-  "\014TPTR_TO_FUNC\020\030\022\016\n\nTARR_FIXED\020\031\022\021\n\rTARR_"
-  "VARIABLE\020\032\022\020\n\014TARR_PARTIAL\020\033\022\n\n\006TUNION\020\034"
-  "\022\013\n\007TSTRUCT\020\035\022\n\n\006TCLASS\020\036\022\n\n\006TOTHER\020\037\032\002\020"
-  "\001*\213\002\n\004K_QK\022\010\n\004QNIL\020\000\022\n\n\006QCONST\020\001\022\017\n\013QCON"
-  "ST_DEST\020\002\022\020\n\014QLOCL_STATIC\020\004\022\020\n\014QGLBL_STA"
-  "TIC\020\010\022\r\n\tQVOLATILE\020\020\022\t\n\005QWEAK\020 \022\021\n\rQTHRE"
-  "AD_LOCAL\020@\022\r\n\010QNO_INIT\020\200\001\022\016\n\tQEXTERNAL\020\200"
-  "\002\022\014\n\007QNO_DEF\020\200\004\022\016\n\tQRESTRICT\020\200\010\022\014\n\007QINLI"
-  "NE\020\200\020\022\014\n\007QATOMIC\020\200 \022\016\n\tQREGISTER\020\200@\022\024\n\016Q"
-  "RECORD_MEMBER\020\200\200\001\022\014\n\006QOTHER\020\200\200\002B\010Z\006./spi"
-  "rb\006proto3"
+  "ir.BitSrcLocH\000\210\001\001B\006\n\004_loc\"\310\001\n\007BitExpr\022\031\n"
+  "\005xkind\030\001 \001(\0162\n.spir.K_XK\022\"\n\004opr1\030\002 \001(\0132\017"
+  ".spir.BitEntityH\000\210\001\001\022\"\n\004opr2\030\003 \001(\0132\017.spi"
+  "r.BitEntityH\001\210\001\001\022\035\n\004oprs\030\004 \003(\0132\017.spir.Bi"
+  "tEntity\022!\n\003loc\030\005 \001(\0132\017.spir.BitSrcLocH\002\210"
+  "\001\001B\007\n\005_opr1B\007\n\005_opr2B\006\n\004_loc\"\250\001\n\007BitInsn"
+  "\022\030\n\004kind\030\001 \001(\0162\n.spir.K_IK\022!\n\005expr1\030\002 \001("
+  "\0132\r.spir.BitExprH\000\210\001\001\022!\n\005expr2\030\003 \001(\0132\r.s"
+  "pir.BitExprH\001\210\001\001\022!\n\003loc\030\004 \001(\0132\017.spir.Bit"
+  "SrcLocH\002\210\001\001B\010\n\006_expr1B\010\n\006_expr2B\006\n\004_loc\""
+  "\240\001\n\007BitFunc\022\013\n\003fid\030\001 \001(\004\022\r\n\005fname\030\002 \001(\t\022"
+  "\023\n\013is_variadic\030\003 \001(\010\022\037\n\022calling_conventi"
+  "on\030\004 \001(\tH\000\210\001\001\022\034\n\005insns\030\005 \003(\0132\r.spir.BitI"
+  "nsn\022\016\n\006locals\030\006 \003(\004B\025\n\023_calling_conventi"
+  "on\"\330\002\n\005BitTU\022\016\n\006tuName\030\001 \001(\t\022\024\n\007absPath\030"
+  "\002 \001(\tH\000\210\001\001\022\023\n\006origin\030\003 \001(\tH\001\210\001\001\022/\n\nnames"
+  "ToIds\030\004 \003(\0132\033.spir.BitTU.NamesToIdsEntry"
+  "\022/\n\nentityInfo\030\005 \003(\0132\033.spir.BitTU.Entity"
+  "InfoEntry\022 \n\tfunctions\030\006 \003(\0132\r.spir.BitF"
+  "unc\0321\n\017NamesToIdsEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005v"
+  "alue\030\002 \001(\004:\0028\001\032F\n\017EntityInfoEntry\022\013\n\003key"
+  "\030\001 \001(\004\022\"\n\005value\030\002 \001(\0132\023.spir.BitEntityIn"
+  "fo:\0028\001B\n\n\010_absPathB\t\n\007_origin*\313\002\n\004K_EK\022\010"
+  "\n\004ENIL\020\000\022\r\n\tEVAR_GLBL\020\001\022\r\n\tEVAR_LOCL\020\002\022\021"
+  "\n\rEVAR_LOCL_ARG\020\003\022\024\n\020EVAR_LOCL_STATIC\020\004\022"
+  "\021\n\rEVAR_LOCL_TMP\020\005\022\021\n\rEVAR_LOCL_SSA\020\006\022\024\n"
+  "\020EVAR_LOCL_PSEUDO\020\007\022\014\n\010ELIT_NUM\020\010\022\020\n\014ELI"
+  "T_NUM_IMM\020\t\022\014\n\010ELIT_STR\020\n\022\016\n\nEDATA_TYPE\020"
+  "\013\022\t\n\005EFUNC\020\014\022\017\n\013EFUNC_VARGS\020\r\022\n\n\006ELABEL\020"
+  "\016\022\n\n\006EOTHER\020\017\022\021\n\rERECORD_FIELD\020\020\022\t\n\005EINS"
+  "N\020\021\022\007\n\003EBB\020\022\022\010\n\004ECFG\020\023\022\n\n\006ESCOPE\020\024\022\007\n\003ET"
+  "U\020\025*\267\001\n\004K_IK\022\010\n\004INIL\020\000\022\010\n\004INOP\020\001\022\014\n\010IBAR"
+  "RIER\020\002\022\020\n\014IASGN_SIMPLE\020\003\022\020\n\014IASGN_RHS_OP"
+  "\020\004\022\020\n\014IASGN_LHS_OP\020\005\022\016\n\nIASGN_CALL\020\006\022\r\n\t"
+  "IASGN_PHI\020\007\022\t\n\005ICALL\020\010\022\t\n\005IGOTO\020\t\022\t\n\005ICO"
+  "ND\020\n\022\n\n\006ILABEL\020\013\022\013\n\007IRETURN\020\014*\202\003\n\004K_XK\022\010"
+  "\n\004XNIL\020\000\022\010\n\004XVAL\020\001\022\010\n\004XADD\020\002\022\010\n\004XSUB\020\003\022\010"
+  "\n\004XMUL\020\004\022\010\n\004XDIV\020\005\022\010\n\004XMOD\020\006\022\010\n\004XAND\020\007\022\007"
+  "\n\003XOR\020\010\022\010\n\004XXOR\020\t\022\010\n\004XSHL\020\n\022\010\n\004XSHR\020\013\022\t\n"
+  "\005XSHRA\020\014\022\007\n\003XEQ\020\r\022\007\n\003XNE\020\016\022\007\n\003XLT\020\017\022\007\n\003X"
+  "GE\020\020\022\020\n\014XARRAY_INDEX\020\021\022\026\n\022XMEMBER_PTR_AC"
+  "CESS\020\022\022\026\n\022XMEMBER_PTR_ADDROF\020\023\022\t\n\005XCALL\020"
+  "\024\022\013\n\007XCALL_0\020\025\022\t\n\005XCAST\020\026\022\014\n\010XBIT_NOT\020\027\022"
+  "\013\n\007XNEGATE\020\030\022\010\n\004XNOT\020\031\022\n\n\006XDEREF\020\032\022\013\n\007XA"
+  "DDROF\020\033\022\013\n\007XSIZEOF\020\034\022\014\n\010XALIGNOF\020\035\022\n\n\006XA"
+  "LLOC\020\036\022\n\n\006XOTHER\020\037*\275\004\n\004K_VK\022\010\n\004TNIL\020\000\022\t\n"
+  "\005TVOID\020\000\022\t\n\005TCHAR\020\001\022\t\n\005TINT8\020\002\022\n\n\006TINT16"
+  "\020\003\022\n\n\006TINT32\020\004\022\n\n\006TINT64\020\005\022\n\n\006TUINT8\020\006\022\n"
+  "\n\006TUCHAR\020\006\022\013\n\007TUINT16\020\007\022\013\n\007TUINT32\020\010\022\013\n\007"
+  "TUINT64\020\t\022\013\n\007TCHAR16\020\007\022\n\n\006TWCHAR\020\010\022\013\n\007TC"
+  "HAR32\020\010\022\013\n\007TN_BITS\020\n\022\014\n\010TN_UBITS\020\013\022\t\n\005TB"
+  "OOL\020\014\022\014\n\010TFLOAT16\020\r\022\014\n\010TFLOAT32\020\016\022\n\n\006TFL"
+  "OAT\020\016\022\014\n\010TFLOAT64\020\017\022\013\n\007TDOUBLE\020\017\022\014\n\010TFLO"
+  "AT80\020\020\022\020\n\014TLONG_DOUBLE\020\020\022\020\n\014TPTR_TO_VOID"
+  "\020\021\022\017\n\013TPTR_TO_PTR\020\022\022\017\n\013TPTR_TO_ARR\020\023\022\020\n\014"
+  "TPTR_TO_CHAR\020\024\022\017\n\013TPTR_TO_INT\020\025\022\021\n\rTPTR_"
+  "TO_FLOAT\020\026\022\022\n\016TPTR_TO_RECORD\020\027\022\020\n\014TPTR_T"
+  "O_FUNC\020\030\022\016\n\nTARR_FIXED\020\031\022\021\n\rTARR_VARIABL"
+  "E\020\032\022\020\n\014TARR_PARTIAL\020\033\022\n\n\006TUNION\020\034\022\013\n\007TST"
+  "RUCT\020\035\022\n\n\006TCLASS\020\036\022\n\n\006TOTHER\020\037\032\002\020\001*\213\002\n\004K"
+  "_QK\022\010\n\004QNIL\020\000\022\n\n\006QCONST\020\001\022\017\n\013QCONST_DEST"
+  "\020\002\022\020\n\014QLOCL_STATIC\020\004\022\020\n\014QGLBL_STATIC\020\010\022\r"
+  "\n\tQVOLATILE\020\020\022\t\n\005QWEAK\020 \022\021\n\rQTHREAD_LOCA"
+  "L\020@\022\r\n\010QNO_INIT\020\200\001\022\016\n\tQEXTERNAL\020\200\002\022\014\n\007QN"
+  "O_DEF\020\200\004\022\016\n\tQRESTRICT\020\200\010\022\014\n\007QINLINE\020\200\020\022\014"
+  "\n\007QATOMIC\020\200 \022\016\n\tQREGISTER\020\200@\022\024\n\016QRECORD_"
+  "MEMBER\020\200\200\001\022\014\n\006QOTHER\020\200\200\002B\010Z\006./spirb\006prot"
+  "o3"
   ;
 static ::_pbi::once_flag descriptor_table_spir_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_spir_2eproto = {
-    false, false, 3529, descriptor_table_protodef_spir_2eproto,
+    false, false, 3522, descriptor_table_protodef_spir_2eproto,
     "spir.proto",
     &descriptor_table_spir_2eproto_once, nullptr, 0, 10,
     schemas, file_default_instances, TableStruct_spir_2eproto::offsets,
@@ -2301,7 +2301,7 @@ BitExpr::BitExpr(const BitExpr& from)
     , decltype(_impl_.opr1_){nullptr}
     , decltype(_impl_.opr2_){nullptr}
     , decltype(_impl_.loc_){nullptr}
-    , decltype(_impl_.kind_){}};
+    , decltype(_impl_.xkind_){}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   if (from._internal_has_opr1()) {
@@ -2313,7 +2313,7 @@ BitExpr::BitExpr(const BitExpr& from)
   if (from._internal_has_loc()) {
     _this->_impl_.loc_ = new ::spir::BitSrcLoc(*from._impl_.loc_);
   }
-  _this->_impl_.kind_ = from._impl_.kind_;
+  _this->_impl_.xkind_ = from._impl_.xkind_;
   // @@protoc_insertion_point(copy_constructor:spir.BitExpr)
 }
 
@@ -2328,7 +2328,7 @@ inline void BitExpr::SharedCtor(
     , decltype(_impl_.opr1_){nullptr}
     , decltype(_impl_.opr2_){nullptr}
     , decltype(_impl_.loc_){nullptr}
-    , decltype(_impl_.kind_){0}
+    , decltype(_impl_.xkind_){0}
   };
 }
 
@@ -2375,7 +2375,7 @@ void BitExpr::Clear() {
       _impl_.loc_->Clear();
     }
   }
-  _impl_.kind_ = 0;
+  _impl_.xkind_ = 0;
   _impl_._has_bits_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
@@ -2387,12 +2387,12 @@ const char* BitExpr::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) 
     uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // .spir.K_XK kind = 1;
+      // .spir.K_XK xkind = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
           uint64_t val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
-          _internal_set_kind(static_cast<::spir::K_XK>(val));
+          _internal_set_xkind(static_cast<::spir::K_XK>(val));
         } else
           goto handle_unusual;
         continue;
@@ -2463,11 +2463,11 @@ uint8_t* BitExpr::_InternalSerialize(
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // .spir.K_XK kind = 1;
-  if (this->_internal_kind() != 0) {
+  // .spir.K_XK xkind = 1;
+  if (this->_internal_xkind() != 0) {
     target = stream->EnsureSpace(target);
     target = ::_pbi::WireFormatLite::WriteEnumToArray(
-      1, this->_internal_kind(), target);
+      1, this->_internal_xkind(), target);
   }
 
   // optional .spir.BitEntity opr1 = 2;
@@ -2546,10 +2546,10 @@ size_t BitExpr::ByteSizeLong() const {
     }
 
   }
-  // .spir.K_XK kind = 1;
-  if (this->_internal_kind() != 0) {
+  // .spir.K_XK xkind = 1;
+  if (this->_internal_xkind() != 0) {
     total_size += 1 +
-      ::_pbi::WireFormatLite::EnumSize(this->_internal_kind());
+      ::_pbi::WireFormatLite::EnumSize(this->_internal_xkind());
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
@@ -2586,8 +2586,8 @@ void BitExpr::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOB
           from._internal_loc());
     }
   }
-  if (from._internal_kind() != 0) {
-    _this->_internal_set_kind(from._internal_kind());
+  if (from._internal_xkind() != 0) {
+    _this->_internal_set_xkind(from._internal_xkind());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -2609,8 +2609,8 @@ void BitExpr::InternalSwap(BitExpr* other) {
   swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
   _impl_.oprs_.InternalSwap(&other->_impl_.oprs_);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(BitExpr, _impl_.kind_)
-      + sizeof(BitExpr::_impl_.kind_)
+      PROTOBUF_FIELD_OFFSET(BitExpr, _impl_.xkind_)
+      + sizeof(BitExpr::_impl_.xkind_)
       - PROTOBUF_FIELD_OFFSET(BitExpr, _impl_.opr1_)>(
           reinterpret_cast<char*>(&_impl_.opr1_),
           reinterpret_cast<char*>(&other->_impl_.opr1_));

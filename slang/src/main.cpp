@@ -464,6 +464,14 @@ public:
     }
   }
 
+  void addStmtBit(BitInsn* bitInsn) {
+    if (isStaticLocal) {
+      bittu.mutable_functions()[0].mutable_insns()->AddAllocated(bitInsn);
+    } else {
+      currentBitFunc->mutable_insns()->AddAllocated(bitInsn);
+    }
+  }
+
   void pushBackFuncParams(std::string paramName) {
     SLANG_TRACE("AddingParam: " << paramName << " to func " << currFunc->name)
     currFunc->paramNames.push_back(paramName);
@@ -497,6 +505,11 @@ public:
   }
 
   void addVar(uint64_t varId, SlangVar &slangVar) { varMap[varId] = slangVar; }
+
+  void addVarBit(uint64_t eid, BitEntityInfo* bitEntityInfo) {
+    bittu.mutable_namestoids()->emplace(bitEntityInfo->strval(), eid);
+    bittu.mutable_entityinfo()->emplace(eid, *bitEntityInfo);
+  }
 
   bool isRecordPresent(uint64_t recordAddr) {
     return !(recordMap.find(recordAddr) == recordMap.end());
@@ -537,6 +550,11 @@ public:
     ss << slangVar.name;
 
     return ss.str();
+  }
+
+  uint64_t convertVarExprBit(uint64_t varAddr) {
+    // if here, var should already be known
+    return varAddr; 
   }
 
 
@@ -958,6 +976,17 @@ public:
           castExpr.locStr = getLocationString(varDecl);
 
           addAssignInstr(varExpr, castExpr, getLocationString(varDecl));
+
+          BitEntity* varEntity = convertVariableBit(varDecl);
+          BitEntity sizeEntity = convertVarArrayVariableBit(varDecl->getType(),
+              arrayType->getElementType());
+          
+          BitExpr* allocExpr = createUnaryExprBit(sizeEntity, K_XK::XALLOC);
+          BitEntity* tmpVoidPtr = convertToTmpBit(allocExpr);
+          
+          BitExpr* castExprBit = createUnaryExprBit(tmpVoidPtr, K_XK::CAST);
+
+          addAssignInstrBit(convertEntityToExprBit(varEntity), castExprBit);
         }
       }
 
@@ -1232,6 +1261,52 @@ public:
       return tmpThisArraySize;
     }
   } // convertVarArrayVariable()
+
+  BitExpr convertVarArrayVariableBit(QualType valueType, QualType elementType) {
+    const Type *elemTypePtr = elementType.getTypePtr();
+    const VariableArrayType *varArrayType =
+        cast<VariableArrayType>(valueType.getTypePtr()->getAsArrayTypeUnsafe());
+
+    if (elemTypePtr->isArrayType()) {
+      // it will definitely be a VarArray Type (since this func is called)
+      SlangExpr tmpSubArraySize = convertVarArrayVariable(elementType,
+          elemTypePtr->getAsArrayTypeUnsafe()->getElementType());
+
+      SlangExpr thisVarArrSizeExpr = convertToTmp(
+          convertStmt(varArrayType->getSizeExpr()));
+
+      SlangExpr sizeOfThisVarArrExpr = convertToTmp(createBinaryExpr(thisVarArrSizeExpr,
+          "op.BO_MUL", tmpSubArraySize, thisVarArrSizeExpr.locStr,
+          varArrayType->getSizeExpr()->getType()));
+
+      SlangExpr tmpThisArraySize = convertToTmp(sizeOfThisVarArrExpr);
+      return tmpThisArraySize;
+
+    } else {
+      // a non-array element type
+      TypeInfo typeInfo = Ctx->getTypeInfo(elementType);
+      uint64_t size = typeInfo.Width / 8;
+
+      SlangExpr thisVarArrSizeExpr = convertToTmp(
+          convertStmt(varArrayType->getSizeExpr()));
+
+      SlangExpr sizeOfInnerNonVarArrType;
+      std::stringstream ss;
+      ss << "expr.LitE(" << size;
+      ss << ", " << thisVarArrSizeExpr.locStr << ")";
+      sizeOfInnerNonVarArrType.expr = ss.str();
+      sizeOfInnerNonVarArrType.qualType = Ctx->UnsignedIntTy;
+      sizeOfInnerNonVarArrType.locStr = thisVarArrSizeExpr.locStr;
+
+      SlangExpr sizeOfThisVarArrExpr = convertToTmp(
+          createBinaryExpr(thisVarArrSizeExpr,
+              "op.BO_MUL", sizeOfInnerNonVarArrType, thisVarArrSizeExpr.locStr,
+              sizeOfInnerNonVarArrType.qualType));
+
+      SlangExpr tmpThisArraySize = convertToTmp(sizeOfThisVarArrExpr);
+      return tmpThisArraySize;
+    }
+  } // convertVarArrayVariableBit()
 
   SlangExpr convertInitListExprNew(
       SlangExpr& lhs, // SlangVar& slangVar,
@@ -2303,6 +2378,21 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
     return slangExpr;
   } // convertVariable()
 
+  BitEntity* convertVariableBit(const VarDecl *varDecl) {
+    BitEntity be = new BitEntity();
+    be->set_eid((uint64_t)varDecl);
+    be->set_allocated_loc(getSrcLocBit(varDecl));
+    return be;
+  } // convertVariableBit()
+
+  BitExpr* convertEntityToExprBit(BitEntity* be) {
+    BitExpr* expr = new BitExpr();
+    expr->set_xkind(K_XK::VAL);
+    expr->set_allocated_opr1(be);
+    expr->set_allocated_loc(new BitSrcLoc(be->loc()));
+    return expr;
+  } // convertEntityToExpr()
+
 
   SlangExpr convertSlangVar(
       SlangVar& slangVar,
@@ -2670,6 +2760,41 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
       return slangExpr;
     }
   } // convertToTmp()
+
+  // stores the given expression into a tmp variable
+  BitEntity* convertToTmpBit(BitExpr* bitExpr, bool force = false) {
+    if (isBitExprCompoundBit(bitExpr) || force == true) {
+      SlangExpr tmpExpr;
+      if (slangExpr.qualType.isNull() || slangExpr.qualType.getTypePtr()->isVoidType()) {
+        tmpExpr = genTmpVariableBit(K_VK_TINT32, "t", bitExpr->loc());
+      } else {
+        if (slangExpr.qualType.getTypePtr()->isArrayType()) {
+          // for array type, generate a tmp variable which is a pointer
+          // to its element types.
+          const Type *type = slangExpr.qualType.getTypePtr();
+          const ArrayType *arrayType = type->getAsArrayTypeUnsafe();
+          QualType elementType = arrayType->getElementType();
+          QualType tmpVarType = Ctx->getPointerType(elementType);
+          tmpExpr = genTmpVariable("t", tmpVarType, slangExpr.locStr);
+        } else if (slangExpr.qualType.getTypePtr()->isFunctionType()) {
+          // create a tmp variable which is a pointer to the function type
+          QualType tmpVarType = Ctx->getPointerType(slangExpr.qualType);
+          tmpExpr = genTmpVariable("t", tmpVarType, slangExpr.locStr);
+        } else {
+          tmpExpr = genTmpVariable("t", slangExpr.qualType, slangExpr.locStr);
+        }
+      }
+      std::stringstream ss;
+
+      ss << "instr.AssignI(" << tmpExpr.expr << ", " << slangExpr.expr;
+      ss << ", " << slangExpr.locStr << ")"; // close instr.AssignI(...
+      stu.addStmt(ss.str());
+
+      return tmpExpr;
+    } else {
+      return slangExpr;
+    }
+  } // convertToTmpBit()
 
   // stores the given expression into a tmp variable
   SlangExpr convertToTmp2(SlangExpr slangExpr, bool force = false) {
@@ -3555,6 +3680,30 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
     return slangExpr;
   } // genTmpVariable()
 
+  BitEntity* genTmpVariableBit(K_VK vType, std::string suffix, const BitSrcLoc& loc) {
+    BitEntity* bitEntity = new BitEntity();
+    BitEntityInfo bitEntityInfo;
+
+    // STEP 1: Populate a SlangVar object with unique name.
+    bitEntity->set_eid(stu.nextUniqueId());
+    bitEntity->set_allocated_loc(new BitSrcLoc(loc));
+    bitEntityInfo.set_eid(bitEntity->eid());
+    bitEntityInfo.set_ekind(K_EK::EVAR_LOCL_TMP);
+    bitEntityInfo.set_vkind(vType);
+    bitEntityInfo.set_allocated_loc(new BitSrcLoc(loc));
+
+    // STEP 2: Populate a BitEntityInfo object with unique name.
+    std::stringstream ss;
+    ss << "" << stu.nextTmpId() << suffix;
+    bitEntityInfo.set_strval(ss.str());
+
+    // STEP 3: Add the variable to the TU.
+    // FIXME: The var's 'id' here should be small enough to not interfere with uint64_t addresses.
+    stu.addVarBit(bitEntity->eid(), &bitEntityInfo);
+
+    return bitEntity;
+  } // genTmpVariableBit()
+
   SlangExpr genTmpVariable(std::string suffix,
       QualType qt, std::string locStr, bool ifTmp = false) {
     std::stringstream ss;
@@ -3672,6 +3821,25 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
     stu.addStmt(ss.str());
   }
 
+  void addAssignInstrBit(BitExpr* lhs, BitExpr* rhs) {
+    if (isBitExprCompoundBit(lhs) && isBitExprCompoundBit(rhs)) {
+      rhs = convertToTmpBit(rhs); // staticLocal init will not generate tmp
+    }
+    BitInsn* bitInsn = new BitInsn();
+    bitInsn->set_allocated_lhs(lhs);
+    bitInsn->set_allocated_rhs(rhs);
+    bitInsn->set_allocated_loc(new BitSrcLoc(lhs->loc()));
+    stu.addStmtBit(bitInsn);
+  } // addAssignInstrBit()
+  
+  bool isBitExprCompoundBit(BitExpr* be) {
+    if (be->xkind() == K_XK::VAL) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
   // Note: unlike createBinaryExpr, createUnaryExpr doesn't convert its expr to tmp expr.
   SlangExpr createUnaryExpr(std::string op,
       SlangExpr expr, std::string locStr, QualType qt) {
@@ -3701,6 +3869,14 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
     return unaryExpr;
   } // createUnaryExpr()
 
+  BitExpr* createUnaryExprBit(BitEntity* opr, K_XK op) {
+    BitExpr* unaryExpr = new BitExpr();
+    unaryExpr->set_xkind(op);
+    unaryExpr->set_allocated_opr1(opr);
+    unaryExpr->set_allocated_loc(new BitSrcLoc(opr->loc()));
+    return unaryExpr;
+  } // createUnaryExprBit()
+
   SlangExpr createBinaryExpr(SlangExpr lhsExpr,
       std::string op, SlangExpr rhsExpr, std::string locStr,
       QualType qt) {
@@ -3722,6 +3898,15 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
 
     return binaryExpr;
   } // createBinaryExpr()
+
+  BitExpr* createBinaryExprBit(BitEntity* opr1, K_XK op, BitEntity* opr2) {
+    BitExpr* binaryExpr = new BitExpr();
+    binaryExpr->set_xkind(op);
+    binaryExpr->set_allocated_opr1(opr1);
+    binaryExpr->set_allocated_opr2(opr2);
+    binaryExpr->set_allocated_loc(new BitSrcLoc(opr1->loc()));
+    return binaryExpr;
+  } // createBinaryExprBit()
 
   // If the expression is the child of an implicit cast,
   // the type of implicit cast is returned, else the given qt is returned
