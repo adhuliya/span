@@ -183,8 +183,8 @@ type ControlFlowGraph struct {
 type CFG = ControlFlowGraph
 
 func (tu *TU) GetUniqueCFGId() CFGId {
-	return CFGId(tu.idGen.AllocateID(GenPrefix16(K_EK_CFG, 0),
-		K_EK_CFG.SeqIdBitLength()))
+	return CFGId(tu.idGen.AllocateID(GenPrefix16(K_EK_ECFG, 0),
+		K_EK_ECFG.SeqIdBitLength()))
 }
 
 func NewControlFlowGraph(tu *TU, scope ScopeId, fid EntityId) *ControlFlowGraph {
@@ -249,6 +249,28 @@ func (cfg *ControlFlowGraph) BasicBlock(id BasicBlockId) *BasicBlock {
 		}
 	}
 	return nil
+}
+
+// Validate the CFG
+// 1. All basic blocks must have at least one successor. Except the exit block.
+// 2. All basic blocks must have at least one predecessor. Except the entry block.
+func (cfg *ControlFlowGraph) IsValid() bool {
+	if cfg.entryBlock == nil || cfg.exitBlock == nil {
+		return false
+	}
+
+	for _, bb := range cfg.basicBlocks {
+		if bb == cfg.entryBlock || bb == cfg.exitBlock {
+			continue
+		}
+		if bb.SuccCount() == 0 {
+			return false
+		}
+		if bb.PredCount() == 0 {
+			return false
+		}
+	}
+	return true
 }
 
 // This function takes a Graph and returns ReversePostOrder of the graph.

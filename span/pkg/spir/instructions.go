@@ -33,7 +33,9 @@ const InsnIdPrefixShift32 uint8 = 20                       // Shift to get the p
 const InsnIdPrefixPosMask64 uint64 = 0x3FF0_0000_0000_0000 // Mask to get the prefix bits
 const InsnIdPrefixShift64 uint8 = 52                       // Shift to get the prefix bits
 
-const FirstHalfExprMask64 uint64 = 0x0000_0000_FFFF_FFFF // Mask to get the expression part from first half of the instruction
+// Mask to get the expression part from first half of the instruction
+// This expression is always a simple Value expression with no operators
+const FirstHalfExprMask64 uint64 = 0x0000_0000_1FFF_FFFF
 
 const TrueLabelPosMask64 uint64 = 0x0000_0000_FFFF_FFFF // Mask to get the true label
 const TrueLabelShift64 uint64 = 0
@@ -62,20 +64,72 @@ type Insn struct {
 func (i Insn) String() string {
 	if i.firstHalf == 0 {
 		return "Insn: Nop"
-	} else {
-		return fmt.Sprintf("Insn: %s", i.InsnKind())
 	}
+
+	kind := i.InsnKind()
+	switch kind {
+	case K_IK_INOP:
+		return "no-op"
+	case K_IK_IBARRIER:
+		return "barrier"
+	case K_IK_IRETURN:
+		expr := i.GetFirstHalfExpr()
+		return fmt.Sprintf("return %s", expr)
+	case K_IK_IASGN_SIMPLE:
+		lhs := i.GetFirstHalfExpr()
+		rhs := Expr(i.secondHalf)
+		return fmt.Sprintf("%s = %s", lhs, rhs)
+	case K_IK_IASGN_CALL:
+		lhs := i.GetFirstHalfExpr()
+		rhs := Expr(i.secondHalf)
+		return fmt.Sprintf("%s = %s", lhs, rhs)
+	case K_IK_IASGN_RHS_OP:
+		lhs := i.GetFirstHalfExpr()
+		rhs := Expr(i.secondHalf)
+		return fmt.Sprintf("%s = %s", lhs, rhs)
+	case K_IK_IASGN_LHS_OP:
+		rhs := i.GetFirstHalfExpr()
+		lhs := Expr(i.secondHalf)
+		return fmt.Sprintf("%s = %s", lhs, rhs)
+	case K_IK_IASGN_PHI:
+		lhs := i.GetFirstHalfExpr()
+		rhs := Expr(i.secondHalf)
+		return fmt.Sprintf("%s = φ(%s)", lhs, rhs)
+	case K_IK_ICALL:
+		expr := Expr(i.secondHalf)
+		return fmt.Sprintf("%s", expr)
+	case K_IK_ICOND:
+		cond := i.GetFirstHalfExpr()
+		trueLabel := LabelId(i.secondHalf & TrueLabelPosMask64)
+		falseLabel := LabelId((i.secondHalf & FalseLabelPosMask64) >> FalseLabelShift64)
+		return fmt.Sprintf("if (%s) T:L%d F:L%d", cond, trueLabel, falseLabel)
+	case K_IK_IGOTO:
+		label := LabelId(i.secondHalf & FirstHalfExprMask64)
+		return fmt.Sprintf("goto L%d", label)
+	case K_IK_ILABEL:
+		label := LabelId(i.GetFirstHalfExpr())
+		return fmt.Sprintf("L%d:", label)
+	default:
+		return fmt.Sprintf("unknown(%s)", kind)
+	}
+}
+
+// BLOCK START: API to create instructions
+
+func NilI() Insn {
+	insn := Insn{}
+	return insn // No instruction -- all zeros
 }
 
 func NopI() Insn {
 	insn := Insn{}
-	insn.firstHalf |= K_EK_INSN.place64() | K_IK_INOP.place64()
+	insn.firstHalf |= K_EK_EINSN.place64() | K_IK_INOP.place64()
 	return insn
 }
 
 func BarrierI() Insn {
 	insn := Insn{}
-	insn.firstHalf |= K_EK_INSN.place64() | K_IK_IBARRIER.place64()
+	insn.firstHalf |= K_EK_EINSN.place64() | K_IK_IBARRIER.place64()
 	return insn
 }
 
@@ -83,7 +137,7 @@ func BarrierI() Insn {
 func ReturnI(expr Expr) Insn {
 	util.Assert(!expr.IsSimple(), "Expr must have no operator")
 	insn := Insn{}
-	insn.firstHalf |= K_EK_INSN.place64() | K_IK_IRETURN.place64()
+	insn.firstHalf |= K_EK_EINSN.place64() | K_IK_IRETURN.place64()
 	insn.firstHalf |= uint64(expr) & FirstHalfExprMask64
 	return insn
 }
@@ -92,7 +146,7 @@ func ReturnI(expr Expr) Insn {
 func AssignI(lhs Expr, rhs Expr) Insn {
 	util.Assert(lhs.IsSimple() || rhs.IsSimple(), "At least one of the expressions must be simple")
 	insn, ik := Insn{}, K_IK_IASGN_SIMPLE
-	insn.firstHalf |= K_EK_INSN.place64()
+	insn.firstHalf |= K_EK_EINSN.place64()
 
 	lhsSimple, rhsSimple := lhs.IsSimple(), rhs.IsSimple()
 	if lhsSimple {
@@ -130,42 +184,45 @@ func AssignI(lhs Expr, rhs Expr) Insn {
 // Create PHI assignment instruction.
 // TODO: Add support for multiple PHI assignments in RHS.
 func PhiI(lhs Expr) Insn {
+	// FIXME: incomplete
 	util.Assert(lhs.IsSimple(), "LHS must be simple")
 	insn := Insn{}
-	insn.firstHalf |= K_EK_INSN.place64() | K_IK_IASGN_PHI.place64()
+	insn.firstHalf |= K_EK_EINSN.place64() | K_IK_IASGN_PHI.place64()
 	insn.firstHalf |= uint64(lhs) & FirstHalfExprMask64
 	return insn
 }
 
 func CallI(zeroArgs bool, callSiteId CallSiteId, callee EntityId) Insn {
 	insn := Insn{}
-	insn.firstHalf |= K_EK_INSN.place64() | K_IK_ICALL.place64()
+	insn.firstHalf |= K_EK_EINSN.place64() | K_IK_ICALL.place64()
 	insn.secondHalf = uint64(CallX(zeroArgs, callSiteId, callee))
+	return insn
+}
+
+func LabelI(label LabelId) Insn {
+	insn := Insn{}
+	insn.firstHalf |= K_EK_EINSN.place64() | K_IK_ILABEL.place64()
+	insn.firstHalf |= uint64(label) & FirstHalfExprMask64
 	return insn
 }
 
 func GotoI(target LabelId) Insn {
 	insn := Insn{}
-	insn.firstHalf |= K_EK_INSN.place64() | K_IK_IGOTO.place64()
+	insn.firstHalf |= K_EK_EINSN.place64() | K_IK_IGOTO.place64()
 	insn.firstHalf |= uint64(target) & FirstHalfExprMask64
 	return insn
 }
 
 func IfI(cond Expr, thenLabel LabelId, elseLabel LabelId) Insn {
 	insn := Insn{}
-	insn.firstHalf |= K_EK_INSN.place64() | K_IK_ICOND.place64()
+	insn.firstHalf |= K_EK_EINSN.place64() | K_IK_ICOND.place64()
 	insn.firstHalf |= uint64(cond) & FirstHalfExprMask64
 	insn.secondHalf = uint64(thenLabel) << TrueLabelShift64
 	insn.secondHalf |= uint64(elseLabel) << FalseLabelShift64
 	return insn
 }
 
-func LabelI(label LabelId) Insn {
-	insn := Insn{}
-	insn.firstHalf |= K_EK_INSN.place64() | K_IK_ILABEL.place64()
-	insn.firstHalf |= uint64(label) & FirstHalfExprMask64
-	return insn
-}
+// BLOCK END  : API to create instructions
 
 // Extra assosicated info with the instruction.
 type InsnInfo struct {
@@ -196,16 +253,19 @@ func (i *Insn) IsAssign() bool {
 	return i.InsnKind() >= K_IK_IASGN_SIMPLE && i.InsnKind() <= K_IK_IASGN_PHI
 }
 
-func (i *Insn) GetCallExpr() Expr {
-	if i.IsCall() {
+func (i Insn) GetCallExpr() Expr {
+	if i.HasCallExpr() {
 		return Expr(i.secondHalf)
 	}
-
-	if i.IsAssign() && i.InsnKind() == K_IK_IASGN_CALL {
-		return Expr(i.secondHalf)
-	}
-
 	return NIL_X
+}
+
+func (i Insn) GetFirstHalfExpr() Expr {
+	return ValX(i.GetFirstHalfEntityId())
+}
+
+func (i Insn) GetFirstHalfEntityId() EntityId {
+	return EntityId(i.firstHalf & FirstHalfExprMask64)
 }
 
 func (i *Insn) IsGoto() bool {
@@ -213,7 +273,7 @@ func (i *Insn) IsGoto() bool {
 }
 
 func (i Insn) GetInsnPrefix16() uint16 {
-	return uint16(EntityId(i.firstHalf>>InsnIdShift64).ValidBits() >> K_EK_INSN.SeqIdBitLength())
+	return uint16(EntityId(i.firstHalf>>InsnIdShift64).ValidBits() >> K_EK_EINSN.SeqIdBitLength())
 }
 
 func (i *Insn) IsCall() bool {
@@ -221,7 +281,7 @@ func (i *Insn) IsCall() bool {
 }
 
 func (i *Insn) HasCallExpr() bool {
-	return i.GetCallExpr() != NIL_X
+	return i.InsnKind() == K_IK_ICALL || i.InsnKind() == K_IK_IASGN_CALL
 }
 
 func (i *Insn) IsIf() bool {
@@ -238,6 +298,10 @@ func (i *Insn) IsLabel() bool {
 
 func (i *Insn) IsReturn() bool {
 	return i.InsnKind() == K_IK_IRETURN
+}
+
+func (i *Insn) IsLocalJump() bool {
+	return i.IsGoto() || i.IsIf()
 }
 
 func (i *Insn) GetLabels() (LabelId, LabelId) {

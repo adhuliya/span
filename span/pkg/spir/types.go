@@ -95,7 +95,7 @@ func newBaseVT(kind ValKind, qtype QualType, size VTSize, align VTAlign) BaseVT 
 
 // Create simple unit types with default size and alignment.
 func NewBasicVT(kind ValKind, qtype QualType) BaseVT {
-	if (kind.IsInteger() && kind != K_VK_N_BITS && kind != K_VK_N_UBITS) || kind.IsFloating() || kind == K_VK_VOID {
+	if (kind.IsInteger() && kind != K_VK_TN_BITS && kind != K_VK_TN_UBITS) || kind.IsFloating() || kind == K_VK_TVOID {
 		return BaseVT{
 			qtype: qtype,
 			kind:  kind,
@@ -108,23 +108,23 @@ func NewBasicVT(kind ValKind, qtype QualType) BaseVT {
 }
 
 func (kind ValKind) IsFloating() bool {
-	return kind >= K_VK_FLOAT16 && kind <= K_VK_DOUBLE
+	return kind >= K_VK_TFLOAT16 && kind <= K_VK_TDOUBLE
 }
 
 func (kind ValKind) IsVoid() bool {
-	return kind == K_VK_VOID
+	return kind == K_VK_TVOID
 }
 
 func (kind ValKind) IsInteger() bool {
-	return kind <= K_VK_BOOL && kind >= K_VK_CHAR
+	return kind <= K_VK_TBOOL && kind >= K_VK_TCHAR
 }
 
 func (kind ValKind) IsPointer() bool {
-	return kind >= K_VK_PTR_TO_VOID && kind <= K_VK_PTR_TO_FUNC
+	return kind >= K_VK_TPTR_TO_VOID && kind <= K_VK_TPTR_TO_FUNC
 }
 
 func (kind ValKind) IsArray() bool {
-	return kind >= K_VK_ARR_FIXED && kind <= K_VK_ARR_PARTIAL
+	return kind >= K_VK_TARR_FIXED && kind <= K_VK_TARR_PARTIAL
 }
 
 func (kind ValKind) IsArrOrPtr() bool {
@@ -133,23 +133,23 @@ func (kind ValKind) IsArrOrPtr() bool {
 
 func (kind ValKind) SizeInBytes() VTSize {
 	switch kind {
-	case K_VK_VOID:
+	case K_VK_TVOID:
 		return 0
-	case K_VK_BOOL:
+	case K_VK_TBOOL:
 		return 1
-	case K_VK_CHAR: // K_VK_UCHAR == K_VK_UINT8
+	case K_VK_TCHAR: // K_VK_TUCHAR == K_VK_TUINT8
 		return 1
-	case K_VK_INT8, K_VK_UINT8:
+	case K_VK_TINT8, K_VK_TUINT8:
 		return 1
-	case K_VK_INT16, K_VK_UINT16:
+	case K_VK_TINT16, K_VK_TUINT16:
 		return 2
-	case K_VK_INT32, K_VK_UINT32:
+	case K_VK_TINT32, K_VK_TUINT32:
 		return 4
-	case K_VK_INT64, K_VK_UINT64:
+	case K_VK_TINT64, K_VK_TUINT64:
 		return 8
-	case K_VK_FLOAT32:
+	case K_VK_TFLOAT32:
 		return 4
-	case K_VK_FLOAT64:
+	case K_VK_TFLOAT64:
 		return 8
 	}
 
@@ -162,23 +162,23 @@ func (kind ValKind) SizeInBytes() VTSize {
 
 func (kind ValKind) MinAlignInBytes() VTAlign {
 	switch kind {
-	case K_VK_VOID:
+	case K_VK_TVOID:
 		return 0
-	case K_VK_BOOL:
+	case K_VK_TBOOL:
 		return 1
-	case K_VK_CHAR: // K_VK_UCHAR == K_VK_UINT8
+	case K_VK_TCHAR: // K_VK_TUCHAR == K_VK_TUINT8
 		return 1
-	case K_VK_INT8, K_VK_UINT8:
+	case K_VK_TINT8, K_VK_TUINT8:
 		return 1
-	case K_VK_INT16, K_VK_UINT16:
+	case K_VK_TINT16, K_VK_TUINT16:
 		return 2
-	case K_VK_INT32, K_VK_UINT32:
+	case K_VK_TINT32, K_VK_TUINT32:
 		return 4
-	case K_VK_INT64, K_VK_UINT64:
+	case K_VK_TINT64, K_VK_TUINT64:
 		return 8
-	case K_VK_FLOAT32:
+	case K_VK_TFLOAT32:
 		return 4
-	case K_VK_FLOAT64:
+	case K_VK_TFLOAT64:
 		return 8
 	}
 
@@ -191,17 +191,17 @@ func (kind ValKind) MinAlignInBytes() VTAlign {
 
 // Common base value types used in C
 var (
-	VoidVT   = NewBasicVT(K_VK_VOID, K_QK_QNONE)
-	BoolVT   = NewBasicVT(K_VK_BOOL, K_QK_QNONE)
-	CharVT   = NewBasicVT(K_VK_CHAR, K_QK_QNONE)
-	Int8VT   = NewBasicVT(K_VK_INT8, K_QK_QNONE)
-	Int16VT  = NewBasicVT(K_VK_INT16, K_QK_QNONE)
-	Int32VT  = NewBasicVT(K_VK_INT32, K_QK_QNONE)
-	Int64VT  = NewBasicVT(K_VK_INT64, K_QK_QNONE)
-	Uint8VT  = NewBasicVT(K_VK_UINT8, K_QK_QNONE)
-	Uint16VT = NewBasicVT(K_VK_UINT16, K_QK_QNONE)
-	Uint32VT = NewBasicVT(K_VK_UINT32, K_QK_QNONE)
-	Uint64VT = NewBasicVT(K_VK_UINT64, K_QK_QNONE)
-	FloatVT  = NewBasicVT(K_VK_FLOAT32, K_QK_QNONE)
-	DoubleVT = NewBasicVT(K_VK_FLOAT64, K_QK_QNONE)
+	VoidVT   = NewBasicVT(K_VK_TVOID, K_QK_QNIL)
+	BoolVT   = NewBasicVT(K_VK_TBOOL, K_QK_QNIL)
+	CharVT   = NewBasicVT(K_VK_TCHAR, K_QK_QNIL)
+	Int8VT   = NewBasicVT(K_VK_TINT8, K_QK_QNIL)
+	Int16VT  = NewBasicVT(K_VK_TINT16, K_QK_QNIL)
+	Int32VT  = NewBasicVT(K_VK_TINT32, K_QK_QNIL)
+	Int64VT  = NewBasicVT(K_VK_TINT64, K_QK_QNIL)
+	Uint8VT  = NewBasicVT(K_VK_TUINT8, K_QK_QNIL)
+	Uint16VT = NewBasicVT(K_VK_TUINT16, K_QK_QNIL)
+	Uint32VT = NewBasicVT(K_VK_TUINT32, K_QK_QNIL)
+	Uint64VT = NewBasicVT(K_VK_TUINT64, K_QK_QNIL)
+	FloatVT  = NewBasicVT(K_VK_TFLOAT32, K_QK_QNIL)
+	DoubleVT = NewBasicVT(K_VK_TFLOAT64, K_QK_QNIL)
 )

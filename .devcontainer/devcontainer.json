@@ -33,7 +33,8 @@
             "ms-azuretools.vscode-docker",
             "ms-vscode.cpptools-extension-pack",
             "xaver.clang-format",
-            "twxs.cmake"
+            "twxs.cmake",
+            "joaompinto.vscode-graphviz"
           ]
         }
       },

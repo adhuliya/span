@@ -1,0 +1,34 @@
+digraph ControlFlow {
+    rankdir=TB;
+    node [shape=box, style=rounded];
+    
+    // Start node
+    start [label="Start", shape=ellipse, style=filled, fillcolor=lightgreen];
+    
+    // Process node before condition
+    process1 [label="Initialize variables"];
+    
+    // Decision node (diamond shape for if condition)
+    condition [label="x > 10?", shape=diamond, style=filled, fillcolor=lightblue];
+    
+    // True branch
+    true_branch [label="Execute true branch\nx = x * 2", style=filled, fillcolor=lightyellow];
+    
+    // False branch  
+    false_branch [label="Execute false branch\nx = x + 1", style=filled, fillcolor=lightcoral];
+    
+    // Merge point after if condition
+    merge [label="Continue execution"];
+    
+    // End node
+    end [label="End", shape=ellipse, style=filled, fillcolor=lightpink];
+    
+    // Define the control flow edges
+    start -> process1;
+    process1 -> condition;
+    condition -> true_branch [label="true"];
+    condition -> false_branch [label="false"];
+    true_branch -> merge;
+    false_branch -> merge;
+    merge -> end;
+}

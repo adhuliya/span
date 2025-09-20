@@ -125,7 +125,7 @@ func NewTU() *TU {
 		origin:         "",
 		mergedTUs:      make(map[EntityId]*TU),
 		globalInit:     NIL_ID,
-		entityInfo:     make(map[EntityId]interface{}),
+		entityInfo:     make(map[EntityId]any),
 		functions:      make(map[EntityId]*Function),
 		constants:      make(map[EntityId]LiteralInfo),
 		valueTypes:     make(map[EntityId]ValueType),
@@ -247,6 +247,7 @@ func (tu *TU) NewFunction(name string, returnType ValueType,
 		returnType: returnType,
 		paramIds:   paramIds,
 		body:       body,
+		insns:      nil,
 	}
 
 	tu.functions[id] = fun
@@ -256,8 +257,8 @@ func (tu *TU) NewFunction(name string, returnType ValueType,
 	return fun
 }
 
-func (fun *Function) SetBody(tu *TU, body Graph) {
-	fun.body = createCfgForFunction(fun, body)
+func (fun *Function) SetBody(tu *TU, insns []Insn) {
+	fun.body = createCfgForFunction(insns)
 }
 
 func (fun *Function) GetId() EntityId {
@@ -345,7 +346,7 @@ func (eKind EntityKind) place64() uint64 {
 }
 
 func (eKind EntityKind) IsVariable() bool {
-	if eKind >= K_EK_EVAR_GLBL && eKind <= K_EK_EVAR_LOCL_PSEUDO {
+	if eKind >= K_EK_EVAR_GLBL && eKind <= K_EK_EVAR_LOCL_OTHER {
 		return true
 	}
 	return false

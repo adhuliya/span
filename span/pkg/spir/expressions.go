@@ -42,18 +42,27 @@ const TopBitMask64 uint64 = 0x8000_0000_0000_0000 // Mask to get/set the top bit
 const TopBitShift64 uint8 = 63                    // Shift to get/set the top bit
 
 func (xk ExprKind) IsCall() bool {
-	return xk == K_XK_CALL || xk == K_XK_CALL_0
+	return xk == K_XK_XCALL || xk == K_XK_XCALL_0
 }
 
 // IsSingleOpr returns true if the expression kind is a single operand expression.
 // Except a CALL_0 call expression, which is a special case.
 func (xk ExprKind) IsSingleOprnd() bool {
-	return xk == K_XK_VAL ||
-		(xk >= K_XK_BIT_NOT && xk <= K_XK_ALIGNOF)
+	return xk == K_XK_XVAL ||
+		(xk >= K_XK_XBIT_NOT && xk <= K_XK_XALLOC)
 }
 
 func (xk ExprKind) IsTwoOprnd() bool {
 	return !xk.IsSingleOprnd() && !xk.IsCall()
+}
+
+func (xk ExprKind) IsRelational() bool {
+	return xk == K_XK_XEQ || xk == K_XK_XNE || xk == K_XK_XLT || xk == K_XK_XGE
+}
+
+func (xk ExprKind) IsCommutative() bool {
+	return (xk == K_XK_XADD || xk == K_XK_XMUL ||
+		xk == K_XK_XAND || xk == K_XK_XOR || xk == K_XK_XXOR)
 }
 
 func placeExprOpr1(operand EntityId) uint64 {
@@ -75,9 +84,11 @@ func placeCallSiteId(siteId CallSiteId) uint64 {
 	return uint64(sid) << CallSiteIdShift64
 }
 
+// BOUND START: API to create expressions
+
 // Simple value without any operator.
 func ValX(value EntityId) Expr {
-	return UnaryX(K_XK_VAL, value)
+	return UnaryX(K_XK_XVAL, value)
 }
 
 func UnaryX(xk ExprKind, opr EntityId) Expr {
@@ -87,9 +98,9 @@ func UnaryX(xk ExprKind, opr EntityId) Expr {
 func CallX(zeroArgs bool, callSiteId CallSiteId, callee EntityId) Expr {
 	var expr uint64
 	if zeroArgs {
-		expr = placeXK(K_XK_CALL_0)
+		expr = placeXK(K_XK_XCALL_0)
 	} else {
-		expr = placeXK(K_XK_CALL)
+		expr = placeXK(K_XK_XCALL)
 	}
 	return Expr(expr | placeCallSiteId(callSiteId) | placeExprOpr1(callee))
 }
@@ -106,6 +117,8 @@ func BinX(exprKind ExprKind, opr1 EntityId, opr2 EntityId) Expr {
 	panic(fmt.Sprintf("Invalid expression kind: %s", exprKind))
 }
 
+// BOUND END  : API to create expressions
+
 // Creates a 64 bit expression from an operand and an expression kind.
 func (expr Expr) GetXK() ExprKind {
 	return ExprKind((uint64(expr) & XKMask64) >> XKShift64)
@@ -121,15 +134,15 @@ func (expr Expr) GetCallee() EntityId {
 
 // A simple expression has no operator.
 func (expr Expr) IsSimple() bool {
-	return expr.GetXK() == K_XK_VAL
+	return expr.GetXK() == K_XK_XVAL
 }
 
 func (expr Expr) IsCall() bool {
-	return expr.GetXK() == K_XK_CALL || expr.GetXK() == K_XK_CALL_0
+	return expr.GetXK() == K_XK_XCALL || expr.GetXK() == K_XK_XCALL_0
 }
 
 func (expr Expr) IsCall0() bool {
-	return expr.GetXK() == K_XK_CALL_0
+	return expr.GetXK() == K_XK_XCALL_0
 }
 
 // Returns one or two operands.
@@ -170,4 +183,81 @@ func (expr *Expr) SetTopBit() {
 
 func (expr *Expr) ClearTopBit() {
 	*expr &= Expr(^TopBitMask64)
+}
+
+// Converts expressions kind to the operator symbol string
+func (xk K_XK) OperatorString() string {
+	switch xk {
+	case K_XK_XADD:
+		return "+"
+	case K_XK_XMUL:
+		return "*"
+	case K_XK_XSUB:
+		return "-"
+	case K_XK_XDIV:
+		return "/"
+	case K_XK_XMOD:
+		return "%"
+	case K_XK_XAND:
+		return "&"
+	case K_XK_XOR:
+		return "^"
+	case K_XK_XXOR:
+		return "^"
+	case K_XK_XSHL:
+		return "<<"
+	case K_XK_XSHR:
+		return ">>"
+	case K_XK_XSHRA:
+		return ">>>"
+	case K_XK_XEQ:
+		return "=="
+	case K_XK_XNE:
+		return "!="
+	case K_XK_XLT:
+		return "<"
+	case K_XK_XGE:
+		return ">="
+	case K_XK_XARRAY_INDEX:
+		return "[]"
+	case K_XK_XMEMBER_PTR_ACCESS:
+		return "->"
+	case K_XK_XMEMBER_PTR_ADDROF:
+		return "&"
+	case K_XK_XCALL:
+		return "()"
+	case K_XK_XCALL_0:
+		return "()"
+	case K_XK_XCAST:
+		return "("
+	case K_XK_XBIT_NOT:
+		return "~"
+	case K_XK_XNEGATE:
+		return "-"
+	case K_XK_XNOT:
+		return "!"
+	case K_XK_XDEREF:
+		return "*"
+	case K_XK_XADDROF:
+		return "&"
+	case K_XK_XSIZEOF:
+		return "sizeof"
+	case K_XK_XALIGNOF:
+		return "alignof"
+	case K_XK_XALLOC:
+		return "alloc"
+	case K_XK_XOTHER:
+		return "xother"
+	}
+	return ""
+}
+
+func (expr Expr) String() string {
+	xk := expr.GetXK()
+	if xk.IsSingleOprnd() {
+		return fmt.Sprintf("(%s %s)", xk.OperatorString(), expr.GetOpr1())
+	} else if xk.IsTwoOprnd() {
+		return fmt.Sprintf("(%s %s %s)", xk.OperatorString(), expr.GetOpr1(), expr.GetOpr2())
+	}
+	return ""
 }
