@@ -23,7 +23,7 @@ enum K_EK {
 	EVAR_LOCL_STATIC	= 4;  // Static local variables in a function body.
 	EVAR_LOCL_TMP		= 5;  // Temporary varibles created when creating SPAN IR.
 	EVAR_LOCL_SSA		= 6;  // An SSA variable; assigned only once.
-	EVAR_LOCL_PSEUDO	= 7;  // To give special names to, for e.g., memory allocations.
+	EVAR_LOCL_OTHER		= 7;  // Other local vars; special names like memory allocations, if conditions etc.
 	ELIT_NUM			= 8;  // A numeric literal.
 	ELIT_NUM_IMM		= 9;  // A numeric literal with immediate value.
 	ELIT_STR			= 10; // A string literal.
@@ -204,7 +204,6 @@ message BitDataType {
 	// The id to the type present in BitTU.entityInfo map.
 	optional uint64 typeId			= 2; // also an entity id
 
-	optional uint32 qtype			= 3; // Bitwise OR of one or more K_QK values
 	// Colon separated attributes of the type (e.g. "packed:aligned(8)", etc.)
 	// These are extra attributes not present in qtype
 	optional string attributes		= 4; 
@@ -237,18 +236,20 @@ message BitDataType {
 message BitEntityInfo {
 	uint64 eid					= 1; // Entity id
 	K_EK ekind					= 2;
-	K_VK vkind					= 3; // For basic types
+	optional K_VK vkind			= 3; // For basic types
+
+	optional uint32 qtype		= 4; // Bitwise OR of one or more K_QK values
 
 	// Id of the parent if this entity is a record field or a function parameter
-	optional uint64 parentId	= 4;
-	optional BitDataType dt		= 5; // For non-basic types
+	optional uint64 parentId	= 5;
+	optional BitDataType dt		= 6; // For non-basic types
 
 	// Store value if entity is a constant value.
-	optional uint64 lowVal		= 6; // for a numeric literal (int, float, etc.)
-	optional uint64 highVal		= 7; // Used for more than 64 bit numeric literal
-	optional string strVal		= 8; // for a string literal or entity name
+	optional uint64 lowVal		= 7; // for a numeric literal (int, float, etc.)
+	optional uint64 highVal		= 8; // Used for more than 64 bit numeric literal
+	optional string strVal		= 9; // for a string literal or entity name
 
-	optional BitSrcLoc loc		= 9; // location of the entity in the source file
+	optional BitSrcLoc loc		= 10; // location of the entity in the source file
 }
 
 // A single entity like a variable, constant etc.
@@ -271,7 +272,7 @@ message BitExpr {
 // All kinds of instructions.
 // Either expr1 or expr2 or both may be missing depending on the instruction type.
 message BitInsn {
-	K_IK kind				= 1;
+	K_IK ikind				= 1;
 	optional BitExpr expr1	= 2;
 	optional BitExpr expr2	= 3;
 	optional BitSrcLoc loc	= 4;

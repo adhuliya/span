@@ -102,7 +102,7 @@ enum K_EK : int {
   EVAR_LOCL_STATIC = 4,
   EVAR_LOCL_TMP = 5,
   EVAR_LOCL_SSA = 6,
-  EVAR_LOCL_PSEUDO = 7,
+  EVAR_LOCL_OTHER = 7,
   ELIT_NUM = 8,
   ELIT_NUM_IMM = 9,
   ELIT_STR = 10,
@@ -623,7 +623,6 @@ class BitDataType final :
     kLocFieldNumber = 13,
     kTypeIdFieldNumber = 2,
     kVkindFieldNumber = 1,
-    kQtypeFieldNumber = 3,
     kLenFieldNumber = 5,
     kAlignFieldNumber = 6,
     kAnonymousFieldNumber = 9,
@@ -763,19 +762,6 @@ class BitDataType final :
   void _internal_set_vkind(::spir::K_VK value);
   public:
 
-  // optional uint32 qtype = 3;
-  bool has_qtype() const;
-  private:
-  bool _internal_has_qtype() const;
-  public:
-  void clear_qtype();
-  uint32_t qtype() const;
-  void set_qtype(uint32_t value);
-  private:
-  uint32_t _internal_qtype() const;
-  void _internal_set_qtype(uint32_t value);
-  public:
-
   // optional uint32 len = 5;
   bool has_len() const;
   private:
@@ -847,7 +833,6 @@ class BitDataType final :
     ::spir::BitSrcLoc* loc_;
     uint64_t typeid__;
     int vkind_;
-    uint32_t qtype_;
     uint32_t len_;
     uint32_t align_;
     bool anonymous_;
@@ -979,16 +964,18 @@ class BitEntityInfo final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kStrValFieldNumber = 7,
-    kDtFieldNumber = 4,
-    kLocFieldNumber = 8,
+    kStrValFieldNumber = 9,
+    kDtFieldNumber = 6,
+    kLocFieldNumber = 10,
     kEidFieldNumber = 1,
-    kParentIdFieldNumber = 3,
-    kLowValFieldNumber = 5,
-    kHighValFieldNumber = 6,
     kEkindFieldNumber = 2,
+    kVkindFieldNumber = 3,
+    kParentIdFieldNumber = 5,
+    kLowValFieldNumber = 7,
+    kHighValFieldNumber = 8,
+    kQtypeFieldNumber = 4,
   };
-  // optional string strVal = 7;
+  // optional string strVal = 9;
   bool has_strval() const;
   private:
   bool _internal_has_strval() const;
@@ -1006,7 +993,7 @@ class BitEntityInfo final :
   std::string* _internal_mutable_strval();
   public:
 
-  // optional .spir.BitDataType dt = 4;
+  // optional .spir.BitDataType dt = 6;
   bool has_dt() const;
   private:
   bool _internal_has_dt() const;
@@ -1024,7 +1011,7 @@ class BitEntityInfo final :
       ::spir::BitDataType* dt);
   ::spir::BitDataType* unsafe_arena_release_dt();
 
-  // optional .spir.BitSrcLoc loc = 8;
+  // optional .spir.BitSrcLoc loc = 10;
   bool has_loc() const;
   private:
   bool _internal_has_loc() const;
@@ -1051,7 +1038,29 @@ class BitEntityInfo final :
   void _internal_set_eid(uint64_t value);
   public:
 
-  // optional uint64 parentId = 3;
+  // .spir.K_EK ekind = 2;
+  void clear_ekind();
+  ::spir::K_EK ekind() const;
+  void set_ekind(::spir::K_EK value);
+  private:
+  ::spir::K_EK _internal_ekind() const;
+  void _internal_set_ekind(::spir::K_EK value);
+  public:
+
+  // optional .spir.K_VK vkind = 3;
+  bool has_vkind() const;
+  private:
+  bool _internal_has_vkind() const;
+  public:
+  void clear_vkind();
+  ::spir::K_VK vkind() const;
+  void set_vkind(::spir::K_VK value);
+  private:
+  ::spir::K_VK _internal_vkind() const;
+  void _internal_set_vkind(::spir::K_VK value);
+  public:
+
+  // optional uint64 parentId = 5;
   bool has_parentid() const;
   private:
   bool _internal_has_parentid() const;
@@ -1064,7 +1073,7 @@ class BitEntityInfo final :
   void _internal_set_parentid(uint64_t value);
   public:
 
-  // optional uint64 lowVal = 5;
+  // optional uint64 lowVal = 7;
   bool has_lowval() const;
   private:
   bool _internal_has_lowval() const;
@@ -1077,7 +1086,7 @@ class BitEntityInfo final :
   void _internal_set_lowval(uint64_t value);
   public:
 
-  // optional uint64 highVal = 6;
+  // optional uint64 highVal = 8;
   bool has_highval() const;
   private:
   bool _internal_has_highval() const;
@@ -1090,13 +1099,17 @@ class BitEntityInfo final :
   void _internal_set_highval(uint64_t value);
   public:
 
-  // .spir.K_EK ekind = 2;
-  void clear_ekind();
-  ::spir::K_EK ekind() const;
-  void set_ekind(::spir::K_EK value);
+  // optional uint32 qtype = 4;
+  bool has_qtype() const;
   private:
-  ::spir::K_EK _internal_ekind() const;
-  void _internal_set_ekind(::spir::K_EK value);
+  bool _internal_has_qtype() const;
+  public:
+  void clear_qtype();
+  uint32_t qtype() const;
+  void set_qtype(uint32_t value);
+  private:
+  uint32_t _internal_qtype() const;
+  void _internal_set_qtype(uint32_t value);
   public:
 
   // @@protoc_insertion_point(class_scope:spir.BitEntityInfo)
@@ -1113,10 +1126,12 @@ class BitEntityInfo final :
     ::spir::BitDataType* dt_;
     ::spir::BitSrcLoc* loc_;
     uint64_t eid_;
+    int ekind_;
+    int vkind_;
     uint64_t parentid_;
     uint64_t lowval_;
     uint64_t highval_;
-    int ekind_;
+    uint32_t qtype_;
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_spir_2eproto;
@@ -1645,7 +1660,7 @@ class BitInsn final :
     kExpr1FieldNumber = 2,
     kExpr2FieldNumber = 3,
     kLocFieldNumber = 4,
-    kKindFieldNumber = 1,
+    kIkindFieldNumber = 1,
   };
   // optional .spir.BitExpr expr1 = 2;
   bool has_expr1() const;
@@ -1701,13 +1716,13 @@ class BitInsn final :
       ::spir::BitSrcLoc* loc);
   ::spir::BitSrcLoc* unsafe_arena_release_loc();
 
-  // .spir.K_IK kind = 1;
-  void clear_kind();
-  ::spir::K_IK kind() const;
-  void set_kind(::spir::K_IK value);
+  // .spir.K_IK ikind = 1;
+  void clear_ikind();
+  ::spir::K_IK ikind() const;
+  void set_ikind(::spir::K_IK value);
   private:
-  ::spir::K_IK _internal_kind() const;
-  void _internal_set_kind(::spir::K_IK value);
+  ::spir::K_IK _internal_ikind() const;
+  void _internal_set_ikind(::spir::K_IK value);
   public:
 
   // @@protoc_insertion_point(class_scope:spir.BitInsn)
@@ -1723,7 +1738,7 @@ class BitInsn final :
     ::spir::BitExpr* expr1_;
     ::spir::BitExpr* expr2_;
     ::spir::BitSrcLoc* loc_;
-    int kind_;
+    int ikind_;
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_spir_2eproto;
@@ -2385,34 +2400,6 @@ inline void BitDataType::set_typeid_(uint64_t value) {
   // @@protoc_insertion_point(field_set:spir.BitDataType.typeId)
 }
 
-// optional uint32 qtype = 3;
-inline bool BitDataType::_internal_has_qtype() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000020u) != 0;
-  return value;
-}
-inline bool BitDataType::has_qtype() const {
-  return _internal_has_qtype();
-}
-inline void BitDataType::clear_qtype() {
-  _impl_.qtype_ = 0u;
-  _impl_._has_bits_[0] &= ~0x00000020u;
-}
-inline uint32_t BitDataType::_internal_qtype() const {
-  return _impl_.qtype_;
-}
-inline uint32_t BitDataType::qtype() const {
-  // @@protoc_insertion_point(field_get:spir.BitDataType.qtype)
-  return _internal_qtype();
-}
-inline void BitDataType::_internal_set_qtype(uint32_t value) {
-  _impl_._has_bits_[0] |= 0x00000020u;
-  _impl_.qtype_ = value;
-}
-inline void BitDataType::set_qtype(uint32_t value) {
-  _internal_set_qtype(value);
-  // @@protoc_insertion_point(field_set:spir.BitDataType.qtype)
-}
-
 // optional string attributes = 4;
 inline bool BitDataType::_internal_has_attributes() const {
   bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
@@ -2483,7 +2470,7 @@ inline void BitDataType::set_allocated_attributes(std::string* attributes) {
 
 // optional uint32 len = 5;
 inline bool BitDataType::_internal_has_len() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000040u) != 0;
+  bool value = (_impl_._has_bits_[0] & 0x00000020u) != 0;
   return value;
 }
 inline bool BitDataType::has_len() const {
@@ -2491,7 +2478,7 @@ inline bool BitDataType::has_len() const {
 }
 inline void BitDataType::clear_len() {
   _impl_.len_ = 0u;
-  _impl_._has_bits_[0] &= ~0x00000040u;
+  _impl_._has_bits_[0] &= ~0x00000020u;
 }
 inline uint32_t BitDataType::_internal_len() const {
   return _impl_.len_;
@@ -2501,7 +2488,7 @@ inline uint32_t BitDataType::len() const {
   return _internal_len();
 }
 inline void BitDataType::_internal_set_len(uint32_t value) {
-  _impl_._has_bits_[0] |= 0x00000040u;
+  _impl_._has_bits_[0] |= 0x00000020u;
   _impl_.len_ = value;
 }
 inline void BitDataType::set_len(uint32_t value) {
@@ -2511,7 +2498,7 @@ inline void BitDataType::set_len(uint32_t value) {
 
 // optional uint32 align = 6;
 inline bool BitDataType::_internal_has_align() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000080u) != 0;
+  bool value = (_impl_._has_bits_[0] & 0x00000040u) != 0;
   return value;
 }
 inline bool BitDataType::has_align() const {
@@ -2519,7 +2506,7 @@ inline bool BitDataType::has_align() const {
 }
 inline void BitDataType::clear_align() {
   _impl_.align_ = 0u;
-  _impl_._has_bits_[0] &= ~0x00000080u;
+  _impl_._has_bits_[0] &= ~0x00000040u;
 }
 inline uint32_t BitDataType::_internal_align() const {
   return _impl_.align_;
@@ -2529,7 +2516,7 @@ inline uint32_t BitDataType::align() const {
   return _internal_align();
 }
 inline void BitDataType::_internal_set_align(uint32_t value) {
-  _impl_._has_bits_[0] |= 0x00000080u;
+  _impl_._has_bits_[0] |= 0x00000040u;
   _impl_.align_ = value;
 }
 inline void BitDataType::set_align(uint32_t value) {
@@ -2697,7 +2684,7 @@ inline void BitDataType::set_allocated_typename_(std::string* typename_) {
 
 // optional bool anonymous = 9;
 inline bool BitDataType::_internal_has_anonymous() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000100u) != 0;
+  bool value = (_impl_._has_bits_[0] & 0x00000080u) != 0;
   return value;
 }
 inline bool BitDataType::has_anonymous() const {
@@ -2705,7 +2692,7 @@ inline bool BitDataType::has_anonymous() const {
 }
 inline void BitDataType::clear_anonymous() {
   _impl_.anonymous_ = false;
-  _impl_._has_bits_[0] &= ~0x00000100u;
+  _impl_._has_bits_[0] &= ~0x00000080u;
 }
 inline bool BitDataType::_internal_anonymous() const {
   return _impl_.anonymous_;
@@ -2715,7 +2702,7 @@ inline bool BitDataType::anonymous() const {
   return _internal_anonymous();
 }
 inline void BitDataType::_internal_set_anonymous(bool value) {
-  _impl_._has_bits_[0] |= 0x00000100u;
+  _impl_._has_bits_[0] |= 0x00000080u;
   _impl_.anonymous_ = value;
 }
 inline void BitDataType::set_anonymous(bool value) {
@@ -2812,7 +2799,7 @@ BitDataType::foptypes() const {
 
 // optional bool variadic = 12;
 inline bool BitDataType::_internal_has_variadic() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000200u) != 0;
+  bool value = (_impl_._has_bits_[0] & 0x00000100u) != 0;
   return value;
 }
 inline bool BitDataType::has_variadic() const {
@@ -2820,7 +2807,7 @@ inline bool BitDataType::has_variadic() const {
 }
 inline void BitDataType::clear_variadic() {
   _impl_.variadic_ = false;
-  _impl_._has_bits_[0] &= ~0x00000200u;
+  _impl_._has_bits_[0] &= ~0x00000100u;
 }
 inline bool BitDataType::_internal_variadic() const {
   return _impl_.variadic_;
@@ -2830,7 +2817,7 @@ inline bool BitDataType::variadic() const {
   return _internal_variadic();
 }
 inline void BitDataType::_internal_set_variadic(bool value) {
-  _impl_._has_bits_[0] |= 0x00000200u;
+  _impl_._has_bits_[0] |= 0x00000100u;
   _impl_.variadic_ = value;
 }
 inline void BitDataType::set_variadic(bool value) {
@@ -2972,9 +2959,65 @@ inline void BitEntityInfo::set_ekind(::spir::K_EK value) {
   // @@protoc_insertion_point(field_set:spir.BitEntityInfo.ekind)
 }
 
-// optional uint64 parentId = 3;
-inline bool BitEntityInfo::_internal_has_parentid() const {
+// optional .spir.K_VK vkind = 3;
+inline bool BitEntityInfo::_internal_has_vkind() const {
   bool value = (_impl_._has_bits_[0] & 0x00000008u) != 0;
+  return value;
+}
+inline bool BitEntityInfo::has_vkind() const {
+  return _internal_has_vkind();
+}
+inline void BitEntityInfo::clear_vkind() {
+  _impl_.vkind_ = 0;
+  _impl_._has_bits_[0] &= ~0x00000008u;
+}
+inline ::spir::K_VK BitEntityInfo::_internal_vkind() const {
+  return static_cast< ::spir::K_VK >(_impl_.vkind_);
+}
+inline ::spir::K_VK BitEntityInfo::vkind() const {
+  // @@protoc_insertion_point(field_get:spir.BitEntityInfo.vkind)
+  return _internal_vkind();
+}
+inline void BitEntityInfo::_internal_set_vkind(::spir::K_VK value) {
+  _impl_._has_bits_[0] |= 0x00000008u;
+  _impl_.vkind_ = value;
+}
+inline void BitEntityInfo::set_vkind(::spir::K_VK value) {
+  _internal_set_vkind(value);
+  // @@protoc_insertion_point(field_set:spir.BitEntityInfo.vkind)
+}
+
+// optional uint32 qtype = 4;
+inline bool BitEntityInfo::_internal_has_qtype() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000080u) != 0;
+  return value;
+}
+inline bool BitEntityInfo::has_qtype() const {
+  return _internal_has_qtype();
+}
+inline void BitEntityInfo::clear_qtype() {
+  _impl_.qtype_ = 0u;
+  _impl_._has_bits_[0] &= ~0x00000080u;
+}
+inline uint32_t BitEntityInfo::_internal_qtype() const {
+  return _impl_.qtype_;
+}
+inline uint32_t BitEntityInfo::qtype() const {
+  // @@protoc_insertion_point(field_get:spir.BitEntityInfo.qtype)
+  return _internal_qtype();
+}
+inline void BitEntityInfo::_internal_set_qtype(uint32_t value) {
+  _impl_._has_bits_[0] |= 0x00000080u;
+  _impl_.qtype_ = value;
+}
+inline void BitEntityInfo::set_qtype(uint32_t value) {
+  _internal_set_qtype(value);
+  // @@protoc_insertion_point(field_set:spir.BitEntityInfo.qtype)
+}
+
+// optional uint64 parentId = 5;
+inline bool BitEntityInfo::_internal_has_parentid() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000010u) != 0;
   return value;
 }
 inline bool BitEntityInfo::has_parentid() const {
@@ -2982,7 +3025,7 @@ inline bool BitEntityInfo::has_parentid() const {
 }
 inline void BitEntityInfo::clear_parentid() {
   _impl_.parentid_ = uint64_t{0u};
-  _impl_._has_bits_[0] &= ~0x00000008u;
+  _impl_._has_bits_[0] &= ~0x00000010u;
 }
 inline uint64_t BitEntityInfo::_internal_parentid() const {
   return _impl_.parentid_;
@@ -2992,7 +3035,7 @@ inline uint64_t BitEntityInfo::parentid() const {
   return _internal_parentid();
 }
 inline void BitEntityInfo::_internal_set_parentid(uint64_t value) {
-  _impl_._has_bits_[0] |= 0x00000008u;
+  _impl_._has_bits_[0] |= 0x00000010u;
   _impl_.parentid_ = value;
 }
 inline void BitEntityInfo::set_parentid(uint64_t value) {
@@ -3000,7 +3043,7 @@ inline void BitEntityInfo::set_parentid(uint64_t value) {
   // @@protoc_insertion_point(field_set:spir.BitEntityInfo.parentId)
 }
 
-// optional .spir.BitDataType dt = 4;
+// optional .spir.BitDataType dt = 6;
 inline bool BitEntityInfo::_internal_has_dt() const {
   bool value = (_impl_._has_bits_[0] & 0x00000002u) != 0;
   PROTOBUF_ASSUME(!value || _impl_.dt_ != nullptr);
@@ -3090,9 +3133,9 @@ inline void BitEntityInfo::set_allocated_dt(::spir::BitDataType* dt) {
   // @@protoc_insertion_point(field_set_allocated:spir.BitEntityInfo.dt)
 }
 
-// optional uint64 lowVal = 5;
+// optional uint64 lowVal = 7;
 inline bool BitEntityInfo::_internal_has_lowval() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000010u) != 0;
+  bool value = (_impl_._has_bits_[0] & 0x00000020u) != 0;
   return value;
 }
 inline bool BitEntityInfo::has_lowval() const {
@@ -3100,7 +3143,7 @@ inline bool BitEntityInfo::has_lowval() const {
 }
 inline void BitEntityInfo::clear_lowval() {
   _impl_.lowval_ = uint64_t{0u};
-  _impl_._has_bits_[0] &= ~0x00000010u;
+  _impl_._has_bits_[0] &= ~0x00000020u;
 }
 inline uint64_t BitEntityInfo::_internal_lowval() const {
   return _impl_.lowval_;
@@ -3110,7 +3153,7 @@ inline uint64_t BitEntityInfo::lowval() const {
   return _internal_lowval();
 }
 inline void BitEntityInfo::_internal_set_lowval(uint64_t value) {
-  _impl_._has_bits_[0] |= 0x00000010u;
+  _impl_._has_bits_[0] |= 0x00000020u;
   _impl_.lowval_ = value;
 }
 inline void BitEntityInfo::set_lowval(uint64_t value) {
@@ -3118,9 +3161,9 @@ inline void BitEntityInfo::set_lowval(uint64_t value) {
   // @@protoc_insertion_point(field_set:spir.BitEntityInfo.lowVal)
 }
 
-// optional uint64 highVal = 6;
+// optional uint64 highVal = 8;
 inline bool BitEntityInfo::_internal_has_highval() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000020u) != 0;
+  bool value = (_impl_._has_bits_[0] & 0x00000040u) != 0;
   return value;
 }
 inline bool BitEntityInfo::has_highval() const {
@@ -3128,7 +3171,7 @@ inline bool BitEntityInfo::has_highval() const {
 }
 inline void BitEntityInfo::clear_highval() {
   _impl_.highval_ = uint64_t{0u};
-  _impl_._has_bits_[0] &= ~0x00000020u;
+  _impl_._has_bits_[0] &= ~0x00000040u;
 }
 inline uint64_t BitEntityInfo::_internal_highval() const {
   return _impl_.highval_;
@@ -3138,7 +3181,7 @@ inline uint64_t BitEntityInfo::highval() const {
   return _internal_highval();
 }
 inline void BitEntityInfo::_internal_set_highval(uint64_t value) {
-  _impl_._has_bits_[0] |= 0x00000020u;
+  _impl_._has_bits_[0] |= 0x00000040u;
   _impl_.highval_ = value;
 }
 inline void BitEntityInfo::set_highval(uint64_t value) {
@@ -3146,7 +3189,7 @@ inline void BitEntityInfo::set_highval(uint64_t value) {
   // @@protoc_insertion_point(field_set:spir.BitEntityInfo.highVal)
 }
 
-// optional string strVal = 7;
+// optional string strVal = 9;
 inline bool BitEntityInfo::_internal_has_strval() const {
   bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
   return value;
@@ -3214,7 +3257,7 @@ inline void BitEntityInfo::set_allocated_strval(std::string* strval) {
   // @@protoc_insertion_point(field_set_allocated:spir.BitEntityInfo.strVal)
 }
 
-// optional .spir.BitSrcLoc loc = 8;
+// optional .spir.BitSrcLoc loc = 10;
 inline bool BitEntityInfo::_internal_has_loc() const {
   bool value = (_impl_._has_bits_[0] & 0x00000004u) != 0;
   PROTOBUF_ASSUME(!value || _impl_.loc_ != nullptr);
@@ -3756,24 +3799,24 @@ inline void BitExpr::set_allocated_loc(::spir::BitSrcLoc* loc) {
 
 // BitInsn
 
-// .spir.K_IK kind = 1;
-inline void BitInsn::clear_kind() {
-  _impl_.kind_ = 0;
+// .spir.K_IK ikind = 1;
+inline void BitInsn::clear_ikind() {
+  _impl_.ikind_ = 0;
 }
-inline ::spir::K_IK BitInsn::_internal_kind() const {
-  return static_cast< ::spir::K_IK >(_impl_.kind_);
+inline ::spir::K_IK BitInsn::_internal_ikind() const {
+  return static_cast< ::spir::K_IK >(_impl_.ikind_);
 }
-inline ::spir::K_IK BitInsn::kind() const {
-  // @@protoc_insertion_point(field_get:spir.BitInsn.kind)
-  return _internal_kind();
+inline ::spir::K_IK BitInsn::ikind() const {
+  // @@protoc_insertion_point(field_get:spir.BitInsn.ikind)
+  return _internal_ikind();
 }
-inline void BitInsn::_internal_set_kind(::spir::K_IK value) {
+inline void BitInsn::_internal_set_ikind(::spir::K_IK value) {
   
-  _impl_.kind_ = value;
+  _impl_.ikind_ = value;
 }
-inline void BitInsn::set_kind(::spir::K_IK value) {
-  _internal_set_kind(value);
-  // @@protoc_insertion_point(field_set:spir.BitInsn.kind)
+inline void BitInsn::set_ikind(::spir::K_IK value) {
+  _internal_set_ikind(value);
+  // @@protoc_insertion_point(field_set:spir.BitInsn.ikind)
 }
 
 // optional .spir.BitExpr expr1 = 2;

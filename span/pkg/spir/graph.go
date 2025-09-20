@@ -86,6 +86,22 @@ func (bb *BasicBlock) Insn(idx int) Insn {
 	return bb.insns[idx]
 }
 
+func (bb *BasicBlock) EntryInsn() Insn {
+	return bb.insns[0]
+}
+
+func (bb *BasicBlock) ExitInsn() Insn {
+	return bb.insns[bb.InsnCount()-1]
+}
+
+func (bb *BasicBlock) EntryInsnId() InsnId {
+	return bb.insns[0].Id()
+}
+
+func (bb *BasicBlock) ExitInsnId() InsnId {
+	return bb.insns[bb.InsnCount()-1].Id()
+}
+
 func (bb *BasicBlock) PredCount() int {
 	return len(bb.predecessors)
 }
@@ -100,6 +116,49 @@ func (bb *BasicBlock) SuccCount() int {
 
 func (bb *BasicBlock) Succ(idx int) *BasicBlock {
 	return bb.successors[idx]
+}
+
+func (bb *BasicBlock) TrueSucc() *BasicBlock {
+	if bb.SuccCount() > 0 {
+		return bb.successors[0]
+	}
+	return nil
+}
+
+func (bb *BasicBlock) FalseSucc() *BasicBlock {
+	if bb.SuccCount() == 2 {
+		return bb.successors[1]
+	}
+	return nil
+}
+
+func (bb *BasicBlock) IsLastIndex(idx int) bool {
+	return idx == bb.InsnCount()-1
+}
+
+func (bb *BasicBlock) HasOnlyOneSucc() bool {
+	return bb.SuccCount() == 1
+}
+
+func (bb *BasicBlock) IsTrueSucc(succ *BasicBlock) bool {
+	// a simple pointer euqality check should be fine here
+	return bb.SuccCount() > 0 && bb.successors[0] == succ
+}
+
+func (bb *BasicBlock) IsFalseSucc(succ *BasicBlock) bool {
+	// a simple pointer euqality check should be fine here
+	return bb.SuccCount() > 1 && bb.successors[1] == succ
+}
+
+// Returns the position of the successor BB
+func (bb *BasicBlock) SuccPos(succ *BasicBlock) int {
+	// a simple pointer euqality check should be fine here
+	if succ == bb.successors[0] {
+		return 0
+	} else if succ == bb.successors[1] {
+		return 1
+	}
+	return -1
 }
 
 func (bb *BasicBlock) addSucc(succ *BasicBlock) *BasicBlock {

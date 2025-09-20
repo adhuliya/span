@@ -43,7 +43,7 @@ const (
 	K_EK_EVAR_LOCL_STATIC K_EK = 4  // Static local variables in a function body.
 	K_EK_EVAR_LOCL_TMP    K_EK = 5  // Temporary varibles created when creating SPAN IR.
 	K_EK_EVAR_LOCL_SSA    K_EK = 6  // An SSA variable; assigned only once.
-	K_EK_EVAR_LOCL_PSEUDO K_EK = 7  // To give special names to, for e.g., memory allocations.
+	K_EK_EVAR_LOCL_OTHER  K_EK = 7  // Other local vars; special names like memory allocations, if conditions etc.
 	K_EK_ELIT_NUM         K_EK = 8  // A numeric literal.
 	K_EK_ELIT_NUM_IMM     K_EK = 9  // A numeric literal with immediate value.
 	K_EK_ELIT_STR         K_EK = 10 // A string literal.
@@ -71,7 +71,7 @@ var (
 		4:  "EVAR_LOCL_STATIC",
 		5:  "EVAR_LOCL_TMP",
 		6:  "EVAR_LOCL_SSA",
-		7:  "EVAR_LOCL_PSEUDO",
+		7:  "EVAR_LOCL_OTHER",
 		8:  "ELIT_NUM",
 		9:  "ELIT_NUM_IMM",
 		10: "ELIT_STR",
@@ -95,7 +95,7 @@ var (
 		"EVAR_LOCL_STATIC": 4,
 		"EVAR_LOCL_TMP":    5,
 		"EVAR_LOCL_SSA":    6,
-		"EVAR_LOCL_PSEUDO": 7,
+		"EVAR_LOCL_OTHER":  7,
 		"ELIT_NUM":         8,
 		"ELIT_NUM_IMM":     9,
 		"ELIT_STR":         10,
@@ -675,7 +675,6 @@ type BitDataType struct {
 	Vkind K_VK                   `protobuf:"varint,1,opt,name=vkind,proto3,enum=spir.K_VK" json:"vkind,omitempty"`
 	// The id to the type present in BitTU.entityInfo map.
 	TypeId *uint64 `protobuf:"varint,2,opt,name=typeId,proto3,oneof" json:"typeId,omitempty"` // also an entity id
-	Qtype  *uint32 `protobuf:"varint,3,opt,name=qtype,proto3,oneof" json:"qtype,omitempty"`   // Bitwise OR of one or more K_QK values
 	// Colon separated attributes of the type (e.g. "packed:aligned(8)", etc.)
 	// These are extra attributes not present in qtype
 	Attributes *string `protobuf:"bytes,4,opt,name=attributes,proto3,oneof" json:"attributes,omitempty"`
@@ -742,13 +741,6 @@ func (x *BitDataType) GetVkind() K_VK {
 func (x *BitDataType) GetTypeId() uint64 {
 	if x != nil && x.TypeId != nil {
 		return *x.TypeId
-	}
-	return 0
-}
-
-func (x *BitDataType) GetQtype() uint32 {
-	if x != nil && x.Qtype != nil {
-		return *x.Qtype
 	}
 	return 0
 }
@@ -827,14 +819,16 @@ type BitEntityInfo struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Eid   uint64                 `protobuf:"varint,1,opt,name=eid,proto3" json:"eid,omitempty"` // Entity id
 	Ekind K_EK                   `protobuf:"varint,2,opt,name=ekind,proto3,enum=spir.K_EK" json:"ekind,omitempty"`
+	Vkind *K_VK                  `protobuf:"varint,3,opt,name=vkind,proto3,enum=spir.K_VK,oneof" json:"vkind,omitempty"` // For basic types
+	Qtype *uint32                `protobuf:"varint,4,opt,name=qtype,proto3,oneof" json:"qtype,omitempty"`                // Bitwise OR of one or more K_QK values
 	// Id of the parent if this entity is a record field or a function parameter
-	ParentId *uint64      `protobuf:"varint,3,opt,name=parentId,proto3,oneof" json:"parentId,omitempty"`
-	Dt       *BitDataType `protobuf:"bytes,4,opt,name=dt,proto3,oneof" json:"dt,omitempty"`
+	ParentId *uint64      `protobuf:"varint,5,opt,name=parentId,proto3,oneof" json:"parentId,omitempty"`
+	Dt       *BitDataType `protobuf:"bytes,6,opt,name=dt,proto3,oneof" json:"dt,omitempty"` // For non-basic types
 	// Store value if entity is a constant value.
-	LowVal        *uint64    `protobuf:"varint,5,opt,name=lowVal,proto3,oneof" json:"lowVal,omitempty"`   // for a numeric literal (int, float, etc.)
-	HighVal       *uint64    `protobuf:"varint,6,opt,name=highVal,proto3,oneof" json:"highVal,omitempty"` // Used for more than 64 bit numeric literal
-	StrVal        *string    `protobuf:"bytes,7,opt,name=strVal,proto3,oneof" json:"strVal,omitempty"`    // for a string literal or entity name
-	Loc           *BitSrcLoc `protobuf:"bytes,8,opt,name=loc,proto3,oneof" json:"loc,omitempty"`          // location of the entity in the source file
+	LowVal        *uint64    `protobuf:"varint,7,opt,name=lowVal,proto3,oneof" json:"lowVal,omitempty"`   // for a numeric literal (int, float, etc.)
+	HighVal       *uint64    `protobuf:"varint,8,opt,name=highVal,proto3,oneof" json:"highVal,omitempty"` // Used for more than 64 bit numeric literal
+	StrVal        *string    `protobuf:"bytes,9,opt,name=strVal,proto3,oneof" json:"strVal,omitempty"`    // for a string literal or entity name
+	Loc           *BitSrcLoc `protobuf:"bytes,10,opt,name=loc,proto3,oneof" json:"loc,omitempty"`         // location of the entity in the source file
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -881,6 +875,20 @@ func (x *BitEntityInfo) GetEkind() K_EK {
 		return x.Ekind
 	}
 	return K_EK_ENIL
+}
+
+func (x *BitEntityInfo) GetVkind() K_VK {
+	if x != nil && x.Vkind != nil {
+		return *x.Vkind
+	}
+	return K_VK_TNIL
+}
+
+func (x *BitEntityInfo) GetQtype() uint32 {
+	if x != nil && x.Qtype != nil {
+		return *x.Qtype
+	}
+	return 0
 }
 
 func (x *BitEntityInfo) GetParentId() uint64 {
@@ -1060,7 +1068,7 @@ func (x *BitExpr) GetLoc() *BitSrcLoc {
 // Either expr1 or expr2 or both may be missing depending on the instruction type.
 type BitInsn struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Kind          K_IK                   `protobuf:"varint,1,opt,name=kind,proto3,enum=spir.K_IK" json:"kind,omitempty"`
+	Ikind         K_IK                   `protobuf:"varint,1,opt,name=ikind,proto3,enum=spir.K_IK" json:"ikind,omitempty"`
 	Expr1         *BitExpr               `protobuf:"bytes,2,opt,name=expr1,proto3,oneof" json:"expr1,omitempty"`
 	Expr2         *BitExpr               `protobuf:"bytes,3,opt,name=expr2,proto3,oneof" json:"expr2,omitempty"`
 	Loc           *BitSrcLoc             `protobuf:"bytes,4,opt,name=loc,proto3,oneof" json:"loc,omitempty"`
@@ -1098,9 +1106,9 @@ func (*BitInsn) Descriptor() ([]byte, []int) {
 	return file_span_pkg_spir_spir_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *BitInsn) GetKind() K_IK {
+func (x *BitInsn) GetIkind() K_IK {
 	if x != nil {
-		return x.Kind
+		return x.Ikind
 	}
 	return K_IK_INIL
 }
@@ -1312,27 +1320,25 @@ const file_span_pkg_spir_spir_proto_rawDesc = "" +
 	"\x18span/pkg/spir/spir.proto\x12\x04spir\"1\n" +
 	"\tBitSrcLoc\x12\x12\n" +
 	"\x04line\x18\x01 \x01(\rR\x04line\x12\x10\n" +
-	"\x03col\x18\x02 \x01(\rR\x03col\"\xb6\x04\n" +
+	"\x03col\x18\x02 \x01(\rR\x03col\"\x91\x04\n" +
 	"\vBitDataType\x12 \n" +
 	"\x05vkind\x18\x01 \x01(\x0e2\n" +
 	".spir.K_VKR\x05vkind\x12\x1b\n" +
-	"\x06typeId\x18\x02 \x01(\x04H\x00R\x06typeId\x88\x01\x01\x12\x19\n" +
-	"\x05qtype\x18\x03 \x01(\rH\x01R\x05qtype\x88\x01\x01\x12#\n" +
+	"\x06typeId\x18\x02 \x01(\x04H\x00R\x06typeId\x88\x01\x01\x12#\n" +
 	"\n" +
-	"attributes\x18\x04 \x01(\tH\x02R\n" +
+	"attributes\x18\x04 \x01(\tH\x01R\n" +
 	"attributes\x88\x01\x01\x12\x15\n" +
-	"\x03len\x18\x05 \x01(\rH\x03R\x03len\x88\x01\x01\x12\x19\n" +
-	"\x05align\x18\x06 \x01(\rH\x04R\x05align\x88\x01\x01\x120\n" +
-	"\asubType\x18\a \x01(\v2\x11.spir.BitDataTypeH\x05R\asubType\x88\x01\x01\x12\x1f\n" +
-	"\btypeName\x18\b \x01(\tH\x06R\btypeName\x88\x01\x01\x12!\n" +
-	"\tanonymous\x18\t \x01(\bH\aR\tanonymous\x88\x01\x01\x12\x16\n" +
+	"\x03len\x18\x05 \x01(\rH\x02R\x03len\x88\x01\x01\x12\x19\n" +
+	"\x05align\x18\x06 \x01(\rH\x03R\x05align\x88\x01\x01\x120\n" +
+	"\asubType\x18\a \x01(\v2\x11.spir.BitDataTypeH\x04R\asubType\x88\x01\x01\x12\x1f\n" +
+	"\btypeName\x18\b \x01(\tH\x05R\btypeName\x88\x01\x01\x12!\n" +
+	"\tanonymous\x18\t \x01(\bH\x06R\tanonymous\x88\x01\x01\x12\x16\n" +
 	"\x06fopIds\x18\n" +
 	" \x03(\x04R\x06fopIds\x12-\n" +
 	"\bfopTypes\x18\v \x03(\v2\x11.spir.BitDataTypeR\bfopTypes\x12\x1f\n" +
-	"\bvariadic\x18\f \x01(\bH\bR\bvariadic\x88\x01\x01\x12&\n" +
-	"\x03loc\x18\r \x01(\v2\x0f.spir.BitSrcLocH\tR\x03loc\x88\x01\x01B\t\n" +
-	"\a_typeIdB\b\n" +
-	"\x06_qtypeB\r\n" +
+	"\bvariadic\x18\f \x01(\bH\aR\bvariadic\x88\x01\x01\x12&\n" +
+	"\x03loc\x18\r \x01(\v2\x0f.spir.BitSrcLocH\bR\x03loc\x88\x01\x01B\t\n" +
+	"\a_typeIdB\r\n" +
 	"\v_attributesB\x06\n" +
 	"\x04_lenB\b\n" +
 	"\x06_alignB\n" +
@@ -1342,17 +1348,23 @@ const file_span_pkg_spir_spir_proto_rawDesc = "" +
 	"\n" +
 	"_anonymousB\v\n" +
 	"\t_variadicB\x06\n" +
-	"\x04_loc\"\xcb\x02\n" +
+	"\x04_loc\"\xa1\x03\n" +
 	"\rBitEntityInfo\x12\x10\n" +
 	"\x03eid\x18\x01 \x01(\x04R\x03eid\x12 \n" +
 	"\x05ekind\x18\x02 \x01(\x0e2\n" +
-	".spir.K_EKR\x05ekind\x12\x1f\n" +
-	"\bparentId\x18\x03 \x01(\x04H\x00R\bparentId\x88\x01\x01\x12&\n" +
-	"\x02dt\x18\x04 \x01(\v2\x11.spir.BitDataTypeH\x01R\x02dt\x88\x01\x01\x12\x1b\n" +
-	"\x06lowVal\x18\x05 \x01(\x04H\x02R\x06lowVal\x88\x01\x01\x12\x1d\n" +
-	"\ahighVal\x18\x06 \x01(\x04H\x03R\ahighVal\x88\x01\x01\x12\x1b\n" +
-	"\x06strVal\x18\a \x01(\tH\x04R\x06strVal\x88\x01\x01\x12&\n" +
-	"\x03loc\x18\b \x01(\v2\x0f.spir.BitSrcLocH\x05R\x03loc\x88\x01\x01B\v\n" +
+	".spir.K_EKR\x05ekind\x12%\n" +
+	"\x05vkind\x18\x03 \x01(\x0e2\n" +
+	".spir.K_VKH\x00R\x05vkind\x88\x01\x01\x12\x19\n" +
+	"\x05qtype\x18\x04 \x01(\rH\x01R\x05qtype\x88\x01\x01\x12\x1f\n" +
+	"\bparentId\x18\x05 \x01(\x04H\x02R\bparentId\x88\x01\x01\x12&\n" +
+	"\x02dt\x18\x06 \x01(\v2\x11.spir.BitDataTypeH\x03R\x02dt\x88\x01\x01\x12\x1b\n" +
+	"\x06lowVal\x18\a \x01(\x04H\x04R\x06lowVal\x88\x01\x01\x12\x1d\n" +
+	"\ahighVal\x18\b \x01(\x04H\x05R\ahighVal\x88\x01\x01\x12\x1b\n" +
+	"\x06strVal\x18\t \x01(\tH\x06R\x06strVal\x88\x01\x01\x12&\n" +
+	"\x03loc\x18\n" +
+	" \x01(\v2\x0f.spir.BitSrcLocH\aR\x03loc\x88\x01\x01B\b\n" +
+	"\x06_vkindB\b\n" +
+	"\x06_qtypeB\v\n" +
 	"\t_parentIdB\x05\n" +
 	"\x03_dtB\t\n" +
 	"\a_lowValB\n" +
@@ -1373,10 +1385,10 @@ const file_span_pkg_spir_spir_proto_rawDesc = "" +
 	"\x03loc\x18\x05 \x01(\v2\x0f.spir.BitSrcLocH\x02R\x03loc\x88\x01\x01B\a\n" +
 	"\x05_opr1B\a\n" +
 	"\x05_opr2B\x06\n" +
-	"\x04_loc\"\xc1\x01\n" +
-	"\aBitInsn\x12\x1e\n" +
-	"\x04kind\x18\x01 \x01(\x0e2\n" +
-	".spir.K_IKR\x04kind\x12(\n" +
+	"\x04_loc\"\xc3\x01\n" +
+	"\aBitInsn\x12 \n" +
+	"\x05ikind\x18\x01 \x01(\x0e2\n" +
+	".spir.K_IKR\x05ikind\x12(\n" +
 	"\x05expr1\x18\x02 \x01(\v2\r.spir.BitExprH\x00R\x05expr1\x88\x01\x01\x12(\n" +
 	"\x05expr2\x18\x03 \x01(\v2\r.spir.BitExprH\x01R\x05expr2\x88\x01\x01\x12&\n" +
 	"\x03loc\x18\x04 \x01(\v2\x0f.spir.BitSrcLocH\x02R\x03loc\x88\x01\x01B\b\n" +
@@ -1411,7 +1423,7 @@ const file_span_pkg_spir_spir_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\v2\x13.spir.BitEntityInfoR\x05value:\x028\x01B\n" +
 	"\n" +
 	"\b_absPathB\t\n" +
-	"\a_origin*\xcb\x02\n" +
+	"\a_origin*\xca\x02\n" +
 	"\x04K_EK\x12\b\n" +
 	"\x04ENIL\x10\x00\x12\r\n" +
 	"\tEVAR_GLBL\x10\x01\x12\r\n" +
@@ -1419,8 +1431,8 @@ const file_span_pkg_spir_spir_proto_rawDesc = "" +
 	"\rEVAR_LOCL_ARG\x10\x03\x12\x14\n" +
 	"\x10EVAR_LOCL_STATIC\x10\x04\x12\x11\n" +
 	"\rEVAR_LOCL_TMP\x10\x05\x12\x11\n" +
-	"\rEVAR_LOCL_SSA\x10\x06\x12\x14\n" +
-	"\x10EVAR_LOCL_PSEUDO\x10\a\x12\f\n" +
+	"\rEVAR_LOCL_SSA\x10\x06\x12\x13\n" +
+	"\x0fEVAR_LOCL_OTHER\x10\a\x12\f\n" +
 	"\bELIT_NUM\x10\b\x12\x10\n" +
 	"\fELIT_NUM_IMM\x10\t\x12\f\n" +
 	"\bELIT_STR\x10\n" +
@@ -1604,28 +1616,29 @@ var file_span_pkg_spir_spir_proto_depIdxs = []int32{
 	6,  // 2: spir.BitDataType.fopTypes:type_name -> spir.BitDataType
 	5,  // 3: spir.BitDataType.loc:type_name -> spir.BitSrcLoc
 	0,  // 4: spir.BitEntityInfo.ekind:type_name -> spir.K_EK
-	6,  // 5: spir.BitEntityInfo.dt:type_name -> spir.BitDataType
-	5,  // 6: spir.BitEntityInfo.loc:type_name -> spir.BitSrcLoc
-	5,  // 7: spir.BitEntity.loc:type_name -> spir.BitSrcLoc
-	2,  // 8: spir.BitExpr.xkind:type_name -> spir.K_XK
-	8,  // 9: spir.BitExpr.opr1:type_name -> spir.BitEntity
-	8,  // 10: spir.BitExpr.opr2:type_name -> spir.BitEntity
-	8,  // 11: spir.BitExpr.oprs:type_name -> spir.BitEntity
-	5,  // 12: spir.BitExpr.loc:type_name -> spir.BitSrcLoc
-	1,  // 13: spir.BitInsn.kind:type_name -> spir.K_IK
-	9,  // 14: spir.BitInsn.expr1:type_name -> spir.BitExpr
-	9,  // 15: spir.BitInsn.expr2:type_name -> spir.BitExpr
-	5,  // 16: spir.BitInsn.loc:type_name -> spir.BitSrcLoc
-	10, // 17: spir.BitFunc.insns:type_name -> spir.BitInsn
-	13, // 18: spir.BitTU.namesToIds:type_name -> spir.BitTU.NamesToIdsEntry
-	14, // 19: spir.BitTU.entityInfo:type_name -> spir.BitTU.EntityInfoEntry
-	11, // 20: spir.BitTU.functions:type_name -> spir.BitFunc
-	7,  // 21: spir.BitTU.EntityInfoEntry.value:type_name -> spir.BitEntityInfo
-	22, // [22:22] is the sub-list for method output_type
-	22, // [22:22] is the sub-list for method input_type
-	22, // [22:22] is the sub-list for extension type_name
-	22, // [22:22] is the sub-list for extension extendee
-	0,  // [0:22] is the sub-list for field type_name
+	3,  // 5: spir.BitEntityInfo.vkind:type_name -> spir.K_VK
+	6,  // 6: spir.BitEntityInfo.dt:type_name -> spir.BitDataType
+	5,  // 7: spir.BitEntityInfo.loc:type_name -> spir.BitSrcLoc
+	5,  // 8: spir.BitEntity.loc:type_name -> spir.BitSrcLoc
+	2,  // 9: spir.BitExpr.xkind:type_name -> spir.K_XK
+	8,  // 10: spir.BitExpr.opr1:type_name -> spir.BitEntity
+	8,  // 11: spir.BitExpr.opr2:type_name -> spir.BitEntity
+	8,  // 12: spir.BitExpr.oprs:type_name -> spir.BitEntity
+	5,  // 13: spir.BitExpr.loc:type_name -> spir.BitSrcLoc
+	1,  // 14: spir.BitInsn.ikind:type_name -> spir.K_IK
+	9,  // 15: spir.BitInsn.expr1:type_name -> spir.BitExpr
+	9,  // 16: spir.BitInsn.expr2:type_name -> spir.BitExpr
+	5,  // 17: spir.BitInsn.loc:type_name -> spir.BitSrcLoc
+	10, // 18: spir.BitFunc.insns:type_name -> spir.BitInsn
+	13, // 19: spir.BitTU.namesToIds:type_name -> spir.BitTU.NamesToIdsEntry
+	14, // 20: spir.BitTU.entityInfo:type_name -> spir.BitTU.EntityInfoEntry
+	11, // 21: spir.BitTU.functions:type_name -> spir.BitFunc
+	7,  // 22: spir.BitTU.EntityInfoEntry.value:type_name -> spir.BitEntityInfo
+	23, // [23:23] is the sub-list for method output_type
+	23, // [23:23] is the sub-list for method input_type
+	23, // [23:23] is the sub-list for extension type_name
+	23, // [23:23] is the sub-list for extension extendee
+	0,  // [0:23] is the sub-list for field type_name
 }
 
 func init() { file_span_pkg_spir_spir_proto_init() }

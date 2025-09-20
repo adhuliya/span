@@ -7,46 +7,45 @@ import (
 )
 
 // This file defines a simple BotBot analysis client.
-// The BotBot is a forward analysis which simply propagates
-// bot values from Entry to Exit of a given CFGraph.
+// It defines both the forward and backward BotBot analysis clients
+// which simply propagates the bot value from IN to OUT and OUT to IN respectively.
 
 type ForwardBotBotClient struct {
-	id         analysis.AnalysisId
-	name       string
-	visitOrder analysis.GraphVisitingOrder
+	analysis.AnalysisClient
 }
 
-func NewForwardTopBotClient() *ForwardBotBotClient {
-	return &ForwardBotBotClient{
-		id:         0,
-		name:       "ForwardBotBotClient",
-		visitOrder: analysis.ReversePostOrder,
-	}
-}
-
-func (c *ForwardBotBotClient) Id() analysis.AnalysisId {
-	return c.id
-}
-
-func (c *ForwardBotBotClient) Name() string {
-	return c.name
-}
-
-func (c *ForwardBotBotClient) VisitingOrder() analysis.GraphVisitingOrder {
-	return c.visitOrder
-}
-
+// Explicitly overrides (though not necessary -- good for demo)
 func (c *ForwardBotBotClient) BoundaryFact(graph spir.Graph, context *spir.Context) lattice.Pair {
 	return lattice.NewPair(&lattice.TopBotLatticeBot, &lattice.TopBotLatticeTop)
 }
 
-// Just propagate the bot to the out fact.
+// Just propagate the IN data flow value to the OUT fact.
 func (c *ForwardBotBotClient) Analyze(instruction spir.Insn,
 	inOut lattice.Pair, context *spir.Context) (lattice.Pair, lattice.FactChanged) {
 	factChange := lattice.NoChange
-	if lattice.IsTop(inOut.L2()) {
-		factChange = lattice.OnlyOutChanged
+	if !lattice.Equals(inOut.L1(), inOut.L2()) {
+		factChange = lattice.NopOutChanged // can also be OutChanged
 	}
-	inOut = lattice.NewPair(inOut.L1(), &lattice.TopBotLatticeBot)
+	inOut = lattice.NewPair(inOut.L1(), inOut.L1())
+	return inOut, factChange
+}
+
+type BackwardBotBotClient struct {
+	analysis.AnalysisClient
+}
+
+// Explicitly overrides (though not necessary -- good for demo)
+func (c *BackwardBotBotClient) BoundaryFact(graph spir.Graph, context *spir.Context) lattice.Pair {
+	return lattice.NewPair(&lattice.TopBotLatticeTop, &lattice.TopBotLatticeBot)
+}
+
+// Just propagate the OUT data flow value to the IN fact.
+func (c *BackwardBotBotClient) Analyze(instruction spir.Insn,
+	inOut lattice.Pair, context *spir.Context) (lattice.Pair, lattice.FactChanged) {
+	factChange := lattice.NoChange
+	if !lattice.Equals(inOut.L1(), inOut.L2()) {
+		factChange = lattice.OnlyInChanged // could also be NopInChanged
+	}
+	inOut = lattice.NewPair(inOut.L2(), inOut.L2())
 	return inOut, factChange
 }
