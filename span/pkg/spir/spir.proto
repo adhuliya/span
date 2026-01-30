@@ -40,6 +40,7 @@ enum K_EK {
 	ECFG				= 19; // A control flow graph.
 	ESCOPE				= 20; // A scope, e.g. a block scope.
 	ETU					= 21; // A translation unit (TU).
+	ESRC_FILE			= 22; // A source file.
 
 	// More K_EK values can be dynamically created by SPAN, if the ID space is exhausted.
 }
@@ -236,17 +237,17 @@ message BitDataType {
 message BitEntityInfo {
 	uint64 eid					= 1; // Entity id
 	K_EK ekind					= 2;
-	optional K_VK vkind			= 3; // For basic types
+	optional K_VK vkind			= 3; // Sufficient for basic types
 
 	optional uint32 qtype		= 4; // Bitwise OR of one or more K_QK values
 
 	// Id of the parent if this entity is a record field or a function parameter
 	optional uint64 parentId	= 5;
-	optional BitDataType dt		= 6; // For non-basic types
+	optional BitDataType dt		= 6; // Sufficient for non-basic types
 
 	// Store value if entity is a constant value.
 	optional uint64 lowVal		= 7; // for a numeric literal (int, float, etc.)
-	optional uint64 highVal		= 8; // Used for more than 64 bit numeric literal
+	optional uint64 highVal		= 8; // Used for >64 bit and <=128 bit numeric literals
 	optional string strVal		= 9; // for a string literal or entity name
 
 	optional BitSrcLoc loc		= 10; // location of the entity in the source file

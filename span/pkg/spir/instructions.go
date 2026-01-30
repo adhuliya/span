@@ -62,12 +62,10 @@ type Insn struct {
 }
 
 func (i Insn) String() string {
-	if i.firstHalf == 0 {
-		return "Insn: Nop"
-	}
-
 	kind := i.InsnKind()
 	switch kind {
+	case K_IK_INIL:
+		return "Insn: Nil"
 	case K_IK_INOP:
 		return "no-op"
 	case K_IK_IBARRIER:
@@ -273,7 +271,7 @@ func (i *Insn) IsGoto() bool {
 }
 
 func (i Insn) GetInsnPrefix16() uint16 {
-	return uint16(EntityId(i.firstHalf>>InsnIdShift64).ValidBits() >> K_EK_EINSN.SeqIdBitLength())
+	return EntityId(i.firstHalf >> InsnIdShift64).KindAndSubKind16()
 }
 
 func (i *Insn) IsCall() bool {

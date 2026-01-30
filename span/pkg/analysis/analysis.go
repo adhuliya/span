@@ -13,15 +13,26 @@ type GraphVisitingOrder uint8
 type StmtViewType uint32
 
 const (
+	// No view generated -- i.e. analysis does not generate a view for the given instruction
+	NoView StmtViewType = 0
+
+	// Nil view (a barrier) -- represents a disconnection in graph
+	NilView StmtViewType = 1
+
 	// A view from x = RHS to x = Top
-	DeadAssignmentView StmtViewType = 0
+	DeadAssignView StmtViewType = 2
+
 	// A view from *x = RHS to {a = RHS, b = RHS, ...}
 	// or 			x = *y  to {x = a, x = b, ...}
-	DereferencedView StmtViewType = 1
-	// A view from x = y to {x = 10, x = 11, ...}
-	ConstantView StmtViewType = 2
+	DerefView    StmtViewType = 3
+	DerefViewLhs StmtViewType = 4
+	DerefViewRhs StmtViewType = 5
+
+	// A view from x = y to {x = 10, x = 11, ...} -- a literal value
+	LiteralView StmtViewType = 6
+
 	// A view from if(x) to {if(true)} or {if(false)}
-	ConditionView StmtViewType = 3
+	ConditionView StmtViewType = 7
 )
 
 const (
@@ -37,7 +48,8 @@ type AnalysisFactMap map[spir.InsnId]lattice.Pair
 type InstanceId uint64
 
 const Low32BitsMask32 = 0xFFFFFFFF
-const High32BitsMask64 = 0xFFFFFFFF00000000
+const Low32BitsMask64 = 0x00000000_FFFFFFFF
+const High32BitsMask64 = 0xFFFFFFFF_00000000
 const Shift32Bits = 32
 
 func (id InstanceId) Low32() uint32 {
@@ -53,7 +65,7 @@ func (id InstanceId) High32() uint32 {
 }
 
 func (id *InstanceId) SetHigh32(high32 uint32) {
-	*id = InstanceId((uint64(high32) << Shift32Bits) | (High32BitsMask64 & uint64(*id)))
+	*id = InstanceId((uint64(high32) << Shift32Bits) | (Low32BitsMask64 & uint64(*id)))
 }
 
 func (id InstanceId) String() string {
@@ -62,18 +74,20 @@ func (id InstanceId) String() string {
 
 type Analysis interface {
 	InstanceId() InstanceId
-	SetId(instanceId InstanceId)
+	SetInstanceId(instanceId InstanceId)
 	Name() string
 	VisitingOrder() GraphVisitingOrder
 	BoundaryFact(graph spir.Graph, context *spir.Context) lattice.Pair
 	AnalyzeInsn(insn spir.Insn, inOut lattice.Pair,
+		context *spir.Context) (lattice.Pair, lattice.FactChanged)
+	AnalyzeBB(bb *spir.BasicBlock, inOut lattice.Pair,
 		context *spir.Context) (lattice.Pair, lattice.FactChanged)
 }
 
 type SpanAnalysis interface {
 	Analysis
 	StmtView(insn spir.Insn, inOut lattice.Pair,
-		viewType StmtViewType, context *spir.Context) []spir.Insn
+		viewTypeRequested StmtViewType, context *spir.Context) (StmtViewType, []spir.Insn)
 	Policy(insn spir.Insn, viewType StmtViewType, view []spir.Insn,
 		context *spir.Context) []spir.Insn
 }
@@ -81,6 +95,13 @@ type SpanAnalysis interface {
 type LernersAnalysis interface {
 	Analysis
 	StmtGraph(insn spir.Insn, inOut lattice.Pair,
+		context *spir.Context) spir.Graph
+}
+
+// Analysis transformation pair for cascading analysis.
+type CascadingATPair interface {
+	Analysis
+	Transform(graph spir.Graph, factMap AnalysisFactMap,
 		context *spir.Context) spir.Graph
 }
 
@@ -92,7 +113,7 @@ func (ac *AnalysisClient) InstanceId() InstanceId {
 	return ac.instanceId
 }
 
-func (ac *AnalysisClient) SetId(instanceId InstanceId) {
+func (ac *AnalysisClient) SetInstanceId(instanceId InstanceId) {
 	ac.instanceId = instanceId
 }
 
@@ -110,7 +131,7 @@ func (ac *AnalysisClient) BoundaryFact(graph spir.Graph, context *spir.Context) 
 	return lattice.NewPair(&lattice.TopBotLatticeBot, &lattice.TopBotLatticeTop)
 }
 
-// Just propagate the IN data flow value to the OUT fact.
+// (Default) Just propagate the IN data flow value to the OUT fact.
 func (ac *AnalysisClient) AnalyzeInsn(instruction spir.Insn,
 	inOut lattice.Pair, context *spir.Context) (lattice.Pair, lattice.FactChanged) {
 	factChange := lattice.NoChange
@@ -119,4 +140,10 @@ func (ac *AnalysisClient) AnalyzeInsn(instruction spir.Insn,
 	}
 	inOut = lattice.NewPair(inOut.L1(), inOut.L1())
 	return inOut, factChange
+}
+
+// (Default) Not implemented.
+func (ac *AnalysisClient) AnalyzeBB(bb *spir.BasicBlock,
+	inOut lattice.Pair, context *spir.Context) (lattice.Pair, lattice.FactChanged) {
+	return inOut, lattice.NotImplemented
 }

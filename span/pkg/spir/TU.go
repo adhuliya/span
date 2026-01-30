@@ -2,6 +2,7 @@ package spir
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/adhuliya/span/pkg/idgen"
 )
@@ -9,60 +10,6 @@ import (
 // This file defines the TranslationUnit type.
 // The TranslationUnit type is used to represent a single SPAN IR translation unit.
 // It is a container for all the entities and instructions which make up a program.
-
-// An Entity ID is a 32 bit unsigned integer which is used to identify an entity.
-// The upper 12 bits are used to identify the pool of IDs.
-//
-//	-- The most significant 2 bits are always masked to zero.
-//	-- The next 5 bits is the EntityKind.
-//	-- The next 5 bits is the possible type of the Entity (value type, instruction type etc.)
-//
-// The remaining lower 20 bits are used to assign a sequential ID to the entity.
-type EntityId uint32
-type EId = EntityId
-
-func (e EntityId) String() string {
-	return EntityIdString(e, 'x')
-}
-
-const NIL_ID EntityId = 0
-
-// The EntityKind (EK) type is used to represent the kind of an entity in the SPAN IR.
-// It is an integer type in the range of 0 to 31 (5 bits)
-// that can take on various values to indicate different kinds of entities.
-type EntityKind = K_EK
-
-const EIdBitLength uint8 = 30
-const EIdMask32 EntityId = 0x3FFF_FFFF
-const EIdShift32 uint8 = 0
-const EIdPosMask64 uint64 = 0x3FFF_FFFF_0000_0000
-const EIdShift64 uint8 = 32
-
-// EntityKind (EK) is a 5-bit integer that represents the kind of an entity.
-const EKPosMask16 uint16 = 0x3E00
-const EKShift16 uint8 = 9
-const EKPosMask32 uint32 = 0x3E00_0000
-const EKShift32 uint8 = 25
-const EKPosMask64 uint64 = 0x3E00_0000_0000_0000
-const EKShift64 uint8 = 57
-
-// EntitySubKind (ESK) is a 5-bit integer that represents the sub-kind of an entity.
-const ESKPosMask16 uint16 = 0x01F0
-const ESKShift16 uint8 = 4
-const ESKPosMask32 uint32 = 0x01F0_0000
-const ESKShift32 uint8 = 20
-const ESKPosMask64 uint64 = 0x01F0_0000_0000_0000
-const ESKShift64 uint8 = 52
-
-const ImmConstBitCount uint8 = 20
-const ImmConstMask32 uint32 = 0x000F_FFFF
-const ImmConstMask64 uint64 = 0x0000_0000_000F_FFFF
-
-// GetTrueEntityId extracts the true entity ID from an EntityId
-// by masking the upper 2 bits of the EntityId.
-func GetTrueEntityId(id EntityId) EntityId {
-	return id & EIdMask32
-}
 
 // Info associated with a literal value.
 type LiteralInfo struct {
@@ -78,6 +25,7 @@ type ValueInfo struct {
 }
 
 // Function represents a function in the SPAN IR.
+// A special global initialization function is used to initialize global variables.
 type Function struct {
 	fid        EntityId // The function ID
 	fName      string   // The function name
@@ -94,48 +42,53 @@ type Function struct {
 }
 
 type TU struct {
-	// globalInit is a special function with one basic block
-	// with all the initialization of global variables.
+	// 1. Basic information about the TU
 	tuId      EntityId // The TU ID
 	tuName    string   // The TU name
 	tuAbspath string   // The source file path
 	origin    string   // The origin of the TU (e.g. Clang AST)
 
-	mergedTUs map[EntityId]*TU // Map of TU IDs to merged TUs
+	// 2. Information about the TU's parent and merged TUs (when linking TUs together)
+	mergedTUs map[EntityId]*TU // Map of TU IDs if this is a merged TU
+	parentTU  *TU              // The parent TU, if this TU has been merged into another TU
 
-	globalInit     EntityId
-	functions      map[EntityId]*Function
-	callArgs       map[CallSiteId][]EntityId
-	valueTypes     map[EntityId]ValueType // Holds complete value type information
-	constants      map[EntityId]LiteralInfo
-	labelNames     map[LabelId]string
-	namesToId      map[string]EntityId // Necessary for name lookup during linking
-	entityInfo     map[EntityId]any    // For scratch use
-	insnInfo       map[InsnId]InsnInfo // For information on an instruction
-	idGen          *idgen.IDGenerator
-	sourceInfo     *SrcLocInfo
-	sourceLocation map[EntityId]SrcLoc
+	// 3. The minimal complete TU program
+	valueTypes map[EntityId]ValueType // Holds complete value type information
+	constants  map[EntityId]LiteralInfo
+	functions  map[EntityId]*Function
+	callArgs   map[CallSiteId][]EntityId // Arguments for a call site
+	labelNames map[LabelId]string
+	globalInit EntityId // A special function with one basic block with all the initialization of global variables.
+
+	// 4. Meta information about the TU
+	namesToId    map[string]EntityId // Necessary for name lookup during linking
+	entityInfo   map[EntityId]any    // For scratch use
+	insnInfo     map[InsnId]InsnInfo // For information on an instruction
+	idGen        *idgen.IDGenerator
+	srcFilesInfo *SrcFilesInfo
+	srcLocations map[EntityId]SrcLoc
 }
 
 func NewTU() *TU {
 	tu := &TU{
-		tuId:           NIL_ID,
-		tuName:         "",
-		tuAbspath:      "",
-		origin:         "",
-		mergedTUs:      make(map[EntityId]*TU),
-		globalInit:     NIL_ID,
-		entityInfo:     make(map[EntityId]any),
-		functions:      make(map[EntityId]*Function),
-		constants:      make(map[EntityId]LiteralInfo),
-		valueTypes:     make(map[EntityId]ValueType),
-		sourceLocation: make(map[EntityId]SrcLoc),
-		insnInfo:       make(map[InsnId]InsnInfo),
-		callArgs:       make(map[CallSiteId][]EntityId),
-		idGen:          idgen.NewIDGenerator(),
-		sourceInfo:     NewSrcLocInfo(),
-		labelNames:     make(map[LabelId]string),
-		namesToId:      make(map[string]EntityId),
+		tuId:         NIL_ID,
+		tuName:       "",
+		tuAbspath:    "",
+		origin:       "",
+		mergedTUs:    make(map[EntityId]*TU),
+		parentTU:     nil,
+		globalInit:   NIL_ID,
+		entityInfo:   make(map[EntityId]any),
+		functions:    make(map[EntityId]*Function),
+		constants:    make(map[EntityId]LiteralInfo),
+		valueTypes:   make(map[EntityId]ValueType),
+		insnInfo:     make(map[InsnId]InsnInfo),
+		callArgs:     make(map[CallSiteId][]EntityId),
+		idGen:        idgen.NewIDGenerator(),
+		srcLocations: make(map[EntityId]SrcLoc),
+		srcFilesInfo: NewSrcFilesInfo(),
+		labelNames:   make(map[LabelId]string),
+		namesToId:    make(map[string]EntityId),
 	}
 
 	tu.globalInit = tu.NewFunction(K_00_GLBL_INIT_FUNC_NAME, &VoidVT, nil, nil).fid
@@ -153,20 +106,20 @@ func NewValueInfo(name string, eKind EntityKind,
 }
 
 func (tu *TU) GetUniqueLabelId() LabelId {
-	return LabelId(tu.idGen.AllocateID(GenPrefix16(K_EK_ELABEL, 0),
-		K_EK_ELABEL.SeqIdBitLength()))
+	return LabelId(tu.idGen.AllocateID(GenKindPrefix16(K_EK_ELABEL, 0),
+		K_EK_ELABEL.SeqIdBitLen()))
 }
 
 func (tu *TU) AddInsn(bb *BasicBlock, insn Insn, srcLoc *SrcLoc) {
 	insnId := InsnId(tu.idGen.AllocateID(insn.GetInsnPrefix16(),
-		K_EK_EINSN.SeqIdBitLength()))
+		K_EK_EINSN.SeqIdBitLen()))
 	tu.entityInfo[EntityId(insnId)] = &InsnInfo{bbId: bb.id, srcLoc: srcLoc}
 	bb.insns = append(bb.insns, insn)
 }
 
 func (tu *TU) GetUniqueBBId() BasicBlockId {
-	id := BasicBlockId(tu.idGen.AllocateID(GenPrefix16(K_EK_EBB, 0),
-		K_EK_EBB.SeqIdBitLength()))
+	id := BasicBlockId(tu.idGen.AllocateID(GenKindPrefix16(K_EK_EBB, 0),
+		K_EK_EBB.SeqIdBitLen()))
 	return id
 }
 
@@ -185,8 +138,8 @@ func (tu *TU) GetEntityId(name string) EntityId {
 func (tu *TU) NewVar(name string, eKind EntityKind,
 	vType ValueType, fid EntityId) EntityId {
 	valInfo := NewValueInfo(name, eKind, vType, fid)
-	id := tu.idGen.AllocateID(GenPrefix16(eKind, uint8(vType.GetType())),
-		eKind.SeqIdBitLength())
+	id := tu.idGen.AllocateID(GenKindPrefix16(eKind, uint8(vType.GetType())),
+		eKind.SeqIdBitLen())
 	entityId := EntityId(id)
 	tu.entityInfo[entityId] = valInfo
 	tu.namesToId[name] = entityId
@@ -199,10 +152,10 @@ func (tu *TU) NewConst(val uint64, vType ValueType) EntityId {
 	var id uint32 = 0
 	if ok {
 		eKind = K_EK_ELIT_NUM_IMM
-		id = GenPrefix32(eKind, uint8(vType.GetType()))<<eKind.SeqIdBitLength() | uint32(imm)
+		id = GenKindPrefix32(eKind, uint8(vType.GetType()))<<eKind.SeqIdBitLen() | uint32(imm)
 	} else {
-		id = tu.idGen.AllocateID(GenPrefix16(eKind, uint8(vType.GetType())),
-			eKind.SeqIdBitLength())
+		id = tu.idGen.AllocateID(GenKindPrefix16(eKind, uint8(vType.GetType())),
+			eKind.SeqIdBitLen())
 	}
 
 	entityId := EntityId(id)
@@ -213,33 +166,10 @@ func (tu *TU) NewConst(val uint64, vType ValueType) EntityId {
 	return entityId
 }
 
-func GenImmediate20(val uint64, vType ValKind) (uint32, bool) {
-	if vType.IsInteger() && val == val&ImmConstMask64 {
-		return uint32(val & ImmConstMask64), true
-	}
-	return 0, false
-}
-
-func GenPrefix16(eKind EntityKind, eSubKind uint8) uint16 {
-	if eKind.HasSubKind() {
-		return uint16(eKind.place16() | (uint16(eSubKind) << ESKShift16))
-	} else {
-		return uint16(eKind)
-	}
-}
-
-func GenPrefix32(eKind EntityKind, eSubKind uint8) uint32 {
-	if eKind.HasSubKind() {
-		return uint32(eKind.place32() | (uint32(eSubKind) << ESKShift32))
-	} else {
-		return uint32(eKind)
-	}
-}
-
 func (tu *TU) NewFunction(name string, returnType ValueType,
 	paramIds []EntityId, body Graph) *Function {
-	id := EntityId(tu.idGen.AllocateID(GenPrefix16(K_EK_EFUNC, uint8(returnType.GetType())),
-		K_EK_EFUNC.SeqIdBitLength()))
+	id := EntityId(tu.idGen.AllocateID(GenKindPrefix16(K_EK_EFUNC, uint8(returnType.GetType())),
+		K_EK_EFUNC.SeqIdBitLen()))
 
 	fun := &Function{
 		fid:        id,
@@ -257,8 +187,8 @@ func (tu *TU) NewFunction(name string, returnType ValueType,
 	return fun
 }
 
-func (fun *Function) SetBody(tu *TU, insns []Insn) {
-	fun.body = createCfgForFunction(insns)
+func (fun *Function) SetBody(tu *TU, insnSeq []Insn) {
+	fun.body = ConstructCFG(insnSeq)
 }
 
 func (fun *Function) GetId() EntityId {
@@ -294,6 +224,35 @@ func (tu *TU) GetFunction(name string) *Function {
 	return nil
 }
 
+func (tu *TU) AddSrcFile(fullPath string) FileId {
+	// if the source file is already in the map, return the existing ID
+	if id := tu.GetSrcFileId(fullPath); id != FileId(NIL_ID) {
+		return id
+	}
+
+	// else, create a new source file entry
+	fileId := FileId(tu.idGen.AllocateID(GenKindPrefix16(K_EK_ESRC_FILE, 0),
+		K_EK_ESRC_FILE.SeqIdBitLen()))
+
+	directory, fileName := filepath.Split(fullPath)
+
+	tu.srcFilesInfo.files[fileId] = SrcFile{
+		id:        fileId,
+		name:      fileName,
+		directory: directory,
+	}
+
+	tu.srcFilesInfo.fileIdMap[fullPath] = fileId
+	return fileId
+}
+
+func (tu *TU) GetSrcFileId(fullPath string) FileId {
+	if id, ok := tu.srcFilesInfo.fileIdMap[fullPath]; ok {
+		return id
+	}
+	return FileId(NIL_ID)
+}
+
 func (tu *TU) GetFunctionById(id EntityId) *Function {
 	if fun, ok := tu.functions[id]; ok {
 		return fun
@@ -302,66 +261,5 @@ func (tu *TU) GetFunctionById(id EntityId) *Function {
 }
 
 func (tu *TU) GenerateEntityId(eKind EntityKind) EntityId {
-	return EntityId(tu.idGen.AllocateID(uint16(eKind), eKind.SeqIdBitLength()))
-}
-
-// ValidBits masks the upper 2 bits of EntityId to zero
-func (entityId EntityId) ValidBits() EntityId {
-	return entityId & EIdMask32
-}
-
-// EKind extracts the EntityKind from an EntityId.
-// The EntityKind is encoded in bits 25-29 of the EntityId.
-func (entityId EntityId) EKind() EntityKind {
-	return EntityKind((entityId & EIdMask32) >> EKShift32)
-}
-
-// Does the entity kind have a sub-kind?
-// A sub-kind uses another 5 bits to represent the sub type of the entity.
-func (eKind EntityKind) HasSubKind() bool {
-	if (eKind >= K_EK_EBB && eKind <= K_EK_ETU) ||
-		eKind == K_EK_ELABEL {
-		return false
-	}
-	return true
-}
-
-func (eKind EntityKind) SeqIdBitLength() uint8 {
-	if eKind.HasSubKind() {
-		return 20
-	}
-	return 25
-}
-
-func (eKind EntityKind) place16() uint16 {
-	return uint16(eKind) << EKShift16
-}
-
-func (eKind EntityKind) place32() uint32 {
-	return uint32(eKind) << EKShift32
-}
-
-func (eKind EntityKind) place64() uint64 {
-	return uint64(eKind) << EKShift64
-}
-
-func (eKind EntityKind) IsVariable() bool {
-	if eKind >= K_EK_EVAR_GLBL && eKind <= K_EK_EVAR_LOCL_OTHER {
-		return true
-	}
-	return false
-}
-
-func (eKind EntityKind) IsLiteral() bool {
-	if eKind == K_EK_ELIT_NUM || eKind == K_EK_ELIT_STR {
-		return true
-	}
-	return false
-}
-
-func (eKind EntityKind) IsFunction() bool {
-	if eKind == K_EK_EFUNC || eKind == K_EK_EFUNC_VARGS {
-		return true
-	}
-	return false
+	return EntityId(tu.idGen.AllocateID(uint16(eKind), eKind.SeqIdBitLen()))
 }

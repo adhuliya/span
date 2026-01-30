@@ -60,6 +60,9 @@ const (
 
 	// Analyses may not provide any change information (at the cost of efficiency)
 	NoChangeInfo FactChanged = 12
+
+	// The transfer function is not implemented for this analysis
+	NotImplemented FactChanged = 13
 )
 
 func (fc FactChanged) HasNop() bool {

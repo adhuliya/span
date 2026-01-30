@@ -17,9 +17,9 @@ type QualType = K_QK
 
 type RecordId EntityId
 
-const VKMask uint32 = 0x1F            // Mask to get the ValKind bits
-const VKPosMask32 uint32 = 0x1F0_0000 // Mask to get the ValKind bits positioned in uint32
-const VKShift32 uint32 = 20           // Shift to get the ValKind bits positioned in uint32
+const VKMask uint32 = 0x1F             // Mask to get the ValKind bits
+const VKPosMask32 uint32 = 0x01F0_0000 // Mask to get the ValKind bits positioned in uint32
+const VKShift32 uint32 = 20            // Shift to get the ValKind bits positioned in uint32
 
 type ValueType interface {
 	GetType() ValKind
@@ -28,7 +28,7 @@ type ValueType interface {
 	GetAlign() VTAlign
 }
 
-type BaseVT struct {
+type BasicVT struct {
 	size  VTSize
 	qtype QualType
 	kind  ValKind
@@ -36,19 +36,19 @@ type BaseVT struct {
 }
 
 type PointerVT struct {
-	BaseVT
+	BasicVT
 	pointeeVT ValueType
 }
 
 type RecordVT struct {
-	BaseVT
+	BasicVT
 	name    string
 	members map[string]ValueType
 	srcLoc  *SrcLoc
 }
 
 type FunctionVT struct {
-	BaseVT
+	BasicVT
 	name       string
 	returnType ValueType
 	paramTypes []ValueType
@@ -57,46 +57,39 @@ type FunctionVT struct {
 }
 
 // VarArgsVT can be used to declare functions with variable args.
+// TODO: For future use.
 type VarArgsVT struct {
-	BaseVT
+	BasicVT
 	elemVT ValueType
 }
 
 type ArrayVT struct {
-	BaseVT
+	BasicVT
 	elemVT ValueType
-	size   VTSize
+	// Size in number of bytes (not elements) of the array (known at compile time only)
+	size VTSize
 }
 
-func (v *BaseVT) GetQType() QualType {
+func (v *BasicVT) GetQType() QualType {
 	return v.qtype
 }
 
-func (v *BaseVT) GetType() ValKind {
+func (v *BasicVT) GetType() ValKind {
 	return v.kind
 }
 
-func (v *BaseVT) GetSize() VTSize {
+func (v *BasicVT) GetSize() VTSize {
 	return v.size
 }
 
-func (v *BaseVT) GetAlign() VTAlign {
+func (v *BasicVT) GetAlign() VTAlign {
 	return v.align
 }
 
-func newBaseVT(kind ValKind, qtype QualType, size VTSize, align VTAlign) BaseVT {
-	return BaseVT{
-		qtype: qtype,
-		kind:  kind,
-		size:  size,
-		align: align,
-	}
-}
-
 // Create simple unit types with default size and alignment.
-func NewBasicVT(kind ValKind, qtype QualType) BaseVT {
+func NewBasicVT(kind ValKind, qtype QualType) BasicVT {
 	if (kind.IsInteger() && kind != K_VK_TN_BITS && kind != K_VK_TN_UBITS) || kind.IsFloating() || kind == K_VK_TVOID {
-		return BaseVT{
+		return BasicVT{
 			qtype: qtype,
 			kind:  kind,
 			size:  kind.SizeInBytes(),

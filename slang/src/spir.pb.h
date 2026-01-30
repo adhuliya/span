@@ -117,12 +117,13 @@ enum K_EK : int {
   ECFG = 19,
   ESCOPE = 20,
   ETU = 21,
+  ESRC_FILE = 22,
   K_EK_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
   K_EK_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
 };
 bool K_EK_IsValid(int value);
 constexpr K_EK K_EK_MIN = ENIL;
-constexpr K_EK K_EK_MAX = ETU;
+constexpr K_EK K_EK_MAX = ESRC_FILE;
 constexpr int K_EK_ARRAYSIZE = K_EK_MAX + 1;
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* K_EK_descriptor();

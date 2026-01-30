@@ -5,13 +5,13 @@ package spir
 import "fmt"
 
 // Each expression is 64 bits long.
-// An expression can be call, binary op, unary op or no operator.
+// An expression can be a value, unary or binary operation, or a call expression.
 // A binary operand format:      <one bit>-<29 bits Opr2  >-<5 bits XK       >-<29 bits Opr1>
 // A unary operand expr format:  <one bit>-<29 bits unused>-<5 bits XK       >-<29 bits Opr>
 // A value expr format: 		 <one bit>-<29 bits unused>-<5 bits K_XK_VAL >-<29 bits Opr> (for constants, variables, etc.)
 // A call expression format: 	 <one bit>-<29 bits SiteId>-<5 bits XK_CALL_0>-<29 bits callee> (for functions with zero arguments)
 // A call expression format: 	 <one bit>-<29 bits SiteId>-<5 bits XK_CALL  >-<29 bits callee> (for functions with non-zero arguments)
-// For non-zero arguments the arguments are stored in a map in the Translation Unit separately.
+// For non-zero arguments, the arguments are stored in a map in the Translation Unit separately.
 // Hence the CallSiteId is required to uniquely identify the call site with its arguments.
 type Expr uint64
 
@@ -20,9 +20,9 @@ type ExprKind = K_XK
 const NIL_X Expr = 0
 
 const XKMask uint8 = 0x1F                           // Mask to get the expression kind (5 bits)
-const XKMask64 uint64 = 0x0000_0003_E000_0000       // Mask to get the expression kind (5 bits)
+const XKPosMask64 uint64 = 0x0000_0003_E000_0000    // Mask to get the expression kind (5 bits)
 const XKShift64 uint8 = 29                          // Shift to get the expression kind
-const XOprIdMask32 uint32 = 0x1FFF_FFFF             // Mask to get the relevant operand bits
+const XOprIdMask32 uint32 = 0x1FFF_FFFF             // Mask to get the relevant operand bits (zeros out most significant 3 bits)
 const UnaryOprMask64 uint64 = 0x0000_0000_1FFF_FFFF // Mask to get the operand in a simple expression
 const BinXOpr1Mask64 uint64 = 0x0000_0000_1FFF_FFFF // Mask to get the first operand in a binary expression
 const BinXOpr1Shift64 uint8 = 0                     // Shift to get the first operand in a binary expression
@@ -66,7 +66,7 @@ func (xk ExprKind) IsCommutative() bool {
 }
 
 func placeExprOpr1(operand EntityId) uint64 {
-	opr := uint32(operand) & XOprIdMask32 // zero out most significant 3 bits
+	opr := uint32(operand) & XOprIdMask32
 	return uint64(opr) << BinXOpr1Shift64
 }
 
@@ -84,7 +84,7 @@ func placeCallSiteId(siteId CallSiteId) uint64 {
 	return uint64(sid) << CallSiteIdShift64
 }
 
-// BOUND START: API to create expressions
+// BLOCK START: API to create expressions
 
 // Simple value without any operator.
 func ValX(value EntityId) Expr {
@@ -117,11 +117,11 @@ func BinX(exprKind ExprKind, opr1 EntityId, opr2 EntityId) Expr {
 	panic(fmt.Sprintf("Invalid expression kind: %s", exprKind))
 }
 
-// BOUND END  : API to create expressions
+// BLOCK END: API to create expressions
 
 // Creates a 64 bit expression from an operand and an expression kind.
 func (expr Expr) GetXK() ExprKind {
-	return ExprKind((uint64(expr) & XKMask64) >> XKShift64)
+	return ExprKind((uint64(expr) & XKPosMask64) >> XKShift64)
 }
 
 func (expr Expr) GetCallSiteId() CallSiteId {
@@ -255,9 +255,9 @@ func (xk K_XK) OperatorString() string {
 func (expr Expr) String() string {
 	xk := expr.GetXK()
 	if xk.IsSingleOprnd() {
-		return fmt.Sprintf("(%s %s)", xk.OperatorString(), expr.GetOpr1())
+		return fmt.Sprintf("((X) %s%s)", xk.OperatorString(), expr.GetOpr1())
 	} else if xk.IsTwoOprnd() {
-		return fmt.Sprintf("(%s %s %s)", xk.OperatorString(), expr.GetOpr1(), expr.GetOpr2())
+		return fmt.Sprintf("((X) %s %s %s)", xk.OperatorString(), expr.GetOpr1(), expr.GetOpr2())
 	}
 	return ""
 }

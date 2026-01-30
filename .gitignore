@@ -39,3 +39,10 @@ _cgo_export.*
 _testmain.go
 go.work
 
+# other files
+.DS_Store
+.cache/
+.clangd
+dev_build.tmplog
+docs/
+misc/.cache

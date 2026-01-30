@@ -27,12 +27,10 @@
             "golang.go",
             "ms-vscode.makefile-tools",
             "ms-python.python",
-            "ms-vscode.cpptools",
+            "llvm-vs-code-extensions.vscode-clangd",
             "ms-vscode.cmake-tools",
             "ms-vscode.cmake",
             "ms-azuretools.vscode-docker",
-            "ms-vscode.cpptools-extension-pack",
-            "xaver.clang-format",
             "twxs.cmake",
             "joaompinto.vscode-graphviz"
           ]

@@ -2,7 +2,7 @@ package spir
 
 // This file defines the SourceLocation type.
 
-type SrcFileId uint32
+type FileId EntityId
 
 // The source location is encoded in a 32-bit unsigned integer.
 // The first bit is unused.
@@ -12,58 +12,44 @@ type SrcFileId uint32
 type SrcLocEnc uint32 // For possible future use.
 
 type SrcFile struct {
-	id   SrcFileId
-	Name string // The name/path of the source file
-	// The range of encoded source location ids associated with this file.
-	from uint32
-	to   uint32
+	id        FileId
+	name      string // The name/path of the source file
+	directory string // The directory of the source file
 }
 
-type SrcLocInfo struct {
-	srcFileIdMap  map[string]SrcFileId
-	srcFiles      map[SrcFileId]SrcFile
+type SrcFilesInfo struct {
+	fileIdMap     map[string]FileId
+	files         map[FileId]SrcFile
 	fileIdCounter uint32
 	freeSrcLocId  uint32
 }
 
-func NewSrcLocInfo() *SrcLocInfo {
-	return &SrcLocInfo{
-		srcFiles:      make(map[SrcFileId]SrcFile),
+func NewSrcFilesInfo() *SrcFilesInfo {
+	return &SrcFilesInfo{
+		fileIdMap:     make(map[string]FileId),
+		files:         make(map[FileId]SrcFile),
 		fileIdCounter: 0,
 		freeSrcLocId:  0,
 	}
 }
 
-func (info *SrcLocInfo) GetId(fileName string) SrcFileId {
-	if id, ok := info.srcFileIdMap[fileName]; ok {
-		return id
-	}
-	info.fileIdCounter++
-	fileId := SrcFileId(info.fileIdCounter)
-	info.srcFileIdMap[fileName] = fileId
-	info.srcFiles[fileId] = SrcFile{
-		id:   fileId,
-		Name: fileName,
-		from: 0,
-		to:   0,
-	}
-	return fileId
-}
-
-// SrcLoc structure holds the source location information with file information.
-// Information in SrcLocEnc is decoded into this struct as needed.
+// SrcLoc structure holds the source location information.
 type SrcLoc struct {
-	srcFileId SrcFileId // The source file id
-	line      uint32    // The line number in the source file
-	col       uint32    // The column number in the source file
-	bytePos   uint32    // The byte position in the source file (optional)
+	line uint32 // The line number in the source file
+	col  uint32 // The column number in the source file
 }
 
-func NewSrcLoc(srcFileId SrcFileId, line uint32, col uint32, bytePos uint32) SrcLoc {
+func NewSrcLoc(line uint32, col uint32) SrcLoc {
 	return SrcLoc{
-		srcFileId: srcFileId,
-		line:      line,
-		col:       col,
-		bytePos:   bytePos,
+		line: line,
+		col:  col,
 	}
+}
+
+func (sl SrcLoc) GetLine() uint32 {
+	return sl.line
+}
+
+func (sl SrcLoc) GetCol() uint32 {
+	return sl.col
 }

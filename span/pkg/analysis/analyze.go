@@ -50,7 +50,7 @@ func (wl *BBWorklist) IsEmpty() bool {
 }
 
 type Analyzer interface {
-	InitializeAnalyzer(ctxId spir.ContextId, analysis Analysis,
+	Initialize(ctxId spir.ContextId, analysis Analysis,
 		graph spir.Graph, context *spir.Context, visitOrder GraphVisitingOrder,
 		factMap AnalysisFactMap) Analyzer
 	AnalyzeGraph()
@@ -86,19 +86,20 @@ type IntraPAN struct {
 	meetAtBasicBlock bool
 }
 
-func (intraPAN *IntraPAN) InitializeAnalyzer(ctxId spir.ContextId, analysis Analysis,
-	graph spir.Graph, context *spir.Context, visitOrder GraphVisitingOrder,
-	skipCallsKnob bool, meetAtBasicBlock bool) Analyzer {
-	intraPAN.ctxId = ctxId
-	intraPAN.context = context
-	intraPAN.analysis = analysis
-	intraPAN.graph = graph
-	intraPAN.wl = NewWorklistBB(graph, visitOrder)
-	intraPAN.factMap = make(AnalysisFactMap)
-	intraPAN.skipCallsKnob = skipCallsKnob
-	intraPAN.meetAtBasicBlock = meetAtBasicBlock
-	return intraPAN
-}
+// FIXME: uncomment this function
+// func (intraPAN *IntraPAN) Initialize(ctxId spir.ContextId, analysis Analysis,
+// 	graph spir.Graph, context *spir.Context, visitOrder GraphVisitingOrder,
+// 	skipCallsKnob bool, meetAtBasicBlock bool) Analyzer {
+// 	intraPAN.ctxId = ctxId
+// 	intraPAN.context = context
+// 	intraPAN.analysis = analysis
+// 	intraPAN.graph = graph
+// 	intraPAN.wl = NewWorklistBB(graph, visitOrder)
+// 	intraPAN.factMap = make(AnalysisFactMap)
+// 	intraPAN.skipCallsKnob = skipCallsKnob
+// 	intraPAN.meetAtBasicBlock = meetAtBasicBlock
+// 	return intraPAN
+// }
 
 func (intraPAN *IntraPAN) AnalyzeGraph() {
 	intraPAN.initializeContext()

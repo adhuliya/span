@@ -7,28 +7,8 @@ import (
 	"strings"
 )
 
-// PrintEntityId prints the different parts of a 32-bit entity ID separated by hyphens.
-// The format is: <top-2-bits>-<entity-kind>-<sub-kind>-<seq-id>
-// base can be 'd' for decimal, 'o' for octal, or 'x' for hexadecimal
-func EntityIdString(id EntityId, base byte) string {
-	// Extract the parts
-	topBits := uint32(id) >> EIdBitLength
-	eKind := EntityKind((uint32(id) & uint32(EKPosMask32)) >> EKShift32)
-	subKind := uint8((uint32(id) & uint32(ESKPosMask32)) >> ESKShift32)
-	seqId := uint32(id) & uint32(ImmConstMask32)
-
-	switch base {
-	case 'o':
-		return fmt.Sprintf("0o%o-0o%o-0o%o-0o%o", topBits, eKind, subKind, seqId)
-	case 'd':
-		return fmt.Sprintf("%d-%d-%d-%d", topBits, eKind, subKind, seqId)
-	default: // hexadecimal
-		return fmt.Sprintf("0x%x-0x%x-0x%x-0x%x", topBits, eKind, subKind, seqId)
-	}
-}
-
-// createCfgForFunction creates a control flow graph from an instruction sequence
-// It checks each basic block in the body and check for the follwoing statements
+// constructCFG constructs a control flow graph from an instruction sequence
+// It checks each basic block in the body and check for the following statements
 //  1. If statement.
 //  2. Goto statement.
 //  3. Label statement.
@@ -45,7 +25,7 @@ func EntityIdString(id EntityId, base byte) string {
 // it marks the label as used and creates a new basic block.
 //
 // The control flow graph is returned which does not belong to any function or translation unit.
-func createCfgForFunction(insnSeq []Insn) *ControlFlowGraph {
+func ConstructCFG(insnSeq []Insn) *ControlFlowGraph {
 	cfg := NewControlFlowGraph(nil, 0, NIL_ID)
 	// Create a map to track label locations and their usage
 	labelToBB := make(map[LabelId]*BasicBlock)
@@ -96,7 +76,9 @@ func createCfgForFunction(insnSeq []Insn) *ControlFlowGraph {
 				newBBs = append(newBBs, currBB)
 			}
 		} else {
-			currBB.insns = append(currBB.insns, insn)
+			if !SkipInsn(insn) {
+				currBB.insns = append(currBB.insns, insn)
+			}
 
 			// Split after control flow instructions if not last instruction
 			if i < len(insnSeq)-1 && (insn.IsIf() || insn.IsGoto() || insn.IsReturn()) {
@@ -342,4 +324,11 @@ func GenerateDotGraphForCFG(cfg *ControlFlowGraph) string {
 	result.WriteString("}\n")
 
 	return result.String()
+}
+
+// Instruction to skip when adding instructions to a basic block.
+// These instructions will not be analyzed, hence not represented in the CFG.
+func SkipInsn(insn Insn) bool {
+	ik := insn.InsnKind()
+	return ik == K_IK_ILABEL || ik == K_IK_IGOTO
 }

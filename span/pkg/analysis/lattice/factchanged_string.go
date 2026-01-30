@@ -9,21 +9,38 @@ func _() {
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
 	_ = x[NoChange-0]
-	_ = x[Changed-1]
-	_ = x[OnlyInChanged-2]
-	_ = x[OnlyOutChanged-3]
-	_ = x[InOutChanged-4]
-	_ = x[OnlyTrueOutChanged-5]
-	_ = x[OnlyFalseOutChanged-6]
+	_ = x[NopNoChange-1]
+	_ = x[Changed-2]
+	_ = x[OnlyInChanged-3]
+	_ = x[OnlyOutChanged-4]
+	_ = x[InOutChanged-5]
+	_ = x[OnlyTrueOutChanged-6]
+	_ = x[OnlyFalseOutChanged-7]
+	_ = x[NopInChanged-9]
+	_ = x[NopOutChanged-10]
+	_ = x[NopInOutChanged-11]
+	_ = x[NoChangeInfo-12]
+	_ = x[NotImplemented-13]
 }
 
-const _FactChanged_name = "NoChangeChangedOnlyInChangedOnlyOutChangedInOutChangedOnlyTrueOutChangedOnlyFalseOutChanged"
+const (
+	_FactChanged_name_0 = "NoChangeNopNoChangeChangedOnlyInChangedOnlyOutChangedInOutChangedOnlyTrueOutChangedOnlyFalseOutChanged"
+	_FactChanged_name_1 = "NopInChangedNopOutChangedNopInOutChangedNoChangeInfoNotImplemented"
+)
 
-var _FactChanged_index = [...]uint8{0, 8, 15, 28, 42, 54, 72, 91}
+var (
+	_FactChanged_index_0 = [...]uint8{0, 8, 19, 26, 39, 53, 65, 83, 102}
+	_FactChanged_index_1 = [...]uint8{0, 12, 25, 40, 52, 66}
+)
 
 func (i FactChanged) String() string {
-	if i >= FactChanged(len(_FactChanged_index)-1) {
+	switch {
+	case i <= 7:
+		return _FactChanged_name_0[_FactChanged_index_0[i]:_FactChanged_index_0[i+1]]
+	case 9 <= i && i <= 13:
+		i -= 9
+		return _FactChanged_name_1[_FactChanged_index_1[i]:_FactChanged_index_1[i+1]]
+	default:
 		return "FactChanged(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _FactChanged_name[_FactChanged_index[i]:_FactChanged_index[i+1]]
 }

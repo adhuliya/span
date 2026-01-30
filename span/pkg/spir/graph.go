@@ -153,9 +153,10 @@ func (bb *BasicBlock) IsFalseSucc(succ *BasicBlock) bool {
 // Returns the position of the successor BB
 func (bb *BasicBlock) SuccPos(succ *BasicBlock) int {
 	// a simple pointer euqality check should be fine here
-	if succ == bb.successors[0] {
+	switch {
+	case bb.IsTrueSucc(succ):
 		return 0
-	} else if succ == bb.successors[1] {
+	case bb.IsFalseSucc(succ):
 		return 1
 	}
 	return -1
@@ -183,8 +184,8 @@ type ControlFlowGraph struct {
 type CFG = ControlFlowGraph
 
 func (tu *TU) GetUniqueCFGId() CFGId {
-	return CFGId(tu.idGen.AllocateID(GenPrefix16(K_EK_ECFG, 0),
-		K_EK_ECFG.SeqIdBitLength()))
+	return CFGId(tu.idGen.AllocateID(GenKindPrefix16(K_EK_ECFG, 0),
+		K_EK_ECFG.SeqIdBitLen()))
 }
 
 func NewControlFlowGraph(tu *TU, scope ScopeId, fid EntityId) *ControlFlowGraph {

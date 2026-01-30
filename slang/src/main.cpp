@@ -102,7 +102,7 @@ public:
   std::string toString() {
     std::stringstream ss;
     ss << "SlangBitExpr:\n";
-    ss << "  Expr     : " << (bitExpr ? bitExpr->toString() : "nullptr") << "\n";
+    ss << "  Expr     : " << (bitExpr ? bitExpr->DebugString() : "nullptr") << "\n";
     ss << "  ExprType : " << qualType.getAsString() << "\n";
     ss << "  NonTmpVar: " << (nonTmpVar ? "true" : "false") << "\n";
     ss << "  VarId    : " << varId << "\n";
@@ -410,6 +410,7 @@ public:
   std::string tuName; // the current translation unit file name
   std::string tuDirectory; // the current translation unit directory
   BitTU bittu; // the bit translation unit
+  BitFunc* currentBitFunc;
 
   SpanStmtVector globalInits; // global variable initializations
 
@@ -494,7 +495,7 @@ public:
 
   void addStmtBit(BitInsn* bitInsn) {
     if (isStaticLocal) {
-      bittu.mutable_functions()[0].mutable_insns()->AddAllocated(bitInsn);
+      bittu.mutable_functions(0)->mutable_insns()->AddAllocated(bitInsn);
     } else {
       currentBitFunc->mutable_insns()->AddAllocated(bitInsn);
     }
@@ -535,13 +536,13 @@ public:
   void addVar(uint64_t varId, SlangVar &slangVar) { varMap[varId] = slangVar; }
 
   bool isBasicBitType(BitDataType* bitDataType) {
-    return (bitDataType->vkind() == K_VK::INT8 || bitDataType->vkind() == K_VK::INT16 ||
-        bitDataType->vkind() == K_VK::INT32 || bitDataType->vkind() == K_VK::INT64 ||
-        bitDataType->vkind() == K_VK::UINT8 || bitDataType->vkind() == K_VK::UINT16 ||
-        bitDataType->vkind() == K_VK::UINT32 || bitDataType->vkind() == K_VK::UINT64 ||
-        bitDataType->vkind() == K_VK::FLOAT16 || bitDataType->vkind() == K_VK::FLOAT32 ||
-        bitDataType->vkind() == K_VK::FLOAT64 || bitDataType->vkind() == K_VK::VOID ||
-        bitDataType->vkind() == K_VK::BOOL);
+    return (bitDataType->vkind() == K_VK::TINT8 || bitDataType->vkind() == K_VK::TINT16 ||
+        bitDataType->vkind() == K_VK::TINT32 || bitDataType->vkind() == K_VK::TINT64 ||
+        bitDataType->vkind() == K_VK::TUINT8 || bitDataType->vkind() == K_VK::TUINT16 ||
+        bitDataType->vkind() == K_VK::TUINT32 || bitDataType->vkind() == K_VK::TUINT64 ||
+        bitDataType->vkind() == K_VK::TFLOAT16 || bitDataType->vkind() == K_VK::TFLOAT32 ||
+        bitDataType->vkind() == K_VK::TFLOAT64 || bitDataType->vkind() == K_VK::TVOID ||
+        bitDataType->vkind() == K_VK::TBOOL);
   }
 
   // Add the given entity id and (move) its entity info to the TU.
@@ -785,7 +786,6 @@ private:
   FunctionDecl *FD; // The active function decl being processed
   ASTContext *Ctx;
   SmallVectorImpl<char> *charSv;
-  BitFunc* currentBitFunc;
 
 public:
 
@@ -852,6 +852,37 @@ public:
 
   // BOUND START: handling_routines
 
+  // T can be a Stmt, VarDecl, ValueDecl, or any class that has getBeginLoc()
+  // method defined.
+  template <typename T>
+  BitSrcLoc* getSrcLocBit(const T *decl) {
+    BitSrcLoc *loc = new BitSrcLoc();
+  
+    loc->set_line(
+        Ctx->getSourceManager().getExpansionLineNumber(decl->getBeginLoc()));
+    loc->set_col(
+        Ctx->getSourceManager().getExpansionColumnNumber(decl->getBeginLoc()));
+  
+    return loc;
+  } // getSrcLocBit()
+
+  // T can be a Stmt, VarDecl, ValueDecl, or any class that has getBeginLoc()
+  // method defined.
+  template <typename T>
+  std::string getLocationString(const T *decl) {
+    std::stringstream ss;
+    uint32_t line = 0;
+    uint32_t col = 0;
+
+    ss << "Info(Loc(";
+    line = Ctx->getSourceManager().getExpansionLineNumber(decl->getBeginLoc());
+    ss << line << ",";
+    col = Ctx->getSourceManager().getExpansionColumnNumber(decl->getBeginLoc());
+    ss << col << "))";
+
+    return ss.str();
+  }
+
   // All global initializations are put in a special function.
   void handleGlobalInits(const TranslationUnitDecl *decl) {
     if (!decl) {
@@ -863,7 +894,7 @@ public:
     BitFunc* bitFunc = stu.bittu.add_functions();
     bitFunc->set_fid(K_00_GLBL_INIT_FUNC_ID);
     bitFunc->set_fname(K_00_GLBL_INIT_FUNC_NAME);
-    currentBitFunc = bitFunc; // mark the current function being processed
+    stu.currentBitFunc = bitFunc; // mark the current function being processed
 
     SlangFunc slangFunc;
     slangFunc.fullName  = slangFunc.name = K_00_GLBL_INIT_FUNC_NAME;
@@ -875,7 +906,7 @@ public:
       if (varDecl) {
         SLANG_DEBUG("Found global variable: "
                     << varDecl->getNameAsString() << " at "
-                    << getSrcLoc(varDecl).DebugString());
+                    << getLocationString(varDecl));
         handleVarDecl(varDecl);
       }
     }
@@ -982,7 +1013,9 @@ public:
         slangVar.setGlobalVarName(varName);
         bitEntityInfo.set_ekind(EVAR_GLBL);
       } else if (varDecl->hasExternalStorage()) {
-        SLANG_ERROR("External Storage Not Handled.")
+        // Treat these as global storage by default
+        slangVar.setGlobalVarName(varName);
+        bitEntityInfo.set_ekind(EVAR_GLBL);
       } else {
         SLANG_ERROR("ERROR:Unknown variable storage.")
       }
@@ -990,8 +1023,8 @@ public:
       stu.addVar(slangVar.id, slangVar);
       bitEntityInfo.set_allocated_loc(getSrcLocBit(varDecl));
       bitEntityInfo.set_strval(slangVar.name);
-      stu.bittu.mutable_entities()->emplace(slangVar.name, slangVar.id);
-      stu.bittu.mutable_entityinfo()->emplace(slangVar.id, std::move(bitEntityInfo));
+      stu.bittu.mutable_namestoids()->insert({slangVar.name, slangVar.id});
+      stu.bittu.mutable_entityinfo()->insert({slangVar.id, std::move(bitEntityInfo)});
       return; //delit
 
       if (varDecl->getType()->isArrayType()) {
@@ -1032,11 +1065,11 @@ public:
                 arrayType->getElementType());
           
             SlangBitExpr* allocExpr = createUnaryBitExpr(sizeEntity, K_XK::XALLOC, Ctx->VoidPtrTy);
-            BitEntity* tmpVoidPtr = convertToTmpBitEntity(allocExpr);
+            BitEntity* tmpVoidPtr = convertToTmpBit(allocExpr);
           
             BitEntity* typeEntity = convertClangTypeToBitEntity(varDecl->getType(),
                 ::slang::Util::getNextUniqueId());
-            SlangBitExpr* castExprBit = createBinaryBitExpr(tmpVoidPtr, K_XK::CAST,
+            SlangBitExpr* castExprBit = createBinaryBitExpr(tmpVoidPtr, K_XK::XCAST,
                 typeEntity, varDecl->getType());
 
             addAssignBitInstr(convertEntityToBitExpr(varEntity), castExprBit->bitExpr);
@@ -2451,7 +2484,7 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
 
   BitExpr* convertEntityToBitExpr(BitEntity* be) {
     BitExpr* expr = new BitExpr();
-    expr->set_xkind(K_XK::VAL);
+    expr->set_xkind(K_XK::XVAL);
     expr->set_allocated_opr1(be);
     expr->set_allocated_loc(new BitSrcLoc(be->loc()));
     return expr;
@@ -2476,7 +2509,7 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
     return slangExpr;
   } // convertSlangVar()
 
-  SlangBitExpr convertSlangVarBit
+  SlangBitExpr convertSlangVarBit(
       uint64_t eid,
       const VarDecl *varDecl
   ) {
@@ -2837,7 +2870,7 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
   } // convertToTmp()
 
   // stores the given expression into a tmp variable
-  BitEntity* convertToTmpBitEntity(SlangBitExpr* slangBitExpr, bool force = false) {
+  BitEntity* convertToTmpBit(SlangBitExpr* slangBitExpr, bool force = false) {
     if (slangBitExpr->compound || force == true) {
       BitEntity* tmpBitEntity = nullptr;
       if (slangBitExpr->qualType.isNull() || slangBitExpr->qualType.getTypePtr()->isVoidType()) {
@@ -2865,7 +2898,7 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
     }
 
     return tmpBitEntity;
-  } // convertToTmpBitEntity()
+  } // convertToTmpBit()
 
   // stores the given expression into a tmp variable
   SlangExpr convertToTmp2(SlangExpr slangExpr, bool force = false) {
@@ -3096,13 +3129,14 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
     return ss.str();
   } // convertClangType()
 
-  // converts clang type to span ir types
+  // converts clang type to span ir proto types by modifying the given BitDataType
   // Returns 0 if successful, non-zero if error
   int convertClangTypeBit(QualType qt, BitDataType *dt) {
     int success = 0;
 
     if (qt.isNull()) {
-      dt->set_vkind(K_VK::INT32);
+      // By default, assume the type is int32
+      dt->set_vkind(K_VK::TINT32);
       return 0;
     }
 
@@ -3110,16 +3144,11 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
 
     const Type *type = qt.getTypePtr();
 
-    //delit: remove this condition and body
-    if (!type->isBuiltinType()) {
-      return 11;
-    }
-
     if (type->isBuiltinType()) {
       return convertClangBuiltinTypeBit(qt, dt);
 
     } else if (type->isEnumeralType()) {
-      dt->set_vkind(K_VK::INT32); // Default to int32
+      dt->set_vkind(K_VK::TINT32); // Default to int32
 
     } else if (type->isFunctionPointerType()) {
       // should be before ->isPointerType() check below
@@ -3127,13 +3156,13 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
 
     } else if (type->isPointerType()) {
       QualType pqt = type->getPointeeType();
-      BitDataType *pdt = new BitDataType();
-      success = convertClangTypeBit(pqt, pdt);
+      BitDataType *pointeeBdt = new BitDataType();
+      success = convertClangTypeBit(pqt, pointeeBdt);
       if (success != 0) {
         return success;
       }
-      dt->set_vkind(getPtrKindBit(pdt->vkind()));
-      dt->set_allocated_subtype(pdt);
+      dt->set_vkind(getPtrKindBit(pointeeBdt->vkind()));
+      dt->set_allocated_subtype(pointeeBdt);
 
     } else if (type->isRecordType()) {
       if (type->isStructureType()) {
@@ -3160,22 +3189,23 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
   // Returns the pointer kind for the given pointee kind
   K_VK getPtrKindBit(K_VK pointeeKind) {
     switch (pointeeKind) {
-      case K_VK::INT8: return K_VK::PTR_TO_INT;
-      case K_VK::INT16: return K_VK::PTR_TO_INT;
-      case K_VK::INT32: return K_VK::PTR_TO_INT;
-      case K_VK::INT64: return K_VK::PTR_TO_INT;
-      case K_VK::FLOAT16: return K_VK::PTR_TO_FLOAT;
-      case K_VK::FLOAT32: return K_VK::PTR_TO_FLOAT;
-      case K_VK::FLOAT64: return K_VK::PTR_TO_FLOAT;
-      case K_VK::VOID: return K_VK::PTR_TO_VOID;
-      case K_VK::PTR: return K_VK::PTR_TO_PTR;
-      case K_VK::UNION: return K_VK::PTR_TO_RECORD;
-      case K_VK::STRUCT: return K_VK::PTR_TO_RECORD;
-      case K_VK::ARR_FIXED: return K_VK::PTR_TO_ARR;
-      case K_VK::ARR_VARIABLE: return K_VK::PTR_TO_ARR;
-      case K_VK::ARR_PARTIAL: return K_VK::PTR_TO_ARR;
-      default: return K_VK::PTR_TO_VOID;
+      case K_VK::TINT8: return K_VK::TPTR_TO_INT;
+      case K_VK::TINT16: return K_VK::TPTR_TO_INT;
+      case K_VK::TINT32: return K_VK::TPTR_TO_INT;
+      case K_VK::TINT64: return K_VK::TPTR_TO_INT;
+      case K_VK::TFLOAT16: return K_VK::TPTR_TO_FLOAT;
+      case K_VK::TFLOAT32: return K_VK::TPTR_TO_FLOAT;
+      case K_VK::TFLOAT64: return K_VK::TPTR_TO_FLOAT;
+      case K_VK::TVOID: return K_VK::TPTR_TO_VOID;
+      case K_VK::TPTR_TO_PTR: return K_VK::TPTR_TO_PTR;
+      case K_VK::TUNION: return K_VK::TPTR_TO_RECORD;
+      case K_VK::TSTRUCT: return K_VK::TPTR_TO_RECORD;
+      case K_VK::TARR_FIXED: return K_VK::TPTR_TO_ARR;
+      case K_VK::TARR_VARIABLE: return K_VK::TPTR_TO_ARR;
+      case K_VK::TARR_PARTIAL: return K_VK::TPTR_TO_ARR;
+      default: return K_VK::TPTR_TO_VOID;
     }
+  } // getPtrKindBit()
   }
 
   std::string convertClangBuiltinType(QualType qt) {
@@ -3226,16 +3256,16 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
 
     if (type->isSignedIntegerType()) {
       if (type->isCharType()) {
-        dt->set_vkind(K_VK::INT8);
+        dt->set_vkind(K_VK::TINT8);
       } else if (type->isChar16Type()) {
-        dt->set_vkind(K_VK::INT16);
+        dt->set_vkind(K_VK::TINT16);
       } else if (type->isIntegerType()) {
         TypeInfo typeInfo = Ctx->getTypeInfo(qt);
         size_t size = typeInfo.Width;
         if (size == 32) {
-          dt->set_vkind(K_VK::INT32);
+          dt->set_vkind(K_VK::TINT32);
         } else if (size == 64) {
-          dt->set_vkind(K_VK::INT64);
+          dt->set_vkind(K_VK::TINT64);
         } else {
           return 100;
         }
@@ -3245,16 +3275,16 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
 
     } else if (type->isUnsignedIntegerType()) {
       if (type->isCharType()) {
-        dt->set_vkind(K_VK::UINT8);
+        dt->set_vkind(K_VK::TUINT8);
       } else if (type->isChar16Type()) {
-        dt->set_vkind(K_VK::UINT16);
+        dt->set_vkind(K_VK::TUINT16);
       } else if (type->isIntegerType()) {
         TypeInfo typeInfo = Ctx->getTypeInfo(qt);
         size_t size = typeInfo.Width;
         if (size == 32) {
-          dt->set_vkind(K_VK::UINT32);
+          dt->set_vkind(K_VK::TUINT32);
         } else if (size == 64) {
-          dt->set_vkind(K_VK::UINT64);
+          dt->set_vkind(K_VK::TUINT64);
         } else {
           return 102;
         }
@@ -3263,9 +3293,9 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
       }
 
     } else if (type->isFloatingType()) {
-      dt->set_vkind(K_VK::FLOAT64);
+      dt->set_vkind(K_VK::TFLOAT64);
     } else if (type->isVoidType()) {
-      dt->set_vkind(K_VK::VOID);
+      dt->set_vkind(K_VK::TVOID);
     } else {
       return 104;
     }
@@ -3444,7 +3474,7 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
         fieldDT.set_typename_(fieldName);
 
         if (fieldDT.anonymous()) {
-          success = convertClangRecordTypeBit(nullptr, fieldDT);
+          success = convertClangRecordTypeBit(nullptr, &fieldDT);
           if (success != 0) {
             return success;
           }
@@ -3467,7 +3497,7 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
             return success;
           }
         } else {
-          success = convertClangTypeBit(fieldDecl->getType(), fieldDT);
+          success = convertClangTypeBit(fieldDecl->getType(), &fieldDT);
         }
 
         recordedDT->mutable_fopIds()->Add((uint64_t) fieldDecl);
@@ -3720,34 +3750,6 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
 
   // BOUND START: helper_routines
 
-  // T can be a Stmt, VarDecl, ValueDecl, or any class that has getBeginLoc()
-  // method.
-  template <typename T>
-  BitSrcLoc getSrcLoc(const T *decl) {
-    BitSrcLoc loc;
-  
-    loc.set_line(
-        Ctx->getSourceManager().getExpansionLineNumber(decl->getBeginLoc()));
-    loc.set_col(
-        Ctx->getSourceManager().getExpansionColumnNumber(decl->getBeginLoc()));
-  
-    return loc;
-  }
-
-  // T can be a Stmt, VarDecl, ValueDecl, or any class that has getBeginLoc()
-  // method.
-  template <typename T>
-  BitSrcLoc* getSrcLocBit(const T *decl) {
-    BitSrcLoc *loc = new BitSrcLoc();
-  
-    loc->set_line(
-        Ctx->getSourceManager().getExpansionLineNumber(decl->getBeginLoc()));
-    loc->set_col(
-        Ctx->getSourceManager().getExpansionColumnNumber(decl->getBeginLoc()));
-  
-    return loc;
-  }
-
   SlangExpr genTmpVariable(std::string suffix, std::string typeStr,
       std::string locStr) {
     std::stringstream ss;
@@ -3841,49 +3843,6 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
     return slangExpr;
   } // genTmpVariable()
 
-  std::string getLocationString(const Stmt *stmt) {
-    std::stringstream ss;
-    uint32_t line = 0;
-    uint32_t col = 0;
-
-    ss << "Info(Loc(";
-    line = Ctx->getSourceManager().getExpansionLineNumber(stmt->getBeginLoc());
-    ss << line << ",";
-    col = Ctx->getSourceManager().getExpansionColumnNumber(stmt->getBeginLoc());
-    ss << col << "))";
-
-    return ss.str();
-  }
-
-  std::string getLocationString(const RecordDecl *recordDecl) {
-    std::stringstream ss;
-    uint32_t line = 0;
-    uint32_t col = 0;
-
-    ss << "Info(Loc(";
-    line = Ctx->getSourceManager().getExpansionLineNumber(recordDecl->getBeginLoc());
-    ss << line << ",";
-    col =
-        Ctx->getSourceManager().getExpansionColumnNumber(recordDecl->getBeginLoc());
-    ss << col << "))";
-
-    return ss.str();
-  }
-
-  std::string getLocationString(const ValueDecl *valueDecl) {
-    std::stringstream ss;
-    uint32_t line = 0;
-    uint32_t col = 0;
-
-    ss << "Info(Loc(";
-    line = Ctx->getSourceManager().getExpansionLineNumber(valueDecl->getBeginLoc());
-    ss << line << ",";
-    col = Ctx->getSourceManager().getExpansionColumnNumber(valueDecl->getBeginLoc());
-    ss << col << "))";
-
-    return ss.str();
-  }
-
   // Remove qualifiers and typedefs
   QualType getCleanedQualType(QualType qt) {
     if (qt.isNull())
@@ -3930,18 +3889,18 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
   void addAssignBitInstr(BitExpr* lhs, BitExpr* rhs) {
     BitInsn* bitInsn = new BitInsn();
     if (isBitExprCompound(lhs) && isBitExprCompound(rhs)) {
-      rhs = convertEntityToBitExpr(convertToTmpBitEntity(rhs));
+      rhs = convertEntityToBitExpr(convertToTmpBit(rhs));
     }
     if (isBitExprCompundBit(lhs)) {
-      bitInsn->set_ikind(K_IK::IASSIGN_LHS_OP)
+      bitInsn->set_ikind(K_IK::IASGN_LHS_OP)
     } else if (isBitExprCompound(rhs)) {
       if (isBitExprCall(rhs)) {
-        bitInsn->set_ikind(K_IK::IASSIGN_CALL)
+        bitInsn->set_ikind(K_IK::IASGN_CALL)
       } else {
-        bitInsn->set_ikind(K_IK::IASSIGN_RHS_OP)
+        bitInsn->set_ikind(K_IK::IASGN_RHS_OP)
       }
     } else {
-      bitInsn->set_ikind(K_IK::IASSIGN_SIMPLE)
+      bitInsn->set_ikind(K_IK::IASGN_SIMPLE)
     }
     bitInsn->set_allocated_lhs(lhs);
     bitInsn->set_allocated_rhs(rhs);
@@ -3950,11 +3909,11 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
   } // addAssignBitInstr()
 
   bool isBitExprCall(BitExpr* be) {
-    return be->xkind() == K_XK::CALL || be->xkind() == K_XK::CALL_0;
+    return be->xkind() == K_XK::XCALL || be->xkind() == K_XK::XCALL_0;
   }
   
   bool isBitExprCompound(BitExpr* be) {
-    if (be->xkind() == K_XK::VAL) {
+    if (be->xkind() == K_XK::XVAL) {
       return false;
     } else {
       return true;

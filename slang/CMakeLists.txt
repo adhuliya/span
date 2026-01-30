@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 project(slang)
 
+# Export compile commands for clangd and other tools
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 find_package(LLVM REQUIRED CONFIG)
 find_package(Clang REQUIRED CONFIG)
 find_package(Protobuf REQUIRED)

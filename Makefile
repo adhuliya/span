@@ -7,6 +7,9 @@ PROTOC=protoc
 DOCKER=docker
 GOTAGS=debug
 VERBOSE=
+CMAKE_CC=-DCMAKE_C_COMPILER=/usr/lib/llvm-19/bin/clang
+CMAKE_CXX=-DCMAKE_CXX_COMPILER=/usr/lib/llvm-19/bin/clang++
+CMAKE_CLANG=$(CMAKE_CC) $(CMAKE_CXX)
 
 all: tidy vet fmt build
 
@@ -65,10 +68,12 @@ gen: gen-go gen-proto ## Generate auto-generated code and proto files
 slang: slang-rel slang-dbg
 
 slang-rel: ## Release build of slang
-	cd slang && mkdir -p built/rel && cd built/rel && cmake ../.. && make -j 4
+	cd slang && mkdir -p built/rel && cd built/rel && cmake $(CMAKE_CLANG) ../.. && make -j 4
+	ln -sf slang/built/rel/compile_commands.json slang/built/compile_commands.json
 
 slang-dbg: ## Debug build of slang
-	cd slang && mkdir -p built/dbg && cd built/dbg && cmake ../.. -DCMAKE_BUILD_TYPE=Debug && make -j 4
+	cd slang && mkdir -p built/dbg && cd built/dbg && cmake $(CMAKE_CLANG) ../.. -DCMAKE_BUILD_TYPE=Debug && make -j 4
+	ln -sf slang/built/dbg/compile_commands.json slang/built/compile_commands.json
 
 clean: clean-slang clean-span ## Clean up binaries
 clean-all: clean clean-proto ## Clean up all binaries and proto files
