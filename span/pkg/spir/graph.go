@@ -23,11 +23,15 @@ const (
 	BackEdge   EdgeLabel = 3
 )
 
+// A BasicBlock represents a liner code with only one entry and one eixt.
+// The first instruction in the sequence is the entry and the last one is the exit.
+// A basic block holds at most 64 instructions.
 type BasicBlock struct {
 	id           BasicBlockId
-	scope        ScopeId
-	fid          EntityId
+	scope        ScopeId  // A scope this BB is part of (sub-blocks in a function)
+	fid          EntityId // The function this BB is part of.
 	insns        []Insn
+	insnBitMap   uint64 // 0/1 bit map of which instructions are valid in insns[]
 	predecessors []*BasicBlock
 	// First successor is the true edge
 	// Second successor is the false edge
@@ -35,7 +39,7 @@ type BasicBlock struct {
 }
 
 func NewBasicBlock(id BasicBlockId, scope ScopeId, fid EntityId,
-	insnCount int) *BasicBlock {
+	insnCount uint) *BasicBlock {
 	bb := &BasicBlock{
 		id:           id,
 		scope:        scope,
@@ -43,6 +47,10 @@ func NewBasicBlock(id BasicBlockId, scope ScopeId, fid EntityId,
 		insns:        nil,
 		predecessors: nil,
 		successors:   nil,
+	}
+
+	if insnCount > 64 {
+		panic("More than 64 instruction count given.")
 	}
 
 	if insnCount > 0 {

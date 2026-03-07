@@ -1,11 +1,11 @@
 package analysis
 
+// This file defines the inter-procedural analysis interface.
+
 import (
 	"github.com/adhuliya/span/pkg/analysis/lattice"
 	"github.com/adhuliya/span/pkg/spir"
 )
-
-// This file defines the inter-procedural analysis interface.
 
 type InterPACtx interface {
 	Equals(other InterPACtx) bool

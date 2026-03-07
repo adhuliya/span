@@ -73,6 +73,9 @@ extern BitSrcLocDefaultTypeInternal _BitSrcLoc_default_instance_;
 class BitTU;
 struct BitTUDefaultTypeInternal;
 extern BitTUDefaultTypeInternal _BitTU_default_instance_;
+class BitTU_DataTypesEntry_DoNotUse;
+struct BitTU_DataTypesEntry_DoNotUseDefaultTypeInternal;
+extern BitTU_DataTypesEntry_DoNotUseDefaultTypeInternal _BitTU_DataTypesEntry_DoNotUse_default_instance_;
 class BitTU_EntityInfoEntry_DoNotUse;
 struct BitTU_EntityInfoEntry_DoNotUseDefaultTypeInternal;
 extern BitTU_EntityInfoEntry_DoNotUseDefaultTypeInternal _BitTU_EntityInfoEntry_DoNotUse_default_instance_;
@@ -89,6 +92,7 @@ template<> ::spir::BitFunc* Arena::CreateMaybeMessage<::spir::BitFunc>(Arena*);
 template<> ::spir::BitInsn* Arena::CreateMaybeMessage<::spir::BitInsn>(Arena*);
 template<> ::spir::BitSrcLoc* Arena::CreateMaybeMessage<::spir::BitSrcLoc>(Arena*);
 template<> ::spir::BitTU* Arena::CreateMaybeMessage<::spir::BitTU>(Arena*);
+template<> ::spir::BitTU_DataTypesEntry_DoNotUse* Arena::CreateMaybeMessage<::spir::BitTU_DataTypesEntry_DoNotUse>(Arena*);
 template<> ::spir::BitTU_EntityInfoEntry_DoNotUse* Arena::CreateMaybeMessage<::spir::BitTU_EntityInfoEntry_DoNotUse>(Arena*);
 template<> ::spir::BitTU_NamesToIdsEntry_DoNotUse* Arena::CreateMaybeMessage<::spir::BitTU_NamesToIdsEntry_DoNotUse>(Arena*);
 PROTOBUF_NAMESPACE_CLOSE
@@ -144,16 +148,18 @@ enum K_IK : int {
   INIL = 0,
   INOP = 1,
   IBARRIER = 2,
-  IASGN_SIMPLE = 3,
-  IASGN_RHS_OP = 4,
-  IASGN_LHS_OP = 5,
-  IASGN_CALL = 6,
-  IASGN_PHI = 7,
-  ICALL = 8,
-  IGOTO = 9,
-  ICOND = 10,
-  ILABEL = 11,
-  IRETURN = 12,
+  ISELECT = 3,
+  IASGN_SELF = 4,
+  IASGN_SIMPLE = 5,
+  IASGN_RHS_OP = 6,
+  IASGN_LHS_OP = 7,
+  IASGN_CALL = 8,
+  IASGN_PHI = 9,
+  ICALL = 10,
+  IGOTO = 11,
+  ICOND = 12,
+  ILABEL = 13,
+  IRETURN = 14,
   K_IK_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
   K_IK_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
 };
@@ -336,6 +342,695 @@ inline bool K_QK_Parse(
 }
 // ===================================================================
 
+class BitDataType final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:spir.BitDataType) */ {
+ public:
+  inline BitDataType() : BitDataType(nullptr) {}
+  ~BitDataType() override;
+  explicit PROTOBUF_CONSTEXPR BitDataType(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  BitDataType(const BitDataType& from);
+  BitDataType(BitDataType&& from) noexcept
+    : BitDataType() {
+    *this = ::std::move(from);
+  }
+
+  inline BitDataType& operator=(const BitDataType& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline BitDataType& operator=(BitDataType&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const BitDataType& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const BitDataType* internal_default_instance() {
+    return reinterpret_cast<const BitDataType*>(
+               &_BitDataType_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    0;
+
+  friend void swap(BitDataType& a, BitDataType& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(BitDataType* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(BitDataType* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  BitDataType* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<BitDataType>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const BitDataType& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const BitDataType& from) {
+    BitDataType::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(BitDataType* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "spir.BitDataType";
+  }
+  protected:
+  explicit BitDataType(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kFopIdsFieldNumber = 11,
+    kFopTypeEidsFieldNumber = 12,
+    kAttributesFieldNumber = 4,
+    kTypeNameFieldNumber = 8,
+    kTypeIdFieldNumber = 2,
+    kVkindFieldNumber = 1,
+    kLenFieldNumber = 5,
+    kSubTypeEidFieldNumber = 7,
+    kAlignFieldNumber = 6,
+    kAnonymousFieldNumber = 9,
+    kFuncPrototypeFieldNumber = 10,
+    kVariadicFieldNumber = 13,
+    kLocLineFieldNumber = 14,
+    kLocColFieldNumber = 15,
+  };
+  // repeated uint64 fopIds = 11;
+  int fopids_size() const;
+  private:
+  int _internal_fopids_size() const;
+  public:
+  void clear_fopids();
+  private:
+  uint64_t _internal_fopids(int index) const;
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >&
+      _internal_fopids() const;
+  void _internal_add_fopids(uint64_t value);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >*
+      _internal_mutable_fopids();
+  public:
+  uint64_t fopids(int index) const;
+  void set_fopids(int index, uint64_t value);
+  void add_fopids(uint64_t value);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >&
+      fopids() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >*
+      mutable_fopids();
+
+  // repeated uint64 fopTypeEids = 12;
+  int foptypeeids_size() const;
+  private:
+  int _internal_foptypeeids_size() const;
+  public:
+  void clear_foptypeeids();
+  private:
+  uint64_t _internal_foptypeeids(int index) const;
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >&
+      _internal_foptypeeids() const;
+  void _internal_add_foptypeeids(uint64_t value);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >*
+      _internal_mutable_foptypeeids();
+  public:
+  uint64_t foptypeeids(int index) const;
+  void set_foptypeeids(int index, uint64_t value);
+  void add_foptypeeids(uint64_t value);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >&
+      foptypeeids() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >*
+      mutable_foptypeeids();
+
+  // optional string attributes = 4;
+  bool has_attributes() const;
+  private:
+  bool _internal_has_attributes() const;
+  public:
+  void clear_attributes();
+  const std::string& attributes() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_attributes(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_attributes();
+  PROTOBUF_NODISCARD std::string* release_attributes();
+  void set_allocated_attributes(std::string* attributes);
+  private:
+  const std::string& _internal_attributes() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_attributes(const std::string& value);
+  std::string* _internal_mutable_attributes();
+  public:
+
+  // optional string typeName = 8;
+  bool has_typename_() const;
+  private:
+  bool _internal_has_typename_() const;
+  public:
+  void clear_typename_();
+  const std::string& typename_() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_typename_(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_typename_();
+  PROTOBUF_NODISCARD std::string* release_typename_();
+  void set_allocated_typename_(std::string* typename_);
+  private:
+  const std::string& _internal_typename_() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_typename_(const std::string& value);
+  std::string* _internal_mutable_typename_();
+  public:
+
+  // optional uint64 typeId = 2;
+  bool has_typeid_() const;
+  private:
+  bool _internal_has_typeid_() const;
+  public:
+  void clear_typeid_();
+  uint64_t typeid_() const;
+  void set_typeid_(uint64_t value);
+  private:
+  uint64_t _internal_typeid_() const;
+  void _internal_set_typeid_(uint64_t value);
+  public:
+
+  // .spir.K_VK vkind = 1;
+  void clear_vkind();
+  ::spir::K_VK vkind() const;
+  void set_vkind(::spir::K_VK value);
+  private:
+  ::spir::K_VK _internal_vkind() const;
+  void _internal_set_vkind(::spir::K_VK value);
+  public:
+
+  // optional uint32 len = 5;
+  bool has_len() const;
+  private:
+  bool _internal_has_len() const;
+  public:
+  void clear_len();
+  uint32_t len() const;
+  void set_len(uint32_t value);
+  private:
+  uint32_t _internal_len() const;
+  void _internal_set_len(uint32_t value);
+  public:
+
+  // optional uint64 subTypeEid = 7;
+  bool has_subtypeeid() const;
+  private:
+  bool _internal_has_subtypeeid() const;
+  public:
+  void clear_subtypeeid();
+  uint64_t subtypeeid() const;
+  void set_subtypeeid(uint64_t value);
+  private:
+  uint64_t _internal_subtypeeid() const;
+  void _internal_set_subtypeeid(uint64_t value);
+  public:
+
+  // optional uint32 align = 6;
+  bool has_align() const;
+  private:
+  bool _internal_has_align() const;
+  public:
+  void clear_align();
+  uint32_t align() const;
+  void set_align(uint32_t value);
+  private:
+  uint32_t _internal_align() const;
+  void _internal_set_align(uint32_t value);
+  public:
+
+  // optional bool anonymous = 9;
+  bool has_anonymous() const;
+  private:
+  bool _internal_has_anonymous() const;
+  public:
+  void clear_anonymous();
+  bool anonymous() const;
+  void set_anonymous(bool value);
+  private:
+  bool _internal_anonymous() const;
+  void _internal_set_anonymous(bool value);
+  public:
+
+  // optional bool funcPrototype = 10;
+  bool has_funcprototype() const;
+  private:
+  bool _internal_has_funcprototype() const;
+  public:
+  void clear_funcprototype();
+  bool funcprototype() const;
+  void set_funcprototype(bool value);
+  private:
+  bool _internal_funcprototype() const;
+  void _internal_set_funcprototype(bool value);
+  public:
+
+  // optional bool variadic = 13;
+  bool has_variadic() const;
+  private:
+  bool _internal_has_variadic() const;
+  public:
+  void clear_variadic();
+  bool variadic() const;
+  void set_variadic(bool value);
+  private:
+  bool _internal_variadic() const;
+  void _internal_set_variadic(bool value);
+  public:
+
+  // optional uint32 loc_line = 14;
+  bool has_loc_line() const;
+  private:
+  bool _internal_has_loc_line() const;
+  public:
+  void clear_loc_line();
+  uint32_t loc_line() const;
+  void set_loc_line(uint32_t value);
+  private:
+  uint32_t _internal_loc_line() const;
+  void _internal_set_loc_line(uint32_t value);
+  public:
+
+  // optional uint32 loc_col = 15;
+  bool has_loc_col() const;
+  private:
+  bool _internal_has_loc_col() const;
+  public:
+  void clear_loc_col();
+  uint32_t loc_col() const;
+  void set_loc_col(uint32_t value);
+  private:
+  uint32_t _internal_loc_col() const;
+  void _internal_set_loc_col(uint32_t value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:spir.BitDataType)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+    ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t > fopids_;
+    mutable std::atomic<int> _fopids_cached_byte_size_;
+    ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t > foptypeeids_;
+    mutable std::atomic<int> _foptypeeids_cached_byte_size_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr attributes_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr typename__;
+    uint64_t typeid__;
+    int vkind_;
+    uint32_t len_;
+    uint64_t subtypeeid_;
+    uint32_t align_;
+    bool anonymous_;
+    bool funcprototype_;
+    bool variadic_;
+    uint32_t loc_line_;
+    uint32_t loc_col_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_spir_2eproto;
+};
+// -------------------------------------------------------------------
+
+class BitEntityInfo final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:spir.BitEntityInfo) */ {
+ public:
+  inline BitEntityInfo() : BitEntityInfo(nullptr) {}
+  ~BitEntityInfo() override;
+  explicit PROTOBUF_CONSTEXPR BitEntityInfo(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  BitEntityInfo(const BitEntityInfo& from);
+  BitEntityInfo(BitEntityInfo&& from) noexcept
+    : BitEntityInfo() {
+    *this = ::std::move(from);
+  }
+
+  inline BitEntityInfo& operator=(const BitEntityInfo& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline BitEntityInfo& operator=(BitEntityInfo&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const BitEntityInfo& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const BitEntityInfo* internal_default_instance() {
+    return reinterpret_cast<const BitEntityInfo*>(
+               &_BitEntityInfo_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    1;
+
+  friend void swap(BitEntityInfo& a, BitEntityInfo& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(BitEntityInfo* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(BitEntityInfo* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  BitEntityInfo* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<BitEntityInfo>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const BitEntityInfo& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const BitEntityInfo& from) {
+    BitEntityInfo::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(BitEntityInfo* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "spir.BitEntityInfo";
+  }
+  protected:
+  explicit BitEntityInfo(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kStrValFieldNumber = 10,
+    kEidFieldNumber = 1,
+    kEkindFieldNumber = 2,
+    kVkindFieldNumber = 3,
+    kAnonymousFieldNumber = 4,
+    kQtypeFieldNumber = 5,
+    kParentEidFieldNumber = 6,
+    kDataTypeEidFieldNumber = 7,
+    kLowValFieldNumber = 8,
+    kHighValFieldNumber = 9,
+    kLocLineFieldNumber = 11,
+    kLocColFieldNumber = 12,
+  };
+  // optional string strVal = 10;
+  bool has_strval() const;
+  private:
+  bool _internal_has_strval() const;
+  public:
+  void clear_strval();
+  const std::string& strval() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_strval(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_strval();
+  PROTOBUF_NODISCARD std::string* release_strval();
+  void set_allocated_strval(std::string* strval);
+  private:
+  const std::string& _internal_strval() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_strval(const std::string& value);
+  std::string* _internal_mutable_strval();
+  public:
+
+  // uint64 eid = 1;
+  void clear_eid();
+  uint64_t eid() const;
+  void set_eid(uint64_t value);
+  private:
+  uint64_t _internal_eid() const;
+  void _internal_set_eid(uint64_t value);
+  public:
+
+  // .spir.K_EK ekind = 2;
+  void clear_ekind();
+  ::spir::K_EK ekind() const;
+  void set_ekind(::spir::K_EK value);
+  private:
+  ::spir::K_EK _internal_ekind() const;
+  void _internal_set_ekind(::spir::K_EK value);
+  public:
+
+  // optional .spir.K_VK vkind = 3;
+  bool has_vkind() const;
+  private:
+  bool _internal_has_vkind() const;
+  public:
+  void clear_vkind();
+  ::spir::K_VK vkind() const;
+  void set_vkind(::spir::K_VK value);
+  private:
+  ::spir::K_VK _internal_vkind() const;
+  void _internal_set_vkind(::spir::K_VK value);
+  public:
+
+  // optional bool anonymous = 4;
+  bool has_anonymous() const;
+  private:
+  bool _internal_has_anonymous() const;
+  public:
+  void clear_anonymous();
+  bool anonymous() const;
+  void set_anonymous(bool value);
+  private:
+  bool _internal_anonymous() const;
+  void _internal_set_anonymous(bool value);
+  public:
+
+  // optional uint32 qtype = 5;
+  bool has_qtype() const;
+  private:
+  bool _internal_has_qtype() const;
+  public:
+  void clear_qtype();
+  uint32_t qtype() const;
+  void set_qtype(uint32_t value);
+  private:
+  uint32_t _internal_qtype() const;
+  void _internal_set_qtype(uint32_t value);
+  public:
+
+  // optional uint64 parentEid = 6;
+  bool has_parenteid() const;
+  private:
+  bool _internal_has_parenteid() const;
+  public:
+  void clear_parenteid();
+  uint64_t parenteid() const;
+  void set_parenteid(uint64_t value);
+  private:
+  uint64_t _internal_parenteid() const;
+  void _internal_set_parenteid(uint64_t value);
+  public:
+
+  // optional uint64 dataTypeEid = 7;
+  bool has_datatypeeid() const;
+  private:
+  bool _internal_has_datatypeeid() const;
+  public:
+  void clear_datatypeeid();
+  uint64_t datatypeeid() const;
+  void set_datatypeeid(uint64_t value);
+  private:
+  uint64_t _internal_datatypeeid() const;
+  void _internal_set_datatypeeid(uint64_t value);
+  public:
+
+  // optional uint64 lowVal = 8;
+  bool has_lowval() const;
+  private:
+  bool _internal_has_lowval() const;
+  public:
+  void clear_lowval();
+  uint64_t lowval() const;
+  void set_lowval(uint64_t value);
+  private:
+  uint64_t _internal_lowval() const;
+  void _internal_set_lowval(uint64_t value);
+  public:
+
+  // optional uint64 highVal = 9;
+  bool has_highval() const;
+  private:
+  bool _internal_has_highval() const;
+  public:
+  void clear_highval();
+  uint64_t highval() const;
+  void set_highval(uint64_t value);
+  private:
+  uint64_t _internal_highval() const;
+  void _internal_set_highval(uint64_t value);
+  public:
+
+  // optional uint32 loc_line = 11;
+  bool has_loc_line() const;
+  private:
+  bool _internal_has_loc_line() const;
+  public:
+  void clear_loc_line();
+  uint32_t loc_line() const;
+  void set_loc_line(uint32_t value);
+  private:
+  uint32_t _internal_loc_line() const;
+  void _internal_set_loc_line(uint32_t value);
+  public:
+
+  // optional uint32 loc_col = 12;
+  bool has_loc_col() const;
+  private:
+  bool _internal_has_loc_col() const;
+  public:
+  void clear_loc_col();
+  uint32_t loc_col() const;
+  void set_loc_col(uint32_t value);
+  private:
+  uint32_t _internal_loc_col() const;
+  void _internal_set_loc_col(uint32_t value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:spir.BitEntityInfo)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr strval_;
+    uint64_t eid_;
+    int ekind_;
+    int vkind_;
+    bool anonymous_;
+    uint32_t qtype_;
+    uint64_t parenteid_;
+    uint64_t datatypeeid_;
+    uint64_t lowval_;
+    uint64_t highval_;
+    uint32_t loc_line_;
+    uint32_t loc_col_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_spir_2eproto;
+};
+// -------------------------------------------------------------------
+
 class BitSrcLoc final :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:spir.BitSrcLoc) */ {
  public:
@@ -384,7 +1079,7 @@ class BitSrcLoc final :
                &_BitSrcLoc_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    0;
+    2;
 
   friend void swap(BitSrcLoc& a, BitSrcLoc& b) {
     a.Swap(&b);
@@ -489,650 +1184,6 @@ class BitSrcLoc final :
     uint32_t line_;
     uint32_t col_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
-  };
-  union { Impl_ _impl_; };
-  friend struct ::TableStruct_spir_2eproto;
-};
-// -------------------------------------------------------------------
-
-class BitDataType final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:spir.BitDataType) */ {
- public:
-  inline BitDataType() : BitDataType(nullptr) {}
-  ~BitDataType() override;
-  explicit PROTOBUF_CONSTEXPR BitDataType(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
-
-  BitDataType(const BitDataType& from);
-  BitDataType(BitDataType&& from) noexcept
-    : BitDataType() {
-    *this = ::std::move(from);
-  }
-
-  inline BitDataType& operator=(const BitDataType& from) {
-    CopyFrom(from);
-    return *this;
-  }
-  inline BitDataType& operator=(BitDataType&& from) noexcept {
-    if (this == &from) return *this;
-    if (GetOwningArena() == from.GetOwningArena()
-  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
-        && GetOwningArena() != nullptr
-  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
-    ) {
-      InternalSwap(&from);
-    } else {
-      CopyFrom(from);
-    }
-    return *this;
-  }
-
-  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
-    return GetDescriptor();
-  }
-  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
-    return default_instance().GetMetadata().descriptor;
-  }
-  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
-    return default_instance().GetMetadata().reflection;
-  }
-  static const BitDataType& default_instance() {
-    return *internal_default_instance();
-  }
-  static inline const BitDataType* internal_default_instance() {
-    return reinterpret_cast<const BitDataType*>(
-               &_BitDataType_default_instance_);
-  }
-  static constexpr int kIndexInFileMessages =
-    1;
-
-  friend void swap(BitDataType& a, BitDataType& b) {
-    a.Swap(&b);
-  }
-  inline void Swap(BitDataType* other) {
-    if (other == this) return;
-  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
-    if (GetOwningArena() != nullptr &&
-        GetOwningArena() == other->GetOwningArena()) {
-   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
-    if (GetOwningArena() == other->GetOwningArena()) {
-  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
-      InternalSwap(other);
-    } else {
-      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
-    }
-  }
-  void UnsafeArenaSwap(BitDataType* other) {
-    if (other == this) return;
-    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
-    InternalSwap(other);
-  }
-
-  // implements Message ----------------------------------------------
-
-  BitDataType* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<BitDataType>(arena);
-  }
-  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
-  void CopyFrom(const BitDataType& from);
-  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
-  void MergeFrom( const BitDataType& from) {
-    BitDataType::MergeImpl(*this, from);
-  }
-  private:
-  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
-  public:
-  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
-  bool IsInitialized() const final;
-
-  size_t ByteSizeLong() const final;
-  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
-  uint8_t* _InternalSerialize(
-      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
-  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
-
-  private:
-  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
-  void SharedDtor();
-  void SetCachedSize(int size) const final;
-  void InternalSwap(BitDataType* other);
-
-  private:
-  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
-  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "spir.BitDataType";
-  }
-  protected:
-  explicit BitDataType(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                       bool is_message_owned = false);
-  public:
-
-  static const ClassData _class_data_;
-  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
-
-  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
-
-  // nested types ----------------------------------------------------
-
-  // accessors -------------------------------------------------------
-
-  enum : int {
-    kFopIdsFieldNumber = 10,
-    kFopTypesFieldNumber = 11,
-    kAttributesFieldNumber = 4,
-    kTypeNameFieldNumber = 8,
-    kSubTypeFieldNumber = 7,
-    kLocFieldNumber = 13,
-    kTypeIdFieldNumber = 2,
-    kVkindFieldNumber = 1,
-    kLenFieldNumber = 5,
-    kAlignFieldNumber = 6,
-    kAnonymousFieldNumber = 9,
-    kVariadicFieldNumber = 12,
-  };
-  // repeated uint64 fopIds = 10;
-  int fopids_size() const;
-  private:
-  int _internal_fopids_size() const;
-  public:
-  void clear_fopids();
-  private:
-  uint64_t _internal_fopids(int index) const;
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >&
-      _internal_fopids() const;
-  void _internal_add_fopids(uint64_t value);
-  ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >*
-      _internal_mutable_fopids();
-  public:
-  uint64_t fopids(int index) const;
-  void set_fopids(int index, uint64_t value);
-  void add_fopids(uint64_t value);
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >&
-      fopids() const;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >*
-      mutable_fopids();
-
-  // repeated .spir.BitDataType fopTypes = 11;
-  int foptypes_size() const;
-  private:
-  int _internal_foptypes_size() const;
-  public:
-  void clear_foptypes();
-  ::spir::BitDataType* mutable_foptypes(int index);
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::spir::BitDataType >*
-      mutable_foptypes();
-  private:
-  const ::spir::BitDataType& _internal_foptypes(int index) const;
-  ::spir::BitDataType* _internal_add_foptypes();
-  public:
-  const ::spir::BitDataType& foptypes(int index) const;
-  ::spir::BitDataType* add_foptypes();
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::spir::BitDataType >&
-      foptypes() const;
-
-  // optional string attributes = 4;
-  bool has_attributes() const;
-  private:
-  bool _internal_has_attributes() const;
-  public:
-  void clear_attributes();
-  const std::string& attributes() const;
-  template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_attributes(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_attributes();
-  PROTOBUF_NODISCARD std::string* release_attributes();
-  void set_allocated_attributes(std::string* attributes);
-  private:
-  const std::string& _internal_attributes() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_attributes(const std::string& value);
-  std::string* _internal_mutable_attributes();
-  public:
-
-  // optional string typeName = 8;
-  bool has_typename_() const;
-  private:
-  bool _internal_has_typename_() const;
-  public:
-  void clear_typename_();
-  const std::string& typename_() const;
-  template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_typename_(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_typename_();
-  PROTOBUF_NODISCARD std::string* release_typename_();
-  void set_allocated_typename_(std::string* typename_);
-  private:
-  const std::string& _internal_typename_() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_typename_(const std::string& value);
-  std::string* _internal_mutable_typename_();
-  public:
-
-  // optional .spir.BitDataType subType = 7;
-  bool has_subtype() const;
-  private:
-  bool _internal_has_subtype() const;
-  public:
-  void clear_subtype();
-  const ::spir::BitDataType& subtype() const;
-  PROTOBUF_NODISCARD ::spir::BitDataType* release_subtype();
-  ::spir::BitDataType* mutable_subtype();
-  void set_allocated_subtype(::spir::BitDataType* subtype);
-  private:
-  const ::spir::BitDataType& _internal_subtype() const;
-  ::spir::BitDataType* _internal_mutable_subtype();
-  public:
-  void unsafe_arena_set_allocated_subtype(
-      ::spir::BitDataType* subtype);
-  ::spir::BitDataType* unsafe_arena_release_subtype();
-
-  // optional .spir.BitSrcLoc loc = 13;
-  bool has_loc() const;
-  private:
-  bool _internal_has_loc() const;
-  public:
-  void clear_loc();
-  const ::spir::BitSrcLoc& loc() const;
-  PROTOBUF_NODISCARD ::spir::BitSrcLoc* release_loc();
-  ::spir::BitSrcLoc* mutable_loc();
-  void set_allocated_loc(::spir::BitSrcLoc* loc);
-  private:
-  const ::spir::BitSrcLoc& _internal_loc() const;
-  ::spir::BitSrcLoc* _internal_mutable_loc();
-  public:
-  void unsafe_arena_set_allocated_loc(
-      ::spir::BitSrcLoc* loc);
-  ::spir::BitSrcLoc* unsafe_arena_release_loc();
-
-  // optional uint64 typeId = 2;
-  bool has_typeid_() const;
-  private:
-  bool _internal_has_typeid_() const;
-  public:
-  void clear_typeid_();
-  uint64_t typeid_() const;
-  void set_typeid_(uint64_t value);
-  private:
-  uint64_t _internal_typeid_() const;
-  void _internal_set_typeid_(uint64_t value);
-  public:
-
-  // .spir.K_VK vkind = 1;
-  void clear_vkind();
-  ::spir::K_VK vkind() const;
-  void set_vkind(::spir::K_VK value);
-  private:
-  ::spir::K_VK _internal_vkind() const;
-  void _internal_set_vkind(::spir::K_VK value);
-  public:
-
-  // optional uint32 len = 5;
-  bool has_len() const;
-  private:
-  bool _internal_has_len() const;
-  public:
-  void clear_len();
-  uint32_t len() const;
-  void set_len(uint32_t value);
-  private:
-  uint32_t _internal_len() const;
-  void _internal_set_len(uint32_t value);
-  public:
-
-  // optional uint32 align = 6;
-  bool has_align() const;
-  private:
-  bool _internal_has_align() const;
-  public:
-  void clear_align();
-  uint32_t align() const;
-  void set_align(uint32_t value);
-  private:
-  uint32_t _internal_align() const;
-  void _internal_set_align(uint32_t value);
-  public:
-
-  // optional bool anonymous = 9;
-  bool has_anonymous() const;
-  private:
-  bool _internal_has_anonymous() const;
-  public:
-  void clear_anonymous();
-  bool anonymous() const;
-  void set_anonymous(bool value);
-  private:
-  bool _internal_anonymous() const;
-  void _internal_set_anonymous(bool value);
-  public:
-
-  // optional bool variadic = 12;
-  bool has_variadic() const;
-  private:
-  bool _internal_has_variadic() const;
-  public:
-  void clear_variadic();
-  bool variadic() const;
-  void set_variadic(bool value);
-  private:
-  bool _internal_variadic() const;
-  void _internal_set_variadic(bool value);
-  public:
-
-  // @@protoc_insertion_point(class_scope:spir.BitDataType)
- private:
-  class _Internal;
-
-  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
-  typedef void InternalArenaConstructable_;
-  typedef void DestructorSkippable_;
-  struct Impl_ {
-    ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
-    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
-    ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t > fopids_;
-    mutable std::atomic<int> _fopids_cached_byte_size_;
-    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::spir::BitDataType > foptypes_;
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr attributes_;
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr typename__;
-    ::spir::BitDataType* subtype_;
-    ::spir::BitSrcLoc* loc_;
-    uint64_t typeid__;
-    int vkind_;
-    uint32_t len_;
-    uint32_t align_;
-    bool anonymous_;
-    bool variadic_;
-  };
-  union { Impl_ _impl_; };
-  friend struct ::TableStruct_spir_2eproto;
-};
-// -------------------------------------------------------------------
-
-class BitEntityInfo final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:spir.BitEntityInfo) */ {
- public:
-  inline BitEntityInfo() : BitEntityInfo(nullptr) {}
-  ~BitEntityInfo() override;
-  explicit PROTOBUF_CONSTEXPR BitEntityInfo(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
-
-  BitEntityInfo(const BitEntityInfo& from);
-  BitEntityInfo(BitEntityInfo&& from) noexcept
-    : BitEntityInfo() {
-    *this = ::std::move(from);
-  }
-
-  inline BitEntityInfo& operator=(const BitEntityInfo& from) {
-    CopyFrom(from);
-    return *this;
-  }
-  inline BitEntityInfo& operator=(BitEntityInfo&& from) noexcept {
-    if (this == &from) return *this;
-    if (GetOwningArena() == from.GetOwningArena()
-  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
-        && GetOwningArena() != nullptr
-  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
-    ) {
-      InternalSwap(&from);
-    } else {
-      CopyFrom(from);
-    }
-    return *this;
-  }
-
-  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
-    return GetDescriptor();
-  }
-  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
-    return default_instance().GetMetadata().descriptor;
-  }
-  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
-    return default_instance().GetMetadata().reflection;
-  }
-  static const BitEntityInfo& default_instance() {
-    return *internal_default_instance();
-  }
-  static inline const BitEntityInfo* internal_default_instance() {
-    return reinterpret_cast<const BitEntityInfo*>(
-               &_BitEntityInfo_default_instance_);
-  }
-  static constexpr int kIndexInFileMessages =
-    2;
-
-  friend void swap(BitEntityInfo& a, BitEntityInfo& b) {
-    a.Swap(&b);
-  }
-  inline void Swap(BitEntityInfo* other) {
-    if (other == this) return;
-  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
-    if (GetOwningArena() != nullptr &&
-        GetOwningArena() == other->GetOwningArena()) {
-   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
-    if (GetOwningArena() == other->GetOwningArena()) {
-  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
-      InternalSwap(other);
-    } else {
-      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
-    }
-  }
-  void UnsafeArenaSwap(BitEntityInfo* other) {
-    if (other == this) return;
-    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
-    InternalSwap(other);
-  }
-
-  // implements Message ----------------------------------------------
-
-  BitEntityInfo* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<BitEntityInfo>(arena);
-  }
-  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
-  void CopyFrom(const BitEntityInfo& from);
-  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
-  void MergeFrom( const BitEntityInfo& from) {
-    BitEntityInfo::MergeImpl(*this, from);
-  }
-  private:
-  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
-  public:
-  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
-  bool IsInitialized() const final;
-
-  size_t ByteSizeLong() const final;
-  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
-  uint8_t* _InternalSerialize(
-      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
-  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
-
-  private:
-  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
-  void SharedDtor();
-  void SetCachedSize(int size) const final;
-  void InternalSwap(BitEntityInfo* other);
-
-  private:
-  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
-  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "spir.BitEntityInfo";
-  }
-  protected:
-  explicit BitEntityInfo(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                       bool is_message_owned = false);
-  public:
-
-  static const ClassData _class_data_;
-  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
-
-  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
-
-  // nested types ----------------------------------------------------
-
-  // accessors -------------------------------------------------------
-
-  enum : int {
-    kStrValFieldNumber = 9,
-    kDtFieldNumber = 6,
-    kLocFieldNumber = 10,
-    kEidFieldNumber = 1,
-    kEkindFieldNumber = 2,
-    kVkindFieldNumber = 3,
-    kParentIdFieldNumber = 5,
-    kLowValFieldNumber = 7,
-    kHighValFieldNumber = 8,
-    kQtypeFieldNumber = 4,
-  };
-  // optional string strVal = 9;
-  bool has_strval() const;
-  private:
-  bool _internal_has_strval() const;
-  public:
-  void clear_strval();
-  const std::string& strval() const;
-  template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_strval(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_strval();
-  PROTOBUF_NODISCARD std::string* release_strval();
-  void set_allocated_strval(std::string* strval);
-  private:
-  const std::string& _internal_strval() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_strval(const std::string& value);
-  std::string* _internal_mutable_strval();
-  public:
-
-  // optional .spir.BitDataType dt = 6;
-  bool has_dt() const;
-  private:
-  bool _internal_has_dt() const;
-  public:
-  void clear_dt();
-  const ::spir::BitDataType& dt() const;
-  PROTOBUF_NODISCARD ::spir::BitDataType* release_dt();
-  ::spir::BitDataType* mutable_dt();
-  void set_allocated_dt(::spir::BitDataType* dt);
-  private:
-  const ::spir::BitDataType& _internal_dt() const;
-  ::spir::BitDataType* _internal_mutable_dt();
-  public:
-  void unsafe_arena_set_allocated_dt(
-      ::spir::BitDataType* dt);
-  ::spir::BitDataType* unsafe_arena_release_dt();
-
-  // optional .spir.BitSrcLoc loc = 10;
-  bool has_loc() const;
-  private:
-  bool _internal_has_loc() const;
-  public:
-  void clear_loc();
-  const ::spir::BitSrcLoc& loc() const;
-  PROTOBUF_NODISCARD ::spir::BitSrcLoc* release_loc();
-  ::spir::BitSrcLoc* mutable_loc();
-  void set_allocated_loc(::spir::BitSrcLoc* loc);
-  private:
-  const ::spir::BitSrcLoc& _internal_loc() const;
-  ::spir::BitSrcLoc* _internal_mutable_loc();
-  public:
-  void unsafe_arena_set_allocated_loc(
-      ::spir::BitSrcLoc* loc);
-  ::spir::BitSrcLoc* unsafe_arena_release_loc();
-
-  // uint64 eid = 1;
-  void clear_eid();
-  uint64_t eid() const;
-  void set_eid(uint64_t value);
-  private:
-  uint64_t _internal_eid() const;
-  void _internal_set_eid(uint64_t value);
-  public:
-
-  // .spir.K_EK ekind = 2;
-  void clear_ekind();
-  ::spir::K_EK ekind() const;
-  void set_ekind(::spir::K_EK value);
-  private:
-  ::spir::K_EK _internal_ekind() const;
-  void _internal_set_ekind(::spir::K_EK value);
-  public:
-
-  // optional .spir.K_VK vkind = 3;
-  bool has_vkind() const;
-  private:
-  bool _internal_has_vkind() const;
-  public:
-  void clear_vkind();
-  ::spir::K_VK vkind() const;
-  void set_vkind(::spir::K_VK value);
-  private:
-  ::spir::K_VK _internal_vkind() const;
-  void _internal_set_vkind(::spir::K_VK value);
-  public:
-
-  // optional uint64 parentId = 5;
-  bool has_parentid() const;
-  private:
-  bool _internal_has_parentid() const;
-  public:
-  void clear_parentid();
-  uint64_t parentid() const;
-  void set_parentid(uint64_t value);
-  private:
-  uint64_t _internal_parentid() const;
-  void _internal_set_parentid(uint64_t value);
-  public:
-
-  // optional uint64 lowVal = 7;
-  bool has_lowval() const;
-  private:
-  bool _internal_has_lowval() const;
-  public:
-  void clear_lowval();
-  uint64_t lowval() const;
-  void set_lowval(uint64_t value);
-  private:
-  uint64_t _internal_lowval() const;
-  void _internal_set_lowval(uint64_t value);
-  public:
-
-  // optional uint64 highVal = 8;
-  bool has_highval() const;
-  private:
-  bool _internal_has_highval() const;
-  public:
-  void clear_highval();
-  uint64_t highval() const;
-  void set_highval(uint64_t value);
-  private:
-  uint64_t _internal_highval() const;
-  void _internal_set_highval(uint64_t value);
-  public:
-
-  // optional uint32 qtype = 4;
-  bool has_qtype() const;
-  private:
-  bool _internal_has_qtype() const;
-  public:
-  void clear_qtype();
-  uint32_t qtype() const;
-  void set_qtype(uint32_t value);
-  private:
-  uint32_t _internal_qtype() const;
-  void _internal_set_qtype(uint32_t value);
-  public:
-
-  // @@protoc_insertion_point(class_scope:spir.BitEntityInfo)
- private:
-  class _Internal;
-
-  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
-  typedef void InternalArenaConstructable_;
-  typedef void DestructorSkippable_;
-  struct Impl_ {
-    ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
-    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr strval_;
-    ::spir::BitDataType* dt_;
-    ::spir::BitSrcLoc* loc_;
-    uint64_t eid_;
-    int ekind_;
-    int vkind_;
-    uint64_t parentid_;
-    uint64_t lowval_;
-    uint64_t highval_;
-    uint32_t qtype_;
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_spir_2eproto;
@@ -1260,27 +1311,10 @@ class BitEntity final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kLocFieldNumber = 2,
     kEidFieldNumber = 1,
+    kLineFieldNumber = 2,
+    kColFieldNumber = 3,
   };
-  // optional .spir.BitSrcLoc loc = 2;
-  bool has_loc() const;
-  private:
-  bool _internal_has_loc() const;
-  public:
-  void clear_loc();
-  const ::spir::BitSrcLoc& loc() const;
-  PROTOBUF_NODISCARD ::spir::BitSrcLoc* release_loc();
-  ::spir::BitSrcLoc* mutable_loc();
-  void set_allocated_loc(::spir::BitSrcLoc* loc);
-  private:
-  const ::spir::BitSrcLoc& _internal_loc() const;
-  ::spir::BitSrcLoc* _internal_mutable_loc();
-  public:
-  void unsafe_arena_set_allocated_loc(
-      ::spir::BitSrcLoc* loc);
-  ::spir::BitSrcLoc* unsafe_arena_release_loc();
-
   // uint64 eid = 1;
   void clear_eid();
   uint64_t eid() const;
@@ -1288,6 +1322,24 @@ class BitEntity final :
   private:
   uint64_t _internal_eid() const;
   void _internal_set_eid(uint64_t value);
+  public:
+
+  // uint32 line = 2;
+  void clear_line();
+  uint32_t line() const;
+  void set_line(uint32_t value);
+  private:
+  uint32_t _internal_line() const;
+  void _internal_set_line(uint32_t value);
+  public:
+
+  // uint32 col = 3;
+  void clear_col();
+  uint32_t col() const;
+  void set_col(uint32_t value);
+  private:
+  uint32_t _internal_col() const;
+  void _internal_set_col(uint32_t value);
   public:
 
   // @@protoc_insertion_point(class_scope:spir.BitEntity)
@@ -1298,10 +1350,10 @@ class BitEntity final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
-    ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
-    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
-    ::spir::BitSrcLoc* loc_;
     uint64_t eid_;
+    uint32_t line_;
+    uint32_t col_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_spir_2eproto;
@@ -1429,83 +1481,84 @@ class BitExpr final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kOprsFieldNumber = 4,
-    kOpr1FieldNumber = 2,
-    kOpr2FieldNumber = 3,
-    kLocFieldNumber = 5,
+    kOprndsFieldNumber = 10,
+    kOprndsLineFieldNumber = 11,
+    kOprndsColFieldNumber = 12,
     kXkindFieldNumber = 1,
+    kLocLineFieldNumber = 2,
+    kOprnd1EidFieldNumber = 4,
+    kLocColFieldNumber = 3,
+    kOprnd1LineFieldNumber = 5,
+    kOprnd2EidFieldNumber = 7,
+    kOprnd1ColFieldNumber = 6,
+    kOprnd2LineFieldNumber = 8,
+    kOprnd2ColFieldNumber = 9,
   };
-  // repeated .spir.BitEntity oprs = 4;
-  int oprs_size() const;
+  // repeated uint64 oprnds = 10;
+  int oprnds_size() const;
   private:
-  int _internal_oprs_size() const;
+  int _internal_oprnds_size() const;
   public:
-  void clear_oprs();
-  ::spir::BitEntity* mutable_oprs(int index);
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::spir::BitEntity >*
-      mutable_oprs();
+  void clear_oprnds();
   private:
-  const ::spir::BitEntity& _internal_oprs(int index) const;
-  ::spir::BitEntity* _internal_add_oprs();
+  uint64_t _internal_oprnds(int index) const;
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >&
+      _internal_oprnds() const;
+  void _internal_add_oprnds(uint64_t value);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >*
+      _internal_mutable_oprnds();
   public:
-  const ::spir::BitEntity& oprs(int index) const;
-  ::spir::BitEntity* add_oprs();
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::spir::BitEntity >&
-      oprs() const;
+  uint64_t oprnds(int index) const;
+  void set_oprnds(int index, uint64_t value);
+  void add_oprnds(uint64_t value);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >&
+      oprnds() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >*
+      mutable_oprnds();
 
-  // optional .spir.BitEntity opr1 = 2;
-  bool has_opr1() const;
+  // repeated uint32 oprnds_line = 11;
+  int oprnds_line_size() const;
   private:
-  bool _internal_has_opr1() const;
+  int _internal_oprnds_line_size() const;
   public:
-  void clear_opr1();
-  const ::spir::BitEntity& opr1() const;
-  PROTOBUF_NODISCARD ::spir::BitEntity* release_opr1();
-  ::spir::BitEntity* mutable_opr1();
-  void set_allocated_opr1(::spir::BitEntity* opr1);
+  void clear_oprnds_line();
   private:
-  const ::spir::BitEntity& _internal_opr1() const;
-  ::spir::BitEntity* _internal_mutable_opr1();
+  uint32_t _internal_oprnds_line(int index) const;
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint32_t >&
+      _internal_oprnds_line() const;
+  void _internal_add_oprnds_line(uint32_t value);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint32_t >*
+      _internal_mutable_oprnds_line();
   public:
-  void unsafe_arena_set_allocated_opr1(
-      ::spir::BitEntity* opr1);
-  ::spir::BitEntity* unsafe_arena_release_opr1();
+  uint32_t oprnds_line(int index) const;
+  void set_oprnds_line(int index, uint32_t value);
+  void add_oprnds_line(uint32_t value);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint32_t >&
+      oprnds_line() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint32_t >*
+      mutable_oprnds_line();
 
-  // optional .spir.BitEntity opr2 = 3;
-  bool has_opr2() const;
+  // repeated uint32 oprnds_col = 12;
+  int oprnds_col_size() const;
   private:
-  bool _internal_has_opr2() const;
+  int _internal_oprnds_col_size() const;
   public:
-  void clear_opr2();
-  const ::spir::BitEntity& opr2() const;
-  PROTOBUF_NODISCARD ::spir::BitEntity* release_opr2();
-  ::spir::BitEntity* mutable_opr2();
-  void set_allocated_opr2(::spir::BitEntity* opr2);
+  void clear_oprnds_col();
   private:
-  const ::spir::BitEntity& _internal_opr2() const;
-  ::spir::BitEntity* _internal_mutable_opr2();
+  uint32_t _internal_oprnds_col(int index) const;
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint32_t >&
+      _internal_oprnds_col() const;
+  void _internal_add_oprnds_col(uint32_t value);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint32_t >*
+      _internal_mutable_oprnds_col();
   public:
-  void unsafe_arena_set_allocated_opr2(
-      ::spir::BitEntity* opr2);
-  ::spir::BitEntity* unsafe_arena_release_opr2();
-
-  // optional .spir.BitSrcLoc loc = 5;
-  bool has_loc() const;
-  private:
-  bool _internal_has_loc() const;
-  public:
-  void clear_loc();
-  const ::spir::BitSrcLoc& loc() const;
-  PROTOBUF_NODISCARD ::spir::BitSrcLoc* release_loc();
-  ::spir::BitSrcLoc* mutable_loc();
-  void set_allocated_loc(::spir::BitSrcLoc* loc);
-  private:
-  const ::spir::BitSrcLoc& _internal_loc() const;
-  ::spir::BitSrcLoc* _internal_mutable_loc();
-  public:
-  void unsafe_arena_set_allocated_loc(
-      ::spir::BitSrcLoc* loc);
-  ::spir::BitSrcLoc* unsafe_arena_release_loc();
+  uint32_t oprnds_col(int index) const;
+  void set_oprnds_col(int index, uint32_t value);
+  void add_oprnds_col(uint32_t value);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint32_t >&
+      oprnds_col() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint32_t >*
+      mutable_oprnds_col();
 
   // .spir.K_XK xkind = 1;
   void clear_xkind();
@@ -1514,6 +1567,110 @@ class BitExpr final :
   private:
   ::spir::K_XK _internal_xkind() const;
   void _internal_set_xkind(::spir::K_XK value);
+  public:
+
+  // optional uint32 loc_line = 2;
+  bool has_loc_line() const;
+  private:
+  bool _internal_has_loc_line() const;
+  public:
+  void clear_loc_line();
+  uint32_t loc_line() const;
+  void set_loc_line(uint32_t value);
+  private:
+  uint32_t _internal_loc_line() const;
+  void _internal_set_loc_line(uint32_t value);
+  public:
+
+  // optional uint64 oprnd1eid = 4;
+  bool has_oprnd1eid() const;
+  private:
+  bool _internal_has_oprnd1eid() const;
+  public:
+  void clear_oprnd1eid();
+  uint64_t oprnd1eid() const;
+  void set_oprnd1eid(uint64_t value);
+  private:
+  uint64_t _internal_oprnd1eid() const;
+  void _internal_set_oprnd1eid(uint64_t value);
+  public:
+
+  // optional uint32 loc_col = 3;
+  bool has_loc_col() const;
+  private:
+  bool _internal_has_loc_col() const;
+  public:
+  void clear_loc_col();
+  uint32_t loc_col() const;
+  void set_loc_col(uint32_t value);
+  private:
+  uint32_t _internal_loc_col() const;
+  void _internal_set_loc_col(uint32_t value);
+  public:
+
+  // optional uint32 oprnd1_line = 5;
+  bool has_oprnd1_line() const;
+  private:
+  bool _internal_has_oprnd1_line() const;
+  public:
+  void clear_oprnd1_line();
+  uint32_t oprnd1_line() const;
+  void set_oprnd1_line(uint32_t value);
+  private:
+  uint32_t _internal_oprnd1_line() const;
+  void _internal_set_oprnd1_line(uint32_t value);
+  public:
+
+  // optional uint64 oprnd2eid = 7;
+  bool has_oprnd2eid() const;
+  private:
+  bool _internal_has_oprnd2eid() const;
+  public:
+  void clear_oprnd2eid();
+  uint64_t oprnd2eid() const;
+  void set_oprnd2eid(uint64_t value);
+  private:
+  uint64_t _internal_oprnd2eid() const;
+  void _internal_set_oprnd2eid(uint64_t value);
+  public:
+
+  // optional uint32 oprnd1_col = 6;
+  bool has_oprnd1_col() const;
+  private:
+  bool _internal_has_oprnd1_col() const;
+  public:
+  void clear_oprnd1_col();
+  uint32_t oprnd1_col() const;
+  void set_oprnd1_col(uint32_t value);
+  private:
+  uint32_t _internal_oprnd1_col() const;
+  void _internal_set_oprnd1_col(uint32_t value);
+  public:
+
+  // optional uint32 oprnd2_line = 8;
+  bool has_oprnd2_line() const;
+  private:
+  bool _internal_has_oprnd2_line() const;
+  public:
+  void clear_oprnd2_line();
+  uint32_t oprnd2_line() const;
+  void set_oprnd2_line(uint32_t value);
+  private:
+  uint32_t _internal_oprnd2_line() const;
+  void _internal_set_oprnd2_line(uint32_t value);
+  public:
+
+  // optional uint32 oprnd2_col = 9;
+  bool has_oprnd2_col() const;
+  private:
+  bool _internal_has_oprnd2_col() const;
+  public:
+  void clear_oprnd2_col();
+  uint32_t oprnd2_col() const;
+  void set_oprnd2_col(uint32_t value);
+  private:
+  uint32_t _internal_oprnd2_col() const;
+  void _internal_set_oprnd2_col(uint32_t value);
   public:
 
   // @@protoc_insertion_point(class_scope:spir.BitExpr)
@@ -1526,11 +1683,21 @@ class BitExpr final :
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
-    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::spir::BitEntity > oprs_;
-    ::spir::BitEntity* opr1_;
-    ::spir::BitEntity* opr2_;
-    ::spir::BitSrcLoc* loc_;
+    ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t > oprnds_;
+    mutable std::atomic<int> _oprnds_cached_byte_size_;
+    ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint32_t > oprnds_line_;
+    mutable std::atomic<int> _oprnds_line_cached_byte_size_;
+    ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint32_t > oprnds_col_;
+    mutable std::atomic<int> _oprnds_col_cached_byte_size_;
     int xkind_;
+    uint32_t loc_line_;
+    uint64_t oprnd1eid_;
+    uint32_t loc_col_;
+    uint32_t oprnd1_line_;
+    uint64_t oprnd2eid_;
+    uint32_t oprnd1_col_;
+    uint32_t oprnd2_line_;
+    uint32_t oprnd2_col_;
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_spir_2eproto;
@@ -1660,8 +1827,9 @@ class BitInsn final :
   enum : int {
     kExpr1FieldNumber = 2,
     kExpr2FieldNumber = 3,
-    kLocFieldNumber = 4,
     kIkindFieldNumber = 1,
+    kLocLineFieldNumber = 4,
+    kLocColFieldNumber = 5,
   };
   // optional .spir.BitExpr expr1 = 2;
   bool has_expr1() const;
@@ -1699,24 +1867,6 @@ class BitInsn final :
       ::spir::BitExpr* expr2);
   ::spir::BitExpr* unsafe_arena_release_expr2();
 
-  // optional .spir.BitSrcLoc loc = 4;
-  bool has_loc() const;
-  private:
-  bool _internal_has_loc() const;
-  public:
-  void clear_loc();
-  const ::spir::BitSrcLoc& loc() const;
-  PROTOBUF_NODISCARD ::spir::BitSrcLoc* release_loc();
-  ::spir::BitSrcLoc* mutable_loc();
-  void set_allocated_loc(::spir::BitSrcLoc* loc);
-  private:
-  const ::spir::BitSrcLoc& _internal_loc() const;
-  ::spir::BitSrcLoc* _internal_mutable_loc();
-  public:
-  void unsafe_arena_set_allocated_loc(
-      ::spir::BitSrcLoc* loc);
-  ::spir::BitSrcLoc* unsafe_arena_release_loc();
-
   // .spir.K_IK ikind = 1;
   void clear_ikind();
   ::spir::K_IK ikind() const;
@@ -1724,6 +1874,32 @@ class BitInsn final :
   private:
   ::spir::K_IK _internal_ikind() const;
   void _internal_set_ikind(::spir::K_IK value);
+  public:
+
+  // optional uint32 loc_line = 4;
+  bool has_loc_line() const;
+  private:
+  bool _internal_has_loc_line() const;
+  public:
+  void clear_loc_line();
+  uint32_t loc_line() const;
+  void set_loc_line(uint32_t value);
+  private:
+  uint32_t _internal_loc_line() const;
+  void _internal_set_loc_line(uint32_t value);
+  public:
+
+  // optional uint32 loc_col = 5;
+  bool has_loc_col() const;
+  private:
+  bool _internal_has_loc_col() const;
+  public:
+  void clear_loc_col();
+  uint32_t loc_col() const;
+  void set_loc_col(uint32_t value);
+  private:
+  uint32_t _internal_loc_col() const;
+  void _internal_set_loc_col(uint32_t value);
   public:
 
   // @@protoc_insertion_point(class_scope:spir.BitInsn)
@@ -1738,8 +1914,9 @@ class BitInsn final :
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
     ::spir::BitExpr* expr1_;
     ::spir::BitExpr* expr2_;
-    ::spir::BitSrcLoc* loc_;
     int ikind_;
+    uint32_t loc_line_;
+    uint32_t loc_col_;
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_spir_2eproto;
@@ -1868,7 +2045,6 @@ class BitFunc final :
 
   enum : int {
     kInsnsFieldNumber = 5,
-    kLocalsFieldNumber = 6,
     kFnameFieldNumber = 2,
     kCallingConventionFieldNumber = 4,
     kFidFieldNumber = 1,
@@ -1891,28 +2067,6 @@ class BitFunc final :
   ::spir::BitInsn* add_insns();
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::spir::BitInsn >&
       insns() const;
-
-  // repeated uint64 locals = 6;
-  int locals_size() const;
-  private:
-  int _internal_locals_size() const;
-  public:
-  void clear_locals();
-  private:
-  uint64_t _internal_locals(int index) const;
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >&
-      _internal_locals() const;
-  void _internal_add_locals(uint64_t value);
-  ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >*
-      _internal_mutable_locals();
-  public:
-  uint64_t locals(int index) const;
-  void set_locals(int index, uint64_t value);
-  void add_locals(uint64_t value);
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >&
-      locals() const;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >*
-      mutable_locals();
 
   // string fname = 2;
   void clear_fname();
@@ -1975,8 +2129,6 @@ class BitFunc final :
     ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::spir::BitInsn > insns_;
-    ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t > locals_;
-    mutable std::atomic<int> _locals_cached_byte_size_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr fname_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr calling_convention_;
     uint64_t fid_;
@@ -2005,6 +2157,30 @@ public:
   static bool ValidateKey(std::string* s) {
     return ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(s->data(), static_cast<int>(s->size()), ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::PARSE, "spir.BitTU.NamesToIdsEntry.key");
  }
+  static bool ValidateValue(void*) { return true; }
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  friend struct ::TableStruct_spir_2eproto;
+};
+
+// -------------------------------------------------------------------
+
+class BitTU_DataTypesEntry_DoNotUse : public ::PROTOBUF_NAMESPACE_ID::internal::MapEntry<BitTU_DataTypesEntry_DoNotUse, 
+    uint64_t, ::spir::BitDataType,
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::TYPE_UINT64,
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::TYPE_MESSAGE> {
+public:
+  typedef ::PROTOBUF_NAMESPACE_ID::internal::MapEntry<BitTU_DataTypesEntry_DoNotUse, 
+    uint64_t, ::spir::BitDataType,
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::TYPE_UINT64,
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::TYPE_MESSAGE> SuperType;
+  BitTU_DataTypesEntry_DoNotUse();
+  explicit PROTOBUF_CONSTEXPR BitTU_DataTypesEntry_DoNotUse(
+      ::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+  explicit BitTU_DataTypesEntry_DoNotUse(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  void MergeFrom(const BitTU_DataTypesEntry_DoNotUse& other);
+  static const BitTU_DataTypesEntry_DoNotUse* internal_default_instance() { return reinterpret_cast<const BitTU_DataTypesEntry_DoNotUse*>(&_BitTU_DataTypesEntry_DoNotUse_default_instance_); }
+  static bool ValidateKey(void*) { return true; }
   static bool ValidateValue(void*) { return true; }
   using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
   ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
@@ -2085,7 +2261,7 @@ class BitTU final :
                &_BitTU_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    9;
+    10;
 
   friend void swap(BitTU& a, BitTU& b) {
     a.Swap(&b);
@@ -2162,8 +2338,9 @@ class BitTU final :
 
   enum : int {
     kNamesToIdsFieldNumber = 4,
-    kEntityInfoFieldNumber = 5,
-    kFunctionsFieldNumber = 6,
+    kDataTypesFieldNumber = 5,
+    kEntityInfoFieldNumber = 6,
+    kFunctionsFieldNumber = 7,
     kTuNameFieldNumber = 1,
     kAbsPathFieldNumber = 2,
     kOriginFieldNumber = 3,
@@ -2185,7 +2362,24 @@ class BitTU final :
   ::PROTOBUF_NAMESPACE_ID::Map< std::string, uint64_t >*
       mutable_namestoids();
 
-  // map<uint64, .spir.BitEntityInfo> entityInfo = 5;
+  // map<uint64, .spir.BitDataType> dataTypes = 5;
+  int datatypes_size() const;
+  private:
+  int _internal_datatypes_size() const;
+  public:
+  void clear_datatypes();
+  private:
+  const ::PROTOBUF_NAMESPACE_ID::Map< uint64_t, ::spir::BitDataType >&
+      _internal_datatypes() const;
+  ::PROTOBUF_NAMESPACE_ID::Map< uint64_t, ::spir::BitDataType >*
+      _internal_mutable_datatypes();
+  public:
+  const ::PROTOBUF_NAMESPACE_ID::Map< uint64_t, ::spir::BitDataType >&
+      datatypes() const;
+  ::PROTOBUF_NAMESPACE_ID::Map< uint64_t, ::spir::BitDataType >*
+      mutable_datatypes();
+
+  // map<uint64, .spir.BitEntityInfo> entityInfo = 6;
   int entityinfo_size() const;
   private:
   int _internal_entityinfo_size() const;
@@ -2202,7 +2396,7 @@ class BitTU final :
   ::PROTOBUF_NAMESPACE_ID::Map< uint64_t, ::spir::BitEntityInfo >*
       mutable_entityinfo();
 
-  // repeated .spir.BitFunc functions = 6;
+  // repeated .spir.BitFunc functions = 7;
   int functions_size() const;
   private:
   int _internal_functions_size() const;
@@ -2286,6 +2480,11 @@ class BitTU final :
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::TYPE_STRING,
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::TYPE_UINT64> namestoids_;
     ::PROTOBUF_NAMESPACE_ID::internal::MapField<
+        BitTU_DataTypesEntry_DoNotUse,
+        uint64_t, ::spir::BitDataType,
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::TYPE_UINT64,
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::TYPE_MESSAGE> datatypes_;
+    ::PROTOBUF_NAMESPACE_ID::internal::MapField<
         BitTU_EntityInfoEntry_DoNotUse,
         uint64_t, ::spir::BitEntityInfo,
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::TYPE_UINT64,
@@ -2307,50 +2506,6 @@ class BitTU final :
   #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wstrict-aliasing"
 #endif  // __GNUC__
-// BitSrcLoc
-
-// uint32 line = 1;
-inline void BitSrcLoc::clear_line() {
-  _impl_.line_ = 0u;
-}
-inline uint32_t BitSrcLoc::_internal_line() const {
-  return _impl_.line_;
-}
-inline uint32_t BitSrcLoc::line() const {
-  // @@protoc_insertion_point(field_get:spir.BitSrcLoc.line)
-  return _internal_line();
-}
-inline void BitSrcLoc::_internal_set_line(uint32_t value) {
-  
-  _impl_.line_ = value;
-}
-inline void BitSrcLoc::set_line(uint32_t value) {
-  _internal_set_line(value);
-  // @@protoc_insertion_point(field_set:spir.BitSrcLoc.line)
-}
-
-// uint32 col = 2;
-inline void BitSrcLoc::clear_col() {
-  _impl_.col_ = 0u;
-}
-inline uint32_t BitSrcLoc::_internal_col() const {
-  return _impl_.col_;
-}
-inline uint32_t BitSrcLoc::col() const {
-  // @@protoc_insertion_point(field_get:spir.BitSrcLoc.col)
-  return _internal_col();
-}
-inline void BitSrcLoc::_internal_set_col(uint32_t value) {
-  
-  _impl_.col_ = value;
-}
-inline void BitSrcLoc::set_col(uint32_t value) {
-  _internal_set_col(value);
-  // @@protoc_insertion_point(field_set:spir.BitSrcLoc.col)
-}
-
-// -------------------------------------------------------------------
-
 // BitDataType
 
 // .spir.K_VK vkind = 1;
@@ -2375,7 +2530,7 @@ inline void BitDataType::set_vkind(::spir::K_VK value) {
 
 // optional uint64 typeId = 2;
 inline bool BitDataType::_internal_has_typeid_() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000010u) != 0;
+  bool value = (_impl_._has_bits_[0] & 0x00000004u) != 0;
   return value;
 }
 inline bool BitDataType::has_typeid_() const {
@@ -2383,7 +2538,7 @@ inline bool BitDataType::has_typeid_() const {
 }
 inline void BitDataType::clear_typeid_() {
   _impl_.typeid__ = uint64_t{0u};
-  _impl_._has_bits_[0] &= ~0x00000010u;
+  _impl_._has_bits_[0] &= ~0x00000004u;
 }
 inline uint64_t BitDataType::_internal_typeid_() const {
   return _impl_.typeid__;
@@ -2393,7 +2548,7 @@ inline uint64_t BitDataType::typeid_() const {
   return _internal_typeid_();
 }
 inline void BitDataType::_internal_set_typeid_(uint64_t value) {
-  _impl_._has_bits_[0] |= 0x00000010u;
+  _impl_._has_bits_[0] |= 0x00000004u;
   _impl_.typeid__ = value;
 }
 inline void BitDataType::set_typeid_(uint64_t value) {
@@ -2471,7 +2626,7 @@ inline void BitDataType::set_allocated_attributes(std::string* attributes) {
 
 // optional uint32 len = 5;
 inline bool BitDataType::_internal_has_len() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000020u) != 0;
+  bool value = (_impl_._has_bits_[0] & 0x00000008u) != 0;
   return value;
 }
 inline bool BitDataType::has_len() const {
@@ -2479,7 +2634,7 @@ inline bool BitDataType::has_len() const {
 }
 inline void BitDataType::clear_len() {
   _impl_.len_ = 0u;
-  _impl_._has_bits_[0] &= ~0x00000020u;
+  _impl_._has_bits_[0] &= ~0x00000008u;
 }
 inline uint32_t BitDataType::_internal_len() const {
   return _impl_.len_;
@@ -2489,7 +2644,7 @@ inline uint32_t BitDataType::len() const {
   return _internal_len();
 }
 inline void BitDataType::_internal_set_len(uint32_t value) {
-  _impl_._has_bits_[0] |= 0x00000020u;
+  _impl_._has_bits_[0] |= 0x00000008u;
   _impl_.len_ = value;
 }
 inline void BitDataType::set_len(uint32_t value) {
@@ -2499,7 +2654,7 @@ inline void BitDataType::set_len(uint32_t value) {
 
 // optional uint32 align = 6;
 inline bool BitDataType::_internal_has_align() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000040u) != 0;
+  bool value = (_impl_._has_bits_[0] & 0x00000020u) != 0;
   return value;
 }
 inline bool BitDataType::has_align() const {
@@ -2507,7 +2662,7 @@ inline bool BitDataType::has_align() const {
 }
 inline void BitDataType::clear_align() {
   _impl_.align_ = 0u;
-  _impl_._has_bits_[0] &= ~0x00000040u;
+  _impl_._has_bits_[0] &= ~0x00000020u;
 }
 inline uint32_t BitDataType::_internal_align() const {
   return _impl_.align_;
@@ -2517,7 +2672,7 @@ inline uint32_t BitDataType::align() const {
   return _internal_align();
 }
 inline void BitDataType::_internal_set_align(uint32_t value) {
-  _impl_._has_bits_[0] |= 0x00000040u;
+  _impl_._has_bits_[0] |= 0x00000020u;
   _impl_.align_ = value;
 }
 inline void BitDataType::set_align(uint32_t value) {
@@ -2525,94 +2680,32 @@ inline void BitDataType::set_align(uint32_t value) {
   // @@protoc_insertion_point(field_set:spir.BitDataType.align)
 }
 
-// optional .spir.BitDataType subType = 7;
-inline bool BitDataType::_internal_has_subtype() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000004u) != 0;
-  PROTOBUF_ASSUME(!value || _impl_.subtype_ != nullptr);
+// optional uint64 subTypeEid = 7;
+inline bool BitDataType::_internal_has_subtypeeid() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000010u) != 0;
   return value;
 }
-inline bool BitDataType::has_subtype() const {
-  return _internal_has_subtype();
+inline bool BitDataType::has_subtypeeid() const {
+  return _internal_has_subtypeeid();
 }
-inline void BitDataType::clear_subtype() {
-  if (_impl_.subtype_ != nullptr) _impl_.subtype_->Clear();
-  _impl_._has_bits_[0] &= ~0x00000004u;
+inline void BitDataType::clear_subtypeeid() {
+  _impl_.subtypeeid_ = uint64_t{0u};
+  _impl_._has_bits_[0] &= ~0x00000010u;
 }
-inline const ::spir::BitDataType& BitDataType::_internal_subtype() const {
-  const ::spir::BitDataType* p = _impl_.subtype_;
-  return p != nullptr ? *p : reinterpret_cast<const ::spir::BitDataType&>(
-      ::spir::_BitDataType_default_instance_);
+inline uint64_t BitDataType::_internal_subtypeeid() const {
+  return _impl_.subtypeeid_;
 }
-inline const ::spir::BitDataType& BitDataType::subtype() const {
-  // @@protoc_insertion_point(field_get:spir.BitDataType.subType)
-  return _internal_subtype();
+inline uint64_t BitDataType::subtypeeid() const {
+  // @@protoc_insertion_point(field_get:spir.BitDataType.subTypeEid)
+  return _internal_subtypeeid();
 }
-inline void BitDataType::unsafe_arena_set_allocated_subtype(
-    ::spir::BitDataType* subtype) {
-  if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.subtype_);
-  }
-  _impl_.subtype_ = subtype;
-  if (subtype) {
-    _impl_._has_bits_[0] |= 0x00000004u;
-  } else {
-    _impl_._has_bits_[0] &= ~0x00000004u;
-  }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:spir.BitDataType.subType)
+inline void BitDataType::_internal_set_subtypeeid(uint64_t value) {
+  _impl_._has_bits_[0] |= 0x00000010u;
+  _impl_.subtypeeid_ = value;
 }
-inline ::spir::BitDataType* BitDataType::release_subtype() {
-  _impl_._has_bits_[0] &= ~0x00000004u;
-  ::spir::BitDataType* temp = _impl_.subtype_;
-  _impl_.subtype_ = nullptr;
-#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
-  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
-  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  if (GetArenaForAllocation() == nullptr) { delete old; }
-#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
-  if (GetArenaForAllocation() != nullptr) {
-    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  }
-#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
-  return temp;
-}
-inline ::spir::BitDataType* BitDataType::unsafe_arena_release_subtype() {
-  // @@protoc_insertion_point(field_release:spir.BitDataType.subType)
-  _impl_._has_bits_[0] &= ~0x00000004u;
-  ::spir::BitDataType* temp = _impl_.subtype_;
-  _impl_.subtype_ = nullptr;
-  return temp;
-}
-inline ::spir::BitDataType* BitDataType::_internal_mutable_subtype() {
-  _impl_._has_bits_[0] |= 0x00000004u;
-  if (_impl_.subtype_ == nullptr) {
-    auto* p = CreateMaybeMessage<::spir::BitDataType>(GetArenaForAllocation());
-    _impl_.subtype_ = p;
-  }
-  return _impl_.subtype_;
-}
-inline ::spir::BitDataType* BitDataType::mutable_subtype() {
-  ::spir::BitDataType* _msg = _internal_mutable_subtype();
-  // @@protoc_insertion_point(field_mutable:spir.BitDataType.subType)
-  return _msg;
-}
-inline void BitDataType::set_allocated_subtype(::spir::BitDataType* subtype) {
-  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
-  if (message_arena == nullptr) {
-    delete _impl_.subtype_;
-  }
-  if (subtype) {
-    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(subtype);
-    if (message_arena != submessage_arena) {
-      subtype = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, subtype, submessage_arena);
-    }
-    _impl_._has_bits_[0] |= 0x00000004u;
-  } else {
-    _impl_._has_bits_[0] &= ~0x00000004u;
-  }
-  _impl_.subtype_ = subtype;
-  // @@protoc_insertion_point(field_set_allocated:spir.BitDataType.subType)
+inline void BitDataType::set_subtypeeid(uint64_t value) {
+  _internal_set_subtypeeid(value);
+  // @@protoc_insertion_point(field_set:spir.BitDataType.subTypeEid)
 }
 
 // optional string typeName = 8;
@@ -2685,7 +2778,7 @@ inline void BitDataType::set_allocated_typename_(std::string* typename_) {
 
 // optional bool anonymous = 9;
 inline bool BitDataType::_internal_has_anonymous() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000080u) != 0;
+  bool value = (_impl_._has_bits_[0] & 0x00000040u) != 0;
   return value;
 }
 inline bool BitDataType::has_anonymous() const {
@@ -2693,7 +2786,7 @@ inline bool BitDataType::has_anonymous() const {
 }
 inline void BitDataType::clear_anonymous() {
   _impl_.anonymous_ = false;
-  _impl_._has_bits_[0] &= ~0x00000080u;
+  _impl_._has_bits_[0] &= ~0x00000040u;
 }
 inline bool BitDataType::_internal_anonymous() const {
   return _impl_.anonymous_;
@@ -2703,7 +2796,7 @@ inline bool BitDataType::anonymous() const {
   return _internal_anonymous();
 }
 inline void BitDataType::_internal_set_anonymous(bool value) {
-  _impl_._has_bits_[0] |= 0x00000080u;
+  _impl_._has_bits_[0] |= 0x00000040u;
   _impl_.anonymous_ = value;
 }
 inline void BitDataType::set_anonymous(bool value) {
@@ -2711,7 +2804,63 @@ inline void BitDataType::set_anonymous(bool value) {
   // @@protoc_insertion_point(field_set:spir.BitDataType.anonymous)
 }
 
-// repeated uint64 fopIds = 10;
+// optional bool funcPrototype = 10;
+inline bool BitDataType::_internal_has_funcprototype() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000080u) != 0;
+  return value;
+}
+inline bool BitDataType::has_funcprototype() const {
+  return _internal_has_funcprototype();
+}
+inline void BitDataType::clear_funcprototype() {
+  _impl_.funcprototype_ = false;
+  _impl_._has_bits_[0] &= ~0x00000080u;
+}
+inline bool BitDataType::_internal_funcprototype() const {
+  return _impl_.funcprototype_;
+}
+inline bool BitDataType::funcprototype() const {
+  // @@protoc_insertion_point(field_get:spir.BitDataType.funcPrototype)
+  return _internal_funcprototype();
+}
+inline void BitDataType::_internal_set_funcprototype(bool value) {
+  _impl_._has_bits_[0] |= 0x00000080u;
+  _impl_.funcprototype_ = value;
+}
+inline void BitDataType::set_funcprototype(bool value) {
+  _internal_set_funcprototype(value);
+  // @@protoc_insertion_point(field_set:spir.BitDataType.funcPrototype)
+}
+
+// optional bool variadic = 13;
+inline bool BitDataType::_internal_has_variadic() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000100u) != 0;
+  return value;
+}
+inline bool BitDataType::has_variadic() const {
+  return _internal_has_variadic();
+}
+inline void BitDataType::clear_variadic() {
+  _impl_.variadic_ = false;
+  _impl_._has_bits_[0] &= ~0x00000100u;
+}
+inline bool BitDataType::_internal_variadic() const {
+  return _impl_.variadic_;
+}
+inline bool BitDataType::variadic() const {
+  // @@protoc_insertion_point(field_get:spir.BitDataType.variadic)
+  return _internal_variadic();
+}
+inline void BitDataType::_internal_set_variadic(bool value) {
+  _impl_._has_bits_[0] |= 0x00000100u;
+  _impl_.variadic_ = value;
+}
+inline void BitDataType::set_variadic(bool value) {
+  _internal_set_variadic(value);
+  // @@protoc_insertion_point(field_set:spir.BitDataType.variadic)
+}
+
+// repeated uint64 fopIds = 11;
 inline int BitDataType::_internal_fopids_size() const {
   return _impl_.fopids_.size();
 }
@@ -2758,162 +2907,107 @@ BitDataType::mutable_fopids() {
   return _internal_mutable_fopids();
 }
 
-// repeated .spir.BitDataType fopTypes = 11;
-inline int BitDataType::_internal_foptypes_size() const {
-  return _impl_.foptypes_.size();
+// repeated uint64 fopTypeEids = 12;
+inline int BitDataType::_internal_foptypeeids_size() const {
+  return _impl_.foptypeeids_.size();
 }
-inline int BitDataType::foptypes_size() const {
-  return _internal_foptypes_size();
+inline int BitDataType::foptypeeids_size() const {
+  return _internal_foptypeeids_size();
 }
-inline void BitDataType::clear_foptypes() {
-  _impl_.foptypes_.Clear();
+inline void BitDataType::clear_foptypeeids() {
+  _impl_.foptypeeids_.Clear();
 }
-inline ::spir::BitDataType* BitDataType::mutable_foptypes(int index) {
-  // @@protoc_insertion_point(field_mutable:spir.BitDataType.fopTypes)
-  return _impl_.foptypes_.Mutable(index);
+inline uint64_t BitDataType::_internal_foptypeeids(int index) const {
+  return _impl_.foptypeeids_.Get(index);
 }
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::spir::BitDataType >*
-BitDataType::mutable_foptypes() {
-  // @@protoc_insertion_point(field_mutable_list:spir.BitDataType.fopTypes)
-  return &_impl_.foptypes_;
+inline uint64_t BitDataType::foptypeeids(int index) const {
+  // @@protoc_insertion_point(field_get:spir.BitDataType.fopTypeEids)
+  return _internal_foptypeeids(index);
 }
-inline const ::spir::BitDataType& BitDataType::_internal_foptypes(int index) const {
-  return _impl_.foptypes_.Get(index);
+inline void BitDataType::set_foptypeeids(int index, uint64_t value) {
+  _impl_.foptypeeids_.Set(index, value);
+  // @@protoc_insertion_point(field_set:spir.BitDataType.fopTypeEids)
 }
-inline const ::spir::BitDataType& BitDataType::foptypes(int index) const {
-  // @@protoc_insertion_point(field_get:spir.BitDataType.fopTypes)
-  return _internal_foptypes(index);
+inline void BitDataType::_internal_add_foptypeeids(uint64_t value) {
+  _impl_.foptypeeids_.Add(value);
 }
-inline ::spir::BitDataType* BitDataType::_internal_add_foptypes() {
-  return _impl_.foptypes_.Add();
+inline void BitDataType::add_foptypeeids(uint64_t value) {
+  _internal_add_foptypeeids(value);
+  // @@protoc_insertion_point(field_add:spir.BitDataType.fopTypeEids)
 }
-inline ::spir::BitDataType* BitDataType::add_foptypes() {
-  ::spir::BitDataType* _add = _internal_add_foptypes();
-  // @@protoc_insertion_point(field_add:spir.BitDataType.fopTypes)
-  return _add;
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >&
+BitDataType::_internal_foptypeeids() const {
+  return _impl_.foptypeeids_;
 }
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::spir::BitDataType >&
-BitDataType::foptypes() const {
-  // @@protoc_insertion_point(field_list:spir.BitDataType.fopTypes)
-  return _impl_.foptypes_;
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >&
+BitDataType::foptypeeids() const {
+  // @@protoc_insertion_point(field_list:spir.BitDataType.fopTypeEids)
+  return _internal_foptypeeids();
 }
-
-// optional bool variadic = 12;
-inline bool BitDataType::_internal_has_variadic() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000100u) != 0;
-  return value;
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >*
+BitDataType::_internal_mutable_foptypeeids() {
+  return &_impl_.foptypeeids_;
 }
-inline bool BitDataType::has_variadic() const {
-  return _internal_has_variadic();
-}
-inline void BitDataType::clear_variadic() {
-  _impl_.variadic_ = false;
-  _impl_._has_bits_[0] &= ~0x00000100u;
-}
-inline bool BitDataType::_internal_variadic() const {
-  return _impl_.variadic_;
-}
-inline bool BitDataType::variadic() const {
-  // @@protoc_insertion_point(field_get:spir.BitDataType.variadic)
-  return _internal_variadic();
-}
-inline void BitDataType::_internal_set_variadic(bool value) {
-  _impl_._has_bits_[0] |= 0x00000100u;
-  _impl_.variadic_ = value;
-}
-inline void BitDataType::set_variadic(bool value) {
-  _internal_set_variadic(value);
-  // @@protoc_insertion_point(field_set:spir.BitDataType.variadic)
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >*
+BitDataType::mutable_foptypeeids() {
+  // @@protoc_insertion_point(field_mutable_list:spir.BitDataType.fopTypeEids)
+  return _internal_mutable_foptypeeids();
 }
 
-// optional .spir.BitSrcLoc loc = 13;
-inline bool BitDataType::_internal_has_loc() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000008u) != 0;
-  PROTOBUF_ASSUME(!value || _impl_.loc_ != nullptr);
+// optional uint32 loc_line = 14;
+inline bool BitDataType::_internal_has_loc_line() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000200u) != 0;
   return value;
 }
-inline bool BitDataType::has_loc() const {
-  return _internal_has_loc();
+inline bool BitDataType::has_loc_line() const {
+  return _internal_has_loc_line();
 }
-inline void BitDataType::clear_loc() {
-  if (_impl_.loc_ != nullptr) _impl_.loc_->Clear();
-  _impl_._has_bits_[0] &= ~0x00000008u;
+inline void BitDataType::clear_loc_line() {
+  _impl_.loc_line_ = 0u;
+  _impl_._has_bits_[0] &= ~0x00000200u;
 }
-inline const ::spir::BitSrcLoc& BitDataType::_internal_loc() const {
-  const ::spir::BitSrcLoc* p = _impl_.loc_;
-  return p != nullptr ? *p : reinterpret_cast<const ::spir::BitSrcLoc&>(
-      ::spir::_BitSrcLoc_default_instance_);
+inline uint32_t BitDataType::_internal_loc_line() const {
+  return _impl_.loc_line_;
 }
-inline const ::spir::BitSrcLoc& BitDataType::loc() const {
-  // @@protoc_insertion_point(field_get:spir.BitDataType.loc)
-  return _internal_loc();
+inline uint32_t BitDataType::loc_line() const {
+  // @@protoc_insertion_point(field_get:spir.BitDataType.loc_line)
+  return _internal_loc_line();
 }
-inline void BitDataType::unsafe_arena_set_allocated_loc(
-    ::spir::BitSrcLoc* loc) {
-  if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.loc_);
-  }
-  _impl_.loc_ = loc;
-  if (loc) {
-    _impl_._has_bits_[0] |= 0x00000008u;
-  } else {
-    _impl_._has_bits_[0] &= ~0x00000008u;
-  }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:spir.BitDataType.loc)
+inline void BitDataType::_internal_set_loc_line(uint32_t value) {
+  _impl_._has_bits_[0] |= 0x00000200u;
+  _impl_.loc_line_ = value;
 }
-inline ::spir::BitSrcLoc* BitDataType::release_loc() {
-  _impl_._has_bits_[0] &= ~0x00000008u;
-  ::spir::BitSrcLoc* temp = _impl_.loc_;
-  _impl_.loc_ = nullptr;
-#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
-  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
-  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  if (GetArenaForAllocation() == nullptr) { delete old; }
-#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
-  if (GetArenaForAllocation() != nullptr) {
-    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  }
-#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
-  return temp;
+inline void BitDataType::set_loc_line(uint32_t value) {
+  _internal_set_loc_line(value);
+  // @@protoc_insertion_point(field_set:spir.BitDataType.loc_line)
 }
-inline ::spir::BitSrcLoc* BitDataType::unsafe_arena_release_loc() {
-  // @@protoc_insertion_point(field_release:spir.BitDataType.loc)
-  _impl_._has_bits_[0] &= ~0x00000008u;
-  ::spir::BitSrcLoc* temp = _impl_.loc_;
-  _impl_.loc_ = nullptr;
-  return temp;
+
+// optional uint32 loc_col = 15;
+inline bool BitDataType::_internal_has_loc_col() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000400u) != 0;
+  return value;
 }
-inline ::spir::BitSrcLoc* BitDataType::_internal_mutable_loc() {
-  _impl_._has_bits_[0] |= 0x00000008u;
-  if (_impl_.loc_ == nullptr) {
-    auto* p = CreateMaybeMessage<::spir::BitSrcLoc>(GetArenaForAllocation());
-    _impl_.loc_ = p;
-  }
-  return _impl_.loc_;
+inline bool BitDataType::has_loc_col() const {
+  return _internal_has_loc_col();
 }
-inline ::spir::BitSrcLoc* BitDataType::mutable_loc() {
-  ::spir::BitSrcLoc* _msg = _internal_mutable_loc();
-  // @@protoc_insertion_point(field_mutable:spir.BitDataType.loc)
-  return _msg;
+inline void BitDataType::clear_loc_col() {
+  _impl_.loc_col_ = 0u;
+  _impl_._has_bits_[0] &= ~0x00000400u;
 }
-inline void BitDataType::set_allocated_loc(::spir::BitSrcLoc* loc) {
-  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
-  if (message_arena == nullptr) {
-    delete _impl_.loc_;
-  }
-  if (loc) {
-    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(loc);
-    if (message_arena != submessage_arena) {
-      loc = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, loc, submessage_arena);
-    }
-    _impl_._has_bits_[0] |= 0x00000008u;
-  } else {
-    _impl_._has_bits_[0] &= ~0x00000008u;
-  }
-  _impl_.loc_ = loc;
-  // @@protoc_insertion_point(field_set_allocated:spir.BitDataType.loc)
+inline uint32_t BitDataType::_internal_loc_col() const {
+  return _impl_.loc_col_;
+}
+inline uint32_t BitDataType::loc_col() const {
+  // @@protoc_insertion_point(field_get:spir.BitDataType.loc_col)
+  return _internal_loc_col();
+}
+inline void BitDataType::_internal_set_loc_col(uint32_t value) {
+  _impl_._has_bits_[0] |= 0x00000400u;
+  _impl_.loc_col_ = value;
+}
+inline void BitDataType::set_loc_col(uint32_t value) {
+  _internal_set_loc_col(value);
+  // @@protoc_insertion_point(field_set:spir.BitDataType.loc_col)
 }
 
 // -------------------------------------------------------------------
@@ -2962,7 +3056,7 @@ inline void BitEntityInfo::set_ekind(::spir::K_EK value) {
 
 // optional .spir.K_VK vkind = 3;
 inline bool BitEntityInfo::_internal_has_vkind() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000008u) != 0;
+  bool value = (_impl_._has_bits_[0] & 0x00000002u) != 0;
   return value;
 }
 inline bool BitEntityInfo::has_vkind() const {
@@ -2970,7 +3064,7 @@ inline bool BitEntityInfo::has_vkind() const {
 }
 inline void BitEntityInfo::clear_vkind() {
   _impl_.vkind_ = 0;
-  _impl_._has_bits_[0] &= ~0x00000008u;
+  _impl_._has_bits_[0] &= ~0x00000002u;
 }
 inline ::spir::K_VK BitEntityInfo::_internal_vkind() const {
   return static_cast< ::spir::K_VK >(_impl_.vkind_);
@@ -2980,7 +3074,7 @@ inline ::spir::K_VK BitEntityInfo::vkind() const {
   return _internal_vkind();
 }
 inline void BitEntityInfo::_internal_set_vkind(::spir::K_VK value) {
-  _impl_._has_bits_[0] |= 0x00000008u;
+  _impl_._has_bits_[0] |= 0x00000002u;
   _impl_.vkind_ = value;
 }
 inline void BitEntityInfo::set_vkind(::spir::K_VK value) {
@@ -2988,9 +3082,37 @@ inline void BitEntityInfo::set_vkind(::spir::K_VK value) {
   // @@protoc_insertion_point(field_set:spir.BitEntityInfo.vkind)
 }
 
-// optional uint32 qtype = 4;
+// optional bool anonymous = 4;
+inline bool BitEntityInfo::_internal_has_anonymous() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000004u) != 0;
+  return value;
+}
+inline bool BitEntityInfo::has_anonymous() const {
+  return _internal_has_anonymous();
+}
+inline void BitEntityInfo::clear_anonymous() {
+  _impl_.anonymous_ = false;
+  _impl_._has_bits_[0] &= ~0x00000004u;
+}
+inline bool BitEntityInfo::_internal_anonymous() const {
+  return _impl_.anonymous_;
+}
+inline bool BitEntityInfo::anonymous() const {
+  // @@protoc_insertion_point(field_get:spir.BitEntityInfo.anonymous)
+  return _internal_anonymous();
+}
+inline void BitEntityInfo::_internal_set_anonymous(bool value) {
+  _impl_._has_bits_[0] |= 0x00000004u;
+  _impl_.anonymous_ = value;
+}
+inline void BitEntityInfo::set_anonymous(bool value) {
+  _internal_set_anonymous(value);
+  // @@protoc_insertion_point(field_set:spir.BitEntityInfo.anonymous)
+}
+
+// optional uint32 qtype = 5;
 inline bool BitEntityInfo::_internal_has_qtype() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000080u) != 0;
+  bool value = (_impl_._has_bits_[0] & 0x00000008u) != 0;
   return value;
 }
 inline bool BitEntityInfo::has_qtype() const {
@@ -2998,7 +3120,7 @@ inline bool BitEntityInfo::has_qtype() const {
 }
 inline void BitEntityInfo::clear_qtype() {
   _impl_.qtype_ = 0u;
-  _impl_._has_bits_[0] &= ~0x00000080u;
+  _impl_._has_bits_[0] &= ~0x00000008u;
 }
 inline uint32_t BitEntityInfo::_internal_qtype() const {
   return _impl_.qtype_;
@@ -3008,7 +3130,7 @@ inline uint32_t BitEntityInfo::qtype() const {
   return _internal_qtype();
 }
 inline void BitEntityInfo::_internal_set_qtype(uint32_t value) {
-  _impl_._has_bits_[0] |= 0x00000080u;
+  _impl_._has_bits_[0] |= 0x00000008u;
   _impl_.qtype_ = value;
 }
 inline void BitEntityInfo::set_qtype(uint32_t value) {
@@ -3016,127 +3138,65 @@ inline void BitEntityInfo::set_qtype(uint32_t value) {
   // @@protoc_insertion_point(field_set:spir.BitEntityInfo.qtype)
 }
 
-// optional uint64 parentId = 5;
-inline bool BitEntityInfo::_internal_has_parentid() const {
+// optional uint64 parentEid = 6;
+inline bool BitEntityInfo::_internal_has_parenteid() const {
   bool value = (_impl_._has_bits_[0] & 0x00000010u) != 0;
   return value;
 }
-inline bool BitEntityInfo::has_parentid() const {
-  return _internal_has_parentid();
+inline bool BitEntityInfo::has_parenteid() const {
+  return _internal_has_parenteid();
 }
-inline void BitEntityInfo::clear_parentid() {
-  _impl_.parentid_ = uint64_t{0u};
+inline void BitEntityInfo::clear_parenteid() {
+  _impl_.parenteid_ = uint64_t{0u};
   _impl_._has_bits_[0] &= ~0x00000010u;
 }
-inline uint64_t BitEntityInfo::_internal_parentid() const {
-  return _impl_.parentid_;
+inline uint64_t BitEntityInfo::_internal_parenteid() const {
+  return _impl_.parenteid_;
 }
-inline uint64_t BitEntityInfo::parentid() const {
-  // @@protoc_insertion_point(field_get:spir.BitEntityInfo.parentId)
-  return _internal_parentid();
+inline uint64_t BitEntityInfo::parenteid() const {
+  // @@protoc_insertion_point(field_get:spir.BitEntityInfo.parentEid)
+  return _internal_parenteid();
 }
-inline void BitEntityInfo::_internal_set_parentid(uint64_t value) {
+inline void BitEntityInfo::_internal_set_parenteid(uint64_t value) {
   _impl_._has_bits_[0] |= 0x00000010u;
-  _impl_.parentid_ = value;
+  _impl_.parenteid_ = value;
 }
-inline void BitEntityInfo::set_parentid(uint64_t value) {
-  _internal_set_parentid(value);
-  // @@protoc_insertion_point(field_set:spir.BitEntityInfo.parentId)
+inline void BitEntityInfo::set_parenteid(uint64_t value) {
+  _internal_set_parenteid(value);
+  // @@protoc_insertion_point(field_set:spir.BitEntityInfo.parentEid)
 }
 
-// optional .spir.BitDataType dt = 6;
-inline bool BitEntityInfo::_internal_has_dt() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000002u) != 0;
-  PROTOBUF_ASSUME(!value || _impl_.dt_ != nullptr);
+// optional uint64 dataTypeEid = 7;
+inline bool BitEntityInfo::_internal_has_datatypeeid() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000020u) != 0;
   return value;
 }
-inline bool BitEntityInfo::has_dt() const {
-  return _internal_has_dt();
+inline bool BitEntityInfo::has_datatypeeid() const {
+  return _internal_has_datatypeeid();
 }
-inline void BitEntityInfo::clear_dt() {
-  if (_impl_.dt_ != nullptr) _impl_.dt_->Clear();
-  _impl_._has_bits_[0] &= ~0x00000002u;
+inline void BitEntityInfo::clear_datatypeeid() {
+  _impl_.datatypeeid_ = uint64_t{0u};
+  _impl_._has_bits_[0] &= ~0x00000020u;
 }
-inline const ::spir::BitDataType& BitEntityInfo::_internal_dt() const {
-  const ::spir::BitDataType* p = _impl_.dt_;
-  return p != nullptr ? *p : reinterpret_cast<const ::spir::BitDataType&>(
-      ::spir::_BitDataType_default_instance_);
+inline uint64_t BitEntityInfo::_internal_datatypeeid() const {
+  return _impl_.datatypeeid_;
 }
-inline const ::spir::BitDataType& BitEntityInfo::dt() const {
-  // @@protoc_insertion_point(field_get:spir.BitEntityInfo.dt)
-  return _internal_dt();
+inline uint64_t BitEntityInfo::datatypeeid() const {
+  // @@protoc_insertion_point(field_get:spir.BitEntityInfo.dataTypeEid)
+  return _internal_datatypeeid();
 }
-inline void BitEntityInfo::unsafe_arena_set_allocated_dt(
-    ::spir::BitDataType* dt) {
-  if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.dt_);
-  }
-  _impl_.dt_ = dt;
-  if (dt) {
-    _impl_._has_bits_[0] |= 0x00000002u;
-  } else {
-    _impl_._has_bits_[0] &= ~0x00000002u;
-  }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:spir.BitEntityInfo.dt)
+inline void BitEntityInfo::_internal_set_datatypeeid(uint64_t value) {
+  _impl_._has_bits_[0] |= 0x00000020u;
+  _impl_.datatypeeid_ = value;
 }
-inline ::spir::BitDataType* BitEntityInfo::release_dt() {
-  _impl_._has_bits_[0] &= ~0x00000002u;
-  ::spir::BitDataType* temp = _impl_.dt_;
-  _impl_.dt_ = nullptr;
-#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
-  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
-  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  if (GetArenaForAllocation() == nullptr) { delete old; }
-#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
-  if (GetArenaForAllocation() != nullptr) {
-    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  }
-#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
-  return temp;
-}
-inline ::spir::BitDataType* BitEntityInfo::unsafe_arena_release_dt() {
-  // @@protoc_insertion_point(field_release:spir.BitEntityInfo.dt)
-  _impl_._has_bits_[0] &= ~0x00000002u;
-  ::spir::BitDataType* temp = _impl_.dt_;
-  _impl_.dt_ = nullptr;
-  return temp;
-}
-inline ::spir::BitDataType* BitEntityInfo::_internal_mutable_dt() {
-  _impl_._has_bits_[0] |= 0x00000002u;
-  if (_impl_.dt_ == nullptr) {
-    auto* p = CreateMaybeMessage<::spir::BitDataType>(GetArenaForAllocation());
-    _impl_.dt_ = p;
-  }
-  return _impl_.dt_;
-}
-inline ::spir::BitDataType* BitEntityInfo::mutable_dt() {
-  ::spir::BitDataType* _msg = _internal_mutable_dt();
-  // @@protoc_insertion_point(field_mutable:spir.BitEntityInfo.dt)
-  return _msg;
-}
-inline void BitEntityInfo::set_allocated_dt(::spir::BitDataType* dt) {
-  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
-  if (message_arena == nullptr) {
-    delete _impl_.dt_;
-  }
-  if (dt) {
-    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(dt);
-    if (message_arena != submessage_arena) {
-      dt = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, dt, submessage_arena);
-    }
-    _impl_._has_bits_[0] |= 0x00000002u;
-  } else {
-    _impl_._has_bits_[0] &= ~0x00000002u;
-  }
-  _impl_.dt_ = dt;
-  // @@protoc_insertion_point(field_set_allocated:spir.BitEntityInfo.dt)
+inline void BitEntityInfo::set_datatypeeid(uint64_t value) {
+  _internal_set_datatypeeid(value);
+  // @@protoc_insertion_point(field_set:spir.BitEntityInfo.dataTypeEid)
 }
 
-// optional uint64 lowVal = 7;
+// optional uint64 lowVal = 8;
 inline bool BitEntityInfo::_internal_has_lowval() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000020u) != 0;
+  bool value = (_impl_._has_bits_[0] & 0x00000040u) != 0;
   return value;
 }
 inline bool BitEntityInfo::has_lowval() const {
@@ -3144,7 +3204,7 @@ inline bool BitEntityInfo::has_lowval() const {
 }
 inline void BitEntityInfo::clear_lowval() {
   _impl_.lowval_ = uint64_t{0u};
-  _impl_._has_bits_[0] &= ~0x00000020u;
+  _impl_._has_bits_[0] &= ~0x00000040u;
 }
 inline uint64_t BitEntityInfo::_internal_lowval() const {
   return _impl_.lowval_;
@@ -3154,7 +3214,7 @@ inline uint64_t BitEntityInfo::lowval() const {
   return _internal_lowval();
 }
 inline void BitEntityInfo::_internal_set_lowval(uint64_t value) {
-  _impl_._has_bits_[0] |= 0x00000020u;
+  _impl_._has_bits_[0] |= 0x00000040u;
   _impl_.lowval_ = value;
 }
 inline void BitEntityInfo::set_lowval(uint64_t value) {
@@ -3162,9 +3222,9 @@ inline void BitEntityInfo::set_lowval(uint64_t value) {
   // @@protoc_insertion_point(field_set:spir.BitEntityInfo.lowVal)
 }
 
-// optional uint64 highVal = 8;
+// optional uint64 highVal = 9;
 inline bool BitEntityInfo::_internal_has_highval() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000040u) != 0;
+  bool value = (_impl_._has_bits_[0] & 0x00000080u) != 0;
   return value;
 }
 inline bool BitEntityInfo::has_highval() const {
@@ -3172,7 +3232,7 @@ inline bool BitEntityInfo::has_highval() const {
 }
 inline void BitEntityInfo::clear_highval() {
   _impl_.highval_ = uint64_t{0u};
-  _impl_._has_bits_[0] &= ~0x00000040u;
+  _impl_._has_bits_[0] &= ~0x00000080u;
 }
 inline uint64_t BitEntityInfo::_internal_highval() const {
   return _impl_.highval_;
@@ -3182,7 +3242,7 @@ inline uint64_t BitEntityInfo::highval() const {
   return _internal_highval();
 }
 inline void BitEntityInfo::_internal_set_highval(uint64_t value) {
-  _impl_._has_bits_[0] |= 0x00000040u;
+  _impl_._has_bits_[0] |= 0x00000080u;
   _impl_.highval_ = value;
 }
 inline void BitEntityInfo::set_highval(uint64_t value) {
@@ -3190,7 +3250,7 @@ inline void BitEntityInfo::set_highval(uint64_t value) {
   // @@protoc_insertion_point(field_set:spir.BitEntityInfo.highVal)
 }
 
-// optional string strVal = 9;
+// optional string strVal = 10;
 inline bool BitEntityInfo::_internal_has_strval() const {
   bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
   return value;
@@ -3258,94 +3318,104 @@ inline void BitEntityInfo::set_allocated_strval(std::string* strval) {
   // @@protoc_insertion_point(field_set_allocated:spir.BitEntityInfo.strVal)
 }
 
-// optional .spir.BitSrcLoc loc = 10;
-inline bool BitEntityInfo::_internal_has_loc() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000004u) != 0;
-  PROTOBUF_ASSUME(!value || _impl_.loc_ != nullptr);
+// optional uint32 loc_line = 11;
+inline bool BitEntityInfo::_internal_has_loc_line() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000100u) != 0;
   return value;
 }
-inline bool BitEntityInfo::has_loc() const {
-  return _internal_has_loc();
+inline bool BitEntityInfo::has_loc_line() const {
+  return _internal_has_loc_line();
 }
-inline void BitEntityInfo::clear_loc() {
-  if (_impl_.loc_ != nullptr) _impl_.loc_->Clear();
-  _impl_._has_bits_[0] &= ~0x00000004u;
+inline void BitEntityInfo::clear_loc_line() {
+  _impl_.loc_line_ = 0u;
+  _impl_._has_bits_[0] &= ~0x00000100u;
 }
-inline const ::spir::BitSrcLoc& BitEntityInfo::_internal_loc() const {
-  const ::spir::BitSrcLoc* p = _impl_.loc_;
-  return p != nullptr ? *p : reinterpret_cast<const ::spir::BitSrcLoc&>(
-      ::spir::_BitSrcLoc_default_instance_);
+inline uint32_t BitEntityInfo::_internal_loc_line() const {
+  return _impl_.loc_line_;
 }
-inline const ::spir::BitSrcLoc& BitEntityInfo::loc() const {
-  // @@protoc_insertion_point(field_get:spir.BitEntityInfo.loc)
-  return _internal_loc();
+inline uint32_t BitEntityInfo::loc_line() const {
+  // @@protoc_insertion_point(field_get:spir.BitEntityInfo.loc_line)
+  return _internal_loc_line();
 }
-inline void BitEntityInfo::unsafe_arena_set_allocated_loc(
-    ::spir::BitSrcLoc* loc) {
-  if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.loc_);
-  }
-  _impl_.loc_ = loc;
-  if (loc) {
-    _impl_._has_bits_[0] |= 0x00000004u;
-  } else {
-    _impl_._has_bits_[0] &= ~0x00000004u;
-  }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:spir.BitEntityInfo.loc)
+inline void BitEntityInfo::_internal_set_loc_line(uint32_t value) {
+  _impl_._has_bits_[0] |= 0x00000100u;
+  _impl_.loc_line_ = value;
 }
-inline ::spir::BitSrcLoc* BitEntityInfo::release_loc() {
-  _impl_._has_bits_[0] &= ~0x00000004u;
-  ::spir::BitSrcLoc* temp = _impl_.loc_;
-  _impl_.loc_ = nullptr;
-#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
-  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
-  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  if (GetArenaForAllocation() == nullptr) { delete old; }
-#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
-  if (GetArenaForAllocation() != nullptr) {
-    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  }
-#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
-  return temp;
+inline void BitEntityInfo::set_loc_line(uint32_t value) {
+  _internal_set_loc_line(value);
+  // @@protoc_insertion_point(field_set:spir.BitEntityInfo.loc_line)
 }
-inline ::spir::BitSrcLoc* BitEntityInfo::unsafe_arena_release_loc() {
-  // @@protoc_insertion_point(field_release:spir.BitEntityInfo.loc)
-  _impl_._has_bits_[0] &= ~0x00000004u;
-  ::spir::BitSrcLoc* temp = _impl_.loc_;
-  _impl_.loc_ = nullptr;
-  return temp;
+
+// optional uint32 loc_col = 12;
+inline bool BitEntityInfo::_internal_has_loc_col() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000200u) != 0;
+  return value;
 }
-inline ::spir::BitSrcLoc* BitEntityInfo::_internal_mutable_loc() {
-  _impl_._has_bits_[0] |= 0x00000004u;
-  if (_impl_.loc_ == nullptr) {
-    auto* p = CreateMaybeMessage<::spir::BitSrcLoc>(GetArenaForAllocation());
-    _impl_.loc_ = p;
-  }
-  return _impl_.loc_;
+inline bool BitEntityInfo::has_loc_col() const {
+  return _internal_has_loc_col();
 }
-inline ::spir::BitSrcLoc* BitEntityInfo::mutable_loc() {
-  ::spir::BitSrcLoc* _msg = _internal_mutable_loc();
-  // @@protoc_insertion_point(field_mutable:spir.BitEntityInfo.loc)
-  return _msg;
+inline void BitEntityInfo::clear_loc_col() {
+  _impl_.loc_col_ = 0u;
+  _impl_._has_bits_[0] &= ~0x00000200u;
 }
-inline void BitEntityInfo::set_allocated_loc(::spir::BitSrcLoc* loc) {
-  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
-  if (message_arena == nullptr) {
-    delete _impl_.loc_;
-  }
-  if (loc) {
-    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(loc);
-    if (message_arena != submessage_arena) {
-      loc = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, loc, submessage_arena);
-    }
-    _impl_._has_bits_[0] |= 0x00000004u;
-  } else {
-    _impl_._has_bits_[0] &= ~0x00000004u;
-  }
-  _impl_.loc_ = loc;
-  // @@protoc_insertion_point(field_set_allocated:spir.BitEntityInfo.loc)
+inline uint32_t BitEntityInfo::_internal_loc_col() const {
+  return _impl_.loc_col_;
+}
+inline uint32_t BitEntityInfo::loc_col() const {
+  // @@protoc_insertion_point(field_get:spir.BitEntityInfo.loc_col)
+  return _internal_loc_col();
+}
+inline void BitEntityInfo::_internal_set_loc_col(uint32_t value) {
+  _impl_._has_bits_[0] |= 0x00000200u;
+  _impl_.loc_col_ = value;
+}
+inline void BitEntityInfo::set_loc_col(uint32_t value) {
+  _internal_set_loc_col(value);
+  // @@protoc_insertion_point(field_set:spir.BitEntityInfo.loc_col)
+}
+
+// -------------------------------------------------------------------
+
+// BitSrcLoc
+
+// uint32 line = 1;
+inline void BitSrcLoc::clear_line() {
+  _impl_.line_ = 0u;
+}
+inline uint32_t BitSrcLoc::_internal_line() const {
+  return _impl_.line_;
+}
+inline uint32_t BitSrcLoc::line() const {
+  // @@protoc_insertion_point(field_get:spir.BitSrcLoc.line)
+  return _internal_line();
+}
+inline void BitSrcLoc::_internal_set_line(uint32_t value) {
+  
+  _impl_.line_ = value;
+}
+inline void BitSrcLoc::set_line(uint32_t value) {
+  _internal_set_line(value);
+  // @@protoc_insertion_point(field_set:spir.BitSrcLoc.line)
+}
+
+// uint32 col = 2;
+inline void BitSrcLoc::clear_col() {
+  _impl_.col_ = 0u;
+}
+inline uint32_t BitSrcLoc::_internal_col() const {
+  return _impl_.col_;
+}
+inline uint32_t BitSrcLoc::col() const {
+  // @@protoc_insertion_point(field_get:spir.BitSrcLoc.col)
+  return _internal_col();
+}
+inline void BitSrcLoc::_internal_set_col(uint32_t value) {
+  
+  _impl_.col_ = value;
+}
+inline void BitSrcLoc::set_col(uint32_t value) {
+  _internal_set_col(value);
+  // @@protoc_insertion_point(field_set:spir.BitSrcLoc.col)
 }
 
 // -------------------------------------------------------------------
@@ -3372,94 +3442,44 @@ inline void BitEntity::set_eid(uint64_t value) {
   // @@protoc_insertion_point(field_set:spir.BitEntity.eid)
 }
 
-// optional .spir.BitSrcLoc loc = 2;
-inline bool BitEntity::_internal_has_loc() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
-  PROTOBUF_ASSUME(!value || _impl_.loc_ != nullptr);
-  return value;
+// uint32 line = 2;
+inline void BitEntity::clear_line() {
+  _impl_.line_ = 0u;
 }
-inline bool BitEntity::has_loc() const {
-  return _internal_has_loc();
+inline uint32_t BitEntity::_internal_line() const {
+  return _impl_.line_;
 }
-inline void BitEntity::clear_loc() {
-  if (_impl_.loc_ != nullptr) _impl_.loc_->Clear();
-  _impl_._has_bits_[0] &= ~0x00000001u;
+inline uint32_t BitEntity::line() const {
+  // @@protoc_insertion_point(field_get:spir.BitEntity.line)
+  return _internal_line();
 }
-inline const ::spir::BitSrcLoc& BitEntity::_internal_loc() const {
-  const ::spir::BitSrcLoc* p = _impl_.loc_;
-  return p != nullptr ? *p : reinterpret_cast<const ::spir::BitSrcLoc&>(
-      ::spir::_BitSrcLoc_default_instance_);
+inline void BitEntity::_internal_set_line(uint32_t value) {
+  
+  _impl_.line_ = value;
 }
-inline const ::spir::BitSrcLoc& BitEntity::loc() const {
-  // @@protoc_insertion_point(field_get:spir.BitEntity.loc)
-  return _internal_loc();
+inline void BitEntity::set_line(uint32_t value) {
+  _internal_set_line(value);
+  // @@protoc_insertion_point(field_set:spir.BitEntity.line)
 }
-inline void BitEntity::unsafe_arena_set_allocated_loc(
-    ::spir::BitSrcLoc* loc) {
-  if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.loc_);
-  }
-  _impl_.loc_ = loc;
-  if (loc) {
-    _impl_._has_bits_[0] |= 0x00000001u;
-  } else {
-    _impl_._has_bits_[0] &= ~0x00000001u;
-  }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:spir.BitEntity.loc)
+
+// uint32 col = 3;
+inline void BitEntity::clear_col() {
+  _impl_.col_ = 0u;
 }
-inline ::spir::BitSrcLoc* BitEntity::release_loc() {
-  _impl_._has_bits_[0] &= ~0x00000001u;
-  ::spir::BitSrcLoc* temp = _impl_.loc_;
-  _impl_.loc_ = nullptr;
-#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
-  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
-  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  if (GetArenaForAllocation() == nullptr) { delete old; }
-#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
-  if (GetArenaForAllocation() != nullptr) {
-    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  }
-#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
-  return temp;
+inline uint32_t BitEntity::_internal_col() const {
+  return _impl_.col_;
 }
-inline ::spir::BitSrcLoc* BitEntity::unsafe_arena_release_loc() {
-  // @@protoc_insertion_point(field_release:spir.BitEntity.loc)
-  _impl_._has_bits_[0] &= ~0x00000001u;
-  ::spir::BitSrcLoc* temp = _impl_.loc_;
-  _impl_.loc_ = nullptr;
-  return temp;
+inline uint32_t BitEntity::col() const {
+  // @@protoc_insertion_point(field_get:spir.BitEntity.col)
+  return _internal_col();
 }
-inline ::spir::BitSrcLoc* BitEntity::_internal_mutable_loc() {
-  _impl_._has_bits_[0] |= 0x00000001u;
-  if (_impl_.loc_ == nullptr) {
-    auto* p = CreateMaybeMessage<::spir::BitSrcLoc>(GetArenaForAllocation());
-    _impl_.loc_ = p;
-  }
-  return _impl_.loc_;
+inline void BitEntity::_internal_set_col(uint32_t value) {
+  
+  _impl_.col_ = value;
 }
-inline ::spir::BitSrcLoc* BitEntity::mutable_loc() {
-  ::spir::BitSrcLoc* _msg = _internal_mutable_loc();
-  // @@protoc_insertion_point(field_mutable:spir.BitEntity.loc)
-  return _msg;
-}
-inline void BitEntity::set_allocated_loc(::spir::BitSrcLoc* loc) {
-  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
-  if (message_arena == nullptr) {
-    delete _impl_.loc_;
-  }
-  if (loc) {
-    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(loc);
-    if (message_arena != submessage_arena) {
-      loc = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, loc, submessage_arena);
-    }
-    _impl_._has_bits_[0] |= 0x00000001u;
-  } else {
-    _impl_._has_bits_[0] &= ~0x00000001u;
-  }
-  _impl_.loc_ = loc;
-  // @@protoc_insertion_point(field_set_allocated:spir.BitEntity.loc)
+inline void BitEntity::set_col(uint32_t value) {
+  _internal_set_col(value);
+  // @@protoc_insertion_point(field_set:spir.BitEntity.col)
 }
 
 // -------------------------------------------------------------------
@@ -3486,314 +3506,369 @@ inline void BitExpr::set_xkind(::spir::K_XK value) {
   // @@protoc_insertion_point(field_set:spir.BitExpr.xkind)
 }
 
-// optional .spir.BitEntity opr1 = 2;
-inline bool BitExpr::_internal_has_opr1() const {
+// optional uint32 loc_line = 2;
+inline bool BitExpr::_internal_has_loc_line() const {
   bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
-  PROTOBUF_ASSUME(!value || _impl_.opr1_ != nullptr);
   return value;
 }
-inline bool BitExpr::has_opr1() const {
-  return _internal_has_opr1();
+inline bool BitExpr::has_loc_line() const {
+  return _internal_has_loc_line();
 }
-inline void BitExpr::clear_opr1() {
-  if (_impl_.opr1_ != nullptr) _impl_.opr1_->Clear();
+inline void BitExpr::clear_loc_line() {
+  _impl_.loc_line_ = 0u;
   _impl_._has_bits_[0] &= ~0x00000001u;
 }
-inline const ::spir::BitEntity& BitExpr::_internal_opr1() const {
-  const ::spir::BitEntity* p = _impl_.opr1_;
-  return p != nullptr ? *p : reinterpret_cast<const ::spir::BitEntity&>(
-      ::spir::_BitEntity_default_instance_);
+inline uint32_t BitExpr::_internal_loc_line() const {
+  return _impl_.loc_line_;
 }
-inline const ::spir::BitEntity& BitExpr::opr1() const {
-  // @@protoc_insertion_point(field_get:spir.BitExpr.opr1)
-  return _internal_opr1();
+inline uint32_t BitExpr::loc_line() const {
+  // @@protoc_insertion_point(field_get:spir.BitExpr.loc_line)
+  return _internal_loc_line();
 }
-inline void BitExpr::unsafe_arena_set_allocated_opr1(
-    ::spir::BitEntity* opr1) {
-  if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.opr1_);
-  }
-  _impl_.opr1_ = opr1;
-  if (opr1) {
-    _impl_._has_bits_[0] |= 0x00000001u;
-  } else {
-    _impl_._has_bits_[0] &= ~0x00000001u;
-  }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:spir.BitExpr.opr1)
-}
-inline ::spir::BitEntity* BitExpr::release_opr1() {
-  _impl_._has_bits_[0] &= ~0x00000001u;
-  ::spir::BitEntity* temp = _impl_.opr1_;
-  _impl_.opr1_ = nullptr;
-#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
-  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
-  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  if (GetArenaForAllocation() == nullptr) { delete old; }
-#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
-  if (GetArenaForAllocation() != nullptr) {
-    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  }
-#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
-  return temp;
-}
-inline ::spir::BitEntity* BitExpr::unsafe_arena_release_opr1() {
-  // @@protoc_insertion_point(field_release:spir.BitExpr.opr1)
-  _impl_._has_bits_[0] &= ~0x00000001u;
-  ::spir::BitEntity* temp = _impl_.opr1_;
-  _impl_.opr1_ = nullptr;
-  return temp;
-}
-inline ::spir::BitEntity* BitExpr::_internal_mutable_opr1() {
+inline void BitExpr::_internal_set_loc_line(uint32_t value) {
   _impl_._has_bits_[0] |= 0x00000001u;
-  if (_impl_.opr1_ == nullptr) {
-    auto* p = CreateMaybeMessage<::spir::BitEntity>(GetArenaForAllocation());
-    _impl_.opr1_ = p;
-  }
-  return _impl_.opr1_;
+  _impl_.loc_line_ = value;
 }
-inline ::spir::BitEntity* BitExpr::mutable_opr1() {
-  ::spir::BitEntity* _msg = _internal_mutable_opr1();
-  // @@protoc_insertion_point(field_mutable:spir.BitExpr.opr1)
-  return _msg;
-}
-inline void BitExpr::set_allocated_opr1(::spir::BitEntity* opr1) {
-  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
-  if (message_arena == nullptr) {
-    delete _impl_.opr1_;
-  }
-  if (opr1) {
-    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(opr1);
-    if (message_arena != submessage_arena) {
-      opr1 = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, opr1, submessage_arena);
-    }
-    _impl_._has_bits_[0] |= 0x00000001u;
-  } else {
-    _impl_._has_bits_[0] &= ~0x00000001u;
-  }
-  _impl_.opr1_ = opr1;
-  // @@protoc_insertion_point(field_set_allocated:spir.BitExpr.opr1)
+inline void BitExpr::set_loc_line(uint32_t value) {
+  _internal_set_loc_line(value);
+  // @@protoc_insertion_point(field_set:spir.BitExpr.loc_line)
 }
 
-// optional .spir.BitEntity opr2 = 3;
-inline bool BitExpr::_internal_has_opr2() const {
-  bool value = (_impl_._has_bits_[0] & 0x00000002u) != 0;
-  PROTOBUF_ASSUME(!value || _impl_.opr2_ != nullptr);
-  return value;
-}
-inline bool BitExpr::has_opr2() const {
-  return _internal_has_opr2();
-}
-inline void BitExpr::clear_opr2() {
-  if (_impl_.opr2_ != nullptr) _impl_.opr2_->Clear();
-  _impl_._has_bits_[0] &= ~0x00000002u;
-}
-inline const ::spir::BitEntity& BitExpr::_internal_opr2() const {
-  const ::spir::BitEntity* p = _impl_.opr2_;
-  return p != nullptr ? *p : reinterpret_cast<const ::spir::BitEntity&>(
-      ::spir::_BitEntity_default_instance_);
-}
-inline const ::spir::BitEntity& BitExpr::opr2() const {
-  // @@protoc_insertion_point(field_get:spir.BitExpr.opr2)
-  return _internal_opr2();
-}
-inline void BitExpr::unsafe_arena_set_allocated_opr2(
-    ::spir::BitEntity* opr2) {
-  if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.opr2_);
-  }
-  _impl_.opr2_ = opr2;
-  if (opr2) {
-    _impl_._has_bits_[0] |= 0x00000002u;
-  } else {
-    _impl_._has_bits_[0] &= ~0x00000002u;
-  }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:spir.BitExpr.opr2)
-}
-inline ::spir::BitEntity* BitExpr::release_opr2() {
-  _impl_._has_bits_[0] &= ~0x00000002u;
-  ::spir::BitEntity* temp = _impl_.opr2_;
-  _impl_.opr2_ = nullptr;
-#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
-  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
-  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  if (GetArenaForAllocation() == nullptr) { delete old; }
-#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
-  if (GetArenaForAllocation() != nullptr) {
-    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  }
-#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
-  return temp;
-}
-inline ::spir::BitEntity* BitExpr::unsafe_arena_release_opr2() {
-  // @@protoc_insertion_point(field_release:spir.BitExpr.opr2)
-  _impl_._has_bits_[0] &= ~0x00000002u;
-  ::spir::BitEntity* temp = _impl_.opr2_;
-  _impl_.opr2_ = nullptr;
-  return temp;
-}
-inline ::spir::BitEntity* BitExpr::_internal_mutable_opr2() {
-  _impl_._has_bits_[0] |= 0x00000002u;
-  if (_impl_.opr2_ == nullptr) {
-    auto* p = CreateMaybeMessage<::spir::BitEntity>(GetArenaForAllocation());
-    _impl_.opr2_ = p;
-  }
-  return _impl_.opr2_;
-}
-inline ::spir::BitEntity* BitExpr::mutable_opr2() {
-  ::spir::BitEntity* _msg = _internal_mutable_opr2();
-  // @@protoc_insertion_point(field_mutable:spir.BitExpr.opr2)
-  return _msg;
-}
-inline void BitExpr::set_allocated_opr2(::spir::BitEntity* opr2) {
-  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
-  if (message_arena == nullptr) {
-    delete _impl_.opr2_;
-  }
-  if (opr2) {
-    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(opr2);
-    if (message_arena != submessage_arena) {
-      opr2 = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, opr2, submessage_arena);
-    }
-    _impl_._has_bits_[0] |= 0x00000002u;
-  } else {
-    _impl_._has_bits_[0] &= ~0x00000002u;
-  }
-  _impl_.opr2_ = opr2;
-  // @@protoc_insertion_point(field_set_allocated:spir.BitExpr.opr2)
-}
-
-// repeated .spir.BitEntity oprs = 4;
-inline int BitExpr::_internal_oprs_size() const {
-  return _impl_.oprs_.size();
-}
-inline int BitExpr::oprs_size() const {
-  return _internal_oprs_size();
-}
-inline void BitExpr::clear_oprs() {
-  _impl_.oprs_.Clear();
-}
-inline ::spir::BitEntity* BitExpr::mutable_oprs(int index) {
-  // @@protoc_insertion_point(field_mutable:spir.BitExpr.oprs)
-  return _impl_.oprs_.Mutable(index);
-}
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::spir::BitEntity >*
-BitExpr::mutable_oprs() {
-  // @@protoc_insertion_point(field_mutable_list:spir.BitExpr.oprs)
-  return &_impl_.oprs_;
-}
-inline const ::spir::BitEntity& BitExpr::_internal_oprs(int index) const {
-  return _impl_.oprs_.Get(index);
-}
-inline const ::spir::BitEntity& BitExpr::oprs(int index) const {
-  // @@protoc_insertion_point(field_get:spir.BitExpr.oprs)
-  return _internal_oprs(index);
-}
-inline ::spir::BitEntity* BitExpr::_internal_add_oprs() {
-  return _impl_.oprs_.Add();
-}
-inline ::spir::BitEntity* BitExpr::add_oprs() {
-  ::spir::BitEntity* _add = _internal_add_oprs();
-  // @@protoc_insertion_point(field_add:spir.BitExpr.oprs)
-  return _add;
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::spir::BitEntity >&
-BitExpr::oprs() const {
-  // @@protoc_insertion_point(field_list:spir.BitExpr.oprs)
-  return _impl_.oprs_;
-}
-
-// optional .spir.BitSrcLoc loc = 5;
-inline bool BitExpr::_internal_has_loc() const {
+// optional uint32 loc_col = 3;
+inline bool BitExpr::_internal_has_loc_col() const {
   bool value = (_impl_._has_bits_[0] & 0x00000004u) != 0;
-  PROTOBUF_ASSUME(!value || _impl_.loc_ != nullptr);
   return value;
 }
-inline bool BitExpr::has_loc() const {
-  return _internal_has_loc();
+inline bool BitExpr::has_loc_col() const {
+  return _internal_has_loc_col();
 }
-inline void BitExpr::clear_loc() {
-  if (_impl_.loc_ != nullptr) _impl_.loc_->Clear();
+inline void BitExpr::clear_loc_col() {
+  _impl_.loc_col_ = 0u;
   _impl_._has_bits_[0] &= ~0x00000004u;
 }
-inline const ::spir::BitSrcLoc& BitExpr::_internal_loc() const {
-  const ::spir::BitSrcLoc* p = _impl_.loc_;
-  return p != nullptr ? *p : reinterpret_cast<const ::spir::BitSrcLoc&>(
-      ::spir::_BitSrcLoc_default_instance_);
+inline uint32_t BitExpr::_internal_loc_col() const {
+  return _impl_.loc_col_;
 }
-inline const ::spir::BitSrcLoc& BitExpr::loc() const {
-  // @@protoc_insertion_point(field_get:spir.BitExpr.loc)
-  return _internal_loc();
+inline uint32_t BitExpr::loc_col() const {
+  // @@protoc_insertion_point(field_get:spir.BitExpr.loc_col)
+  return _internal_loc_col();
 }
-inline void BitExpr::unsafe_arena_set_allocated_loc(
-    ::spir::BitSrcLoc* loc) {
-  if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.loc_);
-  }
-  _impl_.loc_ = loc;
-  if (loc) {
-    _impl_._has_bits_[0] |= 0x00000004u;
-  } else {
-    _impl_._has_bits_[0] &= ~0x00000004u;
-  }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:spir.BitExpr.loc)
-}
-inline ::spir::BitSrcLoc* BitExpr::release_loc() {
-  _impl_._has_bits_[0] &= ~0x00000004u;
-  ::spir::BitSrcLoc* temp = _impl_.loc_;
-  _impl_.loc_ = nullptr;
-#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
-  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
-  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  if (GetArenaForAllocation() == nullptr) { delete old; }
-#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
-  if (GetArenaForAllocation() != nullptr) {
-    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  }
-#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
-  return temp;
-}
-inline ::spir::BitSrcLoc* BitExpr::unsafe_arena_release_loc() {
-  // @@protoc_insertion_point(field_release:spir.BitExpr.loc)
-  _impl_._has_bits_[0] &= ~0x00000004u;
-  ::spir::BitSrcLoc* temp = _impl_.loc_;
-  _impl_.loc_ = nullptr;
-  return temp;
-}
-inline ::spir::BitSrcLoc* BitExpr::_internal_mutable_loc() {
+inline void BitExpr::_internal_set_loc_col(uint32_t value) {
   _impl_._has_bits_[0] |= 0x00000004u;
-  if (_impl_.loc_ == nullptr) {
-    auto* p = CreateMaybeMessage<::spir::BitSrcLoc>(GetArenaForAllocation());
-    _impl_.loc_ = p;
-  }
-  return _impl_.loc_;
+  _impl_.loc_col_ = value;
 }
-inline ::spir::BitSrcLoc* BitExpr::mutable_loc() {
-  ::spir::BitSrcLoc* _msg = _internal_mutable_loc();
-  // @@protoc_insertion_point(field_mutable:spir.BitExpr.loc)
-  return _msg;
+inline void BitExpr::set_loc_col(uint32_t value) {
+  _internal_set_loc_col(value);
+  // @@protoc_insertion_point(field_set:spir.BitExpr.loc_col)
 }
-inline void BitExpr::set_allocated_loc(::spir::BitSrcLoc* loc) {
-  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
-  if (message_arena == nullptr) {
-    delete _impl_.loc_;
-  }
-  if (loc) {
-    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(loc);
-    if (message_arena != submessage_arena) {
-      loc = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, loc, submessage_arena);
-    }
-    _impl_._has_bits_[0] |= 0x00000004u;
-  } else {
-    _impl_._has_bits_[0] &= ~0x00000004u;
-  }
-  _impl_.loc_ = loc;
-  // @@protoc_insertion_point(field_set_allocated:spir.BitExpr.loc)
+
+// optional uint64 oprnd1eid = 4;
+inline bool BitExpr::_internal_has_oprnd1eid() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000002u) != 0;
+  return value;
+}
+inline bool BitExpr::has_oprnd1eid() const {
+  return _internal_has_oprnd1eid();
+}
+inline void BitExpr::clear_oprnd1eid() {
+  _impl_.oprnd1eid_ = uint64_t{0u};
+  _impl_._has_bits_[0] &= ~0x00000002u;
+}
+inline uint64_t BitExpr::_internal_oprnd1eid() const {
+  return _impl_.oprnd1eid_;
+}
+inline uint64_t BitExpr::oprnd1eid() const {
+  // @@protoc_insertion_point(field_get:spir.BitExpr.oprnd1eid)
+  return _internal_oprnd1eid();
+}
+inline void BitExpr::_internal_set_oprnd1eid(uint64_t value) {
+  _impl_._has_bits_[0] |= 0x00000002u;
+  _impl_.oprnd1eid_ = value;
+}
+inline void BitExpr::set_oprnd1eid(uint64_t value) {
+  _internal_set_oprnd1eid(value);
+  // @@protoc_insertion_point(field_set:spir.BitExpr.oprnd1eid)
+}
+
+// optional uint32 oprnd1_line = 5;
+inline bool BitExpr::_internal_has_oprnd1_line() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000008u) != 0;
+  return value;
+}
+inline bool BitExpr::has_oprnd1_line() const {
+  return _internal_has_oprnd1_line();
+}
+inline void BitExpr::clear_oprnd1_line() {
+  _impl_.oprnd1_line_ = 0u;
+  _impl_._has_bits_[0] &= ~0x00000008u;
+}
+inline uint32_t BitExpr::_internal_oprnd1_line() const {
+  return _impl_.oprnd1_line_;
+}
+inline uint32_t BitExpr::oprnd1_line() const {
+  // @@protoc_insertion_point(field_get:spir.BitExpr.oprnd1_line)
+  return _internal_oprnd1_line();
+}
+inline void BitExpr::_internal_set_oprnd1_line(uint32_t value) {
+  _impl_._has_bits_[0] |= 0x00000008u;
+  _impl_.oprnd1_line_ = value;
+}
+inline void BitExpr::set_oprnd1_line(uint32_t value) {
+  _internal_set_oprnd1_line(value);
+  // @@protoc_insertion_point(field_set:spir.BitExpr.oprnd1_line)
+}
+
+// optional uint32 oprnd1_col = 6;
+inline bool BitExpr::_internal_has_oprnd1_col() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000020u) != 0;
+  return value;
+}
+inline bool BitExpr::has_oprnd1_col() const {
+  return _internal_has_oprnd1_col();
+}
+inline void BitExpr::clear_oprnd1_col() {
+  _impl_.oprnd1_col_ = 0u;
+  _impl_._has_bits_[0] &= ~0x00000020u;
+}
+inline uint32_t BitExpr::_internal_oprnd1_col() const {
+  return _impl_.oprnd1_col_;
+}
+inline uint32_t BitExpr::oprnd1_col() const {
+  // @@protoc_insertion_point(field_get:spir.BitExpr.oprnd1_col)
+  return _internal_oprnd1_col();
+}
+inline void BitExpr::_internal_set_oprnd1_col(uint32_t value) {
+  _impl_._has_bits_[0] |= 0x00000020u;
+  _impl_.oprnd1_col_ = value;
+}
+inline void BitExpr::set_oprnd1_col(uint32_t value) {
+  _internal_set_oprnd1_col(value);
+  // @@protoc_insertion_point(field_set:spir.BitExpr.oprnd1_col)
+}
+
+// optional uint64 oprnd2eid = 7;
+inline bool BitExpr::_internal_has_oprnd2eid() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000010u) != 0;
+  return value;
+}
+inline bool BitExpr::has_oprnd2eid() const {
+  return _internal_has_oprnd2eid();
+}
+inline void BitExpr::clear_oprnd2eid() {
+  _impl_.oprnd2eid_ = uint64_t{0u};
+  _impl_._has_bits_[0] &= ~0x00000010u;
+}
+inline uint64_t BitExpr::_internal_oprnd2eid() const {
+  return _impl_.oprnd2eid_;
+}
+inline uint64_t BitExpr::oprnd2eid() const {
+  // @@protoc_insertion_point(field_get:spir.BitExpr.oprnd2eid)
+  return _internal_oprnd2eid();
+}
+inline void BitExpr::_internal_set_oprnd2eid(uint64_t value) {
+  _impl_._has_bits_[0] |= 0x00000010u;
+  _impl_.oprnd2eid_ = value;
+}
+inline void BitExpr::set_oprnd2eid(uint64_t value) {
+  _internal_set_oprnd2eid(value);
+  // @@protoc_insertion_point(field_set:spir.BitExpr.oprnd2eid)
+}
+
+// optional uint32 oprnd2_line = 8;
+inline bool BitExpr::_internal_has_oprnd2_line() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000040u) != 0;
+  return value;
+}
+inline bool BitExpr::has_oprnd2_line() const {
+  return _internal_has_oprnd2_line();
+}
+inline void BitExpr::clear_oprnd2_line() {
+  _impl_.oprnd2_line_ = 0u;
+  _impl_._has_bits_[0] &= ~0x00000040u;
+}
+inline uint32_t BitExpr::_internal_oprnd2_line() const {
+  return _impl_.oprnd2_line_;
+}
+inline uint32_t BitExpr::oprnd2_line() const {
+  // @@protoc_insertion_point(field_get:spir.BitExpr.oprnd2_line)
+  return _internal_oprnd2_line();
+}
+inline void BitExpr::_internal_set_oprnd2_line(uint32_t value) {
+  _impl_._has_bits_[0] |= 0x00000040u;
+  _impl_.oprnd2_line_ = value;
+}
+inline void BitExpr::set_oprnd2_line(uint32_t value) {
+  _internal_set_oprnd2_line(value);
+  // @@protoc_insertion_point(field_set:spir.BitExpr.oprnd2_line)
+}
+
+// optional uint32 oprnd2_col = 9;
+inline bool BitExpr::_internal_has_oprnd2_col() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000080u) != 0;
+  return value;
+}
+inline bool BitExpr::has_oprnd2_col() const {
+  return _internal_has_oprnd2_col();
+}
+inline void BitExpr::clear_oprnd2_col() {
+  _impl_.oprnd2_col_ = 0u;
+  _impl_._has_bits_[0] &= ~0x00000080u;
+}
+inline uint32_t BitExpr::_internal_oprnd2_col() const {
+  return _impl_.oprnd2_col_;
+}
+inline uint32_t BitExpr::oprnd2_col() const {
+  // @@protoc_insertion_point(field_get:spir.BitExpr.oprnd2_col)
+  return _internal_oprnd2_col();
+}
+inline void BitExpr::_internal_set_oprnd2_col(uint32_t value) {
+  _impl_._has_bits_[0] |= 0x00000080u;
+  _impl_.oprnd2_col_ = value;
+}
+inline void BitExpr::set_oprnd2_col(uint32_t value) {
+  _internal_set_oprnd2_col(value);
+  // @@protoc_insertion_point(field_set:spir.BitExpr.oprnd2_col)
+}
+
+// repeated uint64 oprnds = 10;
+inline int BitExpr::_internal_oprnds_size() const {
+  return _impl_.oprnds_.size();
+}
+inline int BitExpr::oprnds_size() const {
+  return _internal_oprnds_size();
+}
+inline void BitExpr::clear_oprnds() {
+  _impl_.oprnds_.Clear();
+}
+inline uint64_t BitExpr::_internal_oprnds(int index) const {
+  return _impl_.oprnds_.Get(index);
+}
+inline uint64_t BitExpr::oprnds(int index) const {
+  // @@protoc_insertion_point(field_get:spir.BitExpr.oprnds)
+  return _internal_oprnds(index);
+}
+inline void BitExpr::set_oprnds(int index, uint64_t value) {
+  _impl_.oprnds_.Set(index, value);
+  // @@protoc_insertion_point(field_set:spir.BitExpr.oprnds)
+}
+inline void BitExpr::_internal_add_oprnds(uint64_t value) {
+  _impl_.oprnds_.Add(value);
+}
+inline void BitExpr::add_oprnds(uint64_t value) {
+  _internal_add_oprnds(value);
+  // @@protoc_insertion_point(field_add:spir.BitExpr.oprnds)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >&
+BitExpr::_internal_oprnds() const {
+  return _impl_.oprnds_;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >&
+BitExpr::oprnds() const {
+  // @@protoc_insertion_point(field_list:spir.BitExpr.oprnds)
+  return _internal_oprnds();
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >*
+BitExpr::_internal_mutable_oprnds() {
+  return &_impl_.oprnds_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >*
+BitExpr::mutable_oprnds() {
+  // @@protoc_insertion_point(field_mutable_list:spir.BitExpr.oprnds)
+  return _internal_mutable_oprnds();
+}
+
+// repeated uint32 oprnds_line = 11;
+inline int BitExpr::_internal_oprnds_line_size() const {
+  return _impl_.oprnds_line_.size();
+}
+inline int BitExpr::oprnds_line_size() const {
+  return _internal_oprnds_line_size();
+}
+inline void BitExpr::clear_oprnds_line() {
+  _impl_.oprnds_line_.Clear();
+}
+inline uint32_t BitExpr::_internal_oprnds_line(int index) const {
+  return _impl_.oprnds_line_.Get(index);
+}
+inline uint32_t BitExpr::oprnds_line(int index) const {
+  // @@protoc_insertion_point(field_get:spir.BitExpr.oprnds_line)
+  return _internal_oprnds_line(index);
+}
+inline void BitExpr::set_oprnds_line(int index, uint32_t value) {
+  _impl_.oprnds_line_.Set(index, value);
+  // @@protoc_insertion_point(field_set:spir.BitExpr.oprnds_line)
+}
+inline void BitExpr::_internal_add_oprnds_line(uint32_t value) {
+  _impl_.oprnds_line_.Add(value);
+}
+inline void BitExpr::add_oprnds_line(uint32_t value) {
+  _internal_add_oprnds_line(value);
+  // @@protoc_insertion_point(field_add:spir.BitExpr.oprnds_line)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint32_t >&
+BitExpr::_internal_oprnds_line() const {
+  return _impl_.oprnds_line_;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint32_t >&
+BitExpr::oprnds_line() const {
+  // @@protoc_insertion_point(field_list:spir.BitExpr.oprnds_line)
+  return _internal_oprnds_line();
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint32_t >*
+BitExpr::_internal_mutable_oprnds_line() {
+  return &_impl_.oprnds_line_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint32_t >*
+BitExpr::mutable_oprnds_line() {
+  // @@protoc_insertion_point(field_mutable_list:spir.BitExpr.oprnds_line)
+  return _internal_mutable_oprnds_line();
+}
+
+// repeated uint32 oprnds_col = 12;
+inline int BitExpr::_internal_oprnds_col_size() const {
+  return _impl_.oprnds_col_.size();
+}
+inline int BitExpr::oprnds_col_size() const {
+  return _internal_oprnds_col_size();
+}
+inline void BitExpr::clear_oprnds_col() {
+  _impl_.oprnds_col_.Clear();
+}
+inline uint32_t BitExpr::_internal_oprnds_col(int index) const {
+  return _impl_.oprnds_col_.Get(index);
+}
+inline uint32_t BitExpr::oprnds_col(int index) const {
+  // @@protoc_insertion_point(field_get:spir.BitExpr.oprnds_col)
+  return _internal_oprnds_col(index);
+}
+inline void BitExpr::set_oprnds_col(int index, uint32_t value) {
+  _impl_.oprnds_col_.Set(index, value);
+  // @@protoc_insertion_point(field_set:spir.BitExpr.oprnds_col)
+}
+inline void BitExpr::_internal_add_oprnds_col(uint32_t value) {
+  _impl_.oprnds_col_.Add(value);
+}
+inline void BitExpr::add_oprnds_col(uint32_t value) {
+  _internal_add_oprnds_col(value);
+  // @@protoc_insertion_point(field_add:spir.BitExpr.oprnds_col)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint32_t >&
+BitExpr::_internal_oprnds_col() const {
+  return _impl_.oprnds_col_;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint32_t >&
+BitExpr::oprnds_col() const {
+  // @@protoc_insertion_point(field_list:spir.BitExpr.oprnds_col)
+  return _internal_oprnds_col();
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint32_t >*
+BitExpr::_internal_mutable_oprnds_col() {
+  return &_impl_.oprnds_col_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint32_t >*
+BitExpr::mutable_oprnds_col() {
+  // @@protoc_insertion_point(field_mutable_list:spir.BitExpr.oprnds_col)
+  return _internal_mutable_oprnds_col();
 }
 
 // -------------------------------------------------------------------
@@ -4000,94 +4075,60 @@ inline void BitInsn::set_allocated_expr2(::spir::BitExpr* expr2) {
   // @@protoc_insertion_point(field_set_allocated:spir.BitInsn.expr2)
 }
 
-// optional .spir.BitSrcLoc loc = 4;
-inline bool BitInsn::_internal_has_loc() const {
+// optional uint32 loc_line = 4;
+inline bool BitInsn::_internal_has_loc_line() const {
   bool value = (_impl_._has_bits_[0] & 0x00000004u) != 0;
-  PROTOBUF_ASSUME(!value || _impl_.loc_ != nullptr);
   return value;
 }
-inline bool BitInsn::has_loc() const {
-  return _internal_has_loc();
+inline bool BitInsn::has_loc_line() const {
+  return _internal_has_loc_line();
 }
-inline void BitInsn::clear_loc() {
-  if (_impl_.loc_ != nullptr) _impl_.loc_->Clear();
+inline void BitInsn::clear_loc_line() {
+  _impl_.loc_line_ = 0u;
   _impl_._has_bits_[0] &= ~0x00000004u;
 }
-inline const ::spir::BitSrcLoc& BitInsn::_internal_loc() const {
-  const ::spir::BitSrcLoc* p = _impl_.loc_;
-  return p != nullptr ? *p : reinterpret_cast<const ::spir::BitSrcLoc&>(
-      ::spir::_BitSrcLoc_default_instance_);
+inline uint32_t BitInsn::_internal_loc_line() const {
+  return _impl_.loc_line_;
 }
-inline const ::spir::BitSrcLoc& BitInsn::loc() const {
-  // @@protoc_insertion_point(field_get:spir.BitInsn.loc)
-  return _internal_loc();
+inline uint32_t BitInsn::loc_line() const {
+  // @@protoc_insertion_point(field_get:spir.BitInsn.loc_line)
+  return _internal_loc_line();
 }
-inline void BitInsn::unsafe_arena_set_allocated_loc(
-    ::spir::BitSrcLoc* loc) {
-  if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.loc_);
-  }
-  _impl_.loc_ = loc;
-  if (loc) {
-    _impl_._has_bits_[0] |= 0x00000004u;
-  } else {
-    _impl_._has_bits_[0] &= ~0x00000004u;
-  }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:spir.BitInsn.loc)
-}
-inline ::spir::BitSrcLoc* BitInsn::release_loc() {
-  _impl_._has_bits_[0] &= ~0x00000004u;
-  ::spir::BitSrcLoc* temp = _impl_.loc_;
-  _impl_.loc_ = nullptr;
-#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
-  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
-  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  if (GetArenaForAllocation() == nullptr) { delete old; }
-#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
-  if (GetArenaForAllocation() != nullptr) {
-    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  }
-#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
-  return temp;
-}
-inline ::spir::BitSrcLoc* BitInsn::unsafe_arena_release_loc() {
-  // @@protoc_insertion_point(field_release:spir.BitInsn.loc)
-  _impl_._has_bits_[0] &= ~0x00000004u;
-  ::spir::BitSrcLoc* temp = _impl_.loc_;
-  _impl_.loc_ = nullptr;
-  return temp;
-}
-inline ::spir::BitSrcLoc* BitInsn::_internal_mutable_loc() {
+inline void BitInsn::_internal_set_loc_line(uint32_t value) {
   _impl_._has_bits_[0] |= 0x00000004u;
-  if (_impl_.loc_ == nullptr) {
-    auto* p = CreateMaybeMessage<::spir::BitSrcLoc>(GetArenaForAllocation());
-    _impl_.loc_ = p;
-  }
-  return _impl_.loc_;
+  _impl_.loc_line_ = value;
 }
-inline ::spir::BitSrcLoc* BitInsn::mutable_loc() {
-  ::spir::BitSrcLoc* _msg = _internal_mutable_loc();
-  // @@protoc_insertion_point(field_mutable:spir.BitInsn.loc)
-  return _msg;
+inline void BitInsn::set_loc_line(uint32_t value) {
+  _internal_set_loc_line(value);
+  // @@protoc_insertion_point(field_set:spir.BitInsn.loc_line)
 }
-inline void BitInsn::set_allocated_loc(::spir::BitSrcLoc* loc) {
-  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
-  if (message_arena == nullptr) {
-    delete _impl_.loc_;
-  }
-  if (loc) {
-    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(loc);
-    if (message_arena != submessage_arena) {
-      loc = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, loc, submessage_arena);
-    }
-    _impl_._has_bits_[0] |= 0x00000004u;
-  } else {
-    _impl_._has_bits_[0] &= ~0x00000004u;
-  }
-  _impl_.loc_ = loc;
-  // @@protoc_insertion_point(field_set_allocated:spir.BitInsn.loc)
+
+// optional uint32 loc_col = 5;
+inline bool BitInsn::_internal_has_loc_col() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000008u) != 0;
+  return value;
+}
+inline bool BitInsn::has_loc_col() const {
+  return _internal_has_loc_col();
+}
+inline void BitInsn::clear_loc_col() {
+  _impl_.loc_col_ = 0u;
+  _impl_._has_bits_[0] &= ~0x00000008u;
+}
+inline uint32_t BitInsn::_internal_loc_col() const {
+  return _impl_.loc_col_;
+}
+inline uint32_t BitInsn::loc_col() const {
+  // @@protoc_insertion_point(field_get:spir.BitInsn.loc_col)
+  return _internal_loc_col();
+}
+inline void BitInsn::_internal_set_loc_col(uint32_t value) {
+  _impl_._has_bits_[0] |= 0x00000008u;
+  _impl_.loc_col_ = value;
+}
+inline void BitInsn::set_loc_col(uint32_t value) {
+  _internal_set_loc_col(value);
+  // @@protoc_insertion_point(field_set:spir.BitInsn.loc_col)
 }
 
 // -------------------------------------------------------------------
@@ -4292,52 +4333,7 @@ BitFunc::insns() const {
   return _impl_.insns_;
 }
 
-// repeated uint64 locals = 6;
-inline int BitFunc::_internal_locals_size() const {
-  return _impl_.locals_.size();
-}
-inline int BitFunc::locals_size() const {
-  return _internal_locals_size();
-}
-inline void BitFunc::clear_locals() {
-  _impl_.locals_.Clear();
-}
-inline uint64_t BitFunc::_internal_locals(int index) const {
-  return _impl_.locals_.Get(index);
-}
-inline uint64_t BitFunc::locals(int index) const {
-  // @@protoc_insertion_point(field_get:spir.BitFunc.locals)
-  return _internal_locals(index);
-}
-inline void BitFunc::set_locals(int index, uint64_t value) {
-  _impl_.locals_.Set(index, value);
-  // @@protoc_insertion_point(field_set:spir.BitFunc.locals)
-}
-inline void BitFunc::_internal_add_locals(uint64_t value) {
-  _impl_.locals_.Add(value);
-}
-inline void BitFunc::add_locals(uint64_t value) {
-  _internal_add_locals(value);
-  // @@protoc_insertion_point(field_add:spir.BitFunc.locals)
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >&
-BitFunc::_internal_locals() const {
-  return _impl_.locals_;
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >&
-BitFunc::locals() const {
-  // @@protoc_insertion_point(field_list:spir.BitFunc.locals)
-  return _internal_locals();
-}
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >*
-BitFunc::_internal_mutable_locals() {
-  return &_impl_.locals_;
-}
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >*
-BitFunc::mutable_locals() {
-  // @@protoc_insertion_point(field_mutable_list:spir.BitFunc.locals)
-  return _internal_mutable_locals();
-}
+// -------------------------------------------------------------------
 
 // -------------------------------------------------------------------
 
@@ -4562,7 +4558,36 @@ BitTU::mutable_namestoids() {
   return _internal_mutable_namestoids();
 }
 
-// map<uint64, .spir.BitEntityInfo> entityInfo = 5;
+// map<uint64, .spir.BitDataType> dataTypes = 5;
+inline int BitTU::_internal_datatypes_size() const {
+  return _impl_.datatypes_.size();
+}
+inline int BitTU::datatypes_size() const {
+  return _internal_datatypes_size();
+}
+inline void BitTU::clear_datatypes() {
+  _impl_.datatypes_.Clear();
+}
+inline const ::PROTOBUF_NAMESPACE_ID::Map< uint64_t, ::spir::BitDataType >&
+BitTU::_internal_datatypes() const {
+  return _impl_.datatypes_.GetMap();
+}
+inline const ::PROTOBUF_NAMESPACE_ID::Map< uint64_t, ::spir::BitDataType >&
+BitTU::datatypes() const {
+  // @@protoc_insertion_point(field_map:spir.BitTU.dataTypes)
+  return _internal_datatypes();
+}
+inline ::PROTOBUF_NAMESPACE_ID::Map< uint64_t, ::spir::BitDataType >*
+BitTU::_internal_mutable_datatypes() {
+  return _impl_.datatypes_.MutableMap();
+}
+inline ::PROTOBUF_NAMESPACE_ID::Map< uint64_t, ::spir::BitDataType >*
+BitTU::mutable_datatypes() {
+  // @@protoc_insertion_point(field_mutable_map:spir.BitTU.dataTypes)
+  return _internal_mutable_datatypes();
+}
+
+// map<uint64, .spir.BitEntityInfo> entityInfo = 6;
 inline int BitTU::_internal_entityinfo_size() const {
   return _impl_.entityinfo_.size();
 }
@@ -4591,7 +4616,7 @@ BitTU::mutable_entityinfo() {
   return _internal_mutable_entityinfo();
 }
 
-// repeated .spir.BitFunc functions = 6;
+// repeated .spir.BitFunc functions = 7;
 inline int BitTU::_internal_functions_size() const {
   return _impl_.functions_.size();
 }
@@ -4634,6 +4659,8 @@ BitTU::functions() const {
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

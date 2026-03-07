@@ -2,19 +2,40 @@ package spir
 
 import "fmt"
 
-// This file defines EntityId, its related types, constants and utility functions.
-// EntityId is a 32-bit unsigned integer used to uniquely identify entities in the SPAN IR.
+// This file defines EntityId, and the related types, constants and utility functions.
 
-// An Entity ID is a 32 bit unsigned integer which is used to identify an entity.
+// An Entity ID is a 32 bit unsigned integer which is used to identify an entity in SPAN IR.
 // The upper 7 to 12 bits are used to identify the entity kind.
 //
 //	-- The most significant 2 bits are always masked to zero.
 //	-- The next 5 bits is the EntityKind.
 //	-- If the EntityKind has a sub-kind, then the next 5 bits are used to represent the sub-kind.
 //	   E.g. K_EK_EVAR_LOCL has a sub-kind K_VK_INT, K_VK_FLOAT, K_VK_DOUBLE, etc.
-//	-- The remaining lower 20 to 25 bits are used to assign a sequential ID to the entity.
+//	-- The remaining lower 20 to 25 bits are used to assign a unique sequential ID to the entity.
 type EntityId uint32
 
+// Q. Why is the EntityId packed with kind and subkind information?
+//    Why don't we simply use pointers?
+// A. We are trying to make SPAN IR more analysis friendly. Packing metadata of
+//    an entity in its ID helps get basic information about the entity without
+//    ever `dereferecing` to reach the entity object containing details.
+//    For example, a constant progagation analysis can work with 32 bit ids
+//    and discover if the entity should be tracked based on its numeric type,
+//    directly from the metadata embedded in the entity id.
+//    The encoding tries to provide direct information to the analyses about
+//    the type of entity they are dealing with.
+//
+//    A smaller entity id (32 bits here) helps reduce memory usage.
+//    It has a cacading effect on memory, as the expression can be encoded
+//    in just 8 bytes and the instructions can be encoded in 16 bytes.
+//    This in turn helps analyses which can use 4 byte or 8 bytes values
+//    to store in their data flow facts.
+//
+//    This is part of the effort to help scale the analyses to a million lines
+//    of code, while keeping the memory footprint and speed of execution
+//    desirably fast.
+
+// A special ID. It is used, it basically conveys an absense of an entity.
 const NIL_ID EntityId = 0
 
 // The EntityKind (EK) type is used to represent the kind of an entity in the SPAN IR.
@@ -23,28 +44,6 @@ const NIL_ID EntityId = 0
 type EntityKind = K_EK
 
 type EId = EntityId
-
-func (e EntityId) String() string {
-	return EntityIdString(e, 'x')
-}
-
-// EntityIdString prints the different parts of a 32-bit entity ID separated by hyphens.
-// The format is: <top-2-bits>-<entity-kind>-<sub-kind>-<seq-id>
-// base can be 'd' for decimal, 'o' for octal, or 'x' for hexadecimal
-func EntityIdString(id EntityId, base byte) string {
-	// Extract the parts
-	topBits := uint32(id) >> EIdBitLength
-	eKind, subKind, seqId := id.Kind(), id.SubKind(), id.SeqId()
-
-	switch base {
-	case 'o':
-		return fmt.Sprintf("0o%o-0o%o-0o%o-0o%o", topBits, eKind, subKind, seqId)
-	case 'd':
-		return fmt.Sprintf("%d-%d-%d-%d", topBits, eKind, subKind, seqId)
-	default: // hexadecimal
-		return fmt.Sprintf("0x%x-0x%x-0x%x-0x%x", topBits, eKind, subKind, seqId)
-	}
-}
 
 // EntityId shifts and masks (whole - no divisions)
 const EIdBitLength uint8 = 30
@@ -83,9 +82,36 @@ const ImmConstMask64 uint64 = 0x0000_0000_000F_FFFF
 
 // BLOCK START: API to extract EntityId components and properties
 
+func (e EntityId) String() string {
+	return EntityIdString(e, 'x')
+}
+
+// EntityIdString prints the different parts of a 32-bit entity ID separated by hyphens.
+// The format is: <top-2-bits>-<entity-kind>-<sub-kind>-<seq-id>
+// base can be 'd' for decimal, 'o' for octal, or 'x' for hexadecimal
+func EntityIdString(id EntityId, base byte) string {
+	// Extract the parts
+	topBits := uint32(id) >> EIdBitLength
+	eKind, subKind, seqId := id.Kind(), id.SubKind(), id.SeqId()
+
+	switch base {
+	case 'o':
+		return fmt.Sprintf("0o%o-0o%o-0o%o-0o%o", topBits, eKind, subKind, seqId)
+	case 'd':
+		return fmt.Sprintf("%d-%d-%d-%d", topBits, eKind, subKind, seqId)
+	default: // hexadecimal
+		return fmt.Sprintf("0x%x-0x%x-0x%x-0x%x", topBits, eKind, subKind, seqId)
+	}
+}
+
 // TrueId returns the zeroed out non-id part of the EntityId.
 func (entityId EntityId) TrueId() EntityId {
 	return entityId & EIdMask32
+}
+
+// Top2Bits returns the most significant 2 bits of the entity id.
+func (entityId EntityId) Top2Bits() uint32 {
+	return uint32(entityId) >> EIdBitLength
 }
 
 // IsTrueId returns true if the EntityId is a true entity ID.

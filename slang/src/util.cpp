@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //  MIT License.
-//  Copyright (c) 2019 The SPAN Authors.
+//  Copyright (c) 2019-2026 The SPAN Authors.
 //
 //  Author: Anshuman Dhuliya (dhuliya@cse.iitb.ac.in)
 //
@@ -18,7 +18,7 @@
 // TRACE < DEBUG < INFO < EVENT < ERROR < FATAL
 // uint8_t slang::Util::LogLevel = SLANG_INFO_LEVEL;
 uint8_t slang::Util::LogLevel = SLANG_TRACE_LEVEL;
-uint32_t slang::Util::id = 0;
+uint32_t slang::Util::id = 1;
 
 std::string slang::Util::getDateTimeString() {
     time_t rawtime;

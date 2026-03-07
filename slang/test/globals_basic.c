@@ -2,7 +2,7 @@
 // RUN: %dslang -p %T/compile_commands.json %s -proto -o %T
 // RUN: %protoc --decode=spir.BitTU --proto_path %S/../../span/pkg/spir/ spir.proto < %T/globals_basic.c.spir 2>&1 | %FileCheck %s
 
-// A simple C program with globals with builtin types.
+// A simple C program declaring globals with builtin types.
 
 int global_int = 10;
 float global_float = 3.14;

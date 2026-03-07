@@ -1,14 +1,30 @@
 package spir
 
 // This file defines the utility functions for the SPAN IR.
+// Anything that doesn't fit in other files can be put here in a common place.
 
 import (
 	"fmt"
 	"strings"
 )
 
-// constructCFG constructs a control flow graph from an instruction sequence
-// It checks each basic block in the body and check for the following statements
+// IsBitSet returns true if bit at position n is 1 in the given value.
+func IsBitSet(value uint64, n uint) bool {
+	return value&(1<<n) != 0
+}
+
+// SetBit sets the bit at position n to 1 and returns the udated value.
+func SetBit(value uint64, n uint) uint64 {
+	return value | (1 << n)
+}
+
+// ClearBit clears the bit at position n to 0 and returns the updated value.
+func ClearBit(value uint64, n uint) uint64 {
+	return value & ^(1 << n)
+}
+
+// ConstructCFG creates a control flow graph from the given instruction sequence.
+// In the given instruction sequence, it checks for the following statements:
 //  1. If statement.
 //  2. Goto statement.
 //  3. Label statement.

@@ -1,5 +1,3 @@
-//go:build !release
-
 package errs
 
 import (

@@ -8,7 +8,7 @@ import "fmt"
 // It is an integer type in the range of 0 to 31 (5 bits).
 type ValKind = K_VK
 
-type VTSize uint32 // Size in bytes of the value type
+type VTSize uint32 // Size in bits of the value type
 type VTAlign uint8 // Alignment in bytes of the value type
 
 // QualType is an encoded integer that represents the qualified type of a value.

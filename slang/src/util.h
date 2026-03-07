@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //  MIT License.
-//  Copyright (c) 2020-2025 The SLANG Authors.
+//  Copyright (c) 2020-2026 The SLANG Authors.
 //
 //  Author: Anshuman Dhuliya (dhuliya@cse.iitb.ac.in)
 //
@@ -14,7 +14,22 @@
 #include <string>
 #include "llvm/Support/Process.h"
 
-#define ENAME "slang" // Executable name
+#define EXEC_NAME "slang"
+
+#define SET_SRC_LOCATION_BIT_PTR(bitObject, srcLoc, name) \
+    (bitObject)->set_##name##_line(srcLoc.line); \
+    (bitObject)->set_##name##_col(srcLoc.col);
+
+#define SET_SRC_LOCATION_BIT(bitObject, srcLoc, name) \
+    (bitObject).set_##name##_line(srcLoc.line); \
+    (bitObject).set_##name##_col(srcLoc.col);
+
+#define COPY_SRC_LOCATION_BIT(destBitObject1, dest, srcBitObject2, src) \
+    (destBitObject1)->set_##dest##_line((srcBitObject2)->##src##_line()); \
+    (destBitObject1)->set_##dest##_col((srcBitObject2)->##src##_col());
+
+#define EXTRACT_BITSRCLOC_OBJ(bitObject, name) \
+    BitSrcLoc((bitObject)->##name##_line(), (bitObject)->##name##_col());
 
 // TRACE < DEBUG < INFO < EVENT < ERROR < FATAL
 #define SLANG_TRACE_LEVEL 10

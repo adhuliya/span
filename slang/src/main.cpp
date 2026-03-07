@@ -1,1848 +1,1591 @@
+//===----------------------------------------------------------------------===//
+//  MIT License.
+//  Copyright (c) 2020-2026 The SLANG Authors.
+//
+//  Author: Anshuman Dhuliya (dhuliya@cse.iitb.ac.in, anshumandhuliya@gmail.com)
+//
+//===----------------------------------------------------------------------===//
+// The slang tool with main() method.
+//===----------------------------------------------------------------------===//
+
 // Example invocation:
 // ./slang test_prog_00.c -p compile_commands.json
 
+
+#include "main.h"
+
 // Generate the SPAN IR from Clang AST.
-
-#include "clang/Basic/Version.h"
-#include "clang/AST/ASTConsumer.h"
-#include "clang/AST/RecursiveASTVisitor.h"
-#include "clang/AST/ASTTypeTraits.h"
-#include "clang/AST/ParentMapContext.h"
-#include "clang/Frontend/CompilerInstance.h"
-#include "clang/Frontend/FrontendAction.h"
-#include "clang/Tooling/Tooling.h"
-#include "clang/Tooling/CommonOptionsParser.h"
-
-#include "llvm/Support/CommandLine.h"
-#include "llvm/ADT/SmallVector.h"
-
-#include <fstream>        //for std::ofstream
-#include <iomanip>        //for std::fixed
-#include <sstream>        //for std::stringstream
-#include <string>         //for std::string
-#include <unordered_map>  //for std::unordered_map
-#include <utility>        //for std::pair
-#include <vector>         //for std::vector
-#include "spir.pb.h"      //for BitTU and other protobuf classes
-#include "util.h"         //for Util::writeToFile
-
-using namespace clang::tooling;
-using namespace clang;
 
 #define K_00_GLBL_INIT_FUNC_NAME "f:00_glbl_init:optional,comma,separated,flags"
 #define K_00_GLBL_INIT_FUNC_ID 1
+#define K_00_INT32_TYPE_EID 0
+#define OK 0
+#define ERR(X) (X)
 
 static llvm::cl::OptionCategory SlangOptions("slang options");
 
 static llvm::cl::opt<std::string> OptOutputDir(
     "o",
-    llvm::cl::desc("Must specify output directory for output."
-    " The .spir extension is automatically added to each output file."),
-    llvm::cl::value_desc("directory"),
-    llvm::cl::cat(SlangOptions));
+    llvm::cl::desc(
+        "Must specify output directory for output."
+        " The .spir extension is automatically added to each output file."),
+    llvm::cl::value_desc("directory"), llvm::cl::cat(SlangOptions));
 
 // Command line option for protobuf output
 static llvm::cl::opt<bool> OptProtoOutputKnob(
     "proto",
     llvm::cl::desc("Output SPAN IR in protobuf format (default: true)"),
-    llvm::cl::init(true),
-    llvm::cl::cat(SlangOptions));
+    llvm::cl::init(true), llvm::cl::cat(SlangOptions));
 
 // Command line option for Python SPAN IR output
 static llvm::cl::opt<bool> OptPySpanIrOutputKnob(
-    "py-spanir", 
+    "py-spanir",
     llvm::cl::desc("Output SPAN IR in Python format (default: false)"),
-    llvm::cl::init(false),
-    llvm::cl::cat(SlangOptions));
+    llvm::cl::init(false), llvm::cl::cat(SlangOptions));
 
-namespace spir {
+void slang::SlangRecord::genMemberAccessExpr(std::string &of, std::string &loc,
+                                             int index, SlangExpr &slangExpr) {
+  std::stringstream ss;
 
-typedef std::vector<const Stmt *> StmtVector;
-typedef std::vector<std::string> SpanStmtVector;
+  ss << "expr.MemberE(\"" << getMemberName(index) << "\"";
+  ss << ", " << of;
+  ss << ", " << loc << ")"; // end expr.MemberE(
 
-// non-breaking space
-#define NBSP1 " "
-#define NBSP2 NBSP1 NBSP1
-#define NBSP4 NBSP2 NBSP2
-#define NBSP6 NBSP2 NBSP4
-#define NBSP8 NBSP4 NBSP4
-#define NBSP10 NBSP4 NBSP6
-#define NBSP12 NBSP6 NBSP6
+  slangExpr.expr = ss.str();
+  slangExpr.qualType = members[index].type;
+} // slang::SlangRecord::genMemberAccessExpr()
 
-#define VAR_NAME_PREFIX "v:"
-#define GLOBAL_VAR_NAME_PREFIX "g:"
-#define FUNC_NAME_PREFIX "f:"
+std::string
+slang::SlangRecord::genMemberExpr(std::vector<uint32_t> indexVector) {
+  std::stringstream ss;
 
-#define DONT_PRINT "DONT_PRINT"
-#define NULL_STMT "NULL_STMT"
+  std::vector<std::string> members;
+  SlangRecord *currentRecord = this;
+  llvm::errs() << "\n------------------------\n"
+               << currentRecord->members.size() << "\n";
+  llvm::errs() << "\n------------------------\n" << indexVector.size() << "\n";
+  llvm::errs() << "\n------------------------\n"
+               << indexVector[0] << indexVector[1] << "\n";
+  llvm::errs().flush();
+  for (auto it = indexVector.begin(); it != indexVector.end(); ++it) {
+    members.push_back(currentRecord->members[*it].name);
+    if (currentRecord->members[*it].slangRecord != nullptr) {
+      // means its a member of type record
+      currentRecord = currentRecord->members[*it].slangRecord;
+    }
+  }
 
-#define LABEL_PREFIX "instr.LabelI(\""
-#define LABEL_SUFFIX "\")"
+  std::string prefix = "";
+  for (auto it = members.end() - 1; it != members.begin() - 1; --it) {
+    ss << prefix << "expr.MemberE(\"" << *it << "\"";
+    if (prefix == "") {
+      prefix = ", ";
+    }
+  }
 
-// the numbering 0,1,2 is important.
-enum EdgeLabel { FalseEdge = 0, TrueEdge = 1, UnCondEdge = 2 };
-enum SlangRecordKind { Struct = 0, Union = 1 };
+  return ss.str();
+} // slang::SlangRecord::genMemberExpr()
 
-class SlangBitExpr {
-public:
-  BitExpr* bitExpr;
-  bool compound;
-  QualType qualType;
-  bool nonTmpVar;
-  uint64_t varId;
+std::string slang::SlangRecord::toString() {
+  std::stringstream ss;
+  ss << NBSP6;
+  ss << ((recordKind == Struct) ? "types.Struct(\n" : "types.Union(\n");
 
-  SlangBitExpr() {
-    bitExpr = nullptr;
-    compound = false;
-    qualType = QualType();
-    nonTmpVar = true;
-    varId = 0;
-  };
+  ss << NBSP8 << "name = ";
+  ss << "\"" << name << "\""
+     << ",\n";
 
-  std::string toString() {
+  std::string suffix = ",\n";
+  ss << NBSP8 << "members = [\n";
+  for (auto member : members) {
+    ss << NBSP10 << member.toString() << suffix;
+  }
+  ss << NBSP8 << "],\n";
+
+  ss << NBSP8 << "info = " << locStr << ",\n";
+  ss << NBSP6 << ")"; // close types.*(...
+
+  return ss.str();
+} // slang::SlangRecord::toString()
+
+std::string slang::SlangRecord::toShortString() {
+  std::stringstream ss;
+
+  if (recordKind == Struct) {
+    ss << "types.Struct";
+  } else {
+    ss << "types.Union";
+  }
+  ss << "(\"" << name << "\")";
+
+  return ss.str();
+} // slang::SlangRecord::toShortString()
+
+void slang::SlangTU::addStmt(std::string spanStmt) {
+  if (isStaticLocal) {
+    auto func = &funcMap[K_00_GLBL_INIT_FUNC_ID];
+    func->spanStmts.push_back(spanStmt);
+  } else {
+    currFunc->spanStmts.push_back(spanStmt);
+  }
+}
+
+// Save the instruction in the global or the current function.
+// Global and function static declarations can be broken into temporary
+// assignments; in such cases the instruction must be added to the global
+// function.
+void slang::SlangTU::addStmtBit(spir::BitInsn *bitInsn) {
+  if (isStaticLocal) {
+    // Function 0 is a special function that contains initialization of all
+    // globals.
+    bittu.mutable_functions(K_00_GLBL_INIT_FUNC_ID)->mutable_insns()->AddAllocated(bitInsn);
+  } else {
+    currBitFunc->mutable_insns()->AddAllocated(bitInsn);
+  }
+}
+
+bool slang::SlangTU::isBasicBitType(spir::BitDataType *bitDataType) {
+  return (bitDataType->vkind() == spir::K_VK::TINT8 ||
+          bitDataType->vkind() == spir::K_VK::TINT16 ||
+          bitDataType->vkind() == spir::K_VK::TINT32 ||
+          bitDataType->vkind() == spir::K_VK::TINT64 ||
+          bitDataType->vkind() == spir::K_VK::TUINT8 ||
+          bitDataType->vkind() == spir::K_VK::TUINT16 ||
+          bitDataType->vkind() == spir::K_VK::TUINT32 ||
+          bitDataType->vkind() == spir::K_VK::TUINT64 ||
+          bitDataType->vkind() == spir::K_VK::TFLOAT16 ||
+          bitDataType->vkind() == spir::K_VK::TFLOAT32 ||
+          bitDataType->vkind() == spir::K_VK::TFLOAT64 ||
+          bitDataType->vkind() == spir::K_VK::TVOID ||
+          bitDataType->vkind() == spir::K_VK::TBOOL);
+}
+
+// Add the given entity id and (move) its entity info to the TU.
+void slang::SlangTU::moveAndAddBitEntityInfo(uint64_t eid,
+                                             spir::BitEntityInfo &bitEntityInfo) {
+  // STEP 1: Assert that the entity ID does not already exist
+  if (bittu.entityinfo().find(eid) != bittu.entityinfo().end()) {
     std::stringstream ss;
-    ss << "SlangBitExpr:\n";
-    ss << "  Expr     : " << (bitExpr ? bitExpr->DebugString() : "nullptr") << "\n";
-    ss << "  ExprType : " << qualType.getAsString() << "\n";
-    ss << "  NonTmpVar: " << (nonTmpVar ? "true" : "false") << "\n";
-    ss << "  VarId    : " << varId << "\n";
-
-    return ss.str();
+    ss << "Entity ID " << eid << " already exists in BitTU";
+    throw std::runtime_error(ss.str());
   }
-};
-
-class SlangExpr {
-public:
-  std::string expr;
-  bool compound;
-  std::string locStr;
-  QualType qualType;
-  bool nonTmpVar;
-  uint64_t varId;
-
-  SlangExpr() {
-    expr = "";
-    compound = false;
-    locStr = "";
-    qualType = QualType();
-    nonTmpVar = true;
-    varId = 0;
-  };
-
-  std::string toString() {
-    std::stringstream ss;
-    ss << "SlangExpr:\n";
-    ss << "  Expr     : " << expr << "\n";
-    ss << "  ExprType : " << qualType.getAsString() << "\n";
-    ss << "  NonTmpVar: " << (nonTmpVar ? "true" : "false") << "\n";
-    ss << "  VarId    : " << varId << "\n";
-
-    return ss.str();
+  // STEP 2: Add a name to eid mapping.
+  if (!bitEntityInfo.strval().empty()) {
+    bittu.mutable_namestoids()->emplace(bitEntityInfo.strval(), eid);
   }
-};
+  // STEP 3: Move the entity info object to the 'eid -> EntityInfo' map.
+  bittu.mutable_entityinfo()->emplace(eid, std::move(bitEntityInfo));
+}
 
-class SlangVar {
-public:
-  uint64_t id;
-  // variable name: e.g. a variable 'x' in main function, is "v:main:x".
-  std::string name;
-  std::string typeStr;
+// BOUND START: dump_routines
 
-  SlangVar() {}
+// Function to get output filename or error out
+std::string slang::SlangTU::getOutFilename(std::string suffix) {
+  // If output directory is specified, use it, otherwise use current directory
+  std::string outDir = OptOutputDir.empty() ? std::string(".") : OptOutputDir;
 
-  SlangVar(uint64_t id, std::string name) {
-    // specially for anonymous member names (needed in member expressions)
-    this->id = id;
-    this->name = name;
-    this->typeStr = DONT_PRINT;
+  // Build full path by combining output directory, tuName and suffix
+  std::string fullPath = outDir + "/" + tuName + suffix;
+
+  SLANG_INFO("Outputting to: " << fullPath)
+
+  return fullPath;
+}
+
+// dump entire span ir module for the translation unit.
+void slang::SlangTU::dumpSlangIr() {
+  // Write the bit translation unit to a file
+  if (OptProtoOutputKnob) {
+    writeProtoToFile(bittu, getOutFilename(".spir"));
   }
 
-  std::string convertToString() {
-    std::stringstream ss;
-    ss << "\"" << name << "\": " << typeStr << ",";
-    return ss.str();
+  if (!OptPySpanIrOutputKnob) {
+    return;
   }
 
-  void setLocalVarName(std::string varName, std::string funcName) {
-    name = VAR_NAME_PREFIX;
-    name += funcName + ":" + varName;
+  std::stringstream ss;
+
+  dumpHeader(ss);
+  dumpVariables(ss);
+  dumpGlobalInits(ss);
+  dumpObjs(ss);
+  dumpFooter(ss);
+
+  if (this->tuName.size()) {
+    slang::Util::writeToFile(getOutFilename(".spanir.py"), ss.str());
+  } else {
+    SLANG_INFO("FILE_HAS_NO_FUNCTION: Hence no output spanir file.")
   }
+} // dumpSlangIr()
 
-  void setLocalVarNameStatic(std::string varName, std::string funcName) {
-    name = GLOBAL_VAR_NAME_PREFIX;
-    name += funcName + ":" + varName;
+void slang::SlangTU::dumpHeader(std::stringstream &ss) {
+  ss << "\n";
+  ss << "# START: A_SPAN_translation_unit!\n";
+  ss << "\n";
+  ss << "# eval() the contents of this file.\n";
+  ss << "# Keep the following imports in effect when calling eval.\n";
+  ss << "\n";
+  ss << "# import span.ir.types as types\n";
+  ss << "# import span.ir.op as op\n";
+  ss << "# import span.ir.expr as expr\n";
+  ss << "# import span.ir.instr as instr\n";
+  ss << "# import span.ir.constructs as constructs\n";
+  ss << "# import span.ir.tunit as tunit\n";
+  ss << "# from span.ir.types import Loc\n";
+  ss << "\n";
+  ss << "# An instance of span.ir.tunit.TranslationUnit class.\n";
+  ss << "tunit.TranslationUnit(\n";
+  ss << NBSP2 << "name = \"" << tuName << "\",\n";
+  ss << NBSP2 << "description = \"Auto-Translated from Clang AST.\",\n";
+} // dumpHeader()
+
+void slang::SlangTU::dumpFooter(std::stringstream &ss) {
+  ss << ") # tunit.TranslationUnit() ends\n";
+  ss << "\n# END  : A_SPAN_translation_unit!\n";
+} // dumpFooter()
+
+void slang::SlangTU::dumpVariables(std::stringstream &ss) {
+  ss << "\n";
+  ss << NBSP2 << "allVars = {\n";
+  for (const auto &var : varMap) {
+    if (var.second.typeStr == DONT_PRINT)
+      continue;
+    ss << NBSP4;
+    ss << "\"" << var.second.name << "\": " << var.second.typeStr << ",\n";
   }
+  ss << NBSP2 << "}, # end allVars dict\n\n";
+} // dumpVariables()
 
-  void setGlobalVarName(std::string varName) {
-    name = GLOBAL_VAR_NAME_PREFIX;
-    name += varName;
+void slang::SlangTU::dumpGlobalInits(std::stringstream &ss) {
+  SlangFunc slangFunc = funcMap[K_00_GLBL_INIT_FUNC_ID];
+  // ss << "\n";
+  ss << NBSP2 << "globalInits = [\n";
+  for (auto insn : slangFunc.spanStmts) {
+    ss << NBSP4 << insn << ",\n";
   }
-}; // class SlangVar
+  ss << NBSP2 << "], # end globalInits.\n\n";
+}
 
-// holds info of a single function
-class SlangFunc {
-public:
-  std::string name;     // e.g. 'main'
-  std::string fullName; // e.g. 'f:main'
-  std::string retType;
-  std::vector<std::string> paramNames;
-  bool variadic;
+void slang::SlangTU::dumpObjs(std::stringstream &ss) {
+  dumpRecords(ss);
+  dumpFunctions(ss);
+}
 
-  uint32_t tmpVarCount;
-
-  SpanStmtVector spanStmts;
-  bool hasBody;
-
-  SlangFunc() {
-    variadic = false;
-    paramNames = std::vector<std::string>{};
-    tmpVarCount = 0;
-    hasBody = false;
+void slang::SlangTU::dumpRecords(std::stringstream &ss) {
+  ss << NBSP2 << "allRecords = {\n";
+  for (auto slangRecord : recordMap) {
+    ss << NBSP4;
+    ss << "\"" << slangRecord.second.name << "\":\n";
+    ss << slangRecord.second.toString();
+    ss << ",\n\n";
   }
-}; // class SlangFunc
+  ss << NBSP2 << "}, # end allRecords dict\n\n";
+}
 
-class SlangRecord;
-
-class SlangRecordField {
-public:
-  bool anonymous;
-  std::string name;
-  std::string typeStr;
-  SlangRecord *slangRecord;
-  QualType type;
-
-  SlangRecordField()
-      : anonymous{false}, name{""}, typeStr{""}, type{QualType()} {}
-
-  std::string getName() const { return name; }
-
-  std::string toString() {
-    std::stringstream ss;
-    ss << "("
-       << "\"" << name << "\"";
-    ss << ", " << typeStr << ")";
-    return ss.str();
-  }
-
-  void clear() {
-    anonymous = false;
-    name = "";
-    typeStr = "";
-    type = QualType();
-  }
-}; // class SlangRecordField
-
-// holds a struct or a union record
-class SlangRecord {
-public:
-  SlangRecordKind recordKind; // Struct, or Union
-  bool anonymous;
-  std::string name;
-  std::vector<SlangRecordField> members;
-  std::string locStr;
-  int32_t nextAnonymousFieldId;
-
-  SlangRecord() {
-    recordKind = Struct; // Struct, or Union
-    anonymous = false;
-    name = "";
-    nextAnonymousFieldId = 0;
-  }
-
-  std::string getNextAnonymousFieldIdStr() {
-    std::stringstream ss;
-    nextAnonymousFieldId += 1;
-    ss << nextAnonymousFieldId;
-    return ss.str();
-  }
-
-  std::vector<SlangRecordField> getFields() const { return members; }
-
-  std::string getMemberName(int index) const { return members[index].name; }
-
-  void genMemberAccessExpr(std::string &of, std::string &loc, int index,
-                           SlangExpr &slangExpr) {
-    std::stringstream ss;
-
-    ss << "expr.MemberE(\"" << getMemberName(index) << "\"";
-    ss << ", " << of;
-    ss << ", " << loc << ")"; // end expr.MemberE(
-
-    slangExpr.expr = ss.str();
-    slangExpr.qualType = members[index].type;
-  }
-
-  std::string genMemberExpr(std::vector<uint32_t> indexVector) {
-    std::stringstream ss;
-
-    std::vector<std::string> members;
-    SlangRecord *currentRecord = this;
-    llvm::errs() << "\n------------------------\n"
-                 << currentRecord->members.size() << "\n";
-    llvm::errs() << "\n------------------------\n"
-                 << indexVector.size() << "\n";
-    llvm::errs() << "\n------------------------\n"
-                 << indexVector[0] << indexVector[1] << "\n";
-    llvm::errs().flush();
-    for (auto it = indexVector.begin(); it != indexVector.end(); ++it) {
-      members.push_back(currentRecord->members[*it].name);
-      if (currentRecord->members[*it].slangRecord != nullptr) {
-        // means its a member of type record
-        currentRecord = currentRecord->members[*it].slangRecord;
-      }
+void slang::SlangTU::dumpFunctions(std::stringstream &ss) {
+  ss << NBSP2 << "allFunctions = {\n";
+  std::string prefix;
+  for (auto slangFunc : funcMap) {
+    if (slangFunc.second.fullName == K_00_GLBL_INIT_FUNC_NAME) {
+      continue;
     }
 
-    std::string prefix = "";
-    for (auto it = members.end() - 1; it != members.begin() - 1; --it) {
-      ss << prefix << "expr.MemberE(\"" << *it << "\"";
-      if (prefix == "") {
+    ss << NBSP4; // indent
+    ss << "\"" << slangFunc.second.fullName << "\":\n";
+    ss << NBSP6 << "constructs.Func(\n";
+
+    // members
+    ss << NBSP8 << "name = "
+       << "\"" << slangFunc.second.fullName << "\",\n";
+    ss << NBSP8 << "paramNames = [";
+    prefix = "";
+    for (std::string &paramName : slangFunc.second.paramNames) {
+      ss << prefix << "\"" << paramName << "\"";
+      if (prefix.size() == 0) {
         prefix = ", ";
       }
     }
-
-    return ss.str();
-  }
-
-  std::string toString() {
-    std::stringstream ss;
-    ss << NBSP6;
-    ss << ((recordKind == Struct) ? "types.Struct(\n" : "types.Union(\n");
-
-    ss << NBSP8 << "name = ";
-    ss << "\"" << name << "\""
+    ss << "],\n";
+    ss << NBSP8
+       << "variadic = " << (slangFunc.second.variadic ? "True" : "False")
        << ",\n";
 
-    std::string suffix = ",\n";
-    ss << NBSP8 << "members = [\n";
-    for (auto member : members) {
-      ss << NBSP10 << member.toString() << suffix;
-    }
-    ss << NBSP8 << "],\n";
+    ss << NBSP8 << "returnType = " << slangFunc.second.retType << ",\n";
 
-    ss << NBSP8 << "info = " << locStr << ",\n";
-    ss << NBSP6 << ")"; // close types.*(...
-
-    return ss.str();
-  }
-
-  std::string toShortString() {
-    std::stringstream ss;
-
-    if (recordKind == Struct) {
-      ss << "types.Struct";
+    // member: basicBlocks
+    ss << "\n";
+    // ss << NBSP8 << "# Note: -1 is always start/entry BB. (REQUIRED)\n";
+    // ss << NBSP8 << "# Note: 0 is always end/exit BB (REQUIRED)\n";
+    ss << NBSP8 << "instrSeq = [\n";
+    if (slangFunc.second.hasBody && slangFunc.second.spanStmts.size() == 0) {
+      ss << NBSP12 << "instr.NopI(),\n";
     } else {
-      ss << "types.Union";
+      for (auto insn : slangFunc.second.spanStmts) {
+        ss << NBSP12 << insn << ",\n";
+      }
     }
-    ss << "(\"" << name << "\")";
+    ss << NBSP8 << "], # instrSeq end.\n";
 
-    return ss.str();
+    // close this function object
+    ss << NBSP6 << "), # " << slangFunc.second.fullName << "() end. \n\n";
   }
-}; // class SlangRecord
+  ss << NBSP2 << "}, # end allFunctions dict\n\n";
+} // dumpFunctions()
 
-// holds info about the switch-cases
-class SwitchCtrlFlowLabels {
-public:
-  int counter;
-  std::string switchStrId;       // id for the switch
-  std::string thisCaseCondLabel; // label for the current case
-  std::string thisBodyLabel;     // label for the current body
-  std::string nextCaseCondLabel; // label for the next case (when encountered)
-  std::string nextBodyLabel;     // label for the next body (case or default)
-  std::string switchStartLabel;  // switch start label
-  std::string switchExitLabel;   // switch exit label
-  std::string defaultCaseLabel;
-  std::string gotoLabel;       // a label
-  std::string gotoLabelLocStr; // a label
-  SlangExpr switchCond;
+void slang::SlangTU::writeProtoToFile(const spir::BitTU &bittu,
+                                      const std::string &filename) {
+  std::ofstream output(filename, std::ios::binary);
+  if (!output) {
+    std::cerr << EXEC_NAME ": Failed to open " << filename << " for writing."
+              << std::endl;
+    return;
+  }
+  if (!bittu.SerializeToOstream(&output)) {
+    std::cerr << EXEC_NAME ": Failed to write protobuf message to " << filename
+              << std::endl;
+  }
+}
+
+// BOUND END  : dump_routines
+
+slang::SpirGen::SpirGen(ASTContext *ctx) : Ctx(ctx) {
+  stu.uniqLabelCounter = 1;
+  stu.uniqIdCounter = 1;
+  stu.isStaticLocal = false;
+  stu.uniqRecordIdCounter = 1;
+  stu.switchCfls = nullptr;
+
+  FD = nullptr;
+  charSv = new SmallVector<char, 64>();
+  charSv->data()[0] = '\0';
+} // SpirGen() constructor
+
+// BOUND START: top_level_routines
+
+void slang::SpirGen::slangInit(const TranslationUnitDecl *TU) {
+  // Get the full path from source manager
+  std::string fullPath =
+      Ctx->getSourceManager()
+          .getFileEntryForID(Ctx->getSourceManager().getMainFileID())
+          ->tryGetRealPathName()
+          .str();
+
+  // Extract the filename and directory from the full path
+  size_t lastSlash = fullPath.find_last_of("/\\");
+  stu.tuName = fullPath.substr(lastSlash + 1);
+  stu.tuDirectory = fullPath.substr(0, lastSlash);
+
+  // Store the translation unit name in the protobuf message
+  stu.bittu.set_tuname(stu.tuName);
+  stu.bittu.set_abspath(fullPath);
+
+  // Add the origin and version of the TU
+  stu.bittu.set_origin("Clang AST " + clang::getClangFullVersion());
+}
+
+// It is invoked once for each source translation unit function.
+void slang::SpirGen::handleFunctionDecl(FunctionDecl *D) {
+  SLANG_EVENT("BOUND START: SLANG_Generated_Output.\n")
+
+  if (FD) {
+    FD = FD->getCanonicalDecl();
+    FD = const_cast<FunctionDecl *>(handleFuncNameAndType(FD, true));
+    stu.currFunc = &stu.funcMap[(uint64_t)FD];
+    SLANG_DEBUG("CurrentFunction: " << stu.currFunc->name << " "
+                                    << (uint64_t)FD->getCanonicalDecl())
+    if (FD->isVariadic()) {
+      SLANG_ERROR("ERROR:VariadicFunction(SkippingBody): "
+                  << stu.currFunc->name << " "
+                  << (uint64_t)FD->getCanonicalDecl())
+    } else {
+      handleFunctionBody(FD); // only for non-variadic functions.
+    }
+  } else {
+    SLANG_ERROR("Decl is not a Function")
+  }
+} // handleFunctionDecl()
+
+// invoked when the whole translation unit has been processed
+void slang::SpirGen::checkEndOfTranslationUnit(const TranslationUnitDecl *TU) {
+  stu.dumpSlangIr();
+  SLANG_EVENT("Translation Unit Ended.\n")
+  SLANG_EVENT("BOUND END  : SLANG_Generated_Output.\n")
+} // checkEndOfTranslationUnit()
+
+// BOUND END  : top_level_routines
+
+// BOUND START: handling_routines
+
+// T can be a Stmt, VarDecl, ValueDecl, or any class that has getBeginLoc()
+// method defined.
+template <typename T>
+slang::SrcLoc slang::SpirGen::getSrcLocBit(const T *decl) {
+  slang::SrcLoc loc;
+
+  loc.line =
+      Ctx->getSourceManager().getExpansionLineNumber(decl->getBeginLoc());
+  loc.col =
+      Ctx->getSourceManager().getExpansionColumnNumber(decl->getBeginLoc());
+
+  return loc;
+} // getSrcLocBit()
+
+// T can be a Stmt, VarDecl, ValueDecl, or any class that has getBeginLoc()
+// method defined.
+template <typename T>
+std::string slang::SpirGen::getLocationString(const T *decl) {
   std::stringstream ss;
-  bool defaultExists;
+  uint32_t line = 0;
+  uint32_t col = 0;
 
-  SwitchCtrlFlowLabels(std::string id) {
-    switchStrId = id;
-    counter = 0;
-    defaultExists = false;
-    switchStartLabel = switchStrId + "SwitchStart";
-    switchExitLabel = switchStrId + "SwitchExit";
-    defaultCaseLabel = switchStrId + "Default";
-    thisCaseCondLabel = ""; // initially no condition
-    thisBodyLabel = "";     // initially no body
-    auto count = getNextCounterStr();
-    nextCaseCondLabel = genLabel("CaseCond", count);
-    nextBodyLabel = genLabel("CaseBody", count);
-    gotoLabel = "";
-    gotoLabelLocStr = "";
+  ss << "Info(Loc(";
+  line = Ctx->getSourceManager().getExpansionLineNumber(decl->getBeginLoc());
+  ss << line << ",";
+  col = Ctx->getSourceManager().getExpansionColumnNumber(decl->getBeginLoc());
+  ss << col << "))";
+
+  return ss.str();
+}
+
+void slang::SpirGen::handleGlobalInits(const TranslationUnitDecl *decl) {
+  if (!decl) {
+    SLANG_FATAL("TranslationUnitDecl is null");
+    return;
   }
 
-  void setupForThisCase() {
-    thisCaseCondLabel = nextCaseCondLabel;
-    thisBodyLabel = nextBodyLabel;
-    auto count = getNextCounterStr();
-    nextCaseCondLabel = genLabel("CaseCond", count);
-    nextBodyLabel = genLabel("CaseBody", count);
-  }
-
-  void setupForDefaultCase() {
-    defaultExists = true;
-    thisCaseCondLabel = defaultCaseLabel;
-    thisBodyLabel = nextBodyLabel;
-    auto count = getNextCounterStr();
-    // nextCaseCondLabel = genLabel("CaseCond", count); // deliberatly commented
-    nextBodyLabel = genLabel("CaseBody", count);
-  }
-
-  std::string getNextCounterStr() {
-    std::stringstream ss;
-    counter += 1;
-    ss << counter;
-    return ss.str();
-  }
-
-  std::string genLabel(std::string s, std::string count) {
-    std::stringstream ss;
-    ss << switchStrId << s << count;
-    return ss.str();
-  }
-}; // class SwitchCtrlFlowLabels
-
-// holds details of the entire translation unit
-class SlangTranslationUnit {
-public:
-  std::string tuName; // the current translation unit file name
-  std::string tuDirectory; // the current translation unit directory
-  BitTU bittu; // the bit translation unit
-  BitFunc* currentBitFunc;
-
-  SpanStmtVector globalInits; // global variable initializations
-
-  SlangFunc *currFunc; // the current function being translated
-  uint64_t uniqIdCounter; // used to generate unique ids for tmp variables etc.
-  uint32_t uniqLabelCounter; // used to generate unique labels
-  uint32_t uniqRecordIdCounter; // to generate unique ids for anonymous records
-
-  // maps a unique variable id (address of AST node) to its SlangVar.
-  std::unordered_map<uint64_t, SlangVar> varMap;
-  // map of var-name to a count:
-  // used in case two local variables have same name (blocks)
-  std::unordered_map<std::string, uint64_t> varCountMap;
-  // contains functions
-  std::unordered_map<uint64_t, SlangFunc> funcMap;
-  // contains structs
-  std::unordered_map<uint64_t, SlangRecord> recordMap;
-
-  // tracks variables that become dirty in an expression
-  std::unordered_map<uint64_t, SlangExpr> dirtyVars;
-
-  // vector of start and exit label of constructs which can contain break and
-  // continue stmts.
-  std::vector<std::pair<std::string, std::string>> entryExitLabels;
-
-  // to handle the conversion of switch statements
-  SwitchCtrlFlowLabels *switchCfls;
-
-  // is static local var decl?
-  bool isStaticLocal;
-
-  void pushLabels(std::string entry, std::string exit) {
-    auto labelPair = std::make_pair(entry, exit);
-    entryExitLabels.push_back(labelPair);
-  }
-
-  void popLabel() { entryExitLabels.pop_back(); }
-
-  std::pair<std::string, std::string> &peekLabel() {
-    return entryExitLabels[entryExitLabels.size() - 1];
-  }
-
-  std::string peekEntryLabel() {
-    return entryExitLabels[entryExitLabels.size() - 1].first;
-  }
-
-  std::string peekExitLabel() {
-    return entryExitLabels[entryExitLabels.size() - 1].second;
-  }
-
-  SlangTranslationUnit()
-      : uniqIdCounter{0}, tuName{}, tuDirectory{}, bittu{}, globalInits{}, 
-        currFunc{nullptr}, uniqRecordIdCounter{0}, varMap{}, varCountMap{}, funcMap{},
-        dirtyVars{}, switchCfls{nullptr}, isStaticLocal{false} {}
-
-  // clear the buffer for the next function.
-  void clear() {
-    varMap.clear();
-    dirtyVars.clear();
-    varCountMap.clear();
-  } // clear()
-
-  uint32_t genNextLabelCount() {
-    uniqLabelCounter += 1;
-    return uniqLabelCounter;
-  }
-
-  std::string genNextLabelCountStr() {
-    std::stringstream ss;
-    ss << genNextLabelCount();
-    return ss.str();
-  }
-
-  void addStmt(std::string spanStmt) {
-    if (isStaticLocal) {
-      auto func = &funcMap[0];
-      func->spanStmts.push_back(spanStmt);
-    } else {
-      currFunc->spanStmts.push_back(spanStmt);
-    }
-  }
-
-  void addStmtBit(BitInsn* bitInsn) {
-    if (isStaticLocal) {
-      bittu.mutable_functions(0)->mutable_insns()->AddAllocated(bitInsn);
-    } else {
-      currentBitFunc->mutable_insns()->AddAllocated(bitInsn);
-    }
-  }
-
-  void pushBackFuncParams(std::string paramName) {
-    SLANG_TRACE("AddingParam: " << paramName << " to func " << currFunc->name)
-    currFunc->paramNames.push_back(paramName);
-  }
-
-  void setFuncReturnType(std::string &retType) { currFunc->retType = retType; }
-
-  void setVariadicness(bool variadic) { currFunc->variadic = variadic; }
-
-  std::string getCurrFuncName() {
-    return currFunc->name; // not fullName
-  }
-
-  SlangVar &getVar(uint64_t varAddr) {
-    // FIXME: there is no check
-    return varMap[varAddr];
-  }
-
-  bool isNewVar(uint64_t varAddr) {
-    return varMap.find(varAddr) == varMap.end();
-  }
-
-  uint32_t nextTmpId() {
-    currFunc->tmpVarCount += 1;
-    return currFunc->tmpVarCount;
-  }
-
-  uint64_t nextUniqueId() {
-    uniqIdCounter += 1;
-    return uniqIdCounter;
-  }
-
-  void addVar(uint64_t varId, SlangVar &slangVar) { varMap[varId] = slangVar; }
-
-  bool isBasicBitType(BitDataType* bitDataType) {
-    return (bitDataType->vkind() == K_VK::TINT8 || bitDataType->vkind() == K_VK::TINT16 ||
-        bitDataType->vkind() == K_VK::TINT32 || bitDataType->vkind() == K_VK::TINT64 ||
-        bitDataType->vkind() == K_VK::TUINT8 || bitDataType->vkind() == K_VK::TUINT16 ||
-        bitDataType->vkind() == K_VK::TUINT32 || bitDataType->vkind() == K_VK::TUINT64 ||
-        bitDataType->vkind() == K_VK::TFLOAT16 || bitDataType->vkind() == K_VK::TFLOAT32 ||
-        bitDataType->vkind() == K_VK::TFLOAT64 || bitDataType->vkind() == K_VK::TVOID ||
-        bitDataType->vkind() == K_VK::TBOOL);
-  }
-
-  // Add the given entity id and (move) its entity info to the TU.
-  void moveAndAddBitEntityInfo(uint64_t eid, BitEntityInfo& bitEntityInfo) {
-    // Assert that the entity ID does not already exist
-    if (bittu.entityinfo().find(eid) != bittu.entityinfo().end()) {
-      std::stringstream ss;
-      ss << "Entity ID " << eid << " already exists in BitTU";
-      throw std::runtime_error(ss.str());
-    }
-    if (!bitEntityInfo.strval().empty()) {
-      bittu.mutable_namestoids()->emplace(bitEntityInfo.strval(), eid);
-    }
-    bittu.mutable_entityinfo()->emplace(eid, std::move(bitEntityInfo));
-  }
-
-  bool isRecordPresent(uint64_t recordAddr) {
-    return !(recordMap.find(recordAddr) == recordMap.end());
-  }
-
-  bool isRecordPresentBit(uint64_t recordAddr) {
-    return bittu.entityinfo().find(recordAddr) != bittu.entityinfo().end();
-  }
-
-  void addRecord(uint64_t recordAddr, SlangRecord slangRecord) {
-    recordMap[recordAddr] = slangRecord;
-  }
-
-  SlangRecord &getRecord(uint64_t recordAddr) { return recordMap[recordAddr]; }
-
-  int32_t getNextRecordId() {
-    uniqRecordIdCounter += 1;
-    return uniqRecordIdCounter;
-  }
-
-  std::string getNextRecordIdStr() {
-    std::stringstream ss;
-    ss << getNextRecordId();
-    return ss.str();
-  }
-
-  std::string convertFuncName(std::string funcName) {
-    std::stringstream ss;
-    ss << FUNC_NAME_PREFIX << funcName;
-    return ss.str();
-  }
-
-  std::string convertVarExpr(uint64_t varAddr) {
-    // if here, var should already be in varMap
-    std::stringstream ss;
-
-    auto slangVar = varMap[varAddr];
-    ss << slangVar.name;
-
-    return ss.str();
-  }
-
-  uint64_t convertVarExprBit(uint64_t varAddr) {
-    // if here, var should already be known
-    return varAddr; 
-  }
-
-
-  // BOUND START: dump_routines (to SPAN Strings)
-
-  // Function to get output filename or error out
-  std::string getOutFilename(std::string suffix) {
-    // If output directory is specified, use it, otherwise use current directory
-    std::string outDir = OptOutputDir.empty() ? std::string(".") : OptOutputDir;
-
-    // Build full path by combining output directory, tuName and suffix
-    std::string fullPath = outDir + "/" + tuName + suffix;
-
-    SLANG_INFO("Outputting to: " << fullPath)
-      
-    return fullPath;
-  }
-
-  // dump entire span ir module for the translation unit.
-  void dumpSlangIr() {
-    // Write the bit translation unit to a file
-    if (OptProtoOutputKnob) {
-      writeProtoToFile(bittu, getOutFilename(".spir"));
-    }
-
-    if (!OptPySpanIrOutputKnob) {
-      return;
-    }
-
-    std::stringstream ss;
-
-    dumpHeader(ss);
-    dumpVariables(ss);
-    dumpGlobalInits(ss);
-    dumpObjs(ss);
-    dumpFooter(ss);
-
-    if (this->tuName.size()) {
-      slang::Util::writeToFile(getOutFilename(".spanir.py"), ss.str());
-    } else {
-      SLANG_INFO("FILE_HAS_NO_FUNCTION: Hence no output spanir file.")
-    }
-  } // dumpSlangIr()
-
-  void dumpHeader(std::stringstream &ss) {
-    ss << "\n";
-    ss << "# START: A_SPAN_translation_unit!\n";
-    ss << "\n";
-    ss << "# eval() the contents of this file.\n";
-    ss << "# Keep the following imports in effect when calling eval.\n";
-    ss << "\n";
-    ss << "# import span.ir.types as types\n";
-    ss << "# import span.ir.op as op\n";
-    ss << "# import span.ir.expr as expr\n";
-    ss << "# import span.ir.instr as instr\n";
-    ss << "# import span.ir.constructs as constructs\n";
-    ss << "# import span.ir.tunit as tunit\n";
-    ss << "# from span.ir.types import Loc\n";
-    ss << "\n";
-    ss << "# An instance of span.ir.tunit.TranslationUnit class.\n";
-    ss << "tunit.TranslationUnit(\n";
-    ss << NBSP2 << "name = \"" << tuName << "\",\n";
-    ss << NBSP2 << "description = \"Auto-Translated from Clang AST.\",\n";
-  } // dumpHeader()
-
-  void dumpFooter(std::stringstream &ss) {
-    ss << ") # tunit.TranslationUnit() ends\n";
-    ss << "\n# END  : A_SPAN_translation_unit!\n";
-  } // dumpFooter()
-
-  void dumpVariables(std::stringstream &ss) {
-    ss << "\n";
-    ss << NBSP2 << "allVars = {\n";
-    for (const auto &var : varMap) {
-      if (var.second.typeStr == DONT_PRINT)
-        continue;
-      ss << NBSP4;
-      ss << "\"" << var.second.name << "\": " << var.second.typeStr << ",\n";
-    }
-    ss << NBSP2 << "}, # end allVars dict\n\n";
-  } // dumpVariables()
-
-  void dumpGlobalInits(std::stringstream &ss) {
-    SlangFunc slangFunc = funcMap[0];
-    // ss << "\n";
-    ss << NBSP2 << "globalInits = [\n";
-    for (auto insn : slangFunc.spanStmts) {
-      ss << NBSP4 << insn << ",\n";
-    }
-    ss << NBSP2 << "], # end globalInits.\n\n";
-  }
-
-  void dumpObjs(std::stringstream &ss) {
-    dumpRecords(ss);
-    dumpFunctions(ss);
-  }
-
-  void dumpRecords(std::stringstream &ss) {
-    ss << NBSP2 << "allRecords = {\n";
-    for (auto slangRecord : recordMap) {
-      ss << NBSP4;
-      ss << "\"" << slangRecord.second.name << "\":\n";
-      ss << slangRecord.second.toString();
-      ss << ",\n\n";
-    }
-    ss << NBSP2 << "}, # end allRecords dict\n\n";
-  }
-
-  void dumpFunctions(std::stringstream &ss) {
-    ss << NBSP2 << "allFunctions = {\n";
-    std::string prefix;
-    for (auto slangFunc : funcMap) {
-      if (slangFunc.second.fullName == K_00_GLBL_INIT_FUNC_NAME) {
-        continue;
-      }
-
-      ss << NBSP4; // indent
-      ss << "\"" << slangFunc.second.fullName << "\":\n";
-      ss << NBSP6 << "constructs.Func(\n";
-
-      // members
-      ss << NBSP8 << "name = "
-         << "\"" << slangFunc.second.fullName << "\",\n";
-      ss << NBSP8 << "paramNames = [";
-      prefix = "";
-      for (std::string &paramName : slangFunc.second.paramNames) {
-        ss << prefix << "\"" << paramName << "\"";
-        if (prefix.size() == 0) {
-          prefix = ", ";
-        }
-      }
-      ss << "],\n";
-      ss << NBSP8
-         << "variadic = " << (slangFunc.second.variadic ? "True" : "False")
-         << ",\n";
-
-      ss << NBSP8 << "returnType = " << slangFunc.second.retType << ",\n";
-
-      // member: basicBlocks
-      ss << "\n";
-      // ss << NBSP8 << "# Note: -1 is always start/entry BB. (REQUIRED)\n";
-      // ss << NBSP8 << "# Note: 0 is always end/exit BB (REQUIRED)\n";
-      ss << NBSP8 << "instrSeq = [\n";
-      if (slangFunc.second.hasBody && slangFunc.second.spanStmts.size() == 0) {
-        ss << NBSP12 << "instr.NopI(),\n";
-      } else {
-        for (auto insn : slangFunc.second.spanStmts) {
-          ss << NBSP12 << insn << ",\n";
-        }
-      }
-      ss << NBSP8 << "], # instrSeq end.\n";
-
-      // close this function object
-      ss << NBSP6 << "), # " << slangFunc.second.fullName << "() end. \n\n";
-    }
-    ss << NBSP2 << "}, # end allFunctions dict\n\n";
-  } // dumpFunctions()
-
-  void writeProtoToFile(const spir::BitTU &bittu, const std::string &filename) {
-    std::ofstream output(filename, std::ios::binary);
-    if (!output) {
-      std::cerr << ENAME ": Failed to open " << filename << " for writing."
-                << std::endl;
-      return;
-    }
-    if (!bittu.SerializeToOstream(&output)) {
-      std::cerr << ENAME ": Failed to write protobuf message to " << filename
-                << std::endl;
-    }
-  }
-
-  // BOUND END  : dump_routines (to SPAN Strings)
-
-}; // class SlangTranslationUnit
-
-class SpirGenerator {
-
-private:
-  // static_members initialized
-  SlangTranslationUnit stu;
-  FunctionDecl *FD; // The active function decl being processed
-  ASTContext *Ctx;
-  SmallVectorImpl<char> *charSv;
-
-public:
-
-  SpirGenerator(ASTContext *ctx) : Ctx(ctx) {
-    stu.uniqLabelCounter = 0;
-    stu.uniqIdCounter = 0;
-    stu.isStaticLocal = false;
-    stu.uniqRecordIdCounter = 0;
-    stu.switchCfls = nullptr;
-
-    FD = nullptr;
-    charSv = new SmallVector<char, 64>();
-    charSv->data()[0] = '\0';
-  }
-
-  // BOUND START: top_level_routines
-
-  void slangInit(const TranslationUnitDecl *TU) {
-    // Get the full path from source manager
-    std::string fullPath = Ctx->getSourceManager().getFileEntryForID(
-        Ctx->getSourceManager().getMainFileID())->tryGetRealPathName().str();
-
-    // Extract the filename and directory from the full path
-    size_t lastSlash = fullPath.find_last_of("/\\");
-    stu.tuName = fullPath.substr(lastSlash + 1);
-    stu.tuDirectory = fullPath.substr(0, lastSlash);
-    
-    // Store the translation unit name in the protobuf message
-    stu.bittu.set_tuname(stu.tuName);
-    stu.bittu.set_abspath(fullPath);
-
-    // Add the origin and version of the TU
-    stu.bittu.set_origin("Clang AST " + clang::getClangFullVersion());
-  }
-
-  // It is invoked once for each source translation unit function.
-  void handleFunctionDecl(FunctionDecl *D) {
-    SLANG_EVENT("BOUND START: SLANG_Generated_Output.\n")
-
-    if (FD) {
-      FD = FD->getCanonicalDecl();
-      FD = const_cast<FunctionDecl*>(handleFuncNameAndType(FD, true));
-      stu.currFunc = &stu.funcMap[(uint64_t) FD];
-      SLANG_DEBUG("CurrentFunction: " << stu.currFunc->name << " " << (uint64_t)FD->getCanonicalDecl())
-      if (FD->isVariadic()) {
-        SLANG_ERROR("ERROR:VariadicFunction(SkippingBody): "\
-          << stu.currFunc->name << " " << (uint64_t)FD->getCanonicalDecl())
-      } else {
-        handleFunctionBody(FD); // only for non-variadic functions.
-      }
-    } else {
-      SLANG_ERROR("Decl is not a Function")
-    }
-  } // checkASTCodeBody()
-
-  // invoked when the whole translation unit has been processed
-  void checkEndOfTranslationUnit(const TranslationUnitDecl *TU) {
-    stu.dumpSlangIr();
-    SLANG_EVENT("Translation Unit Ended.\n")
-    SLANG_EVENT("BOUND END  : SLANG_Generated_Output.\n")
-  } // checkEndOfTranslationUnit()
-
-  // BOUND END  : top_level_routines
-
-  // BOUND START: handling_routines
-
-  // T can be a Stmt, VarDecl, ValueDecl, or any class that has getBeginLoc()
-  // method defined.
-  template <typename T>
-  BitSrcLoc* getSrcLocBit(const T *decl) {
-    BitSrcLoc *loc = new BitSrcLoc();
-  
-    loc->set_line(
-        Ctx->getSourceManager().getExpansionLineNumber(decl->getBeginLoc()));
-    loc->set_col(
-        Ctx->getSourceManager().getExpansionColumnNumber(decl->getBeginLoc()));
-  
-    return loc;
-  } // getSrcLocBit()
-
-  // T can be a Stmt, VarDecl, ValueDecl, or any class that has getBeginLoc()
-  // method defined.
-  template <typename T>
-  std::string getLocationString(const T *decl) {
-    std::stringstream ss;
-    uint32_t line = 0;
-    uint32_t col = 0;
-
-    ss << "Info(Loc(";
-    line = Ctx->getSourceManager().getExpansionLineNumber(decl->getBeginLoc());
-    ss << line << ",";
-    col = Ctx->getSourceManager().getExpansionColumnNumber(decl->getBeginLoc());
-    ss << col << "))";
-
-    return ss.str();
-  }
-
-  // All global initializations are put in a special function.
-  void handleGlobalInits(const TranslationUnitDecl *decl) {
-    if (!decl) {
-      SLANG_FATAL("TranslationUnitDecl is null");
-      return;
-    }
-  
-    // Initialize the BitTU function for global inits
-    BitFunc* bitFunc = stu.bittu.add_functions();
-    bitFunc->set_fid(K_00_GLBL_INIT_FUNC_ID);
-    bitFunc->set_fname(K_00_GLBL_INIT_FUNC_NAME);
-    stu.currentBitFunc = bitFunc; // mark the current function being processed
-
-    SlangFunc slangFunc;
-    slangFunc.fullName  = slangFunc.name = K_00_GLBL_INIT_FUNC_NAME;
-    stu.funcMap[0]      = slangFunc;
-    stu.currFunc        = &stu.funcMap[0];   // the special global function
-  
-    for (auto it = decl->decls_begin(); it != decl->decls_end(); ++it) {
-      const VarDecl *varDecl = dyn_cast<VarDecl>(*it);
-      if (varDecl) {
-        SLANG_DEBUG("Found global variable: "
-                    << varDecl->getNameAsString() << " at "
-                    << getLocationString(varDecl));
-        handleVarDecl(varDecl);
-      }
-    }
-  } // handleGlobalInits()
-
-  void handleFunctionBody(FunctionDecl *funcDecl) {
-    const Stmt *body = funcDecl->getBody();
-    if (funcDecl->hasBody()) {
-      stu.currFunc->hasBody = true;
-      convertStmt(body);
-      SLANG_DEBUG("FunctionHasBody: " << funcDecl->getNameAsString())
-    } else {
-      // FIXME: control doesn't reach here :(
-      stu.currFunc->hasBody = false;
-      SLANG_ERROR("No body for function: " << funcDecl->getNameAsString())
-    }
-  }
-
-  // records the function details
-  const FunctionDecl* handleFuncNameAndType(const FunctionDecl *funcDecl,
-      bool force=false) {
-    const FunctionDecl *realFuncDecl = funcDecl;
-
-    if (funcDecl->isDefined()) {
-      funcDecl = funcDecl->getDefinition();
-      realFuncDecl = funcDecl;
-      // funcDecl = funcDecl->getCanonicalDecl();
-    }
-
-    if (stu.funcMap.find((uint64_t)funcDecl) == stu.funcMap.end() || force) {
-      // if here, function not already present. Add its details.
-
-      SlangFunc slangFunc{};
-      slangFunc.name = funcDecl->getNameInfo().getAsString();
-      slangFunc.fullName = stu.convertFuncName(slangFunc.name);
-      SLANG_DEBUG("AddingFunction: " << slangFunc.name << " " << (uint64_t)funcDecl\
-      << " " << funcDecl->isDefined() << " " << (uint64_t)funcDecl->getCanonicalDecl())
-
-
-      // STEP 1.2: Get function parameters.
-      // if (funcDecl->doesThisDeclarationHaveABody())  //& !funcDecl->hasPrototype())
-      for (unsigned i = 0, e = funcDecl->getNumParams(); i != e; ++i) {
-        const ParmVarDecl *paramVarDecl = funcDecl->getParamDecl(i);
-        handleValueDecl(paramVarDecl, slangFunc.name); // adds the var too
-        slangFunc.paramNames.push_back(stu.getVar((uint64_t)paramVarDecl).name);
-      }
-      slangFunc.variadic = funcDecl->isVariadic();
-
-      // STEP 1.3: Get function return type.
-      slangFunc.retType = convertClangType(funcDecl->getReturnType());
-
-      // STEP 2: Copy the function to the map.
-      stu.funcMap[(uint64_t)funcDecl] = slangFunc;
-    }
-
-    return realFuncDecl;
-  } // handleFuncNameAndType()
-
-  // All variable declarations are handled here.
-  void handleVarDecl(const VarDecl *varDecl, std::string funcName = "") {
-    uint64_t varAddr = (uint64_t)varDecl;
-    std::string varName;
-
-    stu.isStaticLocal = varDecl->isStaticLocal();
-
-    if (stu.isNewVar(varAddr)) {
-      // Seeing the variable for the first time here.
-      SlangVar slangVar{};
-      slangVar.id = varAddr;
-
-      varName = varDecl->getNameAsString();
-
-      //delit slangVar.typeStr = convertClangType(varDecl->getType());
-
-      // Create BitDataType for the variable and store in BitTU
-      BitDataType *dt = new BitDataType();
-      convertClangTypeBit(varDecl->getType(), dt);
-
-      BitEntityInfo bitEntityInfo;
-      bitEntityInfo.set_eid(varAddr);
-      bitEntityInfo.set_allocated_dt(dt);
-
-      SLANG_DEBUG("NEW_VAR: " << slangVar.convertToString())
-
-      if (varName == "") {
-        // used only to name anonymous function parameters
-        varName = slang::Util::getNextUniqueIdStr() + "param";
-      }
-
-      if (varDecl->isStaticLocal()) {
-        slangVar.setLocalVarNameStatic(varName, funcName);
-        bitEntityInfo.set_ekind(EVAR_LOCL_STATIC);
-      } else if (varDecl->hasLocalStorage()) {
-        slangVar.setLocalVarName(varName, funcName);
-        bitEntityInfo.set_ekind(EVAR_LOCL);
-        if (stu.varCountMap.find(slangVar.name) != stu.varCountMap.end()) {
-          stu.varCountMap[slangVar.name]++;
-          uint64_t newVarId = stu.varCountMap[slangVar.name];
-          slangVar.setLocalVarName(std::to_string(newVarId) + "D" + varName, funcName);
-        } else {
-          stu.varCountMap[slangVar.name] = 1;
-        }
-      } else if (varDecl->hasGlobalStorage()) {
-        slangVar.setGlobalVarName(varName);
-        bitEntityInfo.set_ekind(EVAR_GLBL);
-      } else if (varDecl->hasExternalStorage()) {
-        // Treat these as global storage by default
-        slangVar.setGlobalVarName(varName);
-        bitEntityInfo.set_ekind(EVAR_GLBL);
-      } else {
-        SLANG_ERROR("ERROR:Unknown variable storage.")
-      }
-
-      stu.addVar(slangVar.id, slangVar);
-      bitEntityInfo.set_allocated_loc(getSrcLocBit(varDecl));
-      bitEntityInfo.set_strval(slangVar.name);
-      stu.bittu.mutable_namestoids()->insert({slangVar.name, slangVar.id});
-      stu.bittu.mutable_entityinfo()->insert({slangVar.id, std::move(bitEntityInfo)});
-      return; //delit
-
-      if (varDecl->getType()->isArrayType()) {
-        auto arrayType = varDecl->getType()->getAsArrayTypeUnsafe();
-        if (isa<VariableArrayType>(arrayType)) {
-          if (OptPySpanIrOutputKnob) {
-            SlangExpr varExpr = convertVariable(varDecl, getLocationString(varDecl));
-            SlangExpr sizeExpr = convertVarArrayVariable(varDecl->getType(),
-                                                         arrayType->getElementType());
-
-            SlangExpr allocExpr;
-            std::stringstream ss;
-            ss << "expr.AllocE(" << sizeExpr.expr;
-            ss << ", " << getLocationString(varDecl) << ")";
-            allocExpr.expr = ss.str();
-            allocExpr.qualType = Ctx->VoidPtrTy;
-            allocExpr.locStr = getLocationString(varDecl);
-            allocExpr.compound = true;
-
-            SlangExpr tmpVoidPtr = convertToTmp(allocExpr);
-
-            SlangExpr castExpr;
-            ss.str("");
-            ss << "expr.CastE(" << tmpVoidPtr.expr;
-            ss << ", " << convertClangType(varDecl->getType());
-            ss << ", " << getLocationString(varDecl) << ")";
-            castExpr.expr = ss.str();
-            castExpr.qualType = varDecl->getType();
-            castExpr.compound = true;
-            castExpr.locStr = getLocationString(varDecl);
-
-            addAssignInstr(varExpr, castExpr, getLocationString(varDecl));
-          }
-
-          if (OptProtoOutputKnob) {
-            BitEntity* varEntity = convertVariableBit(varDecl);
-            BitEntity sizeEntity = convertVarArrayVariableBit(varDecl->getType(),
-                arrayType->getElementType());
-          
-            SlangBitExpr* allocExpr = createUnaryBitExpr(sizeEntity, K_XK::XALLOC, Ctx->VoidPtrTy);
-            BitEntity* tmpVoidPtr = convertToTmpBit(allocExpr);
-          
-            BitEntity* typeEntity = convertClangTypeToBitEntity(varDecl->getType(),
-                ::slang::Util::getNextUniqueId());
-            SlangBitExpr* castExprBit = createBinaryBitExpr(tmpVoidPtr, K_XK::XCAST,
-                typeEntity, varDecl->getType());
-
-            addAssignBitInstr(convertEntityToBitExpr(varEntity), castExprBit->bitExpr);
-          }
-        }
-      }
-
-      // check if it has a initialization body
-      if (varDecl->hasInit()) {
-        // yes it has, so initialize it
-        if (varDecl->getInit()->getStmtClass() == Stmt::InitListExprClass) {
-          if (OptPySpanIrOutputKnob) {
-            SLANG_ERROR("ERROR:AggregateInit: Check if the output is correct.")
-            varDecl->dump();
-            SlangExpr slangExpr = convertSlangVar(slangVar, varDecl);
-            convertInitListExprNew(slangExpr, cast<InitListExpr>(varDecl->getInit()));
-          }
-
-          if (OptProtoOutputKnob) {
-            SlangBitExpr slangBitExpr = convertSlangVar(slangVar, varDecl);
-            convertInitListExprNew(slangExpr, cast<InitListExpr>(varDecl->getInit()));
-          }
-        } else {
-          if (OptPySpanIrOutputKnob) {
-            SlangExpr slangExpr = convertStmt(varDecl->getInit());
-            if (slangExpr.expr == "ERROR:Unknown") {
-              SLANG_ERROR("SEARCH_ME")
-            }
-            std::string locStr = getLocationString(varDecl);
-            std::stringstream ss;
-            ss << "instr.AssignI(";
-            ss << "expr.VarE(\"" << slangVar.name << "\"";
-            ss << ", " << locStr << ")"; // close expr.VarE(...
-            ss << ", " << slangExpr.expr;
-            ss << ", " << locStr << ")"; // close instr.AssignI(...
-            if (varDecl->isStaticLocal()) { // them make a global init
-              auto func = &stu.funcMap[0];
-              func->spanStmts.push_back(ss.str());
-            } else {
-              stu.addStmt(ss.str());
-            }
-          }
-          
-          if (OptProtoOutputKnob) {
-            // FIXME: autogenerated -- incomplete
-            BitEntity* varEntity = convertVariableBit(varDecl);
-            BitEntity* initEntity = convertStmt(varDecl->getInit());
-            addAssignBitInstr(convertEntityToBitExpr(varEntity), convertEntityToBitExpr(initEntity));
-          }
-        }
-      }
-    } // if (stu.isNewVar(varAddr))
-
-    // else: No need to re-process an already processed variable.
-
-    stu.isStaticLocal = false;
-  } // handleVarDecl()
-
-
-  // record the variable name and type
-  void handleValueDecl(const ValueDecl *valueDecl, std::string funcName) {
-    const VarDecl *varDecl = dyn_cast<VarDecl>(valueDecl);
-
-    std::string varName;
+  // STEP 1: Initialize the BitTU function for global inits
+  // and mark it as the current function.
+  spir::BitFunc *bitFunc = stu.bittu.add_functions();
+  bitFunc->set_fid(K_00_GLBL_INIT_FUNC_ID);
+  bitFunc->set_fname(K_00_GLBL_INIT_FUNC_NAME);
+  stu.currBitFunc = bitFunc; // mark the current function being processed
+
+  SlangFunc slangFunc;
+  slangFunc.fullName = slangFunc.name = K_00_GLBL_INIT_FUNC_NAME;
+  stu.funcMap[K_00_GLBL_INIT_FUNC_ID] = slangFunc;
+  stu.currFunc = &stu.funcMap[K_00_GLBL_INIT_FUNC_ID]; // the special global function
+
+  // STEP 2: Iterate over all global variable declarations.
+  for (auto it = decl->decls_begin(); it != decl->decls_end(); ++it) {
+    const VarDecl *varDecl = dyn_cast<VarDecl>(*it);
     if (varDecl) {
-      handleVarDecl(varDecl, funcName);
-
-    } else if(valueDecl->getAsFunction()) {
-      handleFuncNameAndType(valueDecl->getAsFunction());
-
-    } else {
-      SLANG_ERROR("ValueDecl is not a VarDecl or a FunctionDecl!")
-      SLANG_TRACE_GUARD(valueDecl->dump());
+      SLANG_DEBUG("Found global variable: " << varDecl->getNameAsString()
+                                            << " at "
+                                            << getLocationString(varDecl));
+      handleVarDecl(varDecl);
     }
-  } // handleValueDecl()
+  }
+} // handleGlobalInits()
 
+void slang::SpirGen::handleFunctionBody(FunctionDecl *funcDecl) {
+  const Stmt *body = funcDecl->getBody();
+  if (funcDecl->hasBody()) {
+    stu.currFunc->hasBody = true;
+    convertStmt(body);
+    SLANG_DEBUG("FunctionHasBody: " << funcDecl->getNameAsString())
+  } else {
+    // FIXME: control doesn't reach here :(
+    stu.currFunc->hasBody = false;
+    SLANG_ERROR("No body for function: " << funcDecl->getNameAsString())
+  }
+} // handleFunctionBody()
 
-  void handleDeclStmt(const DeclStmt *declStmt) {
-    SLANG_DEBUG("Set last DeclStmt to DeclStmt at " << (uint64_t)(declStmt));
+// records the function details
+const FunctionDecl *
+slang::SpirGen::handleFuncNameAndType(const FunctionDecl *funcDecl,
+                                      bool force) {
+  const FunctionDecl *realFuncDecl = funcDecl;
 
-    std::stringstream ss;
+  if (funcDecl->isDefined()) {
+    funcDecl = funcDecl->getDefinition();
+    realFuncDecl = funcDecl;
+    // funcDecl = funcDecl->getCanonicalDecl();
+  }
 
-    for (auto it = declStmt->decl_begin(); it != declStmt->decl_end(); ++it) {
-      if (isa<VarDecl>(*it)) {
-        handleVarDecl(cast<VarDecl>(*it), stu.currFunc->name);
+  if (stu.funcMap.find((uint64_t)funcDecl) == stu.funcMap.end() || force) {
+    // if here, function not already present. Add its details.
+
+    SlangFunc slangFunc{};
+    slangFunc.name = funcDecl->getNameInfo().getAsString();
+    slangFunc.fullName = stu.convertFuncName(slangFunc.name);
+    SLANG_DEBUG("AddingFunction: " << slangFunc.name << " "
+                                   << (uint64_t)funcDecl << " "
+                                   << funcDecl->isDefined() << " "
+                                   << (uint64_t)funcDecl->getCanonicalDecl())
+
+    // STEP 1.2: Get function parameters.
+    // if (funcDecl->doesThisDeclarationHaveABody())  //&
+    // !funcDecl->hasPrototype())
+    for (unsigned i = 0, e = funcDecl->getNumParams(); i != e; ++i) {
+      const ParmVarDecl *paramVarDecl = funcDecl->getParamDecl(i);
+      handleValueDecl(paramVarDecl, slangFunc.name); // adds the var too
+      slangFunc.paramNames.push_back(stu.getVar((uint64_t)paramVarDecl).name);
+    }
+    slangFunc.variadic = funcDecl->isVariadic();
+
+    // STEP 1.3: Get function return type.
+    slangFunc.retType = convertClangType(funcDecl->getReturnType());
+
+    // STEP 2: Copy the function to the map.
+    stu.funcMap[(uint64_t)funcDecl] = slangFunc;
+  }
+
+  return realFuncDecl;
+} // handleFuncNameAndType()
+
+// All variable declarations are handled here.
+int slang::SpirGen::handleVarDecl(const VarDecl *varDecl, std::string funcName) {
+  uint64_t varAddr = (uint64_t)varDecl;
+  std::string varName;
+
+  stu.isStaticLocal = varDecl->isStaticLocal();
+
+  if (stu.isNewVar(varAddr)) {
+    // If here, we are seeing the variable for the first time.
+    SlangVar slangVar{};
+    slangVar.id = varAddr;
+    varName = varDecl->getNameAsString();
+
+    // delit slangVar.typeStr = convertClangType(varDecl->getType());
+
+    // Create spir::BitDataType for the variable and store in BitTU
+    MayValue result = convertClangTypeBit(varDecl->getType());
+    if (result.errorCode) {
+      SLANG_ERROR("ERROR: Failed to convert variable type: "
+                  << varDecl->getNameAsString()
+                  << " Error code: " << result.errorCode)
+      return 1000 + result.errorCode;
+    }
+
+    spir::BitEntityInfo bitEntityInfo;
+    bitEntityInfo.set_eid(varAddr);
+    bitEntityInfo.set_datatypeeid(result.value);
+
+    SLANG_DEBUG("NEW_VAR: " << slangVar.convertToString())
+
+    if (varName == "") {
+      // used only to name anonymous function parameters
+      varName = slang::Util::getNextUniqueIdStr() + "param";
+    }
+
+    if (varDecl->isStaticLocal()) {
+      slangVar.setLocalVarNameStatic(varName, funcName);
+      bitEntityInfo.set_ekind(spir::K_EK::EVAR_LOCL_STATIC);
+    } else if (varDecl->hasLocalStorage()) {
+      slangVar.setLocalVarName(varName, funcName);
+      bitEntityInfo.set_ekind(spir::K_EK::EVAR_LOCL);
+      if (stu.varCountMap.find(slangVar.name) != stu.varCountMap.end()) {
+        stu.varCountMap[slangVar.name]++;
+        uint64_t newVarId = stu.varCountMap[slangVar.name];
+        slangVar.setLocalVarName(std::to_string(newVarId) + "D" + varName,
+                                 funcName);
+      } else {
+        stu.varCountMap[slangVar.name] = 1;
+      }
+    } else if (varDecl->hasGlobalStorage()) {
+      slangVar.setGlobalVarName(varName);
+      bitEntityInfo.set_ekind(spir::K_EK::EVAR_GLBL);
+    } else if (varDecl->hasExternalStorage()) {
+      // Treat these as global storage by default
+      slangVar.setGlobalVarName(varName);
+      bitEntityInfo.set_ekind(spir::K_EK::EVAR_GLBL);
+    } else {
+      SLANG_ERROR("ERROR:Unknown variable storage.")
+    }
+
+    stu.addVar(slangVar.id, slangVar);
+    bitEntityInfo.set_loc_line(getSrcLocBit(varDecl).line);
+    bitEntityInfo.set_loc_col(getSrcLocBit(varDecl).col);
+    bitEntityInfo.set_strval(slangVar.name);
+    stu.bittu.mutable_namestoids()->insert({slangVar.name, slangVar.id});
+    stu.bittu.mutable_entityinfo()->insert(
+        {slangVar.id, std::move(bitEntityInfo)});
+
+    if (varDecl->getType()->isArrayType()) {
+      auto arrayType = varDecl->getType()->getAsArrayTypeUnsafe();
+      if (isa<VariableArrayType>(arrayType)) {
+        if (OptPySpanIrOutputKnob) {
+          SlangExpr varExpr =
+              convertVariable(varDecl, getLocationString(varDecl));
+          SlangExpr sizeExpr = convertVarArrayVariable(
+              varDecl->getType(), arrayType->getElementType());
+
+          SlangExpr allocExpr;
+          std::stringstream ss;
+          ss << "expr.AllocE(" << sizeExpr.expr;
+          ss << ", " << getLocationString(varDecl) << ")";
+          allocExpr.expr = ss.str();
+          allocExpr.qualType = Ctx->VoidPtrTy;
+          allocExpr.locStr = getLocationString(varDecl);
+          allocExpr.compound = true;
+
+          SlangExpr tmpVoidPtr = convertToTmp(allocExpr);
+
+          SlangExpr castExpr;
+          ss.str("");
+          ss << "expr.CastE(" << tmpVoidPtr.expr;
+          ss << ", " << convertClangType(varDecl->getType());
+          ss << ", " << getLocationString(varDecl) << ")";
+          castExpr.expr = ss.str();
+          castExpr.qualType = varDecl->getType();
+          castExpr.compound = true;
+          castExpr.locStr = getLocationString(varDecl);
+
+          addAssignInstr(varExpr, castExpr, getLocationString(varDecl));
+        }
+
+        if (OptProtoOutputKnob) {
+          spir::BitEntity varEntity = convertVariableBit(varDecl);
+          spir::BitEntity sizeEntity = convertVarArrayVariableBit(
+              varDecl->getType(), arrayType->getElementType());
+
+          SlangBitExpr allocExpr =
+              createUnaryBitExpr(&sizeEntity, spir::K_XK::XALLOC, Ctx->VoidPtrTy);
+          spir::BitEntity *tmpVoidPtr = convertToTmpBitExpr(allocExpr);
+
+          spir::BitEntity *typeEntity = convertClangTypeToBitEntity(
+              varDecl->getType(), ::slang::Util::getNextUniqueId());
+          SlangBitExpr castExprBit = createBinaryBitExpr(
+              tmpVoidPtr, spir::K_XK::XCAST, typeEntity, varDecl->getType());
+
+          addAssignBitInstr(createBitExpr(varEntity), castExprBit->bitExpr);
+        }
       }
     }
-  } // handleDeclStmt()
 
-  // BOUND END  : handling_routines
+    // check if it has a initialization body
+    if (varDecl->hasInit()) {
+      // yes it has, so initialize it
+      if (varDecl->getInit()->getStmtClass() == Stmt::InitListExprClass) {
+        if (OptPySpanIrOutputKnob) {
+          SLANG_ERROR("ERROR:AggregateInit: Check if the output is correct.")
+          varDecl->dump();
+          SlangExpr slangExpr = convertSlangVar(slangVar, varDecl);
+          convertInitListExprNew(slangExpr,
+                                 cast<InitListExpr>(varDecl->getInit()));
+        }
 
-  // BOUND START: conversion_routines
+        if (OptProtoOutputKnob) {
+          SlangBitExpr slangBitExpr = convertSlangVar(slangVar, varDecl);
+          convertInitListExprNew(slangExpr,
+                                 cast<InitListExpr>(varDecl->getInit()));
+        }
+      } else {
+        if (OptPySpanIrOutputKnob) {
+          SlangExpr slangExpr = convertStmt(varDecl->getInit());
+          if (slangExpr.expr == "ERROR:Unknown") {
+            SLANG_ERROR("SEARCH_ME")
+          }
+          std::string locStr = getLocationString(varDecl);
+          std::stringstream ss;
+          ss << "instr.AssignI(";
+          ss << "expr.VarE(\"" << slangVar.name << "\"";
+          ss << ", " << locStr << ")"; // close expr.VarE(...
+          ss << ", " << slangExpr.expr;
+          ss << ", " << locStr << ")";    // close instr.AssignI(...
+          if (varDecl->isStaticLocal()) { // them make a global init
+            auto func = &stu.funcMap[K_00_GLBL_INIT_FUNC_ID];
+            func->spanStmts.push_back(ss.str());
+          } else {
+            stu.addStmt(ss.str());
+          }
+        }
 
-  // stmtconversion
-  SlangExpr convertStmt(const Stmt *stmt) {
-    SlangExpr slangExpr;
+        if (OptProtoOutputKnob) {
+          // FIXME: autogenerated -- incomplete
+          spir::BitEntity varEntity = convertVariableBit(varDecl);
+          SlangBitExpr bExpr = convertStmtBit(varDecl->getInit());
+          addAssignBitInstr(createBitExpr(varEntity),
+                            std::move(bExpr.cloneBitExpr())));
+        }
+      }
+    }
+  } // if (stu.isNewVar(varAddr))
 
-    if (!stmt) { return slangExpr; }
+  // else: No need to re-process an already processed variable.
 
-    SLANG_INFO("ConvertingStmt : " << stmt->getStmtClassName() << "\n")
+  stu.isStaticLocal = false;
+} // handleVarDecl()
 
-    switch (stmt->getStmtClass()) {
-    case Stmt::PredefinedExprClass:
-      return convertPredefinedExpr(cast<PredefinedExpr>(stmt));
+// record the variable name and type
+void slang::SpirGen::handleValueDecl(const ValueDecl *valueDecl,
+                                     std::string funcName) {
+  const VarDecl *varDecl = dyn_cast<VarDecl>(valueDecl);
 
-    case Stmt::StmtExprClass:
-      return convertStmtExpr(cast<StmtExpr>(stmt));
+  std::string varName;
+  if (varDecl) {
+    handleVarDecl(varDecl, funcName);
 
-    case Stmt::CaseStmtClass:
-      return convertCaseStmt(cast<CaseStmt>(stmt));
+  } else if (valueDecl->getAsFunction()) {
+    handleFuncNameAndType(valueDecl->getAsFunction());
 
-    case Stmt::DefaultStmtClass:
-      return convertDefaultCaseStmt(cast<DefaultStmt>(stmt));
+  } else {
+    SLANG_ERROR("ValueDecl is not a VarDecl or a FunctionDecl!")
+    SLANG_TRACE_GUARD(valueDecl->dump());
+  }
+} // handleValueDecl()
 
-    case Stmt::BreakStmtClass:
-      return convertBreakStmt(cast<BreakStmt>(stmt));
+void slang::SpirGen::handleDeclStmt(const DeclStmt *declStmt) {
+  SLANG_DEBUG("Set last DeclStmt to DeclStmt at " << (uint64_t)(declStmt));
 
-    case Stmt::ContinueStmtClass:
-      return convertContinueStmt(cast<ContinueStmt>(stmt));
+  for (auto it = declStmt->decl_begin(); it != declStmt->decl_end(); ++it) {
+    if (isa<VarDecl>(*it)) {
+      handleVarDecl(cast<VarDecl>(*it), stu.currFunc->name);
+    }
+  }
+} // handleDeclStmt()
 
-    case Stmt::LabelStmtClass:
-      return convertLabel(cast<LabelStmt>(stmt));
+void slang::SpirGen::handleDeclStmtBit(const DeclStmt *declStmt) {
+  SLANG_DEBUG("Set last DeclStmt to DeclStmt at " << (uint64_t)(declStmt));
 
-    case Stmt::ConditionalOperatorClass:
-      return convertConditionalOp(cast<ConditionalOperator>(stmt));
+  for (auto it = declStmt->decl_begin(); it != declStmt->decl_end(); ++it) {
+    if (isa<VarDecl>(*it)) {
+      handleVarDecl(cast<VarDecl>(*it), stu.currFunc->name);
+    }
+  }
+} // handleDeclStmtBit()
 
-    case Stmt::IfStmtClass:
-      return convertIfStmt(cast<IfStmt>(stmt));
+// BOUND END  : handling_routines
 
-    case Stmt::WhileStmtClass:
-      return convertWhileStmt(cast<WhileStmt>(stmt));
+// BOUND START: conversion_routines
 
-    case Stmt::DoStmtClass:
-      return convertDoStmt(cast<DoStmt>(stmt));
+// stmtconversion
+SlangExpr slang::SpirGen::convertStmt(const Stmt *stmt) {
+  SlangExpr slangExpr;
 
-    case Stmt::ForStmtClass:
-      return convertForStmt(cast<ForStmt>(stmt));
+  if (!stmt) {
+    return slangExpr;
+  }
 
-    case Stmt::UnaryOperatorClass:
-      return convertUnaryOperator(cast<UnaryOperator>(stmt));
+  SLANG_INFO("ConvertingStmt : " << stmt->getStmtClassName() << "\n")
 
-    case Stmt::CompoundAssignOperatorClass:
-    case Stmt::BinaryOperatorClass:
-      return convertBinaryOperator(cast<BinaryOperator>(stmt));
+  switch (stmt->getStmtClass()) {
+  case Stmt::PredefinedExprClass:
+    return convertPredefinedExpr(cast<PredefinedExpr>(stmt));
 
-    case Stmt::ParenExprClass:
-      return convertParenExpr(cast<ParenExpr>(stmt));
+  case Stmt::StmtExprClass:
+    return convertStmtExpr(cast<StmtExpr>(stmt));
 
-    case Stmt::CompoundStmtClass:
-      return convertCompoundStmt(cast<CompoundStmt>(stmt));
+  case Stmt::CaseStmtClass:
+    return convertCaseStmt(cast<CaseStmt>(stmt));
 
-    case Stmt::DeclStmtClass:
-      handleDeclStmt(cast<DeclStmt>(stmt)); break;
+  case Stmt::DefaultStmtClass:
+    return convertDefaultCaseStmt(cast<DefaultStmt>(stmt));
 
-    case Stmt::DeclRefExprClass:
-      return convertDeclRefExpr(cast<DeclRefExpr>(stmt));
+  case Stmt::BreakStmtClass:
+    return convertBreakStmt(cast<BreakStmt>(stmt));
 
-    case Stmt::ConstantExprClass:
-      return convertConstantExpr(cast<ConstantExpr>(stmt));
+  case Stmt::ContinueStmtClass:
+    return convertContinueStmt(cast<ContinueStmt>(stmt));
 
-    case Stmt::IntegerLiteralClass:
-      return convertIntegerLiteral(cast<IntegerLiteral>(stmt));
+  case Stmt::LabelStmtClass:
+    return convertLabel(cast<LabelStmt>(stmt));
 
-    case Stmt::CharacterLiteralClass:
-      return convertCharacterLiteral(cast<CharacterLiteral>(stmt));
+  case Stmt::ConditionalOperatorClass:
+    return convertConditionalOp(cast<ConditionalOperator>(stmt));
 
-    case Stmt::FloatingLiteralClass:
-      return convertFloatingLiteral(cast<FloatingLiteral>(stmt));
+  case Stmt::IfStmtClass:
+    return convertIfStmt(cast<IfStmt>(stmt));
 
-    case Stmt::StringLiteralClass:
-      return convertStringLiteral(cast<StringLiteral>(stmt));
+  case Stmt::WhileStmtClass:
+    return convertWhileStmt(cast<WhileStmt>(stmt));
 
-    case Stmt::ImplicitCastExprClass:
-      return convertImplicitCastExpr(cast<ImplicitCastExpr>(stmt));
+  case Stmt::DoStmtClass:
+    return convertDoStmt(cast<DoStmt>(stmt));
 
-    case Stmt::ReturnStmtClass:
-      return convertReturnStmt(cast<ReturnStmt>(stmt));
+  case Stmt::ForStmtClass:
+    return convertForStmt(cast<ForStmt>(stmt));
 
-    case Stmt::SwitchStmtClass:
-      return convertSwitchStmtNew(cast<SwitchStmt>(stmt));
+  case Stmt::UnaryOperatorClass:
+    return convertUnaryOperator(cast<UnaryOperator>(stmt));
 
-    case Stmt::GotoStmtClass:
-      return convertGotoStmt(cast<GotoStmt>(stmt));
+  case Stmt::CompoundAssignOperatorClass:
+  case Stmt::BinaryOperatorClass:
+    return convertBinaryOperator(cast<BinaryOperator>(stmt));
 
-    case Stmt::CStyleCastExprClass:
-      return convertCStyleCastExpr(cast<CStyleCastExpr>(stmt));
+  case Stmt::ParenExprClass:
+    return convertParenExpr(cast<ParenExpr>(stmt));
 
-    case Stmt::MemberExprClass:
-      return convertMemberExpr(cast<MemberExpr>(stmt));
+  case Stmt::CompoundStmtClass:
+    return convertCompoundStmt(cast<CompoundStmt>(stmt));
 
-    case Stmt::ArraySubscriptExprClass:
-      return convertArraySubscriptExpr(cast<ArraySubscriptExpr>(stmt));
+  case Stmt::DeclStmtClass:
+    handleDeclStmt(cast<DeclStmt>(stmt));
+    break;
 
-    case Stmt::UnaryExprOrTypeTraitExprClass:
-      return convertUnaryExprOrTypeTraitExpr(cast<UnaryExprOrTypeTraitExpr>(stmt));    
+  case Stmt::DeclRefExprClass:
+    return convertDeclRefExpr(cast<DeclRefExpr>(stmt));
 
-    case Stmt::CallExprClass:
-      return convertCallExpr(cast<CallExpr>(stmt));
+  case Stmt::ConstantExprClass:
+    return convertConstantExpr(cast<ConstantExpr>(stmt));
+
+  case Stmt::IntegerLiteralClass:
+    return convertIntegerLiteral(cast<IntegerLiteral>(stmt));
+
+  case Stmt::CharacterLiteralClass:
+    return convertCharacterLiteral(cast<CharacterLiteral>(stmt));
+
+  case Stmt::FloatingLiteralClass:
+    return convertFloatingLiteral(cast<FloatingLiteral>(stmt));
+
+  case Stmt::StringLiteralClass:
+    return convertStringLiteral(cast<StringLiteral>(stmt));
+
+  case Stmt::ImplicitCastExprClass:
+    return convertImplicitCastExpr(cast<ImplicitCastExpr>(stmt));
+
+  case Stmt::ReturnStmtClass:
+    return convertReturnStmt(cast<ReturnStmt>(stmt));
+
+  case Stmt::SwitchStmtClass:
+    return convertSwitchStmtNew(cast<SwitchStmt>(stmt));
+
+  case Stmt::GotoStmtClass:
+    return convertGotoStmt(cast<GotoStmt>(stmt));
+
+  case Stmt::CStyleCastExprClass:
+    return convertCStyleCastExpr(cast<CStyleCastExpr>(stmt));
+
+  case Stmt::MemberExprClass:
+    return convertMemberExpr(cast<MemberExpr>(stmt));
+
+  case Stmt::ArraySubscriptExprClass:
+    return convertArraySubscriptExpr(cast<ArraySubscriptExpr>(stmt));
+
+  case Stmt::UnaryExprOrTypeTraitExprClass:
+    return convertUnaryExprOrTypeTraitExpr(
+        cast<UnaryExprOrTypeTraitExpr>(stmt));
+
+  case Stmt::CallExprClass:
+    return convertCallExpr(cast<CallExpr>(stmt));
 
     // case Stmt::CaseStmtClass:
     //   // we manually handle case stmt when we handle switch stmt
     //   break;
 
-    case Stmt::NullStmtClass: // just a ";"
-      stu.addStmt("instr.NopI(" + getLocationString(stmt) + ")");
-      break;
+  case Stmt::NullStmtClass: // just a ";"
+    stu.addStmt("instr.NopI(" + getLocationString(stmt) + ")");
+    break;
 
-    default:
-      SLANG_ERROR("ERROR:Unhandled_Stmt: " << stmt->getStmtClassName())
-      stmt->dump();
-      break;
-    }
-
-    slangExpr.expr = "ERROR:Unknown";
-    return slangExpr;
-  } // convertStmt()
-
-
-  /*
-   * As observer: PredefinedExpr has only a single child expression.
-   * `-PredefinedExpr 0x563d8a43fdb8 <col:233> 'const char [23]' lvalue __PRETTY_FUNCTION__
-   *   `-StringLiteral 0x563d8a43fd88 <col:233> 'const char [23]' lvalue "int main(int, char **)"
-   */
-  SlangExpr convertPredefinedExpr(const PredefinedExpr *pe) {
-    auto it = pe->child_begin();
-    return convertStmt(*it);
+  default:
+    SLANG_ERROR("ERROR:Unhandled_Stmt: " << stmt->getStmtClassName())
+    stmt->dump();
+    break;
   }
 
+  slangExpr.expr = "ERROR:Unknown";
+  return slangExpr;
+} // convertStmt()
 
-  /*
-   * StmtExpr - This is the GNU Statement Expression extension: ({int X=4; X;}).
-   */
-  SlangExpr convertStmtExpr(const StmtExpr *stmt) {
-    SlangExpr expr;
+// stmtconversion
+SlangBitExpr slang::SpirGen::convertStmtBit(const Stmt *stmt) {
+  SlangBitExpr slangBitExpr;
 
-    for (auto it=stmt->child_begin(); it != stmt->child_end(); ++it) {
-      expr = convertStmt(*it);
-    }
-
-    return expr; // return the last expression
+  if (!stmt) {
+    return slangBitExpr;
   }
 
+  SLANG_INFO("ConvertingStmt : " << stmt->getStmtClassName() << "\n")
 
-  SlangExpr convertVarArrayVariable(QualType valueType, QualType elementType) {
-    const Type *elemTypePtr = elementType.getTypePtr();
-    const VariableArrayType *varArrayType =
-        cast<VariableArrayType>(valueType.getTypePtr()->getAsArrayTypeUnsafe());
+  switch (stmt->getStmtClass()) {
+  case Stmt::PredefinedExprClass:
+    return convertPredefinedExprBit(cast<PredefinedExpr>(stmt));
 
-    if (elemTypePtr->isArrayType()) {
-      // it will definitely be a VarArray Type (since this func is called)
-      SlangExpr tmpSubArraySize = convertVarArrayVariable(elementType,
-          elemTypePtr->getAsArrayTypeUnsafe()->getElementType());
+  case Stmt::StmtExprClass:
+    return convertStmtExprBit(cast<StmtExpr>(stmt));
 
-      SlangExpr thisVarArrSizeExpr = convertToTmp(
-          convertStmt(varArrayType->getSizeExpr()));
+  case Stmt::LabelStmtClass:
+    return convertLabel(cast<LabelStmt>(stmt));
 
-      SlangExpr sizeOfThisVarArrExpr = convertToTmp(createBinaryExpr(thisVarArrSizeExpr,
-          "op.BO_MUL", tmpSubArraySize, thisVarArrSizeExpr.locStr,
-          varArrayType->getSizeExpr()->getType()));
+  case Stmt::UnaryOperatorClass:
+    return convertUnaryOperatorBit(cast<UnaryOperator>(stmt));
 
-      SlangExpr tmpThisArraySize = convertToTmp(sizeOfThisVarArrExpr);
-      return tmpThisArraySize;
+  case Stmt::CompoundAssignOperatorClass:
+  case Stmt::BinaryOperatorClass:
+    return convertBinaryOperatorBit(cast<BinaryOperator>(stmt));
 
+  case Stmt::ParenExprClass:
+    return convertParenExprBit(cast<ParenExpr>(stmt));
+
+  case Stmt::CompoundStmtClass:
+    return convertCompoundStmt(cast<CompoundStmt>(stmt));
+
+  case Stmt::DeclStmtClass:
+    handleDeclStmt(cast<DeclStmt>(stmt));
+    break;
+
+  case Stmt::DeclRefExprClass:
+    return convertDeclRefExpr(cast<DeclRefExpr>(stmt));
+
+  case Stmt::ConstantExprClass:
+    return convertConstantExpr(cast<ConstantExpr>(stmt));
+
+  case Stmt::IntegerLiteralClass:
+    return convertIntegerLiteral(cast<IntegerLiteral>(stmt));
+
+  case Stmt::CharacterLiteralClass:
+    return convertCharacterLiteral(cast<CharacterLiteral>(stmt));
+
+  case Stmt::FloatingLiteralClass:
+    return convertFloatingLiteral(cast<FloatingLiteral>(stmt));
+
+  case Stmt::StringLiteralClass:
+    return convertStringLiteral(cast<StringLiteral>(stmt));
+
+  case Stmt::ImplicitCastExprClass:
+    return convertImplicitCastExpr(cast<ImplicitCastExpr>(stmt));
+
+  case Stmt::ReturnStmtClass:
+    return convertReturnStmtBit(cast<ReturnStmt>(stmt));
+
+  case Stmt::SwitchStmtClass:
+    return convertSwitchStmtNew(cast<SwitchStmt>(stmt));
+
+  case Stmt::GotoStmtClass:
+    return convertGotoStmtBit(cast<GotoStmt>(stmt));
+
+  case Stmt::CStyleCastExprClass:
+    return convertCStyleCastExpr(cast<CStyleCastExpr>(stmt));
+
+  case Stmt::MemberExprClass:
+    return convertMemberExpr(cast<MemberExpr>(stmt));
+
+  case Stmt::ArraySubscriptExprClass:
+    return convertArraySubscriptExpr(cast<ArraySubscriptExpr>(stmt));
+
+  case Stmt::UnaryExprOrTypeTraitExprClass:
+    return convertUnaryExprOrTypeTraitExpr(
+        cast<UnaryExprOrTypeTraitExpr>(stmt));
+
+  case Stmt::CallExprClass:
+    return convertCallExpr(cast<CallExpr>(stmt));
+
+    // case Stmt::CaseStmtClass:
+    //   // we manually handle case stmt when we handle switch stmt
+    //   break;
+
+  case Stmt::NullStmtClass: // just a ";"
+    stu.addStmt("instr.NopI(" + getLocationString(stmt) + ")");
+    break;
+
+  default:
+    SLANG_ERROR("ERROR:Unhandled_Stmt: " << stmt->getStmtClassName())
+    stmt->dump();
+    break;
+  }
+
+  slangExpr.expr = "ERROR:Unknown";
+  return slangExpr;
+} // convertStmtBit()
+
+/*
+ * As observer: PredefinedExpr has only a single child expression.
+ * `-PredefinedExpr 0x563d8a43fdb8 <col:233> 'const char [23]' lvalue
+ * __PRETTY_FUNCTION__
+ *   `-StringLiteral 0x563d8a43fd88 <col:233> 'const char [23]' lvalue "int
+ * main(int, char **)"
+ */
+SlangExpr slang::SpirGen::convertPredefinedExpr(const PredefinedExpr *pe) {
+  auto it = pe->child_begin();
+  return convertStmt(*it);
+} // convertPredefinedExpr()
+
+/*
+ * As observer: PredefinedExpr has only a single child expression.
+ * `-PredefinedExpr 0x563d8a43fdb8 <col:233> 'const char [23]' lvalue
+ * __PRETTY_FUNCTION__
+ *   `-StringLiteral 0x563d8a43fd88 <col:233> 'const char [23]' lvalue "int
+ * main(int, char **)"
+ */
+SlangBitExpr
+slang::SpirGen::convertPredefinedExprBit(const PredefinedExpr *pe) {
+  auto it = pe->child_begin();
+  return convertStmtBit(*it);
+} // convertPredefinedExprBit()
+
+/*
+ * StmtExpr - This is the GNU Statement Expression extension: ({int X=4; X;}).
+ */
+SlangExpr slang::SpirGen::convertStmtExpr(const StmtExpr *stmt) {
+  SlangExpr expr;
+
+  for (auto it = stmt->child_begin(); it != stmt->child_end(); ++it) {
+    expr = convertStmt(*it);
+  }
+
+  return expr; // return the last expression
+}
+
+/*
+ * StmtExpr - This is the GNU Statement Expression extension: ({int X=4; X;}).
+ */
+SlangBitExpr slang::SpirGen::convertStmtExprBit(const StmtExpr *stmt) {
+  SlangBitExpr bitExpr;
+
+  for (auto it = stmt->child_begin(); it != stmt->child_end(); ++it) {
+    bitExpr = convertStmtBit(*it);
+  }
+
+  return bitExpr; // return the last expression
+}
+
+SlangExpr slang::SpirGen::convertVarArrayVariable(QualType valueType,
+                                                  QualType elementType) {
+  const Type *elemTypePtr = elementType.getTypePtr();
+  const VariableArrayType *varArrayType =
+      cast<VariableArrayType>(valueType.getTypePtr()->getAsArrayTypeUnsafe());
+
+  if (elemTypePtr->isArrayType()) {
+    // it will definitely be a VarArray Type (since this func is called)
+    SlangExpr tmpSubArraySize = convertVarArrayVariable(
+        elementType, elemTypePtr->getAsArrayTypeUnsafe()->getElementType());
+
+    SlangExpr thisVarArrSizeExpr =
+        convertToTmp(convertStmt(varArrayType->getSizeExpr()));
+
+    SlangExpr sizeOfThisVarArrExpr = convertToTmp(createBinaryExpr(
+        thisVarArrSizeExpr, "op.BO_MUL", tmpSubArraySize,
+        thisVarArrSizeExpr.locStr, varArrayType->getSizeExpr()->getType()));
+
+    SlangExpr tmpThisArraySize = convertToTmp(sizeOfThisVarArrExpr);
+    return tmpThisArraySize;
+
+  } else {
+    // a non-array element type
+    TypeInfo typeInfo = Ctx->getTypeInfo(elementType);
+    uint64_t size = typeInfo.Width / 8;
+
+    SlangExpr thisVarArrSizeExpr =
+        convertToTmp(convertStmt(varArrayType->getSizeExpr()));
+
+    SlangExpr sizeOfInnerNonVarArrType;
+    std::stringstream ss;
+    ss << "expr.LitE(" << size;
+    ss << ", " << thisVarArrSizeExpr.locStr << ")";
+    sizeOfInnerNonVarArrType.expr = ss.str();
+    sizeOfInnerNonVarArrType.qualType = Ctx->UnsignedIntTy;
+    sizeOfInnerNonVarArrType.locStr = thisVarArrSizeExpr.locStr;
+
+    SlangExpr sizeOfThisVarArrExpr = convertToTmp(createBinaryExpr(
+        thisVarArrSizeExpr, "op.BO_MUL", sizeOfInnerNonVarArrType,
+        thisVarArrSizeExpr.locStr, sizeOfInnerNonVarArrType.qualType));
+
+    SlangExpr tmpThisArraySize = convertToTmp(sizeOfThisVarArrExpr);
+    return tmpThisArraySize;
+  }
+} // convertVarArrayVariable()
+
+spir::BitExpr slang::SpirGen::convertVarArrayVariableBit(QualType valueType,
+                                                   QualType elementType) {
+  const Type *elemTypePtr = elementType.getTypePtr();
+  const VariableArrayType *varArrayType =
+      cast<VariableArrayType>(valueType.getTypePtr()->getAsArrayTypeUnsafe());
+
+  if (elemTypePtr->isArrayType()) {
+    // it will definitely be a VarArray Type (since this func is called)
+    SlangExpr tmpSubArraySize = convertVarArrayVariable(
+        elementType, elemTypePtr->getAsArrayTypeUnsafe()->getElementType());
+
+    SlangExpr thisVarArrSizeExpr =
+        convertToTmp(convertStmt(varArrayType->getSizeExpr()));
+
+    SlangExpr sizeOfThisVarArrExpr = convertToTmp(createBinaryExpr(
+        thisVarArrSizeExpr, "op.BO_MUL", tmpSubArraySize,
+        thisVarArrSizeExpr.locStr, varArrayType->getSizeExpr()->getType()));
+
+    SlangExpr tmpThisArraySize = convertToTmp(sizeOfThisVarArrExpr);
+    return tmpThisArraySize;
+
+  } else {
+    // a non-array element type
+    TypeInfo typeInfo = Ctx->getTypeInfo(elementType);
+    uint64_t size = typeInfo.Width / 8;
+
+    SlangExpr thisVarArrSizeExpr =
+        convertToTmp(convertStmt(varArrayType->getSizeExpr()));
+
+    SlangExpr sizeOfInnerNonVarArrType;
+    std::stringstream ss;
+    ss << "expr.LitE(" << size;
+    ss << ", " << thisVarArrSizeExpr.locStr << ")";
+    sizeOfInnerNonVarArrType.expr = ss.str();
+    sizeOfInnerNonVarArrType.qualType = Ctx->UnsignedIntTy;
+    sizeOfInnerNonVarArrType.locStr = thisVarArrSizeExpr.locStr;
+
+    SlangExpr sizeOfThisVarArrExpr = convertToTmp(createBinaryExpr(
+        thisVarArrSizeExpr, "op.BO_MUL", sizeOfInnerNonVarArrType,
+        thisVarArrSizeExpr.locStr, sizeOfInnerNonVarArrType.qualType));
+
+    SlangExpr tmpThisArraySize = convertToTmp(sizeOfThisVarArrExpr);
+    return tmpThisArraySize;
+  }
+} // convertVarArrayVariableBit()
+
+SlangExpr
+slang::SpirGen::convertInitListExprNew(SlangExpr &lhs, // SlangVar& slangVar,
+                                       const InitListExpr *initListExpr) {
+  uint32_t index = 0;
+  SLANG_DEBUG("INIT_LIST_EXPR_NEW dump:");
+  initListExpr->dump();
+  initListExpr->getType().dump();
+
+  for (const auto *it = initListExpr->begin(); it != initListExpr->end();
+       ++it) {
+    const Stmt *stmt = *it;
+    // compute the lhs of the assignment
+    SlangExpr currLhs = genInitLhsExprNew(lhs, initListExpr->getType(), index);
+
+    if (stmt->getStmtClass() == Stmt::InitListExprClass) {
+      // handle sub-init-list here
+      auto subInitExpr = cast<InitListExpr>(stmt);
+      SlangExpr subLhs = convertToTmp2(currLhs); //, subInitExpr->getType());
+      convertInitListExprNew(subLhs, subInitExpr);
+    } else if (stmt->getStmtClass() == Stmt::ImplicitValueInitExprClass) {
+      // handle sub-init-list here
+      auto subInitExpr = cast<ImplicitValueInitExpr>(stmt);
+      SlangExpr subLhs = convertToTmp2(currLhs); //, subInitExpr->getType());
+      convertImplicitValueInitExpr(subLhs, subInitExpr);
     } else {
-      // a non-array element type
-      TypeInfo typeInfo = Ctx->getTypeInfo(elementType);
-      uint64_t size = typeInfo.Width / 8;
-
-      SlangExpr thisVarArrSizeExpr = convertToTmp(
-          convertStmt(varArrayType->getSizeExpr()));
-
-      SlangExpr sizeOfInnerNonVarArrType;
-      std::stringstream ss;
-      ss << "expr.LitE(" << size;
-      ss << ", " << thisVarArrSizeExpr.locStr << ")";
-      sizeOfInnerNonVarArrType.expr = ss.str();
-      sizeOfInnerNonVarArrType.qualType = Ctx->UnsignedIntTy;
-      sizeOfInnerNonVarArrType.locStr = thisVarArrSizeExpr.locStr;
-
-      SlangExpr sizeOfThisVarArrExpr = convertToTmp(
-          createBinaryExpr(thisVarArrSizeExpr,
-              "op.BO_MUL", sizeOfInnerNonVarArrType, thisVarArrSizeExpr.locStr,
-              sizeOfInnerNonVarArrType.qualType));
-
-      SlangExpr tmpThisArraySize = convertToTmp(sizeOfThisVarArrExpr);
-      return tmpThisArraySize;
+      // compute the rhs part
+      SlangExpr rhs = convertToTmp(convertStmt(stmt));
+      addAssignInstr(currLhs, rhs, getLocationString(stmt));
     }
-  } // convertVarArrayVariable()
+    index += 1;
+  }
 
-  BitExpr convertVarArrayVariableBit(QualType valueType, QualType elementType) {
-    const Type *elemTypePtr = elementType.getTypePtr();
-    const VariableArrayType *varArrayType =
-        cast<VariableArrayType>(valueType.getTypePtr()->getAsArrayTypeUnsafe());
+  return SlangExpr{};
+} // convertInitListExprNew()
 
-    if (elemTypePtr->isArrayType()) {
-      // it will definitely be a VarArray Type (since this func is called)
-      SlangExpr tmpSubArraySize = convertVarArrayVariable(elementType,
-          elemTypePtr->getAsArrayTypeUnsafe()->getElementType());
+SlangExpr slang::SpirGen::convertImplicitValueInitExpr(
+    SlangExpr &lhs, // SlangVar& slangVar,
+    const ImplicitValueInitExpr *initListExpr) {
+  uint32_t index = 0;
+  SLANG_DEBUG("INIT_LIST_EXPR_NEW dump:");
+  initListExpr->dump();
+  initListExpr->getType().dump();
 
-      SlangExpr thisVarArrSizeExpr = convertToTmp(
-          convertStmt(varArrayType->getSizeExpr()));
+  for (auto it = initListExpr->child_begin(); it != initListExpr->child_end();
+       ++it) {
+    const Stmt *stmt = *it;
+    // compute the lhs of the assignment
+    SlangExpr currLhs = genInitLhsExprNew(lhs, initListExpr->getType(), index);
 
-      SlangExpr sizeOfThisVarArrExpr = convertToTmp(createBinaryExpr(thisVarArrSizeExpr,
-          "op.BO_MUL", tmpSubArraySize, thisVarArrSizeExpr.locStr,
-          varArrayType->getSizeExpr()->getType()));
-
-      SlangExpr tmpThisArraySize = convertToTmp(sizeOfThisVarArrExpr);
-      return tmpThisArraySize;
-
+    if (stmt->getStmtClass() == Stmt::InitListExprClass) {
+      // handle sub-init-list here
+      auto subInitExpr = cast<InitListExpr>(stmt);
+      SlangExpr subLhs = convertToTmp2(currLhs); //, subInitExpr->getType());
+      convertInitListExprNew(subLhs, subInitExpr);
+    } else if (stmt->getStmtClass() == Stmt::ImplicitValueInitExprClass) {
+      // handle sub-init-list here
+      auto subInitExpr = cast<ImplicitValueInitExpr>(stmt);
+      SlangExpr subLhs = convertToTmp2(currLhs); //, subInitExpr->getType());
+      convertImplicitValueInitExpr(subLhs, subInitExpr);
     } else {
-      // a non-array element type
-      TypeInfo typeInfo = Ctx->getTypeInfo(elementType);
-      uint64_t size = typeInfo.Width / 8;
-
-      SlangExpr thisVarArrSizeExpr = convertToTmp(
-          convertStmt(varArrayType->getSizeExpr()));
-
-      SlangExpr sizeOfInnerNonVarArrType;
-      std::stringstream ss;
-      ss << "expr.LitE(" << size;
-      ss << ", " << thisVarArrSizeExpr.locStr << ")";
-      sizeOfInnerNonVarArrType.expr = ss.str();
-      sizeOfInnerNonVarArrType.qualType = Ctx->UnsignedIntTy;
-      sizeOfInnerNonVarArrType.locStr = thisVarArrSizeExpr.locStr;
-
-      SlangExpr sizeOfThisVarArrExpr = convertToTmp(
-          createBinaryExpr(thisVarArrSizeExpr,
-              "op.BO_MUL", sizeOfInnerNonVarArrType, thisVarArrSizeExpr.locStr,
-              sizeOfInnerNonVarArrType.qualType));
-
-      SlangExpr tmpThisArraySize = convertToTmp(sizeOfThisVarArrExpr);
-      return tmpThisArraySize;
+      // compute the rhs part
+      SlangExpr rhs = convertToTmp(convertStmt(stmt));
+      addAssignInstr(currLhs, rhs, getLocationString(stmt));
     }
-  } // convertVarArrayVariableBit()
+    index += 1;
+  }
 
-  SlangExpr convertInitListExprNew(
-      SlangExpr& lhs, // SlangVar& slangVar,
-      const InitListExpr *initListExpr
-  ) {
-    uint32_t index = 0;
-    SLANG_DEBUG("INIT_LIST_EXPR_NEW dump:");
-    initListExpr->dump();
-    initListExpr->getType().dump();
+  return SlangExpr{};
+} // convertImplicitCastExpr()
 
-    for (const auto *it = initListExpr->begin(); it != initListExpr->end(); ++it) {
-      const Stmt *stmt = *it;
-      // compute the lhs of the assignment
-      SlangExpr currLhs = genInitLhsExprNew(lhs, initListExpr->getType(), index);
+SlangExpr slang::SpirGen::convertInitListExpr(
+    SlangVar &slangVar, const InitListExpr *initListExpr,
+    const VarDecl *varDecl, std::vector<uint32_t> &indexVector,
+    bool staticLocal) {
+  uint32_t index = 0;
+  SLANG_DEBUG("INIT_LIST_EXPR dump:");
+  initListExpr->dump();
+  initListExpr->getType().dump();
+  for (auto it = initListExpr->begin(); it != initListExpr->end(); ++it) {
+    const Stmt *stmt = *it;
+    if (stmt->getStmtClass() == Stmt::InitListExprClass) {
+      // && isCompoundTypeAt(varDecl, indexVector))
+      indexVector.push_back(index);
+      convertInitListExpr(slangVar, cast<InitListExpr>(stmt), varDecl,
+                          indexVector, staticLocal);
+      indexVector.pop_back();
+    } else {
+      SlangExpr rhs = convertToTmp(convertStmt(stmt));
 
-      if (stmt->getStmtClass() == Stmt::InitListExprClass) {
-        // handle sub-init-list here
-        auto subInitExpr = cast<InitListExpr>(stmt);
-        SlangExpr subLhs = convertToTmp2(currLhs); //, subInitExpr->getType());
-        convertInitListExprNew(subLhs, subInitExpr);
-      } else  if (stmt->getStmtClass() == Stmt::ImplicitValueInitExprClass) {
-          // handle sub-init-list here
-          auto subInitExpr = cast<ImplicitValueInitExpr>(stmt);
-          SlangExpr subLhs = convertToTmp2(currLhs); //, subInitExpr->getType());
-          convertImplicitValueInitExpr(subLhs, subInitExpr);
-      } else {
-        // compute the rhs part
-        SlangExpr rhs = convertToTmp(convertStmt(stmt));
-        addAssignInstr(currLhs, rhs, getLocationString(stmt));
+      indexVector.push_back(index);
+      SlangExpr lhs = genInitLhsExpr(slangVar, varDecl, indexVector);
+      indexVector.pop_back();
+
+      addAssignInstr(lhs, rhs, getLocationString(stmt));
+    }
+    index += 1;
+  }
+
+  return SlangExpr{};
+} // convertInitListExpr()
+
+// checks if the
+bool slang::SpirGen::isCompoundTypeAt(const VarDecl *varDecl,
+                                      std::vector<int> &indexVector) {
+  // TODO
+  return true;
+}
+
+SlangExpr
+slang::SpirGen::genInitLhsExprNew(SlangExpr &lhs, // SlangVar& slangVar,
+                                  QualType initExprListQt, int index) {
+  SlangExpr slangExpr;
+  std::stringstream ss;
+
+  const auto *type = initExprListQt.getTypePtr();
+
+  std::string prefix = "";
+  if (type->isArrayType()) {
+    ss << prefix << "expr.ArrayE(";
+    ss << "expr.LitE(" << index << ", " << lhs.locStr << ")";
+    ss << ", " << lhs.expr;          // must be a variable expr only
+    ss << ", " << lhs.locStr << ")"; // end expr.ArrayE(
+
+    slangExpr.expr = ss.str();
+    slangExpr.qualType = type->getAsArrayTypeUnsafe()->getElementType();
+  } else {
+    // must be a record type
+    const RecordDecl *recordDecl;
+
+    if (type->isStructureType()) {
+      recordDecl = type->getAsStructureType()->getDecl();
+    } else { // must be a union then
+      recordDecl = type->getAsUnionType()->getDecl();
+    }
+
+    auto slangRecord = stu.getRecord((uint64_t)recordDecl);
+    slangRecord.genMemberAccessExpr(lhs.expr, lhs.locStr, index, slangExpr);
+  }
+
+  slangExpr.compound = true;
+  slangExpr.locStr = lhs.locStr;
+  return slangExpr;
+} // genInitLhsExprNew()
+
+// used to generate lhs (lvalue) for initializer lists like
+// int arr[][2] = {{1, 2}, {3, 4}, {5, 6}}; // for each element
+// it also works for the struct types
+SlangExpr slang::SpirGen::genInitLhsExpr(SlangVar &slangVar,
+                                         const VarDecl *varDecl,
+                                         std::vector<uint32_t> &indexVector) {
+  SlangExpr slangExpr;
+  std::stringstream ss;
+
+  std::string prefix = "";
+  if (varDecl->getType()->isArrayType()) {
+    for (auto it = indexVector.end() - 1; it != indexVector.begin() - 1; --it) {
+      ss << prefix << "expr.ArrayE(" << "expr.LitE(" << *it << ", "
+         << getLocationString(varDecl) << ")";
+      if (prefix == "") {
+        prefix = ", ";
       }
-      index += 1;
     }
 
-    return SlangExpr{};
-  } // convertInitListExprNew()
+    ss << ", expr.VarE(\"" << slangVar.name << "\"";
+    ss << ", " << getLocationString(varDecl) << ")";
 
+    for (auto it = indexVector.begin(); it != indexVector.end(); ++it) {
+      ss << ", " << getLocationString(varDecl) << ")";
+    }
 
-  SlangExpr convertImplicitValueInitExpr(
-      SlangExpr& lhs, // SlangVar& slangVar,
-      const ImplicitValueInitExpr *initListExpr
-  ) {
-    uint32_t index = 0;
-    SLANG_DEBUG("INIT_LIST_EXPR_NEW dump:");
-    initListExpr->dump();
-    initListExpr->getType().dump();
+    slangExpr.expr = ss.str();
+    slangExpr.compound = true;
+    slangExpr.qualType = varDecl->getType();
+    slangExpr.locStr = getLocationString(varDecl);
+  } else {
+    // must be a record type
+    auto type = varDecl->getType();
+    const RecordDecl *recordDecl;
 
-    for (auto it = initListExpr->child_begin(); it != initListExpr->child_end(); ++it) {
-      const Stmt *stmt = *it;
-      // compute the lhs of the assignment
-      SlangExpr currLhs = genInitLhsExprNew(lhs, initListExpr->getType(), index);
+    if (type->isStructureType()) {
+      recordDecl = type->getAsStructureType()->getDecl();
+    } else {
+      // must be a union then
+      recordDecl = type->getAsUnionType()->getDecl();
+    }
 
-      if (stmt->getStmtClass() == Stmt::InitListExprClass) {
-        // handle sub-init-list here
-        auto subInitExpr = cast<InitListExpr>(stmt);
-        SlangExpr subLhs = convertToTmp2(currLhs); //, subInitExpr->getType());
-        convertInitListExprNew(subLhs, subInitExpr);
-      } else  if (stmt->getStmtClass() == Stmt::ImplicitValueInitExprClass) {
-        // handle sub-init-list here
-        auto subInitExpr = cast<ImplicitValueInitExpr>(stmt);
-        SlangExpr subLhs = convertToTmp2(currLhs); //, subInitExpr->getType());
-        convertImplicitValueInitExpr(subLhs, subInitExpr);
-      } else {
-        // compute the rhs part
-        SlangExpr rhs = convertToTmp(convertStmt(stmt));
-        addAssignInstr(currLhs, rhs, getLocationString(stmt));
+    std::string memberListStr =
+        stu.getRecord((uint64_t)recordDecl).genMemberExpr(indexVector);
+
+    ss << memberListStr;
+    ss << ", expr.VarE(\"" << slangVar.name << "\"";
+    ss << ", " << getLocationString(varDecl) << ")";
+
+    for (auto it = indexVector.begin(); it != indexVector.end(); ++it) {
+      ss << ", " << getLocationString(varDecl) << ")";
+    }
+
+    slangExpr.expr = ss.str();
+    slangExpr.compound = true;
+    slangExpr.qualType = varDecl->getType();
+    slangExpr.locStr = getLocationString(varDecl);
+  }
+
+  return slangExpr;
+} // genInitLhsExpr()
+
+// guaranteed to be a comma operator
+SlangExpr slang::SpirGen::convertBinaryCommaOp(const BinaryOperator *binOp) {
+  auto it = binOp->child_begin();
+  const Stmt *leftOprnd = *it;
+  ++it;
+  const Stmt *rightOprnd = *it;
+
+  convertStmt(leftOprnd);
+
+  SlangExpr rightExpr = convertToTmp(convertStmt(rightOprnd));
+
+  return rightExpr;
+} // convertBinaryCommaOp()
+
+// guaranteed to be a comma operator
+SlangBitExpr
+slang::SpirGen::convertBinaryCommaOpBit(const BinaryOperator *binOp) {
+  auto it = binOp->child_begin();
+  const Stmt *leftOprnd = *it;
+  ++it;
+  const Stmt *rightOprnd = *it;
+
+  convertStmtBit(leftOprnd);
+
+  SlangBitExpr rightExpr =
+      convertToTmpBitExpr(convertStmtBit(rightOprnd), false, true);
+
+  return rightExpr;
+} // convertBinaryCommaOpBit()
+
+SlangExpr slang::SpirGen::convertCallExpr(const CallExpr *callExpr) {
+  SlangExpr slangExpr;
+
+  auto it = callExpr->child_begin();
+
+  const Stmt *callee = *it;
+  SlangExpr calleeExpr = convertToTmp(convertStmt(callee));
+
+  std::vector<const Stmt *> args;
+  ++it; // skip the callee expression
+  for (; it != callExpr->child_end(); ++it) {
+    args.push_back(*it);
+  }
+
+  std::stringstream ss;
+  ss << "expr.CallE(" << calleeExpr.expr;
+  if (args.size()) {
+    std::string prefix = "";
+    ss << ", [";
+    for (auto argIter = args.begin(); argIter != args.end(); ++argIter) {
+      SlangExpr tmpExpr = convertToTmp(convertStmt(*argIter));
+      ss << prefix << tmpExpr.expr;
+      if (prefix == "") {
+        prefix = ", ";
       }
-      index += 1;
     }
+    ss << "]";
+  } else {
+    ss << ", " << "None";
+  }
 
-    return SlangExpr{};
-  } // convertImplicitCastExpr()
+  ss << ", " << getLocationString(callExpr) << ")"; // close expr.CallE(...
 
+  slangExpr.expr = ss.str();
+  slangExpr.qualType = callExpr->getType();
+  slangExpr.locStr = getLocationString(callExpr);
+  slangExpr.compound = true;
+  ss.str("");
 
-  SlangExpr convertInitListExpr(SlangVar& slangVar, const InitListExpr *initListExpr,
-      const VarDecl *varDecl, std::vector<uint32_t>& indexVector, bool staticLocal) {
-    uint32_t index = 0;
-    SLANG_DEBUG("INIT_LIST_EXPR dump:");
-    initListExpr->dump();
-    initListExpr->getType().dump();
-    for (auto it = initListExpr->begin(); it != initListExpr->end(); ++it) {
-      const Stmt *stmt = *it;
-      if (stmt->getStmtClass() == Stmt::InitListExprClass) {
-          // && isCompoundTypeAt(varDecl, indexVector))
-        indexVector.push_back(index);
-        convertInitListExpr(slangVar, cast<InitListExpr>(stmt), varDecl, indexVector, staticLocal);
-        indexVector.pop_back();
-      } else {
-        SlangExpr rhs = convertToTmp(convertStmt(stmt));
+  if (hasVoidReturnType(callExpr) || isTopLevel(callExpr)) {
+    ss << "instr.CallI(" << slangExpr.expr << ", " << slangExpr.locStr << ")";
+    stu.addStmt(ss.str());
+    return SlangExpr{}; // return empty expression
+  }
 
-        indexVector.push_back(index);
-        SlangExpr lhs = genInitLhsExpr(slangVar, varDecl, indexVector);
-        indexVector.pop_back();
+  return slangExpr;
+}
 
-        addAssignInstr(lhs, rhs, getLocationString(stmt));
-      }
-      index += 1;
-    }
-
-    return SlangExpr{};
-  } // convertInitListExpr()
-
-  // checks if the
-  bool isCompoundTypeAt(const VarDecl *varDecl,
-      std::vector<int>& indexVector) {
-    // TODO
+bool slang::SpirGen::hasVoidReturnType(const CallExpr *callExpr) {
+  QualType qt = callExpr->getType();
+  if (qt.isNull()) {
     return true;
   }
 
-  SlangExpr genInitLhsExprNew(
-      SlangExpr& lhs, // SlangVar& slangVar,
-      QualType initExprListQt,
-      int index
-  ) {
-    SlangExpr slangExpr;
-    std::stringstream ss;
+  qt = getCleanedQualType(qt);
+  const Type *type = qt.getTypePtr();
+  return type->isVoidType();
+} // hasVoidReturnType()
 
-    const auto *type = initExprListQt.getTypePtr();
+SlangExpr
+slang::SpirGen::convertArraySubscriptExpr(const ArraySubscriptExpr *arrayExpr) {
+  SlangExpr slangExpr;
+  std::stringstream ss;
 
-    std::string prefix = "";
-    if (type->isArrayType()) {
-      ss << prefix << "expr.ArrayE(";
-      ss << "expr.LitE(" << index << ", " << lhs.locStr << ")";
-      ss << ", " << lhs.expr; // must be a variable expr only
-      ss << ", " << lhs.locStr << ")"; // end expr.ArrayE(
+  auto it = arrayExpr->child_begin();
+  const Stmt *object = *it;
+  ++it;
+  const Stmt *index = *it;
 
-      slangExpr.expr = ss.str();
-      slangExpr.qualType = type->getAsArrayTypeUnsafe()->getElementType();
+  SlangExpr parentExpr = convertToTmp(convertStmt(object));
+  SlangExpr indexExpr = convertToTmp(convertStmt(index));
+  SlangExpr tmpExpr;
+
+  tmpExpr = parentExpr;
+
+  ss.str("");
+  ss << "expr.ArrayE(" << indexExpr.expr;
+  ss << ", " << tmpExpr.expr;
+  ss << ", " << getLocationString(arrayExpr) << ")";
+
+  slangExpr.expr = ss.str();
+  slangExpr.qualType = arrayExpr->getType();
+  slangExpr.locStr = getLocationString(arrayExpr);
+  slangExpr.compound = true;
+
+  return slangExpr;
+} // convertArraySubscript()
+
+SlangExpr slang::SpirGen::convertMemberExpr(const MemberExpr *memberExpr) {
+  auto it = memberExpr->child_begin();
+  const Stmt *child = *it;
+  SlangExpr parentExpr = convertStmt(child);
+  SlangExpr parentTmpExpr;
+  SlangExpr memSlangExpr;
+  std::stringstream ss;
+
+  // store parent to a temporary
+  parentTmpExpr = parentExpr;
+  if (parentExpr.compound) {
+    if (parentExpr.qualType.getTypePtr()->isPointerType()) {
+      //|| !(parentExpr.expr.substr(0,12) == "expr.MemberE"))
+      parentTmpExpr = convertToTmp(parentExpr);
     } else {
-      // must be a record type
-      const RecordDecl *recordDecl;
+      SlangExpr addrOfExpr;
+      ss << "expr.AddrOfE(" << parentExpr.expr;
+      ss << ", " << getLocationString(memberExpr) << ")";
 
-      if (type->isStructureType()) {
-        recordDecl = type->getAsStructureType()->getDecl();
-      } else { // must be a union then
-        recordDecl = type->getAsUnionType()->getDecl();
-      }
+      addrOfExpr.expr = ss.str();
+      addrOfExpr.qualType = Ctx->getPointerType(parentExpr.qualType);
+      addrOfExpr.locStr = getLocationString(memberExpr);
+      addrOfExpr.compound = true;
 
-      auto slangRecord = stu.getRecord((uint64_t)recordDecl);
-      slangRecord.genMemberAccessExpr(lhs.expr, lhs.locStr, index, slangExpr);
+      parentTmpExpr = convertToTmp(addrOfExpr);
     }
-
-    slangExpr.compound = true;
-    slangExpr.locStr = lhs.locStr;
-    return slangExpr;
-  } // genInitLhsExprNew()
-
-
-  // used to generate lhs (lvalue) for initializer lists like
-  // int arr[][2] = {{1, 2}, {3, 4}, {5, 6}}; // for each element
-  // it also works for the struct types
-  SlangExpr genInitLhsExpr(SlangVar& slangVar,
-      const VarDecl *varDecl, std::vector<uint32_t>& indexVector) {
-    SlangExpr slangExpr;
-    std::stringstream ss;
-
-    std::string prefix = "";
-    if (varDecl->getType()->isArrayType()) {
-      for (auto it = indexVector.end()-1; it != indexVector.begin()-1; --it) {
-        ss << prefix << "expr.ArrayE(" << "expr.LitE(" << *it <<
-          ", " << getLocationString(varDecl) << ")";
-        if (prefix == "") {
-          prefix = ", ";
-        }
-      }
-
-      ss << ", expr.VarE(\"" << slangVar.name << "\"";
-      ss << ", " << getLocationString(varDecl) << ")";
-
-      for (auto it = indexVector.begin(); it != indexVector.end(); ++it) {
-        ss << ", " << getLocationString(varDecl) << ")";
-      }
-
-      slangExpr.expr = ss.str();
-      slangExpr.compound = true;
-      slangExpr.qualType = varDecl->getType();
-      slangExpr.locStr = getLocationString(varDecl);
-    } else {
-      // must be a record type
-      auto type = varDecl->getType();
-      const RecordDecl *recordDecl;
-
-      if (type->isStructureType()) {
-        recordDecl = type->getAsStructureType()->getDecl();
-      } else {
-        // must be a union then
-        recordDecl = type->getAsUnionType()->getDecl();
-      }
-
-      std::string memberListStr =
-          stu.getRecord((uint64_t)recordDecl).genMemberExpr(indexVector);
-
-      ss << memberListStr;
-      ss << ", expr.VarE(\"" << slangVar.name << "\"";
-      ss << ", " << getLocationString(varDecl) << ")";
-
-      for (auto it = indexVector.begin(); it != indexVector.end(); ++it) {
-        ss << ", " << getLocationString(varDecl) << ")";
-      }
-
-      slangExpr.expr = ss.str();
-      slangExpr.compound = true;
-      slangExpr.qualType = varDecl->getType();
-      slangExpr.locStr = getLocationString(varDecl);
-    }
-
-    return slangExpr;
-  } // genInitLhsExpr()
-
-  // guaranteed to be a comma operator
-  SlangExpr convertBinaryCommaOp(const BinaryOperator *binOp) {
-    auto it = binOp->child_begin();
-    const Stmt *leftOprnd = *it;
-    ++it;
-    const Stmt *rightOprnd = *it;
-
-    convertStmt(leftOprnd);
-
-    SlangExpr rightExpr = convertToTmp(convertStmt(rightOprnd));
-
-    return rightExpr;
-  } // convertBinaryCommaOp()
-
-  SlangExpr convertCallExpr(const CallExpr *callExpr) {
-    SlangExpr slangExpr;
-
-    auto it = callExpr->child_begin();
-
-    const Stmt *callee = *it;
-    SlangExpr calleeExpr = convertToTmp(convertStmt(callee));
-
-    std::vector<const Stmt*> args;
-    ++it; // skip the callee expression
-    for (; it != callExpr->child_end(); ++it) {
-      args.push_back(*it);
-    }
-
-    std::stringstream ss;
-    ss << "expr.CallE(" << calleeExpr.expr;
-    if (args.size()) {
-      std::string prefix = "";
-      ss << ", [";
-      for (auto argIter = args.begin(); argIter != args.end(); ++argIter) {
-        SlangExpr tmpExpr = convertToTmp(convertStmt(*argIter));
-        ss << prefix << tmpExpr.expr;
-        if (prefix == "") {
-          prefix = ", ";
-        }
-      }
-      ss << "]";
-    } else {
-      ss << ", " << "None";
-    }
-
-    ss << ", " << getLocationString(callExpr) <<  ")"; // close expr.CallE(...
-
-    slangExpr.expr = ss.str();
-    slangExpr.qualType = callExpr->getType();
-    slangExpr.locStr = getLocationString(callExpr);
-    slangExpr.compound = true;
-    ss.str("");
-
-    if (hasVoidReturnType(callExpr) || isTopLevel(callExpr)) {
-      ss << "instr.CallI(" << slangExpr.expr << ", " << slangExpr.locStr << ")";
-      stu.addStmt(ss.str());
-      return SlangExpr{}; // return empty expression
-    }
-
-    return slangExpr;
   }
 
-  bool hasVoidReturnType(const CallExpr *callExpr) {
-    QualType qt = callExpr->getType();
-      if (qt.isNull()) {
-        return true;
-      }
-
-      qt = getCleanedQualType(qt);
-      const Type *type = qt.getTypePtr();
-      return type->isVoidType();
-  } // hasVoidReturnType()
-
-  SlangExpr convertArraySubscriptExpr(const ArraySubscriptExpr *arrayExpr) {
-    SlangExpr slangExpr;
-    std::stringstream ss;
-
-    auto it = arrayExpr->child_begin();
-    const Stmt *object = *it;
-    ++it;
-    const Stmt *index = *it;
-
-    SlangExpr parentExpr = convertToTmp(convertStmt(object));
-    SlangExpr indexExpr = convertToTmp(convertStmt(index));
-    SlangExpr tmpExpr;
-
-    tmpExpr = parentExpr;
-
-    ss.str("");
-    ss << "expr.ArrayE(" << indexExpr.expr;
-    ss << ", " << tmpExpr.expr;
-    ss << ", " << getLocationString(arrayExpr) << ")";
-
-    slangExpr.expr = ss.str();
-    slangExpr.qualType = arrayExpr->getType();
-    slangExpr.locStr = getLocationString(arrayExpr);
-    slangExpr.compound = true;
-
-    return slangExpr;
-  } // convertArraySubscript()
-
-  SlangExpr convertMemberExpr(const MemberExpr *memberExpr) {
-    auto it = memberExpr->child_begin();
-    const Stmt *child = *it;
-    SlangExpr parentExpr = convertStmt(child);
-    SlangExpr parentTmpExpr;
-    SlangExpr memSlangExpr;
-    std::stringstream ss;
-
-    // store parent to a temporary
-    parentTmpExpr = parentExpr;
-    if (parentExpr.compound) {
-      if (parentExpr.qualType.getTypePtr()->isPointerType()) {
-          //|| !(parentExpr.expr.substr(0,12) == "expr.MemberE")) 
-        parentTmpExpr = convertToTmp(parentExpr);
-      } else {
-        SlangExpr addrOfExpr;
-        ss << "expr.AddrOfE(" << parentExpr.expr;
-        ss << ", " << getLocationString(memberExpr) << ")";
-
-        addrOfExpr.expr = ss.str();
-        addrOfExpr.qualType = Ctx->getPointerType(parentExpr.qualType);
-        addrOfExpr.locStr = getLocationString(memberExpr);
-        addrOfExpr.compound = true;
-
-        parentTmpExpr = convertToTmp(addrOfExpr);
-      }
-    }
-
-    std::string memberName;
-    memberName = memberExpr->getMemberNameInfo().getAsString();
-    if (memberName == "") {
-      memberName = stu.getVar((uint64_t)(memberExpr->getMemberDecl())).name;
-    }
-
-    ss.str("");
-    ss << "expr.MemberE(\"" << memberName << "\"";
-    ss << ", " << parentTmpExpr.expr;
-    ss << ", " << getLocationString(memberExpr) << ")";
-
-    memSlangExpr.expr = ss.str();
-    memSlangExpr.qualType = memberExpr->getType();
-    memSlangExpr.locStr = getLocationString(memberExpr);
-    memSlangExpr.compound = true;
-
-    SLANG_DEBUG("Array_Member_Expr: mem: " << memSlangExpr.expr);
-    return memSlangExpr;
-  } // convertMemberExpr()
-
-  SlangExpr convertCStyleCastExpr(const CStyleCastExpr *cCast) {
-    auto it = cCast->child_begin();
-    QualType qt = cCast->getType();
-
-    return convertCastExpr(*it, qt, getLocationString(cCast));
-  } // convertCStyleCastExpr()
-
-  SlangExpr convertGotoStmt(const GotoStmt *gotoStmt) {
-    std::string label = gotoStmt->getLabel()->getNameAsString();
-    addGotoInstr(label);
-    return SlangExpr{};
-  } // convertGotoStmt()
-
-  SlangExpr convertBreakStmt(const BreakStmt *breakStmt) {
-    addGotoInstr(stu.peekExitLabel());
-    return SlangExpr{};
+  std::string memberName;
+  memberName = memberExpr->getMemberNameInfo().getAsString();
+  if (memberName == "") {
+    memberName = stu.getVar((uint64_t)(memberExpr->getMemberDecl())).name;
   }
 
-  SlangExpr convertContinueStmt(const ContinueStmt *continueStmt) {
-    addGotoInstr(stu.peekEntryLabel());
-    return SlangExpr{};
+  ss.str("");
+  ss << "expr.MemberE(\"" << memberName << "\"";
+  ss << ", " << parentTmpExpr.expr;
+  ss << ", " << getLocationString(memberExpr) << ")";
+
+  memSlangExpr.expr = ss.str();
+  memSlangExpr.qualType = memberExpr->getType();
+  memSlangExpr.locStr = getLocationString(memberExpr);
+  memSlangExpr.compound = true;
+
+  SLANG_DEBUG("Array_Member_Expr: mem: " << memSlangExpr.expr);
+  return memSlangExpr;
+} // convertMemberExpr()
+
+SlangExpr slang::SpirGen::convertCStyleCastExpr(const CStyleCastExpr *cCast) {
+  auto it = cCast->child_begin();
+  QualType qt = cCast->getType();
+
+  return convertCastExpr(*it, qt, getLocationString(cCast));
+} // convertCStyleCastExpr()
+
+SlangExpr slang::SpirGen::convertGotoStmt(const GotoStmt *gotoStmt) {
+  std::string label = gotoStmt->getLabel()->getNameAsString();
+  addGotoInstr(label);
+  return SlangExpr{};
+} // convertGotoStmt()
+
+SlangBitExpr slang::SpirGen::convertGotoStmtBit(const GotoStmt *gotoStmt) {
+  std::string label = gotoStmt->getLabel()->getNameAsString();
+  BitEntity labelBit = createLabelBit(label, getSrcLocBit(gotoStmt));
+  addGotoInstrBit(labelBit);
+  return SlangBitExpr{};
+} // convertGotoStmt()
+
+SlangExpr slang::SpirGen::convertBreakStmt(const BreakStmt *breakStmt) {
+  addGotoInstr(stu.peekExitLabel());
+  return SlangExpr{};
+}
+
+SlangExpr
+slang::SpirGen::convertContinueStmt(const ContinueStmt *continueStmt) {
+  addGotoInstr(stu.peekEntryLabel());
+  return SlangExpr{};
+}
+
+SlangExpr slang::SpirGen::convertSwitchStmtNew(const SwitchStmt *switchStmt) {
+  auto oldSwitchCfls = stu.switchCfls;
+  auto switchCfls = SwitchCtrlFlowLabels(stu.genNextLabelCountStr());
+  stu.switchCfls = &switchCfls;
+
+  stu.pushLabels(stu.switchCfls->switchStartLabel,
+                 stu.switchCfls->switchExitLabel);
+
+  addLabelInstr(stu.switchCfls->switchStartLabel);
+
+  const Expr *condExpr = switchStmt->getCond();
+  SlangExpr switchCond = convertToTmp(convertStmt(condExpr));
+  stu.switchCfls->switchCond = switchCond;
+
+  // Get all case statements inside switch.
+  if (switchStmt->getBody()) {
+    convertStmt(switchStmt->getBody());
+  } else {
+    for (auto it = switchStmt->child_begin(); it != switchStmt->child_end();
+         ++it) {
+      convertStmt(*it);
+    }
   }
 
-SlangExpr convertSwitchStmtNew(const SwitchStmt *switchStmt) {
-    auto oldSwitchCfls = stu.switchCfls;
-    auto switchCfls = SwitchCtrlFlowLabels(stu.genNextLabelCountStr());
-    stu.switchCfls = &switchCfls;
+  addGotoInstr(stu.switchCfls->nextBodyLabel);
+  addLabelInstr(stu.switchCfls->nextCaseCondLabel); // the last condition label
+  if (stu.switchCfls->defaultExists) {
+    addGotoInstr(stu.switchCfls->defaultCaseLabel);
+  }
+  addLabelInstr(stu.switchCfls->nextBodyLabel);
+  addLabelInstr(stu.switchCfls->switchExitLabel);
+  stu.switchCfls = oldSwitchCfls; // restore the old ptr
 
-    stu.pushLabels(stu.switchCfls->switchStartLabel, stu.switchCfls->switchExitLabel);
-
-    addLabelInstr(stu.switchCfls->switchStartLabel);
-
-    const Expr *condExpr = switchStmt->getCond();
-    SlangExpr switchCond = convertToTmp(convertStmt(condExpr));
-    stu.switchCfls->switchCond = switchCond;
-
-    // Get all case statements inside switch.
-    if (switchStmt->getBody()) {
-        convertStmt(switchStmt->getBody());
-    } else {
-        for (auto it = switchStmt->child_begin(); it != switchStmt->child_end(); ++it) {
-            convertStmt(*it);
-        }
-    }
-
-    addGotoInstr(stu.switchCfls->nextBodyLabel);
-    addLabelInstr(stu.switchCfls->nextCaseCondLabel); // the last condition label
-    if (stu.switchCfls->defaultExists) {
-        addGotoInstr(stu.switchCfls->defaultCaseLabel);
-    }
-    addLabelInstr(stu.switchCfls->nextBodyLabel);
-    addLabelInstr(stu.switchCfls->switchExitLabel);
-    stu.switchCfls = oldSwitchCfls;  // restore the old ptr
-
-    stu.popLabel();
-    return SlangExpr{};
+  stu.popLabel();
+  return SlangExpr{};
 } // convertSwitchStmtNew()
 
+SlangExpr slang::SpirGen::convertCaseStmt(const CaseStmt *caseStmt) {
+  if (stu.switchCfls->thisCaseCondLabel != "") {
+    addGotoInstr(
+        stu.switchCfls->nextBodyLabel); // add a fall through for prev body
+  }
 
-SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
-    if (stu.switchCfls->thisCaseCondLabel != "") {
-      addGotoInstr(stu.switchCfls->nextBodyLabel); // add a fall through for prev body
-    }
-
-    stu.switchCfls->setupForThisCase();
+  stu.switchCfls->setupForThisCase();
 
   const Stmt *cond = *(caseStmt->child_begin());
   SlangExpr caseCond = convertToTmp(convertStmt(cond));
 
   addLabelInstr(stu.switchCfls->thisCaseCondLabel); // condition label
   // add the actual condition
-  SlangExpr eqExpr = convertToIfTmp(createBinaryExpr(
-      stu.switchCfls->switchCond, "op.BO_EQ", caseCond,
-      getLocationString(caseStmt), Ctx->UnsignedIntTy));
+  SlangExpr eqExpr = convertToIfTmp(
+      createBinaryExpr(stu.switchCfls->switchCond, "op.BO_EQ", caseCond,
+                       getLocationString(caseStmt), Ctx->UnsignedIntTy));
   addCondInstr(eqExpr.expr, stu.switchCfls->thisBodyLabel,
-      stu.switchCfls->nextCaseCondLabel, getLocationString(caseStmt));
+               stu.switchCfls->nextCaseCondLabel, getLocationString(caseStmt));
 
   // case body
   if (stu.switchCfls->gotoLabel != "") {
     std::stringstream ss;
     ss << "instr.LabelI(\"" << stu.switchCfls->gotoLabel << "\"";
-    ss << ", " << stu.switchCfls->gotoLabelLocStr << ")"; // close instr.LabelI(...
+    ss << ", " << stu.switchCfls->gotoLabelLocStr
+       << ")"; // close instr.LabelI(...
     stu.addStmt(ss.str());
     stu.switchCfls->gotoLabel = stu.switchCfls->gotoLabelLocStr = "";
   }
@@ -1854,2242 +1597,3236 @@ SlangExpr convertCaseStmt(const CaseStmt *caseStmt) {
   return SlangExpr{};
 }
 
-    SlangExpr convertDefaultCaseStmt(const DefaultStmt *defaultStmt) {
-      if (stu.switchCfls->thisCaseCondLabel != "") {
-        addGotoInstr(stu.switchCfls->nextBodyLabel); // add a fall through for prev body
+SlangExpr
+slang::SpirGen::convertDefaultCaseStmt(const DefaultStmt *defaultStmt) {
+  if (stu.switchCfls->thisCaseCondLabel != "") {
+    addGotoInstr(
+        stu.switchCfls->nextBodyLabel); // add a fall through for prev body
+  }
+
+  stu.switchCfls->setupForDefaultCase();
+
+  addLabelInstr(stu.switchCfls->defaultCaseLabel); // default case label
+
+  // default body
+  addLabelInstr(stu.switchCfls->thisBodyLabel); // body label
+  for (auto it = defaultStmt->child_begin(); it != defaultStmt->child_end();
+       ++it) {
+    convertStmt(*it);
+  }
+
+  return SlangExpr{};
+}
+
+SlangExpr slang::SpirGen::convertSwitchStmt(const SwitchStmt *switchStmt) {
+  std::string id = stu.genNextLabelCountStr();
+  std::string switchStartLabel = id + "SwitchStart";
+  std::string switchExitLabel = id + "SwitchExit";
+  std::string caseCondLabel = id + "CaseCond" + "-";
+  std::string caseBodyLabel = id + "CaseBody" + "-";
+  std::string defaultLabel = id + "Default";
+  bool defaultLabelAdded = false;
+
+  stu.pushLabels(switchStartLabel, switchExitLabel);
+
+  addLabelInstr(switchStartLabel);
+
+  std::vector<const Stmt *> caseStmtsWithDefault;
+  // std::vector<const Stmt*> defaultStmt;
+
+  const Expr *condExpr = switchStmt->getCond();
+  SlangExpr switchCond = convertToTmp(convertStmt(condExpr));
+
+  // Get all case statements inside switch.
+  if (switchStmt->getBody()) {
+    getCaseStmts(caseStmtsWithDefault, switchStmt->getBody());
+    // getDefaultStmt(defaultStmt, switchStmt->getBody());
+
+  } else {
+    for (auto it = switchStmt->child_begin(); it != switchStmt->child_end();
+         ++it) {
+      if (isa<CaseStmt>(*it)) {
+        getCaseStmts(caseStmtsWithDefault, (*it));
+        // getDefaultStmt(defaultStmt, (*it));
+      }
+    }
+  }
+
+  std::stringstream ss;
+  std::string label;
+  std::string nextLabel;
+  size_t totalStmts = caseStmtsWithDefault.size();
+  for (size_t index = 0; index < caseStmtsWithDefault.size(); ++index) {
+    // for (const Stmt *stmt: caseStmtsWithDefault) {
+    const Stmt *stmt = caseStmtsWithDefault[index];
+
+    if (isa<CaseStmt>(stmt)) {
+      const CaseStmt *caseStmt = cast<CaseStmt>(stmt);
+      // find where to jump to if the case condition is false
+      std::string falseLabel;
+      falseLabel = defaultLabel;
+
+      if (index != totalStmts - 1) {
+        // try jumping to the next case's cond
+        for (size_t i = index + 1; i < totalStmts; ++i) {
+          if (isa<CaseStmt>(caseStmtsWithDefault[i])) {
+            ss << caseCondLabel << i;
+            falseLabel = ss.str();
+            ss.str("");
+            break;
+          }
+        }
       }
 
-      stu.switchCfls->setupForDefaultCase();
+      // armed with the falseLabel add the condition
+      ss << caseCondLabel << index;
+      std::string condLabel = ss.str();
+      ss.str("");
 
-      addLabelInstr(stu.switchCfls->defaultCaseLabel); // default case label
+      const Stmt *cond = *(caseStmt->child_begin());
+      // llvm::errs() << "CASE-CASE-CASE\n"; cond->dump();
+      SlangExpr caseCond = convertToTmp(convertStmt(cond));
 
-      // default body
-      addLabelInstr(stu.switchCfls->thisBodyLabel); // body label
-      for (auto it = defaultStmt->child_begin(); it != defaultStmt->child_end(); ++it) {
+      // generate body label
+      ss << caseBodyLabel << index;
+      std::string bodyLabel = ss.str();
+      ss.str("");
+
+      addLabelInstr(condLabel); // condition label
+      // add the actual condition
+      SlangExpr eqExpr = convertToIfTmp(
+          createBinaryExpr(switchCond, "op.BO_EQ", caseCond,
+                           getLocationString(caseStmt), Ctx->UnsignedIntTy));
+      addCondInstr(eqExpr.expr, bodyLabel, falseLabel,
+                   getLocationString(caseStmt));
+
+      // case body
+      addLabelInstr(bodyLabel);
+      for (auto it = caseStmt->child_begin(); it != caseStmt->child_end();
+           ++it) {
         convertStmt(*it);
       }
 
-      return SlangExpr{};
-    }
-
-  SlangExpr convertSwitchStmt(const SwitchStmt *switchStmt) {
-    std::string id = stu.genNextLabelCountStr();
-    std::string switchStartLabel = id + "SwitchStart";
-    std::string switchExitLabel = id + "SwitchExit";
-    std::string caseCondLabel = id + "CaseCond" + "-";
-    std::string caseBodyLabel = id + "CaseBody" + "-";
-    std::string defaultLabel = id + "Default";
-    bool defaultLabelAdded = false;
-
-    stu.pushLabels(switchStartLabel, switchExitLabel);
-
-    addLabelInstr(switchStartLabel);
-
-    std::vector<const Stmt*> caseStmtsWithDefault;
-    // std::vector<const Stmt*> defaultStmt;
-
-    const Expr *condExpr = switchStmt->getCond();
-    SlangExpr switchCond = convertToTmp(convertStmt(condExpr));
-
-    // Get all case statements inside switch.
-    if (switchStmt->getBody()) {
-      getCaseStmts(caseStmtsWithDefault, switchStmt->getBody());
-      // getDefaultStmt(defaultStmt, switchStmt->getBody());
-
-    } else {
-      for (auto it = switchStmt->child_begin(); it != switchStmt->child_end(); ++it) {
-        if (isa<CaseStmt>(*it)) {
-          getCaseStmts(caseStmtsWithDefault, (*it));
-          // getDefaultStmt(defaultStmt, (*it));
-        }
-      }
-    }
-
-    std::stringstream ss;
-    std::string label;
-    std::string nextLabel;
-    size_t totalStmts = caseStmtsWithDefault.size();
-    for (size_t index=0; index < caseStmtsWithDefault.size(); ++index) {
-      // for (const Stmt *stmt: caseStmtsWithDefault) {
-      const Stmt *stmt = caseStmtsWithDefault[index];
-
-      if (isa<CaseStmt>(stmt)) {
-        const CaseStmt *caseStmt = cast<CaseStmt>(stmt);
-        // find where to jump to if the case condition is false
-        std::string falseLabel;
-        falseLabel = defaultLabel;
-
+      // if it has break, then jump to exit
+      // Note: a break as child stmt is covered recursively
+      if (caseOrDefaultStmtHasSiblingBreak(caseStmt)) {
+        addGotoInstr(switchExitLabel);
+      } else {
+        // try jumping to the next case's body if present :)
         if (index != totalStmts - 1) {
-          // try jumping to the next case's cond
-          for (size_t i=index+1; i < totalStmts; ++i) {
-            if (isa<CaseStmt>(caseStmtsWithDefault[i])) {
-              ss << caseCondLabel << i;
-              falseLabel = ss.str();
-              ss.str("");
-              break;
-            }
-          }
-        }
-
-        // armed with the falseLabel add the condition
-        ss << caseCondLabel << index;
-        std::string condLabel = ss.str();
-        ss.str("");
-
-        const Stmt *cond = *(caseStmt->child_begin());
-        // llvm::errs() << "CASE-CASE-CASE\n"; cond->dump();
-        SlangExpr caseCond = convertToTmp(convertStmt(cond));
-
-        // generate body label
-        ss << caseBodyLabel << index;
-        std::string bodyLabel = ss.str();
-        ss.str("");
-
-        addLabelInstr(condLabel); // condition label
-        // add the actual condition
-        SlangExpr eqExpr = convertToIfTmp(createBinaryExpr(switchCond,
-            "op.BO_EQ", caseCond, getLocationString(caseStmt),
-            Ctx->UnsignedIntTy));
-        addCondInstr(eqExpr.expr, bodyLabel, falseLabel, getLocationString(caseStmt));
-
-        // case body
-        addLabelInstr(bodyLabel);
-        for (auto it = caseStmt->child_begin();
-             it != caseStmt->child_end();
-             ++it) {
-          convertStmt(*it);
-        }
-
-        // if it has break, then jump to exit
-        // Note: a break as child stmt is covered recursively
-        if (caseOrDefaultStmtHasSiblingBreak(caseStmt)) {
-          addGotoInstr(switchExitLabel);
-        } else {
-          // try jumping to the next case's body if present :)
-          if (index != totalStmts-1) {
-            if (isa<CaseStmt>(caseStmtsWithDefault[index + 1])) {
-              ss << caseBodyLabel << index + 1;
-              addGotoInstr(ss.str());
-              ss.str("");
-            } else {
-              // must be default then, hence fall through to it
-            }
-          }
-        }
-
-      } else if (isa<DefaultStmt>(stmt)) {
-        // add the default case
-        addLabelInstr(defaultLabel);
-        defaultLabelAdded = true;
-        for (auto it = stmt->child_begin(); it != stmt->child_end();
-             ++it) {
-          convertStmt(*it);
-        }
-
-        // if it has break, then jump to exit
-        // Note: a break as child stmt is covered recursively
-        if (caseOrDefaultStmtHasSiblingBreak(stmt)) {
-          addGotoInstr(switchExitLabel);
-        } else {
-          // try jumping to the next case's body
-          if (index != totalStmts-1) {
-            // must be a case stmt, since this is a default stmt :)
-            ss << caseBodyLabel << index+1;
+          if (isa<CaseStmt>(caseStmtsWithDefault[index + 1])) {
+            ss << caseBodyLabel << index + 1;
             addGotoInstr(ss.str());
             ss.str("");
+          } else {
+            // must be default then, hence fall through to it
           }
         }
       }
-
-    }
-
-    if (!defaultLabelAdded) {
-      addLabelInstr(defaultLabel); // needed
-    }
-    addLabelInstr(switchExitLabel);
-
-    stu.popLabel();
-    return SlangExpr{};
-  } // convertSwitchStmt()
-
-  // many times BreakStmt is a sibling of CaseStmt/DefaultStmt
-  // this function detects that
-  bool caseOrDefaultStmtHasSiblingBreak(const Stmt *stmt) {
-    const auto &parents = Ctx->getParents(DynTypedNode::create(*stmt));
-
-    const Stmt *parentStmt = parents[0].get<Stmt>();
-    bool lastStmtWasTheGivenCaseOrDefaultStmt = false;
-    bool hasBreak = false;
-
-    for (auto it = parentStmt->child_begin();
-          it != parentStmt->child_end();
-          ++it) {
-      if (! *it) { continue; }
-
-      if (isa<BreakStmt>(*it)) {
-        if (lastStmtWasTheGivenCaseOrDefaultStmt) {
-          hasBreak = true;
-        }
-        break;
-      }
-
-      if (lastStmtWasTheGivenCaseOrDefaultStmt) {
-        lastStmtWasTheGivenCaseOrDefaultStmt = false;
-      }
-      if ((*it) == stmt) {
-        lastStmtWasTheGivenCaseOrDefaultStmt = true;
-      }
-    }
-
-    return hasBreak;
-  } // caseOrDefaultStmtHasSiblingBreak()
-
-  // Returns true if the type is not complete enough to give away a constant size
-  bool isIncompleteType(const Type *type) {
-      bool retVal = false;
-
-      if (type->isIncompleteArrayType() || type->isVariableArrayType()) {
-          retVal = true;
-      }
-      return retVal;
-  }
-
-  // get all case statements recursively (case stmts can be hierarchical)
-  void getCaseStmts(std::vector<const Stmt*>& caseStmtsWithDefault, const Stmt *stmt) {
-    if (! stmt) return;
-
-    if (isa<CaseStmt>(stmt)) {
-      auto caseStmt = cast<CaseStmt>(stmt);
-      caseStmtsWithDefault.push_back(stmt);
-      for (auto it = caseStmt->child_begin(); it != caseStmt->child_end(); ++it) {
-        if ((*it) && isa<CaseStmt>(*it)) {
-          getCaseStmts(caseStmtsWithDefault, (*it));
-        }
-      }
-
-    } else if (isa<CompoundStmt>(stmt)) {
-      const CompoundStmt *compoundStmt = cast<CompoundStmt>(stmt);
-      for (auto it = compoundStmt->body_begin(); it != compoundStmt->body_end(); ++it) {
-        getCaseStmts(caseStmtsWithDefault, (*it));
-      }
-    } else if (isa<SwitchStmt>(stmt)) {
-      // do nothing, as it will be handled separately
 
     } else if (isa<DefaultStmt>(stmt)) {
-      auto defaultStmt = cast<DefaultStmt>(stmt);
-      caseStmtsWithDefault.push_back(stmt);
-      for (auto it = defaultStmt->child_begin(); it != defaultStmt->child_end(); ++it) {
-        if ((*it) && isa<CaseStmt>(*it)) {
-          getCaseStmts(caseStmtsWithDefault, (*it));
-        }
+      // add the default case
+      addLabelInstr(defaultLabel);
+      defaultLabelAdded = true;
+      for (auto it = stmt->child_begin(); it != stmt->child_end(); ++it) {
+        convertStmt(*it);
       }
 
-    } else {
-      if (stmt->child_begin() != stmt->child_end()) {
-        for (auto it = stmt->child_begin(); it != stmt->child_end(); ++it) {
-          getCaseStmts(caseStmtsWithDefault, (*it));
+      // if it has break, then jump to exit
+      // Note: a break as child stmt is covered recursively
+      if (caseOrDefaultStmtHasSiblingBreak(stmt)) {
+        addGotoInstr(switchExitLabel);
+      } else {
+        // try jumping to the next case's body
+        if (index != totalStmts - 1) {
+          // must be a case stmt, since this is a default stmt :)
+          ss << caseBodyLabel << index + 1;
+          addGotoInstr(ss.str());
+          ss.str("");
         }
       }
     }
   }
 
-  // get the default stmt if present
-  void getDefaultStmt(std::vector<const Stmt*>& defaultStmt, const Stmt *stmt) {
-    if (! stmt) return;
+  if (!defaultLabelAdded) {
+    addLabelInstr(defaultLabel); // needed
+  }
+  addLabelInstr(switchExitLabel);
 
-    if (isa<DefaultStmt>(stmt)) {
-      defaultStmt.push_back(stmt);
+  stu.popLabel();
+  return SlangExpr{};
+} // convertSwitchStmt()
 
-    } else if (isa<CaseStmt>(stmt)) {
-      auto caseStmt = cast<CaseStmt>(stmt);
-      for (auto it = caseStmt->child_begin(); it != caseStmt->child_end(); ++it) {
-        if ((*it) && isa<CaseStmt>(*it)) {
-          getDefaultStmt(defaultStmt, (*it));
-        }
+// many times BreakStmt is a sibling of CaseStmt/DefaultStmt
+// this function detects that
+bool slang::SpirGen::caseOrDefaultStmtHasSiblingBreak(const Stmt *stmt) {
+  const auto &parents = Ctx->getParents(DynTypedNode::create(*stmt));
+
+  const Stmt *parentStmt = parents[0].get<Stmt>();
+  bool lastStmtWasTheGivenCaseOrDefaultStmt = false;
+  bool hasBreak = false;
+
+  for (auto it = parentStmt->child_begin(); it != parentStmt->child_end();
+       ++it) {
+    if (!*it) {
+      continue;
+    }
+
+    if (isa<BreakStmt>(*it)) {
+      if (lastStmtWasTheGivenCaseOrDefaultStmt) {
+        hasBreak = true;
       }
+      break;
+    }
 
-    } else if (isa<CompoundStmt>(stmt)) {
-      const CompoundStmt *compoundStmt = cast<CompoundStmt>(stmt);
-      for (auto it = compoundStmt->body_begin(); it != compoundStmt->body_end(); ++it) {
+    if (lastStmtWasTheGivenCaseOrDefaultStmt) {
+      lastStmtWasTheGivenCaseOrDefaultStmt = false;
+    }
+    if ((*it) == stmt) {
+      lastStmtWasTheGivenCaseOrDefaultStmt = true;
+    }
+  }
+
+  return hasBreak;
+} // caseOrDefaultStmtHasSiblingBreak()
+
+// Returns true if the type is not complete enough to give away a constant size
+bool slang::SpirGen::isIncompleteType(const Type *type) {
+  bool retVal = false;
+
+  if (type->isIncompleteArrayType() || type->isVariableArrayType()) {
+    retVal = true;
+  }
+  return retVal;
+}
+
+// get all case statements recursively (case stmts can be hierarchical)
+void slang::SpirGen::getCaseStmts(
+    std::vector<const Stmt *> &caseStmtsWithDefault, const Stmt *stmt) {
+  if (!stmt)
+    return;
+
+  if (isa<CaseStmt>(stmt)) {
+    auto caseStmt = cast<CaseStmt>(stmt);
+    caseStmtsWithDefault.push_back(stmt);
+    for (auto it = caseStmt->child_begin(); it != caseStmt->child_end(); ++it) {
+      if ((*it) && isa<CaseStmt>(*it)) {
+        getCaseStmts(caseStmtsWithDefault, (*it));
+      }
+    }
+
+  } else if (isa<CompoundStmt>(stmt)) {
+    const CompoundStmt *compoundStmt = cast<CompoundStmt>(stmt);
+    for (auto it = compoundStmt->body_begin(); it != compoundStmt->body_end();
+         ++it) {
+      getCaseStmts(caseStmtsWithDefault, (*it));
+    }
+  } else if (isa<SwitchStmt>(stmt)) {
+    // do nothing, as it will be handled separately
+
+  } else if (isa<DefaultStmt>(stmt)) {
+    auto defaultStmt = cast<DefaultStmt>(stmt);
+    caseStmtsWithDefault.push_back(stmt);
+    for (auto it = defaultStmt->child_begin(); it != defaultStmt->child_end();
+         ++it) {
+      if ((*it) && isa<CaseStmt>(*it)) {
+        getCaseStmts(caseStmtsWithDefault, (*it));
+      }
+    }
+
+  } else {
+    if (stmt->child_begin() != stmt->child_end()) {
+      for (auto it = stmt->child_begin(); it != stmt->child_end(); ++it) {
+        getCaseStmts(caseStmtsWithDefault, (*it));
+      }
+    }
+  }
+}
+
+// get the default stmt if present
+void slang::SpirGen::getDefaultStmt(std::vector<const Stmt *> &defaultStmt,
+                                    const Stmt *stmt) {
+  if (!stmt)
+    return;
+
+  if (isa<DefaultStmt>(stmt)) {
+    defaultStmt.push_back(stmt);
+
+  } else if (isa<CaseStmt>(stmt)) {
+    auto caseStmt = cast<CaseStmt>(stmt);
+    for (auto it = caseStmt->child_begin(); it != caseStmt->child_end(); ++it) {
+      if ((*it) && isa<CaseStmt>(*it)) {
         getDefaultStmt(defaultStmt, (*it));
       }
-    } else if (isa<SwitchStmt>(stmt)) {
-      // do nothing, as it will be handled separately
-    } else {
-      if (stmt->child_begin() != stmt->child_end()) {
-        for (auto it = stmt->child_begin(); it != stmt->child_end(); ++it) {
-          getDefaultStmt(defaultStmt, (*it));
-        }
+    }
+
+  } else if (isa<CompoundStmt>(stmt)) {
+    const CompoundStmt *compoundStmt = cast<CompoundStmt>(stmt);
+    for (auto it = compoundStmt->body_begin(); it != compoundStmt->body_end();
+         ++it) {
+      getDefaultStmt(defaultStmt, (*it));
+    }
+  } else if (isa<SwitchStmt>(stmt)) {
+    // do nothing, as it will be handled separately
+  } else {
+    if (stmt->child_begin() != stmt->child_end()) {
+      for (auto it = stmt->child_begin(); it != stmt->child_end(); ++it) {
+        getDefaultStmt(defaultStmt, (*it));
       }
     }
   }
+}
 
-  SlangExpr convertReturnStmt(const ReturnStmt *returnStmt) {
-    const Expr *retVal = returnStmt->getRetValue();
+SlangExpr slang::SpirGen::convertReturnStmt(const ReturnStmt *returnStmt) {
+  const Expr *retVal = returnStmt->getRetValue();
 
-    SlangExpr retExpr = convertToTmp(convertStmt(retVal));
+  SlangExpr retExpr = convertToTmp(convertStmt(retVal));
 
-    std::stringstream ss;
-    if (retExpr.expr.size() == 0) {
-      retExpr.expr = "None";
-    }
-    ss << "instr.ReturnI(" << retExpr.expr;
-    ss << ", " << getLocationString(returnStmt) << ")";
-    stu.addStmt(ss.str());
+  std::stringstream ss;
+  if (retExpr.expr.size() == 0) {
+    retExpr.expr = "None";
+  }
+  ss << "instr.ReturnI(" << retExpr.expr;
+  ss << ", " << getLocationString(returnStmt) << ")";
+  stu.addStmt(ss.str());
 
-    return SlangExpr{};
+  return SlangExpr{};
+}
+
+SlangBitExpr
+slang::SpirGen::convertReturnStmtBit(const ReturnStmt *returnStmt) {
+  const Expr *retVal = returnStmt->getRetValue();
+
+  SlangBitExpr retExpr = convertToTmpBit(convertStmtBit(retVal), false, true);
+
+  BitInsn *insn = new BitInsn();
+  BitSrcLoc srcLoc = getSrcLocBit(returnStmt);
+  insn->set_ikind(::spir::K_IK::IRETURN);
+  insn->set_allocated_expr1(retExpr.bitExpr);
+  insn->set_loc_line(srcLoc.line());
+  insn->set_loc_col(srcLoc.col());
+
+  stu.addStmtBit(insn);
+
+  // Return empty expression, assuming no one needs it.
+  return SlangBitExpr{};
+} // convertReturnStmtBit()
+
+SlangExpr
+slang::SpirGen::convertConditionalOp(const ConditionalOperator *condOp) {
+  const Expr *condition = condOp->getCond();
+
+  SlangExpr cond = convertToTmp(convertStmt(condition));
+  SlangExpr trueExpr = convertToTmp(convertStmt(condOp->getTrueExpr()));
+  SlangExpr falseExpr = convertToTmp(convertStmt(condOp->getFalseExpr()));
+
+  SlangExpr slangExpr;
+  std::stringstream ss;
+  ss << "expr.SelectE(" << cond.expr;
+  ss << ", " << trueExpr.expr;
+  ss << ", " << falseExpr.expr;
+  ss << ", " << getLocationString(condition) << ")";
+  slangExpr.expr = ss.str();
+  slangExpr.compound = true;
+  slangExpr.qualType = condOp->getType();
+
+  return slangExpr;
+} // convertConditionalOp()
+
+SlangExpr slang::SpirGen::convertIfStmt(const IfStmt *ifStmt) {
+  std::string id = stu.genNextLabelCountStr();
+  std::string ifTrueLabel = id + "IfTrue";
+  std::string ifFalseLabel = id + "IfFalse";
+  std::string ifExitLabel = id + "IfExit";
+
+  const Stmt *condition = ifStmt->getCond();
+  SlangExpr conditionExpr = convertStmt(condition);
+  conditionExpr = convertToIfTmp(conditionExpr);
+
+  addCondInstr(conditionExpr.expr, ifTrueLabel, ifFalseLabel,
+               getLocationString(ifStmt));
+
+  addLabelInstr(ifTrueLabel);
+
+  const Stmt *body = ifStmt->getThen();
+  if (body) {
+    convertStmt(body);
   }
 
-  SlangExpr convertConditionalOp(const ConditionalOperator *condOp) {
-    const Expr *condition = condOp->getCond();
+  addGotoInstr(ifExitLabel);
+  addLabelInstr(ifFalseLabel);
 
-    SlangExpr cond = convertToTmp(convertStmt(condition));
-    SlangExpr trueExpr = convertToTmp(convertStmt(condOp->getTrueExpr()));
-    SlangExpr falseExpr = convertToTmp(convertStmt(condOp->getFalseExpr()));
+  const Stmt *elseBody = ifStmt->getElse();
+  if (elseBody) {
+    convertStmt(elseBody);
+  }
 
-    SlangExpr slangExpr;
-    std::stringstream ss;
-    ss << "expr.SelectE(" << cond.expr;
-    ss << ", " << trueExpr.expr;
-    ss << ", " << falseExpr.expr;
-    ss << ", " << getLocationString(condition) << ")";
-    slangExpr.expr = ss.str();
-    slangExpr.compound = true;
-    slangExpr.qualType = condOp->getType();
+  addLabelInstr(ifExitLabel);
 
-    return slangExpr;
-  } // convertConditionalOp()
+  return SlangExpr{}; // return empty expression
+} // convertIfStmt()
 
-  SlangExpr convertIfStmt(const IfStmt *ifStmt) {
-    std::string id = stu.genNextLabelCountStr();
-    std::string ifTrueLabel = id + "IfTrue";
-    std::string ifFalseLabel = id + "IfFalse";
-    std::string ifExitLabel = id + "IfExit";
+SlangExpr slang::SpirGen::convertWhileStmt(const WhileStmt *whileStmt) {
+  std::string id = stu.genNextLabelCountStr();
+  std::string whileCondLabel = id + "WhileCond";
+  std::string whileBodyLabel = id + "WhileBody";
+  std::string whileExitLabel = id + "WhileExit";
 
-    const Stmt *condition = ifStmt->getCond();
-    SlangExpr conditionExpr = convertStmt(condition);
-    conditionExpr = convertToIfTmp(conditionExpr);
+  stu.pushLabels(whileCondLabel, whileExitLabel);
 
-    addCondInstr(conditionExpr.expr,
-        ifTrueLabel, ifFalseLabel, getLocationString(ifStmt));
+  addLabelInstr(whileCondLabel);
 
-    addLabelInstr(ifTrueLabel);
+  const Stmt *condition = whileStmt->getCond();
+  SlangExpr conditionExpr = convertStmt(condition);
+  conditionExpr = convertToIfTmp(conditionExpr);
 
-    const Stmt *body = ifStmt->getThen();
-    if (body) { convertStmt(body); }
+  addCondInstr(conditionExpr.expr, whileBodyLabel, whileExitLabel,
+               getLocationString(condition));
 
-    addGotoInstr(ifExitLabel);
-    addLabelInstr(ifFalseLabel);
+  addLabelInstr(whileBodyLabel);
 
-    const Stmt *elseBody = ifStmt->getElse();
-    if (elseBody) {
-      convertStmt(elseBody);
-    }
+  const Stmt *body = whileStmt->getBody();
+  if (body) {
+    convertStmt(body);
+  }
 
-    addLabelInstr(ifExitLabel);
+  // unconditional jump to startConditionLabel
+  addGotoInstr(whileCondLabel);
 
-    return SlangExpr{}; // return empty expression
-  } // convertIfStmt()
+  addLabelInstr(whileExitLabel);
 
-  SlangExpr convertWhileStmt(const WhileStmt *whileStmt) {
-    std::string id = stu.genNextLabelCountStr();
-    std::string whileCondLabel = id + "WhileCond";
-    std::string whileBodyLabel = id + "WhileBody";
-    std::string whileExitLabel = id + "WhileExit";
+  stu.popLabel();
+  return SlangExpr{}; // return empty expression
+} // convertWhileStmt()
 
-    stu.pushLabels(whileCondLabel, whileExitLabel);
+SlangExpr slang::SpirGen::convertDoStmt(const DoStmt *doStmt) {
+  std::string id = stu.genNextLabelCountStr();
+  std::string doEntry = "DoEntry" + id;
+  std::string doCond = "DoCond" + id;
+  std::string doExit = "DoExit" + id;
 
-    addLabelInstr(whileCondLabel);
+  stu.pushLabels(doCond, doExit);
 
-    const Stmt *condition = whileStmt->getCond();
-    SlangExpr conditionExpr = convertStmt(condition);
-    conditionExpr = convertToIfTmp(conditionExpr);
+  // do body
+  addLabelInstr(doEntry);
+  const Stmt *body = doStmt->getBody();
+  if (body) {
+    convertStmt(body);
+  }
 
-    addCondInstr(conditionExpr.expr,
-        whileBodyLabel, whileExitLabel, getLocationString(condition));
+  // while condition
+  addLabelInstr(doCond);
+  const Stmt *condition = doStmt->getCond();
+  SlangExpr conditionExpr = convertToIfTmp(convertStmt(condition));
+  addCondInstr(conditionExpr.expr, doEntry, doExit,
+               getLocationString(condition));
 
-    addLabelInstr(whileBodyLabel);
+  addLabelInstr(doExit);
 
-    const Stmt *body = whileStmt->getBody();
-    if (body) { convertStmt(body); }
+  stu.popLabel();
+  return SlangExpr{}; // return empty expression
+} // convertDoStmt()
 
-    // unconditional jump to startConditionLabel
-    addGotoInstr(whileCondLabel);
+SlangExpr slang::SpirGen::convertForStmt(const ForStmt *forStmt) {
+  std::string id = stu.genNextLabelCountStr();
+  std::string forCondLabel = id + "ForCond";
+  std::string forBodyLabel = id + "ForBody";
+  std::string forExitLabel = id + "ForExit";
 
-    addLabelInstr(whileExitLabel);
+  stu.pushLabels(forCondLabel, forExitLabel);
 
-    stu.popLabel();
-    return SlangExpr{}; // return empty expression
-  } // convertWhileStmt()
+  // for init
+  const Stmt *init = forStmt->getInit();
+  if (init) {
+    convertStmt(init);
+  }
 
-  SlangExpr convertDoStmt(const DoStmt *doStmt) {
-    std::string id = stu.genNextLabelCountStr();
-    std::string doEntry = "DoEntry" + id;
-    std::string doCond = "DoCond" + id;
-    std::string doExit = "DoExit" + id;
+  // for condition
+  const Stmt *condition = forStmt->getCond();
 
-    stu.pushLabels(doCond, doExit);
+  addLabelInstr(forCondLabel);
 
-    // do body
-    addLabelInstr(doEntry);
-    const Stmt *body = doStmt->getBody();
-    if (body) { convertStmt(body); }
-
-    // while condition
-    addLabelInstr(doCond);
-    const Stmt *condition = doStmt->getCond();
+  if (condition) {
     SlangExpr conditionExpr = convertToIfTmp(convertStmt(condition));
-    addCondInstr(conditionExpr.expr,
-        doEntry, doExit, getLocationString(condition));
 
-    addLabelInstr(doExit);
-
-    stu.popLabel();
-    return SlangExpr{}; // return empty expression
-  } // convertDoStmt()
-
-  SlangExpr convertForStmt(const ForStmt *forStmt) {
-    std::string id = stu.genNextLabelCountStr();
-    std::string forCondLabel = id + "ForCond";
-    std::string forBodyLabel = id + "ForBody";
-    std::string forExitLabel = id + "ForExit";
-
-    stu.pushLabels(forCondLabel, forExitLabel);
-
-    // for init
-    const Stmt *init = forStmt->getInit();
-    if (init) { convertStmt(init); }
-
-    // for condition
-    const Stmt *condition = forStmt->getCond();
-
-    addLabelInstr(forCondLabel);
-
-    if (condition) {
-      SlangExpr conditionExpr = convertToIfTmp(convertStmt(condition));
-
-      addCondInstr(conditionExpr.expr,
-          forBodyLabel, forExitLabel, getLocationString(condition));
-    } else {
-      addCondInstr("expr.LitE(1)",
-                   forBodyLabel, forExitLabel, getLocationString(forStmt));
-    }
-
-    // for body
-    addLabelInstr(forBodyLabel);
-
-    const Stmt *body = forStmt->getBody();
-    if (body) { convertStmt(body); }
-
-    const Stmt *inc = forStmt->getInc();
-    if (inc) { convertStmt(inc); }
-
-    addGotoInstr(forCondLabel); // jump to for cond
-    addLabelInstr(forExitLabel); // for exit
-
-    stu.popLabel();
-    return SlangExpr{}; // return empty expression
-  } // convertForStmt()
-
-  SlangExpr convertCastExpr(const Stmt *expr, QualType qt, std::string locStr) {
-    // Generates CastE() expression.
-    SlangExpr castExpr;
-    SlangExpr exprArg = convertToTmp(convertStmt(expr));
-    auto typePtr = qt.getTypePtr();
-    if (typePtr->isVoidType()) {
-      // A VOID cast shouldn't be used anywhere.
-      castExpr.expr = "ERROR:Unkown VOID Cast";
-      return castExpr; // return an empty expression
-    }
-    std::string castTypeStr = convertClangType(qt);
-
-    std::stringstream ss;
-    ss << "expr.CastE(" << exprArg.expr;
-    ss << ", " << castTypeStr;
-    ss << ", " << locStr << ")";
-
-    castExpr.expr = ss.str();
-    castExpr.compound = true;
-    castExpr.qualType = qt;
-    castExpr.locStr = locStr;
-
-    return castExpr;
-  } // convertCastExpr()
-
-  SlangExpr convertImplicitCastExpr(const ImplicitCastExpr *iCast) {
-    // only one child is expected
-    auto it = iCast->child_begin();
-    auto ck = iCast->getCastKind();
-
-    switch(ck) {
-      case CastKind::CK_IntegralToFloating:
-      case CastKind::CK_FloatingToIntegral:
-      case CastKind::CK_IntegralCast:
-      case CastKind::CK_ArrayToPointerDecay: {
-        return convertStmt(*it);
-      }
-
-      default:
-        return convertStmt(*it);
-        //return convertCastExpr(*it, iCast->getType(), getLocationString(iCast));
-    }
+    addCondInstr(conditionExpr.expr, forBodyLabel, forExitLabel,
+                 getLocationString(condition));
+  } else {
+    addCondInstr("expr.LitE(1)", forBodyLabel, forExitLabel,
+                 getLocationString(forStmt));
   }
 
-  SlangExpr convertCharacterLiteral(const CharacterLiteral *cl) {
-    std::stringstream ss;
-    ss << "expr.LitE(" << cl->getValue();
-    ss << ", " << getLocationString(cl) << ")";
+  // for body
+  addLabelInstr(forBodyLabel);
 
-    SlangExpr slangExpr;
-    slangExpr.expr = ss.str();
-    slangExpr.locStr = getLocationString(cl);
-    slangExpr.qualType = cl->getType();
+  const Stmt *body = forStmt->getBody();
+  if (body) {
+    convertStmt(body);
+  }
 
-    return slangExpr;
-  } // convertCharacterLiteral()
+  const Stmt *inc = forStmt->getInc();
+  if (inc) {
+    convertStmt(inc);
+  }
 
-  SlangExpr convertConstantExpr(const ConstantExpr *constExpr) {
-    // a ConstantExpr contains a literal expression
-    return convertStmt(constExpr->getSubExpr());
-  } // convertConstantExpr()
+  addGotoInstr(forCondLabel);  // jump to for cond
+  addLabelInstr(forExitLabel); // for exit
 
-  SlangExpr convertIntegerLiteral(const IntegerLiteral *il) {
-    std::stringstream ss;
-    std::string suffix = ""; // helps make int appear float
+  stu.popLabel();
+  return SlangExpr{}; // return empty expression
+} // convertForStmt()
 
-    std::string locStr = getLocationString(il);
+SlangExpr slang::SpirGen::convertCastExpr(const Stmt *expr, QualType qt,
+                                          std::string locStr) {
+  // Generates CastE() expression.
+  SlangExpr castExpr;
+  SlangExpr exprArg = convertToTmp(convertStmt(expr));
+  auto typePtr = qt.getTypePtr();
+  if (typePtr->isVoidType()) {
+    // A VOID cast shouldn't be used anywhere.
+    castExpr.expr = "ERROR:Unkown VOID Cast";
+    return castExpr; // return an empty expression
+  }
+  std::string castTypeStr = convertClangType(qt);
 
-    // check if int is implicitly casted to floating
-    const auto &parents = Ctx->getParents(*il);
-    if (!parents.empty()) {
-      const Stmt *stmt1 = parents[0].get<Stmt>();
-      if (stmt1) {
-        switch (stmt1->getStmtClass()) {
+  std::stringstream ss;
+  ss << "expr.CastE(" << exprArg.expr;
+  ss << ", " << castTypeStr;
+  ss << ", " << locStr << ")";
+
+  castExpr.expr = ss.str();
+  castExpr.compound = true;
+  castExpr.qualType = qt;
+  castExpr.locStr = locStr;
+
+  return castExpr;
+} // convertCastExpr()
+
+SlangExpr
+slang::SpirGen::convertImplicitCastExpr(const ImplicitCastExpr *iCast) {
+  // only one child is expected
+  auto it = iCast->child_begin();
+  auto ck = iCast->getCastKind();
+
+  switch (ck) {
+  case CastKind::CK_IntegralToFloating:
+  case CastKind::CK_FloatingToIntegral:
+  case CastKind::CK_IntegralCast:
+  case CastKind::CK_ArrayToPointerDecay: {
+    return convertStmt(*it);
+  }
+
+  default:
+    return convertStmt(*it);
+    // return convertCastExpr(*it, iCast->getType(), getLocationString(iCast));
+  }
+}
+
+SlangExpr slang::SpirGen::convertCharacterLiteral(const CharacterLiteral *cl) {
+  std::stringstream ss;
+  ss << "expr.LitE(" << cl->getValue();
+  ss << ", " << getLocationString(cl) << ")";
+
+  SlangExpr slangExpr;
+  slangExpr.expr = ss.str();
+  slangExpr.locStr = getLocationString(cl);
+  slangExpr.qualType = cl->getType();
+
+  return slangExpr;
+} // convertCharacterLiteral()
+
+SlangExpr slang::SpirGen::convertConstantExpr(const ConstantExpr *constExpr) {
+  // a ConstantExpr contains a literal expression
+  return convertStmt(constExpr->getSubExpr());
+} // convertConstantExpr()
+
+SlangExpr slang::SpirGen::convertIntegerLiteral(const IntegerLiteral *il) {
+  std::stringstream ss;
+  std::string suffix = ""; // helps make int appear float
+
+  std::string locStr = getLocationString(il);
+
+  // check if int is implicitly casted to floating
+  const auto &parents = Ctx->getParents(*il);
+  if (!parents.empty()) {
+    const Stmt *stmt1 = parents[0].get<Stmt>();
+    if (stmt1) {
+      switch (stmt1->getStmtClass()) {
+      default:
+        break;
+      case Stmt::ImplicitCastExprClass: {
+        const ImplicitCastExpr *ice = cast<ImplicitCastExpr>(stmt1);
+        switch (ice->getCastKind()) {
         default:
           break;
-        case Stmt::ImplicitCastExprClass: {
-          const ImplicitCastExpr *ice = cast<ImplicitCastExpr>(stmt1);
-          switch (ice->getCastKind()) {
-          default:
-            break;
-          case CastKind::CK_IntegralToFloating:
-            suffix = ".0";
-            break;
-          }
-        }
+        case CastKind::CK_IntegralToFloating:
+          suffix = ".0";
+          break;
         }
       }
+      }
     }
+  }
 
-    bool is_signed = il->getType()->isSignedIntegerType();
-    ss << "expr.LitE(";
-    charSv->clear(); il->getValue().toString(*charSv, 10, is_signed);
-    ss << charSv->data();
-    //il->print(ss, is_signed);// << il->getValue().toString(10, is_signed);
-    ss << suffix;
-    ss << ", " << locStr << ")";
-    SLANG_TRACE(ss.str())
+  bool is_signed = il->getType()->isSignedIntegerType();
+  ss << "expr.LitE(";
+  charSv->clear();
+  il->getValue().toString(*charSv, 10, is_signed);
+  ss << charSv->data();
+  // il->print(ss, is_signed);// << il->getValue().toString(10, is_signed);
+  ss << suffix;
+  ss << ", " << locStr << ")";
+  SLANG_TRACE(ss.str())
 
-    SlangExpr slangExpr;
-    slangExpr.expr = ss.str();
-    slangExpr.qualType = il->getType();
-    slangExpr.locStr = getLocationString(il);
+  SlangExpr slangExpr;
+  slangExpr.expr = ss.str();
+  slangExpr.qualType = il->getType();
+  slangExpr.locStr = getLocationString(il);
 
-    return slangExpr;
-  } // convertIntegerLiteral()
+  return slangExpr;
+} // convertIntegerLiteral()
 
-  SlangExpr convertFloatingLiteral(const FloatingLiteral *fl) {
-    std::stringstream ss;
-    bool toInt = false;
+SlangExpr slang::SpirGen::convertFloatingLiteral(const FloatingLiteral *fl) {
+  std::stringstream ss;
+  bool toInt = false;
 
-    std::string locStr = getLocationString(fl);
+  std::string locStr = getLocationString(fl);
 
-    // check if float is implicitly casted to int
-    const auto &parents = Ctx->getParents(*fl);
-    if (!parents.empty()) {
-      const Stmt *stmt1 = parents[0].get<Stmt>();
-      if (stmt1) {
-        switch (stmt1->getStmtClass()) {
+  // check if float is implicitly casted to int
+  const auto &parents = Ctx->getParents(*fl);
+  if (!parents.empty()) {
+    const Stmt *stmt1 = parents[0].get<Stmt>();
+    if (stmt1) {
+      switch (stmt1->getStmtClass()) {
+      default:
+        break;
+      case Stmt::ImplicitCastExprClass: {
+        const ImplicitCastExpr *ice = cast<ImplicitCastExpr>(stmt1);
+        switch (ice->getCastKind()) {
         default:
           break;
-        case Stmt::ImplicitCastExprClass: {
-          const ImplicitCastExpr *ice = cast<ImplicitCastExpr>(stmt1);
-          switch (ice->getCastKind()) {
-          default:
-            break;
-          case CastKind::CK_FloatingToIntegral:
-            toInt = true;
-            break;
-          }
-        }
+        case CastKind::CK_FloatingToIntegral:
+          toInt = true;
+          break;
         }
       }
+      }
+    }
+  }
+
+  ss << "expr.LitE(";
+  if (toInt) {
+    // ss << (int64_t)fl->getValue().convertToDouble();
+    ss << (int64_t)fl->getValueAsApproximateDouble();
+  } else {
+    ss << std::fixed << fl->getValueAsApproximateDouble();
+  }
+  ss << ", " << locStr << ")";
+  SLANG_TRACE(ss.str())
+
+  SlangExpr slangExpr;
+  slangExpr.expr = ss.str();
+  slangExpr.qualType = fl->getType();
+  slangExpr.locStr = getLocationString(fl);
+
+  return slangExpr;
+} // convertFloatingLiteral()
+
+SlangExpr slang::SpirGen::convertStringLiteral(const StringLiteral *sl) {
+  SlangExpr slangExpr;
+  std::stringstream ss;
+
+  std::string locStr = getLocationString(sl);
+
+  // with extra text at the end since """" could occur
+  // making the string invalid in python
+  ss << "expr.LitE(\"\"\"" << sl->getBytes().str() << "XXX\"\"\"";
+  ss << ", " << locStr << ")";
+  slangExpr.expr = ss.str();
+  slangExpr.locStr = locStr;
+
+  return slangExpr;
+} // convertStringLiteral()
+
+SlangExpr
+slang::SpirGen::convertVariable(const VarDecl *varDecl, std::string locStr) {
+  std::stringstream ss;
+  SlangExpr slangExpr;
+
+  ss << "expr.VarE(\"" << stu.convertVarExpr((uint64_t)varDecl) << "\"";
+  ss << ", " << locStr << ")";
+  slangExpr.expr = ss.str();
+  slangExpr.qualType = varDecl->getType();
+  slangExpr.varId = (uint64_t)varDecl;
+  slangExpr.locStr = getLocationString(varDecl);
+
+  return slangExpr;
+} // convertVariable()
+
+spir::BitEntity slang::SpirGen::convertVariableBit(const VarDecl *varDecl) {
+  spir::BitEntity be;
+  be.set_eid((uint64_t)varDecl);
+  spir::BitSrcLoc srcLoc = getSrcLocBit(varDecl);
+  be.set_line(srcLoc.line());
+  be.set_col(srcLoc.col());
+  return be;
+} // convertVariableBit()
+
+void slang::SpirGen::addBitExprOperand1(spir::BitExpr *expr, BitEntity be) {
+  expr->set_oprnd1eid(be.eid());
+  expr->set_oprnd1_line(be.line());
+  expr->set_oprnd1_col(be.col());
+}
+
+void slang::SpirGen::addBitExprOperand2(spir::BitExpr *expr, BitEntity be) {
+  expr->set_oprnd2eid(be.eid());
+  expr->set_oprnd2_line(be.line());
+  expr->set_oprnd2_col(be.col());
+}
+
+spir::BitExpr *slang::SpirGen::createBitExpr(spir::BitEntity be) {
+  spir::BitExpr *expr = new spir::BitExpr();
+
+  // Assumes a simple expression with no operators.
+  expr->set_xkind(K_XK::XVAL);
+
+  // Set the first operand only.
+  expr->set_oprnd1eid(be.eid());
+
+  // Use the same src location for operand 1 and the expression.
+  expr->set_oprnd1_line(be.line());
+  expr->set_oprnd1_col(be.col());
+  expr->set_loc_line(be.line());
+  expr->set_loc_col(be.col());
+  return expr;
+} // createBitExpr()
+
+spir::BitExpr *slang::SpirGen::createBitExpr(K_XK op, spir::BitEntity be1, spir::BitEntity be2,
+                                       BitSrcLoc srcLoc) {
+  spir::BitExpr *expr = new spir::BitExpr();
+  expr->set_xkind(op);
+
+  expr->set_oprnd1eid(be1.eid());
+  expr->set_oprnd1_line(be1.line());
+  expr->set_oprnd1_col(be1.col());
+
+  expr->set_oprnd2eid(be2.eid());
+  expr->set_oprnd2_line(be2.line());
+  expr->set_oprnd2_col(be2.col());
+
+  expr->set_loc_line(srcLoc.line);
+  expr->set_loc_col(srcLoc.col);
+  return expr;
+} // createBitExpr()
+
+// Extracts the spir::BitEntity from the spir::BitExpr.
+// It assumes the entity is the first operand of the expression.
+spir::BitEntity slang::SpirGen::convertBitExprToBitEntity(spir::BitExpr *expr,
+                                                    bool freeExpr = false) {
+  assert(expr != nullptr);
+
+  if (expr->xkind() != K_XK::XVAL) {
+    SLANG_ERROR("ERROR: Not a value expression: " << K_XK_Name(expr->xkind()));
+    return nullptr;
+  }
+
+  spir::BitEntity be;
+  be.set_eid(expr->opr1()->eid());
+  be.set_line(expr->oprnd1_line());
+  be.set_col(expr->oprnd1_col());
+
+  if (freeExpr) {
+    delete expr;
+  }
+  return be;
+} // convertBitExprToBitEntity()
+
+SlangExpr slang::SpirGen::convertSlangVar(SlangVar &slangVar,
+                                          const VarDecl *varDecl) {
+  std::stringstream ss;
+  SlangExpr slangExpr;
+
+  ss << "expr.VarE(\"" << slangVar.name << "\"";
+  ss << ", " << getLocationString(varDecl) << ")";
+
+  slangExpr.expr = ss.str();
+  slangExpr.qualType = varDecl->getType();
+  slangExpr.varId = (uint64_t)varDecl;
+  slangExpr.locStr = getLocationString(varDecl);
+
+  return slangExpr;
+} // convertSlangVar()
+
+SlangBitExpr slang::SpirGen::convertSlangVarBit(uint64_t eid,
+                                                const VarDecl *varDecl) {
+  SlangBitExpr slangBitExpr;
+
+  slangBitExpr.bitExpr = convertEntityToBitExpr(new spir::BitEntity(eid));
+
+  return slangBitExpr;
+} // convertSlangVarBit()
+
+SlangExpr slang::SpirGen::convertEnumConst(const EnumConstantDecl *ecd,
+                                           std::string &locStr) {
+  SlangExpr slangExpr;
+
+  std::stringstream ss;
+  auto value = ecd->getInitVal();
+  charSv->clear();
+  value.toString(*charSv, 10, value.isSigned());
+  ss << "expr.LitE(" << charSv->data();
+  ss << ", " << locStr << ")";
+
+  slangExpr.expr = ss.str();
+  slangExpr.locStr = locStr;
+  slangExpr.qualType = ecd->getType();
+
+  return slangExpr;
+}
+
+SlangExpr slang::SpirGen::convertDeclRefExpr(const DeclRefExpr *dre) {
+  SlangExpr slangExpr;
+  std::stringstream ss;
+
+  std::string locStr = getLocationString(dre);
+
+  const ValueDecl *valueDecl = dre->getDecl();
+  if (isa<EnumConstantDecl>(valueDecl)) {
+    auto ecd = cast<EnumConstantDecl>(valueDecl);
+    return convertEnumConst(ecd, locStr);
+  }
+
+  // it may be a VarDecl or FunctionDecl
+  handleValueDecl(valueDecl, stu.currFunc->name);
+
+  if (isa<VarDecl>(valueDecl)) {
+    auto varDecl = cast<VarDecl>(valueDecl);
+    slangExpr = convertVariable(varDecl, getLocationString(dre));
+    slangExpr.locStr = getLocationString(dre);
+    return slangExpr;
+
+  } else if (isa<EnumConstantDecl>(valueDecl)) {
+    auto ecd = cast<EnumConstantDecl>(valueDecl);
+    return convertEnumConst(ecd, locStr);
+
+  } else if (isa<FunctionDecl>(valueDecl)) {
+    auto funcDecl = cast<FunctionDecl>(valueDecl);
+    std::string funcName = funcDecl->getNameInfo().getAsString();
+    ss << "expr.VarE(\"" << stu.convertFuncName(funcName) << "\"";
+    ss << ", " << locStr << ")";
+    slangExpr.expr = ss.str();
+    slangExpr.qualType = funcDecl->getType();
+    slangExpr.locStr = locStr;
+    return slangExpr;
+
+  } else {
+    SLANG_ERROR("Not_a_VarDecl.")
+    slangExpr.expr = "ERROR:convertDeclRefExpr";
+    return slangExpr;
+  }
+} // convertDeclRefExpr()
+
+// a || b , a && b
+SlangExpr slang::SpirGen::convertLogicalOp(const BinaryOperator *binOp) {
+  std::string nextCheck;
+  std::string tmpReAssign;
+  std::string exitLabel;
+
+  std::string op;
+  std::string id = stu.genNextLabelCountStr();
+  switch (binOp->getOpcode()) {
+  case BO_LOr:
+    op = "||";
+    nextCheck = id + "NextCheckLor";
+    tmpReAssign = id + "TmpAssignLor";
+    exitLabel = id + "ExitLor";
+    break;
+  case BO_LAnd:
+    op = "&&";
+    nextCheck = id + "NextCheckLand";
+    tmpReAssign = id + "TmpAssignLand";
+    exitLabel = id + "ExitLand";
+    break;
+  default:
+    SLANG_ERROR("ERROR:UnknownLogicalOp");
+    break;
+  }
+
+  auto it = binOp->child_begin();
+  const Stmt *leftOprStmt = *it;
+  ++it;
+  const Stmt *rightOprStmt = *it;
+
+  SlangExpr trueValue;
+  SlangExpr falseValue;
+  trueValue.expr = "expr.LitE(1, " + getLocationString(binOp) + ")";
+  falseValue.expr = "expr.LitE(0, " + getLocationString(binOp) + ")";
+  trueValue.locStr = falseValue.locStr = getLocationString(binOp);
+
+  // assign tmp = 1
+  SlangExpr tmpVar =
+      genTmpVariable("L", "types.Int32", getLocationString(binOp));
+  addAssignInstr(tmpVar, trueValue, getLocationString(binOp));
+
+  // check first part a ||, a &&
+  SlangExpr leftOprExpr = convertToIfTmp(convertStmt(leftOprStmt));
+  if (op == "||") {
+    addCondInstr(leftOprExpr.expr, exitLabel, nextCheck, leftOprExpr.locStr);
+  } else {
+    addCondInstr(leftOprExpr.expr, nextCheck, tmpReAssign, leftOprExpr.locStr);
+  }
+
+  // check second part || b, && b
+  addLabelInstr(nextCheck);
+  SlangExpr rightOprExpr = convertToIfTmp(convertStmt(rightOprStmt));
+  addCondInstr(rightOprExpr.expr, exitLabel, tmpReAssign, leftOprExpr.locStr);
+
+  // assign tmp = 0
+  addLabelInstr(tmpReAssign);
+  addAssignInstr(tmpVar, falseValue, getLocationString(binOp));
+
+  // exit label
+  addLabelInstr(exitLabel);
+
+  return tmpVar;
+} // convertLogicalOp()
+
+// a || b , a && b
+SlangBitExpr slang::SpirGen::convertLogicalOpBit(const BinaryOperator *binOp) {
+  std::string nextCheck;
+  std::string tmpReAssign;
+  std::string exitLabel;
+
+  std::string op;
+  std::string id = stu.genNextLabelCountStr();
+  switch (binOp->getOpcode()) {
+  case BO_LOr:
+    op = "||";
+    nextCheck = id + "NextCheckLor";
+    tmpReAssign = id + "TmpAssignLor";
+    exitLabel = id + "ExitLor";
+    break;
+  case BO_LAnd:
+    op = "&&";
+    nextCheck = id + "NextCheckLand";
+    tmpReAssign = id + "TmpAssignLand";
+    exitLabel = id + "ExitLand";
+    break;
+  default:
+    SLANG_ERROR("ERROR:UnknownLogicalOp");
+    break;
+  }
+
+  spir::BitEntity nextCheckLabelBit = createLabelBit(nextCheck, getSrcLocBit(binOp));
+  spir::BitEntity tmpReAssignLabelBit =
+      createLabelBit(tmpReAssign, getSrcLocBit(binOp));
+  spir::BitEntity exitLabelBit = createLabelBit(exitLabel, getSrcLocBit(binOp));
+
+  auto it = binOp->child_begin();
+  const Stmt *leftOprStmt = *it;
+  ++it;
+  const Stmt *rightOprStmt = *it;
+
+  SlangExpr trueValue;
+  SlangExpr falseValue;
+  auto trueValue = createLiteralBitExpr_Integer(1, false, getSrcLocBit(binOp));
+  auto falseValue = createLiteralBitExpr_Integer(0, false, getSrcLocBit(binOp));
+
+  // assign tmp = 1
+  auto tmpVar =
+      createBitExpr(genTmpBitEntity(spir::K_VK::TINT32, "L", getSrcLocBit(binOp)));
+  addAssignBitInstr(tmpVar, trueValue, getSrcLocBit(binOp));
+
+  // check first part "a ||" or "a &&"
+  SlangBitExpr leftOprExpr = convertToIfTmp(convertStmt(leftOprStmt));
+  if (op == "||") {
+    addCondInstrBit(leftOprExpr, exitLabelBit, nextCheckLabelBit,
+                    getSrcLocBit(leftOprStmt));
+  } else { // && operator
+    addCondInstrBit(leftOprExpr, nextCheckLabelBit, tmpReAssignLabelBit,
+                    getSrcLocBit(leftOprStmt));
+  }
+
+  // check second part || b, && b
+  addLabelInstrBit(nextCheckLabelBit);
+  SlangBitExpr rightOprExpr = convertToIfTmpBit(convertStmtBit(rightOprStmt));
+  addCondInstrBit(rightOprExpr, exitLabelBit, tmpReAssignLabelBit,
+                  getSrcLocBit(rightOprStmt));
+
+  // assign tmp = 0
+  addLabelInstrBit(tmpReAssignLabelBit);
+  addAssignInstr(tmpVar, falseValue, getLocationString(binOp));
+
+  // exit label
+  addLabelInstrBit(exitLabelBit);
+
+  return tmpVar;
+} // convertLogicalOpBit()
+
+SlangExpr slang::SpirGen::convertUnaryIncDecOp(const UnaryOperator *unOp) {
+  auto it = unOp->child_begin();
+  SlangExpr exprArg = convertStmt(*it);
+
+  std::string op;
+  switch (unOp->getOpcode()) {
+  case UO_PreInc:
+  case UO_PostInc:
+    op = "op.BO_ADD";
+    break;
+  case UO_PostDec:
+  case UO_PreDec:
+    op = "op.BO_SUB";
+    break;
+  default:
+    break;
+  }
+
+  SlangExpr litOne;
+  litOne.expr = "expr.LitE(1, " + getLocationString(unOp) + ")";
+  litOne.locStr = getLocationString(unOp);
+
+  SlangExpr incDecExpr = createBinaryExpr(
+      exprArg, op, litOne, getLocationString(unOp), exprArg.qualType);
+
+  switch (unOp->getOpcode()) {
+  case UO_PreInc:
+  case UO_PreDec: {
+    addAssignInstr(exprArg, incDecExpr, getLocationString(unOp));
+    return convertToTmp(exprArg, true);
+  }
+
+  case UO_PostInc:
+  case UO_PostDec: {
+    SlangExpr tmpExpr = convertToTmp(exprArg, true);
+    addAssignInstr(exprArg, incDecExpr, getLocationString(unOp));
+    return tmpExpr;
+  }
+
+  default:
+    SLANG_ERROR("ERROR:UnknownIncDecOps"
+                << unOp->getOpcodeStr(unOp->getOpcode()));
+    break;
+  }
+  return exprArg;
+}
+
+spir::K_VK slang::SpirGen::getIntegerValueKind(uint64_t value, bool isSigned) {
+  // Returns the most fitting integer value kind based on value and sign.
+  // spir::K_VK is the value kind enum (e.g. TUINT8, TINT16, etc.)
+  spir::K_VK kind;
+  if (isSigned) {
+    if (value <= static_cast<uint64_t>(std::numeric_limits<int8_t>::max())) {
+      kind = spir::K_VK::TINT8;
+    } else if (value <=
+               static_cast<uint64_t>(std::numeric_limits<int16_t>::max())) {
+      kind = spir::K_VK::TINT16;
+    } else if (value <=
+               static_cast<uint64_t>(std::numeric_limits<int32_t>::max())) {
+      kind = spir::K_VK::TINT32;
+    } else if (value <=
+               static_cast<uint64_t>(std::numeric_limits<int64_t>::max())) {
+      kind = spir::K_VK::TINT64;
+    } else {
+      kind =
+          spir::K_VK::TINT128; // Assume TINT128 exists and handles even bigger values
+    }
+  } else { // unsigned
+    if (value <= static_cast<uint64_t>(std::numeric_limits<uint8_t>::max())) {
+      kind = spir::K_VK::TUINT8;
+    } else if (value <=
+               static_cast<uint64_t>(std::numeric_limits<uint16_t>::max())) {
+      kind = spir::K_VK::TUINT16;
+    } else if (value <=
+               static_cast<uint64_t>(std::numeric_limits<uint32_t>::max())) {
+      kind = spir::K_VK::TUINT32;
+    } else if (value <=
+               static_cast<uint64_t>(std::numeric_limits<uint64_t>::max())) {
+      kind = spir::K_VK::TUINT64;
+    } else {
+      kind = spir::K_VK::TUINT128; // Assume TUINT128 exists for much larger constants
+    }
+  }
+  return kind;
+} // getIntegerValueKind()
+
+/// Returns the most fitting QualType from the value and its signedness.
+QualType slang::SpirGen::getIntegerValueQualType(uint64_t value,
+                                                 bool isSigned) {
+  // Note: This function assumes common primitive integer types are available:
+  // Ctx->CharTy, Ctx->ShortTy, Ctx->IntTy, Ctx->LongTy, Ctx->LongLongTy, and
+  // their unsigned versions. If you have custom types, adjust as needed.
+
+  // Check signed types first
+  if (isSigned) {
+    if (value <= static_cast<uint64_t>(std::numeric_limits<int8_t>::max())) {
+      return Ctx->CharTy;
+    } else if (value <=
+               static_cast<uint64_t>(std::numeric_limits<int16_t>::max())) {
+      return Ctx->ShortTy;
+    } else if (value <=
+               static_cast<uint64_t>(std::numeric_limits<int32_t>::max())) {
+      return Ctx->IntTy;
+    } else if (value <=
+               static_cast<uint64_t>(std::numeric_limits<int64_t>::max())) {
+      return Ctx->LongLongTy;
+    } else {
+      // If value does not fit in 64-bit signed, use a custom 128-bit type if
+      // available Fallback to largest available type
+      if (Ctx->Int128Ty.isNull()) {
+        return Ctx->LongLongTy;
+      }
+      return Ctx->Int128Ty;
+    }
+  } else { // unsigned types
+    if (value <= static_cast<uint64_t>(std::numeric_limits<uint8_t>::max())) {
+      return Ctx->UnsignedCharTy;
+    } else if (value <=
+               static_cast<uint64_t>(std::numeric_limits<uint16_t>::max())) {
+      return Ctx->UnsignedShortTy;
+    } else if (value <=
+               static_cast<uint64_t>(std::numeric_limits<uint32_t>::max())) {
+      return Ctx->UnsignedIntTy;
+    } else if (value <=
+               static_cast<uint64_t>(std::numeric_limits<uint64_t>::max())) {
+      return Ctx->UnsignedLongLongTy;
+    } else {
+      // If value does not fit in 64-bit unsigned, use a custom 128-bit type if
+      // available
+      if (Ctx->UInt128Ty.isNull()) {
+        return Ctx->UnsignedLongLongTy;
+      }
+      return Ctx->UInt128Ty;
+    }
+  }
+} // getIntegerValueQualType()
+
+SlangBitExpr
+slang::SpirGen::createLiteralBitExpr_Integer(uint64_t value, bool isSigned,
+                                             slang::SrcLoc srcLoc) {
+  SlangBitExpr slangExpr;
+  // Create a BitEntityInfo object and set its value and source location
+  spir::BitEntityInfo *bitEntityInfo = new spir::BitEntityInfo();
+  bitEntityInfo->set_ekind(spir::K_EK::ELIT_NUM); // Numeric literal entity kind
+  bitEntityInfo->set_vkind(getIntegerValueKind(value, isSigned));
+  bitEntityInfo->set_lowval(value);
+  bitEntityInfo->set_loc_line(srcLoc.line);
+  bitEntityInfo->set_loc_col(srcLoc.col);
+
+  // Use the address of BitEntityInfo as entityId
+  uint64_t entityId = (uint64_t)bitEntityInfo;
+
+  // Create BitEntity from BitEntityInfo and entityId
+  spir::BitEntity *bitEntity = new spir::BitEntity();
+  bitEntity->set_id(entityId);
+  bitEntity->set_line(srcLoc.line);
+  bitEntity->set_col(srcLoc.col);
+
+  // Create BitExpr from the BitEntity with VAL operator type
+  spir::BitExpr *bitExpr = new spir::BitExpr();
+  bitExpr->set_xkind(K_XK::XVAL);
+  addBitExprOperand1(bitExpr, bitEntity);
+  bitExpr->set_loc_line(srcLoc.line);
+  bitExpr->set_loc_col(srcLoc.col);
+
+  // Initialize the SlangBitExpr and assign the BitExpr
+  slangExpr.bitExpr = bitExpr;
+  slangExpr.compound = false;
+  slangExpr.qualType = getIntegerValueQualType(value, isSigned);
+
+  return slangExpr;
+} // createLiteralBitExpr_Integer()
+
+SlangBitExpr
+slang::SpirGen::convertUnaryIncDecOpBit(const UnaryOperator *unOp) {
+  auto it = unOp->child_begin();
+  SlangBitExpr bitExprArg = convertStmtBit(*it);
+
+  K_XK incDecOp;
+  switch (unOp->getOpcode()) {
+  case UO_PreInc:
+  case UO_PostInc:
+    incDecOp = K_XK::XADD;
+    break;
+  case UO_PostDec:
+  case UO_PreDec:
+    incDecOp = K_XK::XSUB;
+    break;
+  default:
+    break;
+  }
+
+  SlangBitExpr litOne =
+      createLiteralBitExpr_Integer(1, false, getSrcLocBit(unOp));
+
+  // Expression to add or subtract constant 1.
+  SlangExpr incDecExpr = createBinaryBitExpr(
+      bitExprArg /*left operand*/, incDecOp, litOne /*right operand*/,
+      getSrcLocBit(unOp), bitExprArg.qualType);
+
+  switch (unOp->getOpcode()) {
+  case UO_PreInc:
+  case UO_PreDec: {
+    addAssignBitInstr(bitExprArg, incDecExpr);
+    incDecExpr.deleteBitExpr();
+    return convertToTmpBit(bitExprArg, true); // FIXME: why force=true?
+  }
+
+  case UO_PostInc:
+  case UO_PostDec: {
+    // Keep the original value in a temporary and return it.
+    // In the current expression the temporary gets used.
+    // Assign the inc/decremented value in the original variable.
+    SlangBitExpr tmpExpr = convertToTmpBit(bitExprArg, true);
+    addAssignBitInstr(bitExprArg, incDecExpr);
+    incDecExpr.deleteBitExpr();
+    return tmpExpr;
+  }
+
+  default:
+    SLANG_ERROR("ERROR:UnknownIncDecOps"
+                << unOp->getOpcodeStr(unOp->getOpcode()));
+    break;
+  }
+  return exprArg;
+} // convertUnaryIncDecOpBit()
+
+SlangExpr slang::SpirGen::convertUnaryOperator(const UnaryOperator *unOp) {
+  switch (unOp->getOpcode()) {
+  case UO_PreInc:
+  case UO_PostInc:
+  case UO_PreDec:
+  case UO_PostDec:
+    return convertUnaryIncDecOp(unOp);
+  default:
+    break;
+  }
+
+  SlangExpr exprArg;
+  auto it = unOp->child_begin();
+
+  if (unOp->getOpcode() == UO_AddrOf) {
+    exprArg = convertStmt(*it); // special case: e.g. &arr[7][5], ...
+  } else {
+    exprArg = convertToTmp(convertStmt(*it));
+  }
+
+  std::string op;
+  switch (unOp->getOpcode()) {
+  default:
+    SLANG_DEBUG("convertUnaryOp: " << unOp->getOpcodeStr(unOp->getOpcode()))
+    break;
+  case UO_AddrOf:
+    op = "op.UO_ADDROF";
+    break;
+  case UO_Deref:
+    op = "op.UO_DEREF";
+    break;
+  case UO_Minus:
+    op = "op.UO_MINUS";
+    break;
+  case UO_Plus:
+    op = "op.UO_MINUS";
+    break;
+  case UO_LNot:
+    op = "op.UO_LNOT";
+    break;
+  case UO_Not:
+    op = "op.UO_BIT_NOT";
+    break;
+  case UO_Extension:
+    exprArg.expr = "expr.LitE(0," + getLocationString(unOp) + ")";
+    exprArg.qualType = unOp->getType();
+    exprArg.locStr = getLocationString(unOp);
+    exprArg.compound = false;
+    return exprArg; // don't handle __extension__ expressions
+  }
+
+  return createUnaryExpr(op, exprArg, getLocationString(unOp),
+                         getImplicitType(unOp, unOp->getType()));
+} // convertUnaryOperator()
+
+SlangBitExpr
+slang::SpirGen::convertUnaryOperatorBit(const UnaryOperator *unOp) {
+  switch (unOp->getOpcode()) {
+  case UO_PreInc:
+  case UO_PostInc:
+  case UO_PreDec:
+  case UO_PostDec:
+    return convertUnaryIncDecOpBit(unOp);
+  default:
+    break;
+  }
+
+  // This handles special case too: e.g. &arr[7][5], ...
+  auto it = unOp->child_begin();
+  SlangBitExpr sbExpr = convertToTmpBitExpr(convertStmtBit(*it), false, true);
+
+  K_XK opKind;
+  switch (unOp->getOpcode()) {
+  default:
+    SLANG_DEBUG("convertUnaryOp: " << unOp->getOpcodeStr(unOp->getOpcode()))
+    break;
+  case UO_AddrOf:
+    opKind = K_XK::XADDROF;
+    break;
+  case UO_Deref:
+    opKind = K_XK::XDEREF;
+    break;
+  case UO_Minus:
+    opKind = K_XK::XNEGATE;
+    break;
+  case UO_Plus:
+    opKind = K_XK::XVAL;
+    break; // silently remove the + sign
+  case UO_LNot:
+    opKind = K_XK::XNOT;
+    break;
+  case UO_Not:
+    opKind = K_XK::XBIT_NOT;
+    break;
+  case UO_Extension:
+    // doesn't handle __extension__ expressions -- return a 0 constant instead.
+    return createLiteralBitExpr_Integer(0, false, getSrcLocBit(unOp));
+  }
+
+  return createUnaryBitExpr(opKind, sbExpr, getSrcLocBit(unOp),
+                            getImplicitType(unOp, unOp->getType()));
+} // convertUnaryOperatorBit()
+
+SlangExpr slang::SpirGen::convertUnaryExprOrTypeTraitExpr(
+    const UnaryExprOrTypeTraitExpr *stmt) {
+  SlangExpr slangExpr;
+  SlangExpr innerExpr;
+  std::stringstream ss;
+  uint64_t size = 0;
+
+  std::string locStr = getLocationString(stmt);
+
+  UnaryExprOrTypeTrait kind = stmt->getKind();
+  switch (kind) {
+  // the sizeof operator
+  case UETT_SizeOf: {
+    auto iterator = stmt->child_begin();
+    if (iterator != stmt->child_end()) {
+      // then child is an expression
+
+      const Stmt *firstChild = *iterator;
+      innerExpr = convertStmt(firstChild);
+      const Expr *expr = cast<Expr>(firstChild);
+      // slangExpr.qualType = Ctx->getTypeOfExprType(const_cast<Expr*>(expr));
+      slangExpr.qualType = expr->getType();
+      const Type *type = slangExpr.qualType.getTypePtr();
+      if (type && !isIncompleteType(type)) {
+        TypeInfo typeInfo = Ctx->getTypeInfo(slangExpr.qualType);
+        size = typeInfo.Width / 8;
+      } else {
+        // FIXME: handle runtime sizeof support too
+        SLANG_ERROR("SizeOf_Expr_is_incomplete. Loc:" << locStr)
+      }
+    } else {
+      // child is a type
+      slangExpr.qualType = stmt->getType();
+      TypeInfo typeInfo = Ctx->getTypeInfo(stmt->getArgumentType());
+      size = typeInfo.Width / 8;
     }
 
     ss << "expr.LitE(";
-    if (toInt) {
-      // ss << (int64_t)fl->getValue().convertToDouble();
-      ss << (int64_t)fl->getValueAsApproximateDouble();
+    if (size == 0) {
+      ss << "ERROR:sizeof()";
     } else {
-      ss << std::fixed << fl->getValueAsApproximateDouble();
+      ss << size;
     }
     ss << ", " << locStr << ")";
-    SLANG_TRACE(ss.str())
-
-    SlangExpr slangExpr;
     slangExpr.expr = ss.str();
-    slangExpr.qualType = fl->getType();
-    slangExpr.locStr = getLocationString(fl);
-
-    return slangExpr;
-  } // convertFloatingLiteral()
-
-  SlangExpr convertStringLiteral(const StringLiteral *sl) {
-    SlangExpr slangExpr;
-    std::stringstream ss;
-
-    std::string locStr = getLocationString(sl);
-
-    // with extra text at the end since """" could occur
-    // making the string invalid in python
-    ss << "expr.LitE(\"\"\"" << sl->getBytes().str() << "XXX\"\"\"";
-    ss << ", " << locStr << ")";
-    slangExpr.expr = ss.str();
-    slangExpr.locStr = locStr;
-
-    return slangExpr;
-  } // convertStringLiteral()
-
-  SlangExpr convertVariable(const VarDecl *varDecl,
-      std::string locStr = "Info(Loc(33333,33333))") {
-    std::stringstream ss;
-    SlangExpr slangExpr;
-
-    ss << "expr.VarE(\"" << stu.convertVarExpr((uint64_t)varDecl) << "\"";
-    ss << ", " << locStr << ")";
-    slangExpr.expr = ss.str();
-    slangExpr.qualType = varDecl->getType();
-    slangExpr.varId = (uint64_t)varDecl;
-    slangExpr.locStr = getLocationString(varDecl);
-
-    return slangExpr;
-  } // convertVariable()
-
-  BitEntity* convertVariableBit(const VarDecl *varDecl) {
-    BitEntity be = new BitEntity();
-    be->set_eid((uint64_t)varDecl);
-    be->set_allocated_loc(getSrcLocBit(varDecl));
-    return be;
-  } // convertVariableBit()
-
-  BitExpr* convertEntityToBitExpr(BitEntity* be) {
-    BitExpr* expr = new BitExpr();
-    expr->set_xkind(K_XK::XVAL);
-    expr->set_allocated_opr1(be);
-    expr->set_allocated_loc(new BitSrcLoc(be->loc()));
-    return expr;
-  } // convertEntityToBitExpr()
-
-
-  SlangExpr convertSlangVar(
-      SlangVar& slangVar,
-      const VarDecl *varDecl
-  ) {
-    std::stringstream ss;
-    SlangExpr slangExpr;
-
-    ss << "expr.VarE(\"" << slangVar.name << "\"";
-    ss << ", " << getLocationString(varDecl) << ")";
-
-    slangExpr.expr = ss.str();
-    slangExpr.qualType = varDecl->getType();
-    slangExpr.varId = (uint64_t)varDecl;
-    slangExpr.locStr = getLocationString(varDecl);
-
-    return slangExpr;
-  } // convertSlangVar()
-
-  SlangBitExpr convertSlangVarBit(
-      uint64_t eid,
-      const VarDecl *varDecl
-  ) {
-    SlangBitExpr slangBitExpr;
-
-    slangBitExpr.bitExpr = convertEntityToBitExpr(new BitEntity(eid));
-
-    return slangBitExpr;
-  } // convertSlangVarBit()
-
-  SlangExpr convertEnumConst(const EnumConstantDecl *ecd, std::string &locStr) {
-    SlangExpr slangExpr;
-
-    std::stringstream ss;
-    auto value = ecd->getInitVal();
-    charSv->clear(); value.toString(*charSv, 10, value.isSigned());
-    ss << "expr.LitE(" << charSv->data();
-    ss << ", " << locStr << ")";
-
-    slangExpr.expr = ss.str();
-    slangExpr.locStr = locStr;
-    slangExpr.qualType = ecd->getType();
-
-    return slangExpr;
+    break;
   }
 
-  SlangExpr convertDeclRefExpr(const DeclRefExpr *dre) {
-    SlangExpr slangExpr;
-    std::stringstream ss;
+  default:
+    SLANG_ERROR("UnaryExprOrTypeTrait not handled. Kind: " << kind)
+    break;
+  }
+  return slangExpr;
+} // convertUnaryExprOrTypeTraitExpr()
 
-    std::string locStr = getLocationString(dre);
+SlangExpr slang::SpirGen::convertBinaryOperator(const BinaryOperator *binOp) {
+  SlangExpr slangExpr;
 
-    const ValueDecl *valueDecl = dre->getDecl();
-    if (isa<EnumConstantDecl>(valueDecl)) {
-      auto ecd = cast<EnumConstantDecl>(valueDecl);
-      return convertEnumConst(ecd, locStr);
-    }
-
-    // it may be a VarDecl or FunctionDecl
-    handleValueDecl(valueDecl, stu.currFunc->name);
-
-    if (isa<VarDecl>(valueDecl)) {
-      auto varDecl = cast<VarDecl>(valueDecl);
-      slangExpr = convertVariable(varDecl, getLocationString(dre));
-      slangExpr.locStr = getLocationString(dre);
-      return slangExpr;
-
-    } else if (isa<EnumConstantDecl>(valueDecl)) {
-      auto ecd = cast<EnumConstantDecl>(valueDecl);
-      return convertEnumConst(ecd, locStr);
-
-    } else if (isa<FunctionDecl>(valueDecl)) {
-      auto funcDecl = cast<FunctionDecl>(valueDecl);
-      std::string funcName = funcDecl->getNameInfo().getAsString();
-      ss << "expr.VarE(\"" << stu.convertFuncName(funcName) << "\"";
-      ss << ", " << locStr << ")";
-      slangExpr.expr = ss.str();
-      slangExpr.qualType = funcDecl->getType();
-      slangExpr.locStr = locStr;
-      return slangExpr;
-
-    } else {
-      SLANG_ERROR("Not_a_VarDecl.")
-      slangExpr.expr = "ERROR:convertDeclRefExpr";
-      return slangExpr;
-    }
-  } // convertDeclRefExpr()
-
-  // a || b , a && b
-  SlangExpr convertLogicalOp(const BinaryOperator *binOp) {
-    std::string nextCheck;
-    std::string tmpReAssign;
-    std::string exitLabel;
-
-    std::string op;
-    std::string id = stu.genNextLabelCountStr();
-    switch(binOp->getOpcode()) {
-      case BO_LOr:
-        op = "||";
-        nextCheck = id + "NextCheckLor";
-        tmpReAssign = id + "TmpAssignLor";
-        exitLabel = id + "ExitLor";
-        break;
-      case BO_LAnd:
-        op = "&&";
-        nextCheck = id + "NextCheckLand";
-        tmpReAssign = id + "TmpAssignLand";
-        exitLabel = id + "ExitLand";
-        break;
-      default: SLANG_ERROR("ERROR:UnknownLogicalOp"); break;
-    }
-
-    auto it = binOp->child_begin();
-    const Stmt *leftOprStmt = *it;
-    ++it;
-    const Stmt *rightOprStmt = *it;
-
-    SlangExpr trueValue;
-    SlangExpr falseValue;
-    trueValue.expr = "expr.LitE(1, " + getLocationString(binOp) + ")";
-    falseValue.expr = "expr.LitE(0, " + getLocationString(binOp) + ")";
-    trueValue.locStr = falseValue.locStr = getLocationString(binOp);
-
-    // assign tmp = 1
-    SlangExpr tmpVar = genTmpVariable("L", "types.Int32", getLocationString(binOp));
-    addAssignInstr(tmpVar, trueValue, getLocationString(binOp));
-
-    // check first part a ||, a &&
-    SlangExpr leftOprExpr = convertToIfTmp(convertStmt(leftOprStmt));
-    if (op == "||") {
-      addCondInstr(leftOprExpr.expr, exitLabel, nextCheck, leftOprExpr.locStr);
-    } else {
-      addCondInstr(leftOprExpr.expr, nextCheck, tmpReAssign, leftOprExpr.locStr);
-    }
-
-    // check second part || b, && b
-    addLabelInstr(nextCheck);
-    SlangExpr rightOprExpr = convertToIfTmp(convertStmt(rightOprStmt));
-    addCondInstr(rightOprExpr.expr, exitLabel, tmpReAssign, leftOprExpr.locStr);
-
-    // assign tmp = 0
-    addLabelInstr(tmpReAssign);
-    addAssignInstr(tmpVar, falseValue, getLocationString(binOp));
-
-    // exit label
-    addLabelInstr(exitLabel);
-
-    return tmpVar;
-  } // convertLogicalOp()
-
-  SlangExpr convertUnaryIncDecOp(const UnaryOperator *unOp) {
-    auto it = unOp->child_begin();
-    SlangExpr exprArg = convertStmt(*it);
-
-    std::string op;
-    switch(unOp->getOpcode()) {
-      case UO_PreInc:
-      case UO_PostInc: op = "op.BO_ADD"; break;
-      case UO_PostDec:
-      case UO_PreDec: op = "op.BO_SUB"; break;
-      default:  break;
-    }
-
-    SlangExpr litOne;
-    litOne.expr = "expr.LitE(1, " + getLocationString(unOp) + ")";
-    litOne.locStr = getLocationString(unOp);
-
-    SlangExpr incDecExpr = createBinaryExpr(exprArg, op,
-        litOne, getLocationString(unOp), exprArg.qualType);
-
-    switch(unOp->getOpcode()) {
-      case UO_PreInc:
-      case UO_PreDec: {
-        addAssignInstr(exprArg, incDecExpr, getLocationString(unOp));
-        return convertToTmp(exprArg, true);
-      }
-
-      case UO_PostInc:
-      case UO_PostDec: {
-        SlangExpr tmpExpr = convertToTmp(exprArg, true);
-        addAssignInstr(exprArg, incDecExpr, getLocationString(unOp));
-        return tmpExpr;
-      }
-
-      default:
-        SLANG_ERROR("ERROR:UnknownIncDecOps" <<
-            unOp->getOpcodeStr(unOp->getOpcode()));
-        break;
-    }
-    return exprArg;
+  if (binOp->isCompoundAssignmentOp()) {
+    return convertCompoundAssignmentOp(binOp);
+  } else if (binOp->isAssignmentOp()) {
+    return convertAssignmentOp(binOp);
+  } else if (binOp->isLogicalOp()) {
+    return convertLogicalOp(binOp);
   }
 
-  SlangExpr convertUnaryOperator(const UnaryOperator *unOp) {
-    switch(unOp->getOpcode()) {
-      case UO_PreInc:
-      case UO_PostInc:
-      case UO_PreDec:
-      case UO_PostDec:
-        return convertUnaryIncDecOp(unOp);
-      default:  break;
-    }
-
-    SlangExpr exprArg;
-    auto it = unOp->child_begin();
-
-    if (unOp->getOpcode() == UO_AddrOf) {
-      exprArg = convertStmt(*it); // special case: e.g. &arr[7][5], ...
-    } else {
-      exprArg = convertToTmp(convertStmt(*it));
-    }
-
-    std::string op;
-    switch (unOp->getOpcode()) {
-      default:
-        SLANG_DEBUG("convertUnaryOp: " << unOp->getOpcodeStr(unOp->getOpcode()))
-        break;
-      case UO_AddrOf: op = "op.UO_ADDROF"; break;
-      case UO_Deref: op = "op.UO_DEREF"; break;
-      case UO_Minus: op = "op.UO_MINUS"; break;
-      case UO_Plus: op = "op.UO_MINUS"; break;
-      case UO_LNot: op = "op.UO_LNOT"; break;
-      case UO_Not: op = "op.UO_BIT_NOT"; break;
-      case UO_Extension:
-        exprArg.expr = "expr.LitE(0," + getLocationString(unOp) + ")";
-        exprArg.qualType = unOp->getType();
-        exprArg.locStr = getLocationString(unOp);
-        exprArg.compound = false;
-        return exprArg; // don't handle __extension__ expressions
-    }
-
-    return createUnaryExpr(op, exprArg, getLocationString(unOp),
-        getImplicitType(unOp, unOp->getType()));
-  } // convertUnaryOperator()
-
-  SlangExpr convertUnaryExprOrTypeTraitExpr(const UnaryExprOrTypeTraitExpr *stmt) {
-    SlangExpr slangExpr;
-    SlangExpr innerExpr;
-    std::stringstream ss;
-    uint64_t size = 0;
-
-    std::string locStr = getLocationString(stmt);
-
-    UnaryExprOrTypeTrait kind = stmt->getKind();
-    switch (kind) {
-    // the sizeof operator
-    case UETT_SizeOf: {
-        auto iterator = stmt->child_begin();
-        if (iterator != stmt->child_end()) {
-            // then child is an expression
-
-            const Stmt *firstChild = *iterator;
-            innerExpr = convertStmt(firstChild);
-            const Expr *expr = cast<Expr>(firstChild);
-            // slangExpr.qualType = Ctx->getTypeOfExprType(const_cast<Expr*>(expr));
-            slangExpr.qualType = expr->getType();
-            const Type *type = slangExpr.qualType.getTypePtr();
-            if (type && !isIncompleteType(type)) {
-                TypeInfo typeInfo = Ctx->getTypeInfo(slangExpr.qualType);
-                size = typeInfo.Width / 8;
-            } else {
-                // FIXME: handle runtime sizeof support too
-                SLANG_ERROR("SizeOf_Expr_is_incomplete. Loc:" << locStr)
-            }
-        } else {
-            // child is a type
-            slangExpr.qualType = stmt->getType();
-            TypeInfo typeInfo = Ctx->getTypeInfo(
-                stmt->getArgumentType());
-            size = typeInfo.Width / 8;
-        }
-
-        ss << "expr.LitE(";
-        if (size == 0) {
-            ss << "ERROR:sizeof()";
-        } else {
-            ss << size;
-        }
-        ss << ", " << locStr << ")";
-        slangExpr.expr = ss.str();
-        break;
-    }
-
-    default:
-        SLANG_ERROR("UnaryExprOrTypeTrait not handled. Kind: " << kind)
-        break;
-    }
-    return slangExpr;
-  } // convertUnaryExprOrTypeTraitExpr()
-
-  SlangExpr convertBinaryOperator(const BinaryOperator *binOp) {
-    SlangExpr slangExpr;
-
-    if (binOp->isCompoundAssignmentOp()) {
-      return convertCompoundAssignmentOp(binOp);
-    } else if (binOp->isAssignmentOp()) {
-      return convertAssignmentOp(binOp);
-    } else if (binOp->isLogicalOp()) {
-      return convertLogicalOp(binOp);
-    }
-
-    std::string op;
-    switch (binOp->getOpcode()) {
+  std::string op;
+  switch (binOp->getOpcode()) {
     // NOTE : && and || are handled in convertConditionalOp()
 
-    case BO_Add: op = "op.BO_ADD"; break;
-    case BO_Sub: op = "op.BO_SUB"; break;
-    case BO_Mul: op = "op.BO_MUL"; break;
-    case BO_Div: op = "op.BO_DIV"; break;
-    case BO_Rem: op = "op.BO_MOD"; break;
-
-    case BO_LT: op = "op.BO_LT"; break;
-    case BO_LE: op = "op.BO_LE"; break;
-    case BO_EQ: op = "op.BO_EQ"; break;
-    case BO_NE: op = "op.BO_NE"; break;
-    case BO_GE: op = "op.BO_GE"; break;
-    case BO_GT: op = "op.BO_GT"; break;
-
-    case BO_Or: op = "op.BO_BIT_OR"; break;
-    case BO_And: op = "op.BO_BIT_AND"; break;
-    case BO_Xor: op = "op.BO_BIT_XOR"; break;
-
-    case BO_Shl: op = "op.BO_LSHIFT"; break;
-    case BO_Shr: op = "op.BO_RSHIFT"; break;
-
-    case BO_Comma: return convertBinaryCommaOp(binOp);
-
-    default: op = "ERROR:binOp"; break;
-    }
-
-    auto it = binOp->child_begin();
-    const Stmt *leftOprStmt = *it;
-    ++it;
-    const Stmt *rightOprStmt = *it;
-
-    SlangExpr leftOprExpr = convertStmt(leftOprStmt);
-    SlangExpr rightOprExpr = convertStmt(rightOprStmt);
-
-    slangExpr = createBinaryExpr(leftOprExpr,
-        op, rightOprExpr, getLocationString(binOp),
-        getImplicitType(binOp, binOp->getType()));
-
-    return slangExpr;
-  } // convertBinaryOperator()
-
-  // stores the given expression into a tmp variable
-  SlangExpr convertToTmp(SlangExpr slangExpr, bool force = false) {
-    if (slangExpr.compound || force == true) {
-      SlangExpr tmpExpr;
-      if (slangExpr.qualType.isNull() || slangExpr.qualType.getTypePtr()->isVoidType()) {
-        tmpExpr = genTmpVariable("t", "types.Int32", slangExpr.locStr);
-      } else {
-        if (slangExpr.qualType.getTypePtr()->isArrayType()) {
-          // for array type, generate a tmp variable which is a pointer
-          // to its element types.
-          const Type *type = slangExpr.qualType.getTypePtr();
-          const ArrayType *arrayType = type->getAsArrayTypeUnsafe();
-          QualType elementType = arrayType->getElementType();
-          QualType tmpVarType = Ctx->getPointerType(elementType);
-          tmpExpr = genTmpVariable("t", tmpVarType, slangExpr.locStr);
-        } else if (slangExpr.qualType.getTypePtr()->isFunctionType()) {
-          // create a tmp variable which is a pointer to the function type
-          QualType tmpVarType = Ctx->getPointerType(slangExpr.qualType);
-          tmpExpr = genTmpVariable("t", tmpVarType, slangExpr.locStr);
-        } else {
-          tmpExpr = genTmpVariable("t", slangExpr.qualType, slangExpr.locStr);
-        }
-      }
-      std::stringstream ss;
-
-      ss << "instr.AssignI(" << tmpExpr.expr << ", " << slangExpr.expr;
-      ss << ", " << slangExpr.locStr << ")"; // close instr.AssignI(...
-      stu.addStmt(ss.str());
-
-      return tmpExpr;
-    } else {
-      return slangExpr;
-    }
-  } // convertToTmp()
-
-  // stores the given expression into a tmp variable
-  BitEntity* convertToTmpBit(SlangBitExpr* slangBitExpr, bool force = false) {
-    if (slangBitExpr->compound || force == true) {
-      BitEntity* tmpBitEntity = nullptr;
-      if (slangBitExpr->qualType.isNull() || slangBitExpr->qualType.getTypePtr()->isVoidType()) {
-        tmpBitEntity = genTmpBitEntity(K_VK::TINT32, "t", slangBitExpr->bitExpr->loc());
-      } else {
-        if (slangBitExpr->qualType.getTypePtr()->isArrayType()) {
-          // for array type, generate a tmp variable which is a pointer
-          // to its element types.
-          const Type *type = slangBitExpr->qualType.getTypePtr();
-          const ArrayType *arrayType = type->getAsArrayTypeUnsafe();
-          QualType elementType = arrayType->getElementType();
-          QualType tmpVarType = Ctx->getPointerType(elementType);
-          tmpBitEntity = genTmpBitEntity(K_VK::TNIL, "t", slangBitExpr->bitExpr->loc(), tmpVarType);
-        } else if (slangExpr.qualType.getTypePtr()->isFunctionType()) {
-          // create a tmp variable which is a pointer to the function type
-          QualType tmpVarType = Ctx->getPointerType(slangBitExpr->qualType);
-          tmpBitEntity = genTmpBitEntity(K_VK::TNIL, "t", slangBitExpr->bitExpr->loc(), tmpVarType);
-        } else {
-          tmpBitEntity = genTmpBitEntity(K_VK::TNIL, "t", slangBitExpr->bitExpr->loc(), slangBitExpr->qualType);
-        }
-      }
-
-      stu.addAssignBitInstr(convertEntityToBitExpr(tmpBitEntity), slangBitExpr->bitExpr);
-      return tmpBitEntity;
-    }
-
-    return tmpBitEntity;
-  } // convertToTmpBit()
-
-  // stores the given expression into a tmp variable
-  SlangExpr convertToTmp2(SlangExpr slangExpr, bool force = false) {
-
-    if (slangExpr.compound || force == true) {
-      bool takeAddress = false;
-      SlangExpr tmpExpr;
-      if (slangExpr.qualType.isNull() || slangExpr.qualType.getTypePtr()->isVoidType()) {
-        tmpExpr = genTmpVariable("t", "types.Int32", slangExpr.locStr);
-      } else {
-        if (slangExpr.qualType.getTypePtr()->isArrayType()) {
-          // for array type, generate a tmp variable which is a pointer
-          // to its element types.
-          const Type *type = slangExpr.qualType.getTypePtr();
-          const ArrayType *arrayType = type->getAsArrayTypeUnsafe();
-          QualType elementType = arrayType->getElementType();
-          QualType tmpVarType = Ctx->getPointerType(elementType);
-          tmpExpr = genTmpVariable("t", tmpVarType, slangExpr.locStr);
-        } else if (slangExpr.qualType.getTypePtr()->isFunctionType()) {
-          // create a tmp variable which is a pointer to the function type
-          QualType tmpVarType =
-              Ctx->getPointerType(slangExpr.qualType);
-          tmpExpr = genTmpVariable("t", tmpVarType, slangExpr.locStr);
-        } else if (slangExpr.qualType.getTypePtr()->isRecordType()) {
-          takeAddress = true;
-          tmpExpr = genTmpVariable("t",
-                                   Ctx->getPointerType(slangExpr.qualType),
-                                   slangExpr.locStr);
-        } else {
-          tmpExpr = genTmpVariable("t", slangExpr.qualType, slangExpr.locStr);
-        }
-      }
-      std::stringstream ss;
-
-      if (takeAddress) {
-        ss << "instr.AssignI(" << tmpExpr.expr << ", ";
-        ss << "expr.AddrOfE(" << slangExpr.expr << ", " << slangExpr.locStr << ")";
-        ss << ", " << slangExpr.locStr << ")"; // close instr.AssignI(...
-      } else {
-        ss << "instr.AssignI(" << tmpExpr.expr << ", " << slangExpr.expr;
-        ss << ", " << slangExpr.locStr << ")"; // close instr.AssignI(...
-      }
-      stu.addStmt(ss.str());
-
-      return tmpExpr;
-    } else {
-      return slangExpr;
-    }
-  } // convertToTmp2()
-
-  // special tmp variable for if "t.1if", "t.2if" etc...
-  SlangExpr convertToIfTmp(SlangExpr slangExpr, bool force = false) {
-    if (slangExpr.compound || force == true) {
-      SlangExpr tmpExpr;
-      if (slangExpr.qualType.isNull()) {
-        tmpExpr = genTmpVariable("if", "types.Int32", slangExpr.locStr);
-      } else {
-        tmpExpr = genTmpVariable("if", slangExpr.qualType, slangExpr.locStr);
-      }
-      std::stringstream ss;
-
-      ss << "instr.AssignI(" << tmpExpr.expr << ", " << slangExpr.expr;
-      ss << ", " << slangExpr.locStr << ")"; // close instr.AssignI(...
-      stu.addStmt(ss.str());
-
-      return tmpExpr;
-    } else {
-      return slangExpr;
-    }
-  } // convertToIfTmp()
-
-  SlangExpr convertCompoundAssignmentOp(const BinaryOperator *binOp) {
-    auto it = binOp->child_begin();
-    const Stmt *lhs = *it;
-    const Stmt *rhs = *(++it);
-
-    SlangExpr rhsExpr = convertStmt(rhs);
-    SlangExpr lhsExpr = convertStmt(lhs);
-
-    if (lhsExpr.compound && rhsExpr.compound) {
-      rhsExpr = convertToTmp(rhsExpr);
-    }
-
-    std::string op;
-    switch(binOp->getOpcode()) {
-      case BO_ShlAssign: op = "op.BO_LSHIFT"; break;
-      case BO_ShrAssign: op = "op.BO_RSHIFT"; break;
-
-      case BO_OrAssign: op = "op.BO_BIT_OR"; break;
-      case BO_AndAssign: op = "op.BO_BIT_AND"; break;
-      case BO_XorAssign: op = "op.BO_BIT_XOR"; break;
-
-      case BO_AddAssign: op = "op.BO_ADD"; break;
-      case BO_SubAssign: op = "op.BO_SUB"; break;
-      case BO_MulAssign: op = "op.BO_MUL"; break;
-      case BO_DivAssign: op = "op.BO_DIV"; break;
-      case BO_RemAssign: op = "op.BO_MOD"; break;
-
-      default: op = "ERROR:UnknowncompoundAssignOp"; break;
-    }
-
-    SlangExpr newRhsExpr;
-    if (lhsExpr.compound) {
-      newRhsExpr = convertToTmp(createBinaryExpr(
-          lhsExpr, op, rhsExpr, getLocationString(binOp),
-          lhsExpr.qualType));
-    } else {
-      newRhsExpr = createBinaryExpr(
-          lhsExpr, op, rhsExpr, getLocationString(binOp),
-          lhsExpr.qualType);
-    }
-
-    addAssignInstr(lhsExpr, newRhsExpr, getLocationString(binOp));
-    return lhsExpr;
-  } // convertCompoundAssignmentOp()
-
-  SlangExpr convertAssignmentOp(const BinaryOperator *binOp) {
-    SlangExpr lhsExpr, rhsExpr;
-
-    auto it = binOp->child_begin();
-    const Stmt *lhs = *it;
-    const Stmt *rhs = *(++it);
-
-    rhsExpr = convertStmt(rhs);
-    lhsExpr = convertStmt(lhs);
-
-    if (lhsExpr.compound && rhsExpr.compound) {
-      rhsExpr = convertToTmp(rhsExpr);
-    }
-
-    addAssignInstr(lhsExpr, rhsExpr, getLocationString(binOp));
-
-    return lhsExpr;
-  } // convertAssignmentOp()
-
-  SlangExpr convertCompoundStmt(const CompoundStmt *compoundStmt) {
-    SlangExpr slangExpr;
-
-    for (auto it = compoundStmt->body_begin(); it != compoundStmt->body_end(); ++it) {
-      // don't care about the return value
-      convertStmt(*it);
-    }
-
-    return slangExpr;
-  } // convertCompoundStmt()
-
-  SlangExpr convertParenExpr(const ParenExpr *parenExpr) {
-    auto it = parenExpr->child_begin(); // should have only one child
-    return convertStmt(*it);
-  } // convertParenExpr()
-
-  SlangExpr convertLabel(const LabelStmt *labelStmt) {
-    SlangExpr slangExpr;
-    std::stringstream ss;
-
-    std::string locStr = getLocationString(labelStmt);
-
-    auto firstChild = *labelStmt->child_begin();
-    if (isa<CaseStmt>(firstChild) && stu.switchCfls) {
-      stu.switchCfls->gotoLabel = labelStmt->getName();
-      stu.switchCfls->gotoLabelLocStr = locStr;
-      llvm::errs() << "ERROR:LABEL_BEFORE_CASE(CheckTheCFG): " << stu.switchCfls->gotoLabel << "\n";
-    } else {
-      ss << "instr.LabelI(\"" << labelStmt->getName() << "\"";
-      ss << ", " << locStr << ")"; // close instr.LabelI(...
-      stu.addStmt(ss.str());
-    }
-
-    for (auto it = labelStmt->child_begin(); it != labelStmt->child_end(); ++it) {
-      convertStmt(*it);
-    }
-
-    return slangExpr;
-  } // convertLabel()
-
-  // BOUND START: type_conversion_routines
-
-  // converts clang type to span ir types
-  std::string convertClangType(QualType qt) {
-    std::stringstream ss;
-
-    if (qt.isNull()) {
-      return "types.Int32"; // the default type
-    }
-
-    qt = getCleanedQualType(qt);
-
-    const Type *type = qt.getTypePtr();
-
-    if (type->isBuiltinType()) {
-      return convertClangBuiltinType(qt);
-
-    } else if (type->isEnumeralType()) {
-      ss << "types.Int32";
-
-    } else if (type->isFunctionPointerType()) {
-      // should be before ->isPointerType() check below
-      return convertFunctionPointerType(qt);
-
-    } else if (type->isPointerType()) {
-      ss << "types.Ptr(to=";
-      QualType pqt = type->getPointeeType();
-      ss << convertClangType(pqt);
-      ss << ")";
-
-    } else if (type->isRecordType()) {
-      SlangRecord *slangRecordType;
-      if (type->isStructureType()) {
-        return convertClangRecordType(type->getAsStructureType()->getDecl(),
-            slangRecordType);
-      } else if (type->isUnionType()) {
-        return convertClangRecordType(type->getAsUnionType()->getDecl(),
-            slangRecordType);
-      } else {
-        ss << "ERROR:RecordType";
-      }
-
-    } else if (type->isArrayType()) {
-      return convertClangArrayType(qt);
-
-    } else if (type->isFunctionProtoType()) {
-      return convertFunctionPrototype(qt);
-
-    } else {
-      ss << "ERROR:UnknownType.";
-    }
-
-    return ss.str();
-  } // convertClangType()
-
-  // converts clang type to span ir proto types by modifying the given BitDataType
-  // Returns 0 if successful, non-zero if error
-  int convertClangTypeBit(QualType qt, BitDataType *dt) {
-    int success = 0;
-
-    if (qt.isNull()) {
-      // By default, assume the type is int32
-      dt->set_vkind(K_VK::TINT32);
-      return 0;
-    }
-
-    qt = getCleanedQualType(qt);
-
-    const Type *type = qt.getTypePtr();
-
-    if (type->isBuiltinType()) {
-      return convertClangBuiltinTypeBit(qt, dt);
-
-    } else if (type->isEnumeralType()) {
-      dt->set_vkind(K_VK::TINT32); // Default to int32
-
-    } else if (type->isFunctionPointerType()) {
-      // should be before ->isPointerType() check below
-      return convertFunctionPointerTypeBit(qt, dt);
-
-    } else if (type->isPointerType()) {
-      QualType pqt = type->getPointeeType();
-      BitDataType *pointeeBdt = new BitDataType();
-      success = convertClangTypeBit(pqt, pointeeBdt);
-      if (success != 0) {
-        return success;
-      }
-      dt->set_vkind(getPtrKindBit(pointeeBdt->vkind()));
-      dt->set_allocated_subtype(pointeeBdt);
-
-    } else if (type->isRecordType()) {
-      if (type->isStructureType()) {
-        success = convertClangRecordTypeBit(type->getAsStructureType()->getDecl(), dt);
-      } else if (type->isUnionType()) {
-        success = convertClangRecordTypeBit(type->getAsUnionType()->getDecl(), dt);
-      } else {
-        success = 120;
-      }
-
-    } else if (type->isArrayType()) {
-      success = convertClangArrayTypeBit(qt, dt);
-
-    } else if (type->isFunctionProtoType()) {
-      success = convertFunctionPrototypeBit(qt, dt);
-
-    } else {
-      success = 121;
-    }
-
-    return success;
-  } // convertClangTypeBit()
-
-  // Returns the pointer kind for the given pointee kind
-  K_VK getPtrKindBit(K_VK pointeeKind) {
-    switch (pointeeKind) {
-      case K_VK::TINT8: return K_VK::TPTR_TO_INT;
-      case K_VK::TINT16: return K_VK::TPTR_TO_INT;
-      case K_VK::TINT32: return K_VK::TPTR_TO_INT;
-      case K_VK::TINT64: return K_VK::TPTR_TO_INT;
-      case K_VK::TFLOAT16: return K_VK::TPTR_TO_FLOAT;
-      case K_VK::TFLOAT32: return K_VK::TPTR_TO_FLOAT;
-      case K_VK::TFLOAT64: return K_VK::TPTR_TO_FLOAT;
-      case K_VK::TVOID: return K_VK::TPTR_TO_VOID;
-      case K_VK::TPTR_TO_PTR: return K_VK::TPTR_TO_PTR;
-      case K_VK::TUNION: return K_VK::TPTR_TO_RECORD;
-      case K_VK::TSTRUCT: return K_VK::TPTR_TO_RECORD;
-      case K_VK::TARR_FIXED: return K_VK::TPTR_TO_ARR;
-      case K_VK::TARR_VARIABLE: return K_VK::TPTR_TO_ARR;
-      case K_VK::TARR_PARTIAL: return K_VK::TPTR_TO_ARR;
-      default: return K_VK::TPTR_TO_VOID;
-    }
-  } // getPtrKindBit()
+  case BO_Add:
+    op = "op.BO_ADD";
+    break;
+  case BO_Sub:
+    op = "op.BO_SUB";
+    break;
+  case BO_Mul:
+    op = "op.BO_MUL";
+    break;
+  case BO_Div:
+    op = "op.BO_DIV";
+    break;
+  case BO_Rem:
+    op = "op.BO_MOD";
+    break;
+
+  case BO_LT:
+    op = "op.BO_LT";
+    break;
+  case BO_LE:
+    op = "op.BO_LE";
+    break;
+  case BO_EQ:
+    op = "op.BO_EQ";
+    break;
+  case BO_NE:
+    op = "op.BO_NE";
+    break;
+  case BO_GE:
+    op = "op.BO_GE";
+    break;
+  case BO_GT:
+    op = "op.BO_GT";
+    break;
+
+  case BO_Or:
+    op = "op.BO_BIT_OR";
+    break;
+  case BO_And:
+    op = "op.BO_BIT_AND";
+    break;
+  case BO_Xor:
+    op = "op.BO_BIT_XOR";
+    break;
+
+  case BO_Shl:
+    op = "op.BO_LSHIFT";
+    break;
+  case BO_Shr:
+    op = "op.BO_RSHIFT";
+    break;
+
+  case BO_Comma:
+    return convertBinaryCommaOp(binOp);
+
+  default:
+    op = "ERROR:binOp";
+    break;
   }
 
-  std::string convertClangBuiltinType(QualType qt) {
+  auto it = binOp->child_begin();
+  const Stmt *leftOprStmt = *it;
+  ++it;
+  const Stmt *rightOprStmt = *it;
+
+  SlangExpr leftOprExpr = convertStmt(leftOprStmt);
+  SlangExpr rightOprExpr = convertStmt(rightOprStmt);
+
+  slangExpr =
+      createBinaryExpr(leftOprExpr, op, rightOprExpr, getLocationString(binOp),
+                       getImplicitType(binOp, binOp->getType()));
+
+  return slangExpr;
+} // convertBinaryOperator()
+
+SlangBitExpr
+slang::SpirGen::convertBinaryOperatorBit(const BinaryOperator *binOp) {
+  if (binOp->isCompoundAssignmentOp()) {
+    return convertCompoundAssignmentOpBit(binOp);
+  } else if (binOp->isAssignmentOp()) {
+    return convertAssignmentOpBit(binOp);
+  } else if (binOp->isLogicalOp()) {
+    return convertLogicalOpBit(binOp);
+  }
+
+  K_XK op;
+  bool flipOperands = false;
+  switch (binOp->getOpcode()) {
+    // NOTE : && and || are handled in convertConditionalOp()
+
+  case BO_Add:
+    op = K_XK::XADD;
+    break;
+  case BO_Sub:
+    op = K_XK::XSUB;
+    break;
+  case BO_Mul:
+    op = K_XK::XMUL;
+    break;
+  case BO_Div:
+    op = K_XK::XDIV;
+    break;
+  case BO_Rem:
+    op = K_XK::XMOD;
+    break;
+
+  case BO_LT:
+    op = K_XK::XLT;
+    break;
+  case BO_LE:
+    op = K_XK::XGE;
+    flipOperands = true;
+    break;
+  case BO_EQ:
+    op = K_XK::XEQ;
+    break;
+  case BO_NE:
+    op = K_XK::XNE;
+    break;
+  case BO_GE:
+    op = K_XK::XGE;
+    break;
+  case BO_GT:
+    op = K_XK::XLT;
+    flipOperands = true;
+    break;
+
+  case BO_Or:
+    op = K_XK::XBIT_OR;
+    break;
+  case BO_And:
+    op = K_XK::XBIT_AND;
+    break;
+  case BO_Xor:
+    op = K_XK::XBIT_XOR;
+    break;
+
+  case BO_Shl:
+    op = K_XK::XLSHIFT;
+    break;
+  case BO_Shr:
+    op = K_XK::XRSHIFT;
+    break;
+
+  case BO_Comma:
+    return convertBinaryCommaOpBit(binOp);
+
+  default:
+    op = K_XK::XNIL;
+    break;
+  }
+
+  auto it = binOp->child_begin();
+  const Stmt *leftOprStmt = *it;
+  ++it;
+  const Stmt *rightOprStmt = *it;
+
+  SlangExpr leftOprExpr = convertStmt(leftOprStmt);
+  SlangExpr rightOprExpr = convertStmt(rightOprStmt);
+
+  SlangBitExpr sbExpr;
+  if (flipOperands) {
+    // Used to replace GT with LT and LE with GE by flipping the operands.
+    sbExpr = createBinaryBitExpr(rightOprExpr, op, leftOprExpr,
+                                 getLocationString(binOp),
+                                 getImplicitType(binOp, binOp->getType()));
+  } else {
+    sbExpr = createBinaryBitExpr(leftOprExpr, op, rightOprExpr,
+                                 getLocationString(binOp),
+                                 getImplicitType(binOp, binOp->getType()));
+  }
+
+  leftOprExpr.deleteBitExpr();
+  rightOprExpr.deleteBitExpr();
+  return sbExpr;
+} // convertBinaryOperatorBit()
+
+// stores the given expression into a tmp variable
+SlangExpr slang::SpirGen::convertToTmp(SlangExpr slangExpr, bool force) {
+  if (slangExpr.compound || force == true) {
+    SlangExpr tmpExpr;
+    if (slangExpr.qualType.isNull() ||
+        slangExpr.qualType.getTypePtr()->isVoidType()) {
+      tmpExpr = genTmpVariable("t", "types.Int32", slangExpr.locStr);
+    } else {
+      if (slangExpr.qualType.getTypePtr()->isArrayType()) {
+        // for array type, generate a tmp variable which is a pointer
+        // to its element types.
+        const Type *type = slangExpr.qualType.getTypePtr();
+        const ArrayType *arrayType = type->getAsArrayTypeUnsafe();
+        QualType elementType = arrayType->getElementType();
+        QualType tmpVarType = Ctx->getPointerType(elementType);
+        tmpExpr = genTmpVariable("t", tmpVarType, slangExpr.locStr);
+      } else if (slangExpr.qualType.getTypePtr()->isFunctionType()) {
+        // create a tmp variable which is a pointer to the function type
+        QualType tmpVarType = Ctx->getPointerType(slangExpr.qualType);
+        tmpExpr = genTmpVariable("t", tmpVarType, slangExpr.locStr);
+      } else {
+        tmpExpr = genTmpVariable("t", slangExpr.qualType, slangExpr.locStr);
+      }
+    }
     std::stringstream ss;
 
-    const Type *type = qt.getTypePtr();
+    ss << "instr.AssignI(" << tmpExpr.expr << ", " << slangExpr.expr;
+    ss << ", " << slangExpr.locStr << ")"; // close instr.AssignI(...
+    stu.addStmt(ss.str());
 
-    if (type->isSignedIntegerType()) {
-      if (type->isCharType()) {
-        ss << "types.Int8";
-      } else if (type->isChar16Type()) {
-        ss << "types.Int16";
-      } else if (type->isIntegerType()) {
-        TypeInfo typeInfo = Ctx->getTypeInfo(qt);
-        size_t size = typeInfo.Width;
-        ss << "types.Int" << size;
-      } else {
-        ss << "ERROR:UnknownSignedIntType.";
-      }
+    return tmpExpr;
+  } else {
+    return slangExpr;
+  }
+} // convertToTmp()
 
-    } else if (type->isUnsignedIntegerType()) {
-      if (type->isCharType()) {
-        ss << "types.UInt8";
-      } else if (type->isChar16Type()) {
-        ss << "types.UInt16";
-      } else if (type->isIntegerType()) {
-        TypeInfo typeInfo = Ctx->getTypeInfo(qt);
-        size_t size = typeInfo.Width;
-        ss << "types.UInt" << size;
-      } else {
-        ss << "ERROR:UnknownUnsignedIntType.";
-      }
+// Stores the given expression into a tmp variable if it is compound,
+// or the force flag is true.
+// To assign constant literals to a temporary, use force = true.
+SlangBitExpr slang::SpirGen::convertToTmpBitExpr(SlangBitExpr expr,
+                                                 bool force = false,
+                                                 bool gc = false) {
+  // STEP 1: Return the expr unchanged if it is a simple value (unless forced
+  // otherwise)
+  if (force == false) {
+    if (!expr.compound || expr.bitExpr->xkind() == spir::K_XK::XVAL) {
+      return expr;
+    }
+  }
 
-    } else if (type->isFloatingType()) {
-      ss << "types.Float64";  // FIXME: all are considered 64 bit (okay for analysis purposes)
-    } else if (type->isVoidType()) {
-      ss << "types.Void";
+  // STEP 2: If here, it is a compound expression or a forced temporary
+  // assignment, hence create a new temporary, assign the expression to it and
+  // return the temporary.
+  spir::BitEntity bEntity;
+  // Always use a default signed 32-bit int type for tmpVarType.
+  QualType tmpVarType = Ctx->getIntTypeForBitwidth(32, /*Signed=*/true);
+  if (expr.qualType.isNull() || expr.qualType.getTypePtr()->isVoidType()) {
+      bEntity = genTmpBitEntity(spir::K_VK::TINT32, "t", expr.srcLoc()));
+  } else {
+    if (expr.qualType.getTypePtr()->isArrayType()) {
+      // for array type, generate a tmp variable which is a pointer
+      // to its element types.
+      const Type *type = expr.qualType.getTypePtr();
+      const ArrayType *arrayType = type->getAsArrayTypeUnsafe();
+      QualType elementType = arrayType->getElementType();
+      tmpVarType = Ctx->getPointerType(elementType);
+      bEntity = genTmpBitEntity(spir::K_VK::TNIL, "t", expr.srcLoc(), tmpVarType);
+    } else if (expr.qualType.getTypePtr()->isFunctionType()) {
+      // create a tmp variable which is a pointer to the function type
+      tmpVarType = Ctx->getPointerType(expr.qualType);
+      bEntity = genTmpBitEntity(spir::K_VK::TNIL, "t", expr.srcLoc(), tmpVarType);
     } else {
-      ss << "ERROR:UnknownBuiltinType.";
+      tmpVarType = expr.qualType;
+      // Use signed 32-bit as tmpVarType (set above), but pass expr.qualType for
+      // semantic fidelity.
+      bEntity = genTmpBitEntity(spir::K_VK::TNIL, "t", expr.srcLoc(), tmpVarType);
+    }
+  }
+
+  spir::BitExpr *bExpr = createBitExpr(bEntity);
+  SlangBitExpr sbExpr = createSlangExprFromBitExpr(bExpr, tmpVarType, true);
+  stu.addAssignBitInstr(sbExpr, expr);
+  if (gc == true) {
+    expr.deleteBitExpr();
+  }
+  return sbExpr;
+} // convertToTmpBitExpr()
+
+SlangBitExpr *slang::SpirGen::createSlangExprFromBitExpr(spir::BitExpr *bitExpr,
+                                                         QualType type,
+                                                         bool isTmp = false) {
+  SlangBitExpr *slangBitExpr = new SlangBitExpr();
+
+  slangBitExpr->bitExpr = bitExpr;
+  slangBitExpr->qualType = type;
+  slangBitExpr->nonTmpVar = !isTmp;
+  slangBitExpr->compound = isBitExprCompound(bitExpr);
+
+  return slangBitExpr;
+}
+
+// stores the given expression into a tmp variable
+SlangExpr slang::SpirGen::convertToTmp2(SlangExpr slangExpr,
+                                        bool force = false) {
+
+  if (slangExpr.compound || force == true) {
+    bool takeAddress = false;
+    SlangExpr tmpExpr;
+    if (slangExpr.qualType.isNull() ||
+        slangExpr.qualType.getTypePtr()->isVoidType()) {
+      tmpExpr = genTmpVariable("t", "types.Int32", slangExpr.locStr);
+    } else {
+      if (slangExpr.qualType.getTypePtr()->isArrayType()) {
+        // for array type, generate a tmp variable which is a pointer
+        // to its element types.
+        const Type *type = slangExpr.qualType.getTypePtr();
+        const ArrayType *arrayType = type->getAsArrayTypeUnsafe();
+        QualType elementType = arrayType->getElementType();
+        QualType tmpVarType = Ctx->getPointerType(elementType);
+        tmpExpr = genTmpVariable("t", tmpVarType, slangExpr.locStr);
+      } else if (slangExpr.qualType.getTypePtr()->isFunctionType()) {
+        // create a tmp variable which is a pointer to the function type
+        QualType tmpVarType = Ctx->getPointerType(slangExpr.qualType);
+        tmpExpr = genTmpVariable("t", tmpVarType, slangExpr.locStr);
+      } else if (slangExpr.qualType.getTypePtr()->isRecordType()) {
+        takeAddress = true;
+        tmpExpr = genTmpVariable("t", Ctx->getPointerType(slangExpr.qualType),
+                                 slangExpr.locStr);
+      } else {
+        tmpExpr = genTmpVariable("t", slangExpr.qualType, slangExpr.locStr);
+      }
+    }
+    std::stringstream ss;
+
+    if (takeAddress) {
+      ss << "instr.AssignI(" << tmpExpr.expr << ", ";
+      ss << "expr.AddrOfE(" << slangExpr.expr << ", " << slangExpr.locStr
+         << ")";
+      ss << ", " << slangExpr.locStr << ")"; // close instr.AssignI(...
+    } else {
+      ss << "instr.AssignI(" << tmpExpr.expr << ", " << slangExpr.expr;
+      ss << ", " << slangExpr.locStr << ")"; // close instr.AssignI(...
+    }
+    stu.addStmt(ss.str());
+
+    return tmpExpr;
+  } else {
+    return slangExpr;
+  }
+} // convertToTmp2()
+
+// special tmp variable for if "t.1if", "t.2if" etc...
+SlangExpr slang::SpirGen::convertToIfTmp(SlangExpr slangExpr,
+                                         bool force = false) {
+  if (slangExpr.compound || force == true) {
+    SlangExpr tmpExpr;
+    if (slangExpr.qualType.isNull()) {
+      tmpExpr = genTmpVariable("if", "types.Int32", slangExpr.locStr);
+    } else {
+      tmpExpr = genTmpVariable("if", slangExpr.qualType, slangExpr.locStr);
+    }
+    std::stringstream ss;
+
+    ss << "instr.AssignI(" << tmpExpr.expr << ", " << slangExpr.expr;
+    ss << ", " << slangExpr.locStr << ")"; // close instr.AssignI(...
+    stu.addStmt(ss.str());
+
+    return tmpExpr;
+  } else {
+    return slangExpr;
+  }
+} // convertToIfTmp()
+
+// special tmp variable for if "t.1if", "t.2if" etc...
+SlangBitExpr slang::SpirGen::convertToIfTmpBit(SlangBitExpr expr,
+                                               bool force = false,
+                                               bool gc = false) {
+  if (expr.compound || force == true) {
+    spir::BitEntity tmp =
+        genTmpBitEntity(spir::K_VK::TINT32, "if", expr.srcLoc(), expr.qualType);
+    SlangBitExpr *tmpExpr = createBitExpr(tmp);
+    tmpExpr->nonTmpVar = false;
+    stu.addAssignBitInstr(tmpExpr, expr);
+    if (gc) {
+      expr.deleteBitExpr();
+    }
+    return tmpExpr;
+  } else {
+    return expr;
+  }
+} // convertToIfTmpBit()
+
+SlangExpr
+slang::SpirGen::convertCompoundAssignmentOp(const BinaryOperator *binOp) {
+  auto it = binOp->child_begin();
+  const Stmt *lhs = *it;
+  const Stmt *rhs = *(++it);
+
+  SlangExpr rhsExpr = convertStmt(rhs);
+  SlangExpr lhsExpr = convertStmt(lhs);
+
+  if (lhsExpr.compound && rhsExpr.compound) {
+    rhsExpr = convertToTmp(rhsExpr);
+  }
+
+  std::string op;
+  switch (binOp->getOpcode()) {
+  case BO_ShlAssign:
+    op = "op.BO_LSHIFT";
+    break;
+  case BO_ShrAssign:
+    op = "op.BO_RSHIFT";
+    break;
+
+  case BO_OrAssign:
+    op = "op.BO_BIT_OR";
+    break;
+  case BO_AndAssign:
+    op = "op.BO_BIT_AND";
+    break;
+  case BO_XorAssign:
+    op = "op.BO_BIT_XOR";
+    break;
+
+  case BO_AddAssign:
+    op = "op.BO_ADD";
+    break;
+  case BO_SubAssign:
+    op = "op.BO_SUB";
+    break;
+  case BO_MulAssign:
+    op = "op.BO_MUL";
+    break;
+  case BO_DivAssign:
+    op = "op.BO_DIV";
+    break;
+  case BO_RemAssign:
+    op = "op.BO_MOD";
+    break;
+
+  default:
+    op = "ERROR:UnknowncompoundAssignOp";
+    break;
+  }
+
+  SlangExpr newRhsExpr;
+  if (lhsExpr.compound) {
+    newRhsExpr = convertToTmp(createBinaryExpr(
+        lhsExpr, op, rhsExpr, getLocationString(binOp), lhsExpr.qualType));
+  } else {
+    newRhsExpr = createBinaryExpr(lhsExpr, op, rhsExpr,
+                                  getLocationString(binOp), lhsExpr.qualType);
+  }
+
+  addAssignInstr(lhsExpr, newRhsExpr, getLocationString(binOp));
+  return lhsExpr;
+} // convertCompoundAssignmentOp()
+
+SlangBitExpr
+slang::SpirGen::convertCompoundAssignmentOpBit(const BinaryOperator *binOp) {
+  auto it = binOp->child_begin();
+  const Stmt *lhs = *it;
+  const Stmt *rhs = *(++it);
+
+  SlangBitExpr rhsExpr = convertStmtBit(rhs);
+  SlangBitExpr lhsExpr = convertStmtBit(lhs);
+
+  if (lhsExpr.compound && rhsExpr.compound) {
+    rhsExpr = convertToTmpBitExpr(rhsExpr, false, true);
+  }
+
+  K_XK op;
+  switch (binOp->getOpcode()) {
+  case BO_ShlAssign:
+    op = K_XK::XLSHIFT;
+    break;
+  case BO_ShrAssign:
+    op = K_XK::XRSHIFT;
+    break;
+
+  case BO_OrAssign:
+    op = K_XK::XBIT_OR;
+    break;
+  case BO_AndAssign:
+    op = K_XK::XBIT_AND;
+    break;
+  case BO_XorAssign:
+    op = K_XK::XBIT_XOR;
+    break;
+
+  case BO_AddAssign:
+    op = K_XK::XADD;
+    break;
+  case BO_SubAssign:
+    op = K_XK::XSUB;
+    break;
+  case BO_MulAssign:
+    op = K_XK::XMUL;
+    break;
+  case BO_DivAssign:
+    op = K_XK::XDIV;
+    break;
+  case BO_RemAssign:
+    op = K_XK::XMOD;
+    break;
+
+  default:
+    op = K_XK::XNIL;
+    break;
+  }
+
+  SlangBitExpr newRhsExpr;
+  newRhsExpr = createBinaryBitExpr(lhsExpr, op, rhsExpr,
+                                   getLocationString(binOp), lhsExpr.qualType);
+  if (lhsExpr.compound) {
+    newRhsExpr = convertToTmpBitExpr(newRhsExpr, false, true);
+  }
+
+  addAssignBitInstr(lhsExpr, newRhsExpr);
+  newRhsExpr.deleteBitExpr();
+  return lhsExpr;
+} // convertCompoundAssignmentOp()
+
+SlangExpr slang::SpirGen::convertAssignmentOp(const BinaryOperator *binOp) {
+  SlangExpr lhsExpr, rhsExpr;
+
+  auto it = binOp->child_begin();
+  const Stmt *lhs = *it;
+  const Stmt *rhs = *(++it);
+
+  rhsExpr = convertStmt(rhs);
+  lhsExpr = convertStmt(lhs);
+
+  if (lhsExpr.compound && rhsExpr.compound) {
+    rhsExpr = convertToTmp(rhsExpr);
+  }
+
+  addAssignInstr(lhsExpr, rhsExpr, getLocationString(binOp));
+
+  return lhsExpr;
+} // convertAssignmentOp()
+
+SlangBitExpr
+slang::SpirGen::convertAssignmentOpBit(const BinaryOperator *binOp) {
+  SlangBitExpr lhsExpr, rhsExpr;
+
+  auto it = binOp->child_begin();
+  const Stmt *lhs = *it;
+  const Stmt *rhs = *(++it);
+
+  rhsExpr = convertStmtBit(rhs);
+  lhsExpr = convertStmtBit(lhs);
+
+  if (lhsExpr.compound && rhsExpr.compound) {
+    rhsExpr = convertToTmpBit(rhsExpr, false, true);
+  }
+
+  addAssignBitInstr(lhsExpr, rhsExpr, getLocationString(binOp));
+  return lhsExpr;
+} // convertAssignmentOp()
+
+SlangExpr
+slang::SpirGen::convertCompoundStmt(const CompoundStmt *compoundStmt) {
+  SlangExpr slangExpr;
+
+  for (auto it = compoundStmt->body_begin(); it != compoundStmt->body_end();
+       ++it) {
+    // don't care about the return value
+    convertStmt(*it);
+  }
+
+  return slangExpr;
+} // convertCompoundStmt()
+
+SlangExpr slang::SpirGen::convertParenExpr(const ParenExpr *parenExpr) {
+  auto it = parenExpr->child_begin(); // should have only one child
+  return convertStmt(*it);
+} // convertParenExpr()
+
+SlangBitExpr slang::SpirGen::convertParenExprBit(const ParenExpr *parenExpr) {
+  auto it = parenExpr->child_begin(); // should have only one child
+  return convertStmtBit(*it);
+} // convertParenExprBit()
+
+SlangExpr slang::SpirGen::convertLabel(const LabelStmt *labelStmt) {
+  SlangExpr slangExpr;
+  std::stringstream ss;
+
+  std::string locStr = getLocationString(labelStmt);
+
+  auto firstChild = *labelStmt->child_begin();
+  if (isa<CaseStmt>(firstChild) && stu.switchCfls) {
+    stu.switchCfls->gotoLabel = labelStmt->getName();
+    stu.switchCfls->gotoLabelLocStr = locStr;
+    llvm::errs() << "ERROR:LABEL_BEFORE_CASE(CheckTheCFG): "
+                 << stu.switchCfls->gotoLabel << "\n";
+  } else {
+    ss << "instr.LabelI(\"" << labelStmt->getName() << "\"";
+    ss << ", " << locStr << ")"; // close instr.LabelI(...
+    stu.addStmt(ss.str());
+  }
+
+  for (auto it = labelStmt->child_begin(); it != labelStmt->child_end(); ++it) {
+    convertStmt(*it);
+  }
+
+  return slangExpr;
+} // convertLabel()
+
+// BOUND START: type_conversion_routines
+
+// converts clang type to span ir types
+std::string slang::SpirGen::convertClangType(QualType qt) {
+  std::stringstream ss;
+
+  if (qt.isNull()) {
+    return "types.Int32"; // the default type
+  }
+
+  qt = getCleanedQualType(qt);
+
+  const Type *type = qt.getTypePtr();
+
+  if (type->isBuiltinType()) {
+    return convertClangBuiltinType(qt);
+
+  } else if (type->isEnumeralType()) {
+    ss << "types.Int32";
+
+  } else if (type->isFunctionPointerType()) {
+    // should be before ->isPointerType() check below
+    return convertFunctionPointerType(qt);
+
+  } else if (type->isPointerType()) {
+    ss << "types.Ptr(to=";
+    QualType pqt = type->getPointeeType();
+    ss << convertClangType(pqt);
+    ss << ")";
+
+  } else if (type->isRecordType()) {
+    SlangRecord *slangRecordType;
+    if (type->isStructureType()) {
+      return convertClangRecordType(type->getAsStructureType()->getDecl(),
+                                    slangRecordType);
+    } else if (type->isUnionType()) {
+      return convertClangRecordType(type->getAsUnionType()->getDecl(),
+                                    slangRecordType);
+    } else {
+      ss << "ERROR:RecordType";
     }
 
-    return ss.str();
-  } // convertClangBuiltinType()
+  } else if (type->isArrayType()) {
+    return convertClangArrayType(qt);
 
-  // Returns 0 if successful, non-zero if error
-  int convertClangBuiltinTypeBit(QualType qt, BitDataType *dt) {
-    const Type *type = qt.getTypePtr();
+  } else if (type->isFunctionProtoType()) {
+    return convertFunctionPrototype(qt);
 
-    if (type->isSignedIntegerType()) {
-      if (type->isCharType()) {
-        dt->set_vkind(K_VK::TINT8);
-      } else if (type->isChar16Type()) {
-        dt->set_vkind(K_VK::TINT16);
-      } else if (type->isIntegerType()) {
-        TypeInfo typeInfo = Ctx->getTypeInfo(qt);
-        size_t size = typeInfo.Width;
-        if (size == 32) {
-          dt->set_vkind(K_VK::TINT32);
-        } else if (size == 64) {
-          dt->set_vkind(K_VK::TINT64);
-        } else {
-          return 100;
-        }
-      } else {
-        return 101;
-      }
+  } else {
+    ss << "ERROR:UnknownType.";
+  }
 
-    } else if (type->isUnsignedIntegerType()) {
-      if (type->isCharType()) {
-        dt->set_vkind(K_VK::TUINT8);
-      } else if (type->isChar16Type()) {
-        dt->set_vkind(K_VK::TUINT16);
-      } else if (type->isIntegerType()) {
-        TypeInfo typeInfo = Ctx->getTypeInfo(qt);
-        size_t size = typeInfo.Width;
-        if (size == 32) {
-          dt->set_vkind(K_VK::TUINT32);
-        } else if (size == 64) {
-          dt->set_vkind(K_VK::TUINT64);
-        } else {
-          return 102;
-        }
-      } else {
-        return 103;
-      }
+  return ss.str();
+} // convertClangType()
 
-    } else if (type->isFloatingType()) {
-      dt->set_vkind(K_VK::TFLOAT64);
-    } else if (type->isVoidType()) {
-      dt->set_vkind(K_VK::TVOID);
+// convertClangTypeBit converts clang type to span ir proto types.
+// It uses an existing or a new spir::BitDataType and returns its id (pointer address
+// of the qualtype). It returns errorCode 0 if successful.
+MayValue slang::SpirGen::convertClangTypeBit(QualType qt) {
+  spir::BitDataType dt;
+  MayValue result;
+
+  if (qt.isNull()) {
+    if (stu.bittu.datatypes().find(uint64_t(K_00_INT32_TYPE_EID)) !=
+        stu.bittu.datatypes().end()) {
+      return MayValue(OK /*errorCode*/, 0 /*value*/);
     } else {
-      return 104;
+      // By default, assume the type is int32
+      dt.set_vkind(spir::K_VK::TINT32);
+      dt.set_typeid_(K_00_INT32_TYPE_EID);
+      stu.bittu.mutable_datatypes()->emplace(K_00_INT32_TYPE_EID, dt);
+      return MayValue(OK /*errorCode*/, 0 /*value*/);
     }
 
     return 0;
-  } // convertClangBuiltinTypeBit()
+  }
 
-  std::string convertClangRecordType(const RecordDecl *recordDecl,
-      SlangRecord *&returnSlangRecord) {
-    // a hack1 for anonymous decls (it works!) see test 000193.c and its AST!!
-    static const RecordDecl *lastAnonymousRecordDecl = nullptr;
-    if (recordDecl->getDefinition()) {
-      recordDecl = recordDecl->getDefinition();
+  qt = getCleanedQualType(qt);
+  const Type *typePtr = qt.getTypePtr();
+  const uint64_t typeKey = (uint64_t)typePtr;
+
+  // Return the id (pointer address of the qualtype) if it exists.
+  if (stu.bittu.datatypes().find(typeKey) != stu.bittu.datatypes().end()) {
+    return MayValue(OK /*errorCode*/, typeKey);
+  }
+
+  if (typePtr->isBuiltinType()) {
+    return convertClangBuiltinTypeBit(qt, typeKey);
+
+  } else if (typePtr->isEnumeralType()) {
+    dt.set_vkind(spir::K_VK::TINT32); // Default to int32
+    dt.set_typeid_(typeKey);
+    stu.bittu.mutable_datatypes()->emplace(typeKey, dt);
+    return MayValue(OK, typeKey);
+
+  } else if (typePtr->isFunctionPointerType()) {
+    // should be before ->isPointerType() check below
+    return convertFunctionPointerTypeBit(qt, typeKey);
+
+  } else if (typePtr->isPointerType()) {
+    QualType pqt = typePtr->getPointeeType();
+    auto result = convertClangTypeBit(pqt);
+    if (result.errorCode) {
+      return result;
     }
+    dt.set_vkind(getPtrKindBit(stu.bittu.datatypes().at(result.value).vkind()));
+    dt.set_subTypeEid(result.value);
+    dt.set_typeid_(typeKey);
+    stu.bittu.mutable_datatypes()->emplace(typeKey, dt);
+    return MayValue(OK, typeKey);
 
-    if (recordDecl == nullptr) {
-      // default to the last anonymous record decl
-      return convertClangRecordType(lastAnonymousRecordDecl, returnSlangRecord);
-    }
-
-    if (stu.isRecordPresent((uint64_t)recordDecl)) {
-      returnSlangRecord = &stu.getRecord((uint64_t)recordDecl); // return pointer back
-      return stu.getRecord((uint64_t)recordDecl).toShortString();
-    }
-
-    std::string namePrefix;
-    SlangRecord slangRecord;
-
-    if (recordDecl->isStruct()) {
-      namePrefix = "s:";
-      slangRecord.recordKind = Struct;
-    } else if (recordDecl->isUnion()) {
-      namePrefix = "u:";
-      slangRecord.recordKind = Union;
-    }
-
-    if (recordDecl->getNameAsString() == "") {
-      slangRecord.anonymous = true;
-      slangRecord.name = namePrefix + stu.getNextRecordIdStr();
+  } else if (typePtr->isRecordType()) {
+    const RecordDecl *rdecl;
+    if (typePtr->isStructureType()) {
+      rdecl = typePtr->getAsStructureType()->getDecl();
+    } else if (typePtr->isUnionType()) {
+      rdecl = typePtr->getAsUnionType()->getDecl();
     } else {
-      slangRecord.anonymous = false;
-      slangRecord.name = namePrefix + recordDecl->getNameAsString();
+      return MayValue(ERR(120));
+    }
+    return convertClangRecordTypeBit(rdecl, typeKey);
+
+  } else if (typePtr->isArrayType()) {
+    return convertClangArrayTypeBit(qt, typeKey);
+
+  } else if (typePtr->isFunctionProtoType()) {
+    return convertFunctionPrototypeBit(qt, typeKey);
+
+  } else {
+    return MayValue(ERR(121));
+  }
+
+} // convertClangTypeBit()
+
+// Returns the pointer kind for the given pointee kind
+spir::K_VK slang::SpirGen::getPtrKindBit(spir::K_VK pointeeKind) {
+  switch (pointeeKind) {
+  case spir::K_VK::TINT8:
+    return spir::K_VK::TPTR_TO_INT;
+  case spir::K_VK::TINT16:
+    return spir::K_VK::TPTR_TO_INT;
+  case spir::K_VK::TINT32:
+    return spir::K_VK::TPTR_TO_INT;
+  case spir::K_VK::TINT64:
+    return spir::K_VK::TPTR_TO_INT;
+  case spir::K_VK::TFLOAT16:
+    return spir::K_VK::TPTR_TO_FLOAT;
+  case spir::K_VK::TFLOAT32:
+    return spir::K_VK::TPTR_TO_FLOAT;
+  case spir::K_VK::TFLOAT64:
+    return spir::K_VK::TPTR_TO_FLOAT;
+  case spir::K_VK::TVOID:
+    return spir::K_VK::TPTR_TO_VOID;
+  case spir::K_VK::TPTR_TO_PTR:
+    return spir::K_VK::TPTR_TO_PTR;
+  case spir::K_VK::TUNION:
+    return spir::K_VK::TPTR_TO_RECORD;
+  case spir::K_VK::TSTRUCT:
+    return spir::K_VK::TPTR_TO_RECORD;
+  case spir::K_VK::TARR_FIXED:
+    return spir::K_VK::TPTR_TO_ARR;
+  case spir::K_VK::TARR_VARIABLE:
+    return spir::K_VK::TPTR_TO_ARR;
+  case spir::K_VK::TARR_PARTIAL:
+    return spir::K_VK::TPTR_TO_ARR;
+  default:
+    return spir::K_VK::TPTR_TO_VOID;
+  }
+} // getPtrKindBit()
+}
+
+std::string slang::SpirGen::convertClangBuiltinType(QualType qt) {
+  std::stringstream ss;
+
+  const Type *type = qt.getTypePtr();
+
+  if (type->isSignedIntegerType()) {
+    if (type->isCharType()) {
+      ss << "types.Int8";
+    } else if (type->isChar16Type()) {
+      ss << "types.Int16";
+    } else if (type->isIntegerType()) {
+      TypeInfo typeInfo = Ctx->getTypeInfo(qt);
+      size_t size = typeInfo.Width;
+      ss << "types.Int" << size;
+    } else {
+      ss << "ERROR:UnknownSignedIntType.";
     }
 
-    slangRecord.locStr = getLocationString(recordDecl);
+  } else if (type->isUnsignedIntegerType()) {
+    if (type->isCharType()) {
+      ss << "types.UInt8";
+    } else if (type->isChar16Type()) {
+      ss << "types.UInt16";
+    } else if (type->isIntegerType()) {
+      TypeInfo typeInfo = Ctx->getTypeInfo(qt);
+      size_t size = typeInfo.Width;
+      ss << "types.UInt" << size;
+    } else {
+      ss << "ERROR:UnknownUnsignedIntType.";
+    }
 
-    stu.addRecord((uint64_t)recordDecl, slangRecord);                  // IMPORTANT
-    SlangRecord &newSlangRecord = stu.getRecord((uint64_t)recordDecl); // IMPORTANT
-    returnSlangRecord = &newSlangRecord; // IMPORTANT
+  } else if (type->isFloatingType()) {
+    ss << "types.Float64"; // FIXME: all are considered 64 bit (okay for
+                           // analysis purposes)
+  } else if (type->isVoidType()) {
+    ss << "types.Void";
+  } else {
+    ss << "ERROR:UnknownBuiltinType.";
+  }
 
-    SlangRecordField slangRecordField;
+  return ss.str();
+} // convertClangBuiltinType()
 
-    SlangRecord *getBackSlangRecord;
-    for (auto it = recordDecl->decls_begin(); it != recordDecl->decls_end(); ++it) {
-      if (isa<RecordDecl>(*it)) {
-        convertClangRecordType(cast<RecordDecl>(*it), getBackSlangRecord);
-      } else if (isa<FieldDecl>(*it)) {
-        const FieldDecl *fieldDecl = cast<FieldDecl>(*it);
+// Returns 0 if successful, non-zero if error
+MayValue slang::SpirGen::convertClangBuiltinTypeBit(QualType qt,
+                                                    const uint64_t typeKey) {
+  spir::BitDataType dt;
+  dt.set_typeid_(typeKey);
 
-        slangRecordField.clear();
+  const Type *typePtr = qt.getTypePtr();
 
-        if (fieldDecl->getNameAsString() == "") {
-          slangRecordField.name = newSlangRecord.getNextAnonymousFieldIdStr() + "a";
-          slangRecordField.anonymous = true;
+  if (typePtr->isSignedIntegerType()) {
+    if (typePtr->isCharType()) {
+      dt.set_vkind(spir::K_VK::TINT8);
+    } else if (typePtr->isChar16Type()) {
+      dt.set_vkind(spir::K_VK::TINT16);
+    } else if (typePtr->isIntegerType()) {
+      TypeInfo typeInfo = Ctx->getTypeInfo(qt);
+      size_t size = typeInfo.Width;
+      if (size == 32) {
+        dt.set_vkind(spir::K_VK::TINT32);
+      } else if (size == 64) {
+        dt.set_vkind(spir::K_VK::TINT64);
+      } else {
+        return MayValue(ERR(100));
+      }
+    } else {
+      return MayValue(ERR(101));
+    }
+
+  } else if (typePtr->isUnsignedIntegerType()) {
+    if (typePtr->isCharType()) {
+      dt.set_vkind(spir::K_VK::TUINT8);
+    } else if (typePtr->isChar16Type()) {
+      dt.set_vkind(spir::K_VK::TUINT16);
+    } else if (typePtr->isIntegerType()) {
+      TypeInfo typeInfo = Ctx->getTypeInfo(qt);
+      size_t size = typeInfo.Width;
+      if (size == 32) {
+        dt.set_vkind(spir::K_VK::TUINT32);
+      } else if (size == 64) {
+        dt.set_vkind(spir::K_VK::TUINT64);
+      } else {
+        return MayValue(ERR(102));
+      }
+    } else {
+      return MayValue(ERR(103));
+    }
+
+  } else if (typePtr->isFloatingType()) {
+    dt.set_vkind(spir::K_VK::TFLOAT64);
+  } else if (typePtr->isVoidType()) {
+    dt.set_vkind(spir::K_VK::TVOID);
+  } else {
+    return MayValue(ERR(104));
+  }
+
+  stu.bittu.mutable_datatypes()->emplace(typeKey, dt);
+  return MayValue(OK, typeKey);
+} // convertClangBuiltinTypeBit()
+
+std::string
+slang::SpirGen::convertClangRecordType(const RecordDecl *recordDecl,
+                                       SlangRecord *&returnSlangRecord) {
+  // a hack1 for anonymous decls (it works!) see test 000193.c and its AST!!
+  static const RecordDecl *lastAnonymousRecordDecl = nullptr;
+  if (recordDecl && recordDecl->getDefinition()) {
+    recordDecl = recordDecl->getDefinition();
+  }
+
+  if (recordDecl == nullptr) {
+    // default to the last anonymous record decl
+    return convertClangRecordType(lastAnonymousRecordDecl, returnSlangRecord);
+  }
+
+  if (stu.isRecordPresent((uint64_t)recordDecl)) {
+    returnSlangRecord =
+        &stu.getRecord((uint64_t)recordDecl); // return pointer back
+    return stu.getRecord((uint64_t)recordDecl).toShortString();
+  }
+
+  std::string namePrefix;
+  SlangRecord slangRecord;
+
+  if (recordDecl->isStruct()) {
+    namePrefix = "s:";
+    slangRecord.recordKind = Struct;
+  } else if (recordDecl->isUnion()) {
+    namePrefix = "u:";
+    slangRecord.recordKind = Union;
+  }
+
+  if (recordDecl->getNameAsString() == "") {
+    slangRecord.anonymous = true;
+    slangRecord.name = namePrefix + stu.getNextRecordIdStr();
+  } else {
+    slangRecord.anonymous = false;
+    slangRecord.name = namePrefix + recordDecl->getNameAsString();
+  }
+
+  slangRecord.locStr = getLocationString(recordDecl);
+
+  stu.addRecord((uint64_t)recordDecl, slangRecord); // IMPORTANT
+  SlangRecord &newSlangRecord =
+      stu.getRecord((uint64_t)recordDecl); // IMPORTANT
+  returnSlangRecord = &newSlangRecord;     // IMPORTANT
+
+  SlangRecordField slangRecordField;
+
+  SlangRecord *getBackSlangRecord;
+  for (auto it = recordDecl->decls_begin(); it != recordDecl->decls_end();
+       ++it) {
+    if (isa<RecordDecl>(*it)) {
+      convertClangRecordType(cast<RecordDecl>(*it), getBackSlangRecord);
+    } else if (isa<FieldDecl>(*it)) {
+      const FieldDecl *fieldDecl = cast<FieldDecl>(*it);
+
+      slangRecordField.clear();
+
+      if (fieldDecl->getNameAsString() == "") {
+        slangRecordField.name =
+            newSlangRecord.getNextAnonymousFieldIdStr() + "a";
+        slangRecordField.anonymous = true;
+      } else {
+        slangRecordField.name = fieldDecl->getNameAsString();
+        slangRecordField.anonymous = false;
+      }
+
+      slangRecordField.type = fieldDecl->getType();
+      if (slangRecordField.anonymous) {
+        auto slangVar = SlangVar((uint64_t)fieldDecl, slangRecordField.name);
+        stu.addVar((uint64_t)fieldDecl, slangVar);
+        slangRecordField.typeStr =
+            convertClangRecordType(nullptr, slangRecordField.slangRecord);
+
+      } else if (fieldDecl->getType()->isRecordType()) {
+        auto type = fieldDecl->getType();
+        if (type->isStructureType()) {
+          slangRecordField.typeStr =
+              convertClangRecordType(type->getAsStructureType()->getDecl(),
+                                     slangRecordField.slangRecord);
+        } else if (type->isUnionType()) {
+          slangRecordField.typeStr = convertClangRecordType(
+              type->getAsUnionType()->getDecl(), slangRecordField.slangRecord);
+        }
+      } else {
+        slangRecordField.typeStr = convertClangType(slangRecordField.type);
+      }
+
+      newSlangRecord.members.push_back(slangRecordField);
+    }
+  }
+
+  // store for later use (part-of-hack1))
+  lastAnonymousRecordDecl = recordDecl;
+
+  // no need to add newSlangRecord, its a reference to its entry in the
+  // stu.recordMap
+  return newSlangRecord.toShortString();
+} // convertClangRecordType()
+
+MayValue slang::SpirGen::convertClangRecordTypeBit(const RecordDecl *recordDecl,
+                                                   const uint64_t typeKey) {
+  spir::BitDataType dt;
+  dt.set_typeid_(typeKey);
+
+  // a hack1 for anonymous decls (it works!) see test 000193.c and its AST!!
+  static const RecordDecl *lastAnonymousRecordDecl = nullptr;
+
+  if (recordDecl == nullptr) {
+    assert(lastAnonymousRecordDecl != nullptr);
+    // default to the last anonymous record decl
+    return convertClangRecordTypeBit(
+        lastAnonymousRecordDecl, (uint64_t)lastAnonymousRecordDecl /*typeKey*/);
+  }
+
+  if (recordDecl->getDefinition()) {
+    recordDecl = recordDecl->getDefinition();
+  }
+
+  if (stu.hasTypeKey(typeKey)) {
+    // Get the existing record id (it avoids infinite recursion for self
+    // referencing records)
+    return MayValue(OK, typeKey);
+  }
+
+  std::string namePrefix;
+  SlangRecord slangRecord;
+
+  // Set the kind of the record and choose the right prefix for the name
+  if (recordDecl->isStruct()) {
+    namePrefix = "s:";
+    dt.set_vkind(spir::K_VK::TSTRUCT);
+  } else if (recordDecl->isUnion()) {
+    namePrefix = "u:";
+    dt.set_vkind(spir::K_VK::TUNION);
+  }
+
+  // Set the name of the record, its anonymous flag and source location
+  if (recordDecl->getNameAsString() == "") {
+    dt.set_anonymous(true);
+    dt.set_typename_(namePrefix + stu.getNextRecordIdStr());
+  } else {
+    dt.set_anonymous(false);
+    dt.set_typename_(namePrefix + recordDecl->getNameAsString());
+  }
+  SrcLoc srcLoc = getSrcLocBit(recordDecl);
+  dt.set_loc_line(srcLoc.line);
+  dt.set_loc_col(srcLoc.col);
+
+  spir::BitEntityInfo bitEntityInfo;
+  bitEntityInfo.set_eid(typeKey);
+  bitEntityInfo.set_ekind(spir::K_EK::EDATA_TYPE);
+  bitEntityInfo.set_vkind(dt.vkind());
+  bitEntityInfo.set_datatypeeid(typeKey); // same as eid for record types
+  bitEntityInfo.set_strval(dt.typename_());
+  bitEntityInfo.set_anonymous(dt.anonymous());
+  bitEntityInfo.set_loc_line(srcLoc.line);
+  bitEntityInfo.set_loc_col(srcLoc.col);
+  stu.bittu.mutable_entityinfo()->emplace(typeKey, bitEntityInfo);
+
+  // It is nessary to place the incomplete record type in the BitTU.datatypes
+  // map, as the record can be recursively referenced by its own fields. This
+  // avoids infinite recursion for self referencing records. The record type is
+  // placed again when all its fields are populated.
+  stu.bittu.mutable_datatypes()->emplace(typeKey, dt);
+
+  // Iterate over each field of the record (struct/union)
+  MayValue fieldDtEid;
+  std::string fieldName;
+  for (auto it = recordDecl->decls_begin(); it != recordDecl->decls_end();
+       ++it) {
+    uint64_t fieldKey = (uint64_t)(*it);
+    spir::BitEntityInfo bitEntityInfo;
+
+    if (isa<RecordDecl>(*it)) {
+      fieldDtEid = convertClangRecordTypeBit(cast<RecordDecl>(*it), fieldKey);
+      if (fieldDtEid.errorCode) {
+        return fieldDtEid;
+      }
+      fieldName = stu.bittu.datatypes()[fieldDtEid.value].typename();
+      bitEntityInfo.set_loc_line(stu.bittu.datatypes()[fieldDtEid.value].loc_line());
+      bitEntityInfo.set_loc_col(stu.bittu.datatypes()[fieldDtEid.value].loc_col());
+
+    } else if (isa<FieldDecl>(*it)) {
+      const FieldDecl *fieldDecl = cast<FieldDecl>(*it);
+      bool anonymous = false;
+
+      if (fieldDecl.getNameAsString() == "") {
+        anonymous = true;
+        fieldName = ::slang::Util::getNextUniqueIdStr() + "a";
+      } else {
+        anonymous = false;
+        fieldName = fieldDecl->getNameAsString();
+      }
+
+      if (anonymous) {
+        fieldDtEid = convertClangRecordTypeBit(nullptr, fieldKey);
+        if (fieldDtEid.errorCode) {
+          return fieldDtEid;
+        }
+      } else if (fieldDecl->getType()->isRecordType()) {
+        auto type = fieldDecl->getType();
+        auto fieldTypeKey = (uint64_t)type;
+        const RecordDecl *rdecl;
+        if (type->isStructureType()) {
+          rdecl = type->getAsStructureType()->getDecl();
+        } else if (type->isUnionType()) {
+          rdecl = type->getAsUnionType()->getDecl();
         } else {
-          slangRecordField.name = fieldDecl->getNameAsString();
-          slangRecordField.anonymous = false;
+          return MayValue(ERR(201));
+        }
+        fieldDtEid = convertClangRecordTypeBit(rdecl, fieldTypeKey);
+        if (fieldDtEid.errorCode) {
+          return fieldDtEid;
         }
 
-        slangRecordField.type = fieldDecl->getType();
-        if (slangRecordField.anonymous) {
-          auto slangVar = SlangVar((uint64_t) fieldDecl, slangRecordField.name);
-          stu.addVar((uint64_t) fieldDecl, slangVar);
-          slangRecordField.typeStr = convertClangRecordType(nullptr,
-              slangRecordField.slangRecord);
-
-        } else if (fieldDecl->getType()->isRecordType()) {
-          auto type = fieldDecl->getType();
-          if (type->isStructureType()) {
-            slangRecordField.typeStr =
-                convertClangRecordType(type->getAsStructureType()->getDecl(),
-                   slangRecordField.slangRecord);
-          } else if (type->isUnionType()) {
-            slangRecordField.typeStr =
-                convertClangRecordType(type->getAsUnionType()->getDecl(),
-                    slangRecordField.slangRecord);
-          }
-        } else {
-          slangRecordField.typeStr = convertClangType(slangRecordField.type);
+      } else {
+        fieldDtEid = convertClangTypeBit(fieldDecl->getType());
+        if (fieldDtEid.errorCode) {
+          return fieldDtEid;
         }
-
-        newSlangRecord.members.push_back(slangRecordField);
       }
+      SrcLoc fieldSrcLoc = getSrcLocBit(fieldDecl);
+      bitEntityInfo.set_loc_line(fieldSrcLoc.line);
+      bitEntityInfo.set_loc_col(fieldSrcLoc.col);
     }
 
-    // store for later use (part-of-hack1))
-    lastAnonymousRecordDecl = recordDecl;
+    bitEntityInfo.set_ekind(spir::K_EK::ERECORD_FIELD);
+    bitEntityInfo.set_eid(fieldKey);
+    bitEntityInfo.set_parenteid(typeKey);
+    bitEntityInfo.set_datatypeeid(fieldDtEid.value);
+    bitEntityInfo.set_strval(fieldName);
+    stu.bittu.mutable_entityinfo()->emplace(fieldKey, bitEntityInfo);
 
-    // no need to add newSlangRecord, its a reference to its entry in the stu.recordMap
-    return newSlangRecord.toShortString();
-  } // convertClangRecordType()
+    dt.mutable_fopIds()->Add(fieldKey);
+    dt.mutable_fopTypes()->Add(fieldDtEid.value);
+  } // for loop
 
-  int convertClangRecordTypeBit(const RecordDecl *recordDecl, BitDataType *dt) {
-    int success = 0;
-    // a hack1 for anonymous decls (it works!) see test 000193.c and its AST!!
-    static const RecordDecl *lastAnonymousRecordDecl = nullptr;
+  // Place the record type with complete fields information in the
+  // BitTU.datatypes map.
+  stu.bittu.mutable_datatypes()->emplace(typeKey, dt);
 
-    if (recordDecl->getDefinition()) {
-      recordDecl = recordDecl->getDefinition();
+  // store for later use (part-of-hack1))
+  lastAnonymousRecordDecl = recordDecl;
+
+  return MayValue(OK, typeKey);
+} // convertClangRecordTypeBit()
+
+std::string slang::SpirGen::convertClangArrayType(QualType qt) {
+  std::stringstream ss;
+
+  const Type *type = qt.getTypePtr();
+  const ArrayType *arrayType = type->getAsArrayTypeUnsafe();
+
+  if (isa<ConstantArrayType>(arrayType)) {
+    ss << "types.ConstSizeArray(of=";
+    ss << convertClangType(arrayType->getElementType());
+    ss << ", ";
+    auto constArrType = cast<ConstantArrayType>(arrayType);
+    auto size = constArrType->getSize();
+    charSv->clear();
+    size.toString(*charSv, 10, false);
+    ss << "size=" << charSv->data();
+    ss << ")";
+
+  } else if (isa<VariableArrayType>(arrayType)) {
+    ss << "types.VarArray(of=";
+    ss << convertClangType(arrayType->getElementType());
+    ss << ")";
+  } else if (isa<IncompleteArrayType>(arrayType)) {
+    ss << "types.IncompleteArray(of=";
+    ss << convertClangType(arrayType->getElementType());
+    ss << ")";
+
+  } else {
+    ss << "ERROR:UnknownArrayType";
+  }
+
+  return ss.str();
+} // convertClangArrayType()
+
+MayValue slang::SpirGen::convertClangArrayTypeBit(QualType qt,
+                                                  const uint64_t typeKey) {
+  spir::BitDataType dt;
+  dt.set_typeid_(typeKey);
+
+  const Type *type = qt.getTypePtr();
+  const ArrayType *arrayType = type->getAsArrayTypeUnsafe();
+
+  if (isa<ConstantArrayType>(arrayType)) {
+    dt.set_vkind(spir::K_VK::TARR_FIXED);
+    auto constArrType = cast<ConstantArrayType>(arrayType);
+    auto size = constArrType->getSize();
+    // Convert llvm::APInt to uint32_t safely
+    uint64_t sizeVal = size.getLimitedValue(UINT32_MAX);
+    if (sizeVal > UINT32_MAX) {
+      SLANG_FATAL("Array size too large");
+      return MayValue(ERR(106));
     }
+    dt.set_len(static_cast<uint32_t>(sizeVal));
+  } else if (isa<VariableArrayType>(arrayType)) {
+    dt.set_vkind(spir::K_VK::TARR_VARIABLE);
+  } else if (isa<IncompleteArrayType>(arrayType)) {
+    dt.set_vkind(spir::K_VK::TARR_PARTIAL);
+  } else {
+    SLANG_FATAL("Unknown array type");
+    return MayValue(ERR(105));
+  }
 
-    if (recordDecl == nullptr) {
-      // default to the last anonymous record decl
-      return convertClangRecordTypeBit(lastAnonymousRecordDecl, dt);
+  MayValue elemType = convertClangTypeBit(arrayType->getElementType());
+  if (elemType.errorCode) {
+    return elemType;
+  }
+  dt.set_subtypeeid(elemType.value);
+  SrcLoc srcLoc = getSrcLocBit(arrayType);
+  dt.set_loc_line(srcLoc.line);
+  dt.set_loc_col(srcLoc.col);
+
+  stu.bittu.mutable_datatypes()->emplace(typeKey, dt);
+
+  return MayValue(OK, typeKey);
+} // convertClangArrayTypeBit()
+
+std::string slang::SpirGen::convertFunctionPrototype(QualType qt) {
+  std::stringstream ss;
+
+  const Type *funcType = qt.getTypePtr();
+
+  funcType = funcType->getUnqualifiedDesugaredType();
+  if (isa<FunctionProtoType>(funcType)) {
+    auto funcProtoType = cast<FunctionProtoType>(funcType);
+    ss << "types.FuncSig(returnType=";
+    ss << convertClangType(funcProtoType->getReturnType());
+    ss << ", "
+       << "paramTypes=[";
+    std::string prefix = "";
+    for (auto qType : funcProtoType->getParamTypes()) {
+      ss << prefix << convertClangType(qType);
+      if (prefix == "")
+        prefix = ", ";
     }
-
-    if (stu.isRecordPresentBit((uint64_t)recordDecl)) {
-      // Get existing record
-      const auto& bitEntityInfo = stu.bittu.entityinfo().at((uint64_t)recordDecl);
-      dt->set_typeid_(bitEntityInfo.dt().typeid_());
-      dt->set_typename_(bitEntityInfo.dt().typename_());
-      return 0;
+    ss << "]";
+    if (funcProtoType->isVariadic()) {
+      ss << ", variadic=True";
     }
+    ss << ")"; // close types.FuncSig(...
 
-    std::string namePrefix;
-    SlangRecord slangRecord;
+  } else {
+    ss << "ERROR:UnknownFunctionProtoType";
+  }
 
-    if (recordDecl->isStruct()) {
-      namePrefix = "s:";
-      dt->set_vkind(K_VK::TSTRUCT);
-    } else if (recordDecl->isUnion()) {
-      namePrefix = "u:";
-      dt->set_vkind(K_VK::TUNION);
+  return ss.str();
+} // convertFunctionPrototype()
+
+MayValue slang::SpirGen::convertFunctionPrototypeBit(QualType qt,
+                                                     const uint64_t typeKey) {
+  spir::BitDataType dt;
+  dt.set_typeid_(typeKey);
+  dt.set_funcprototype(true);
+
+  const Type *funcTypePtr = qt.getTypePtr()->getUnqualifiedDesugaredType();
+
+  if (isa<FunctionProtoType>(funcTypePtr)) {
+    auto funcProtoType = cast<FunctionProtoType>(funcTypePtr);
+
+    // STEP 1: Convert the return type.
+    auto retTypeResult = convertClangTypeBit(funcProtoType->getReturnType());
+    if (retTypeResult.errorCode) {
+      return retTypeResult;
     }
+    dt.set_subtypeeid(retTypeResult.value);
+    dt.set_vkind(stu.bittu.datatypes().at(retTypeResult.value).vkind());
 
-    if (recordDecl->getNameAsString() == "") {
-      dt->set_anonymous(true);
-      dt->set_typename_(namePrefix + stu.getNextRecordIdStr());
-    } else {
-      dt->set_anonymous(false);
-      dt->set_typename_(namePrefix + recordDecl->getNameAsString());
-    }
-
-    BitEntityInfo bitEntityInfo;
-    bitEntityInfo.set_ekind(K_EK::EDATA_TYPE);
-    bitEntityInfo.set_eid((uint64_t)recordDecl);
-    bitEntityInfo.set_allocated_dt(dt);
-    bitEntityInfo.set_allocated_loc(getSrcLocBit(recordDecl));
-    bitEntityInfo.set_strval(dt->typename_());
-    stu.bittu.mutable_entityinfo()->emplace((uint64_t)recordDecl, bitEntityInfo);
-
-    BitDataType* recordedDT = stu.bittu.mutable_entityinfo()->at((uint64_t)recordDecl).mutable_dt();
-
-    //stu.addRecord((uint64_t)recordDecl, slangRecord);                  // IMPORTANT
-    //SlangRecord &newSlangRecord = stu.getRecord((uint64_t)recordDecl); // IMPORTANT
-    //returnSlangRecord = &newSlangRecord; // IMPORTANT
-
-    SlangRecordField slangRecordField;
-
-    for (auto it = recordDecl->decls_begin(); it != recordDecl->decls_end(); ++it) {
-      if (isa<RecordDecl>(*it)) {
-        BitDataType* subRecordDT = new BitDataType();
-        convertClangRecordTypeBit(cast<RecordDecl>(*it), subRecordDT);
-      } else if (isa<FieldDecl>(*it)) {
-        const FieldDecl *fieldDecl = cast<FieldDecl>(*it);
-        BitDataType fieldDT;
-        std::string fieldName;
-
-        if (fieldDecl.getNameAsString() == "") {
-          fieldDT.set_anonymous(true);
-          fieldName = ::slang::Util::getNextUniqueIdStr() + "a";
-        } else {
-          fieldDT.set_anonymous(false);
-          fieldName = fieldDecl->getNameAsString();
-        }
-        fieldDT.set_typename_(fieldName);
-
-        if (fieldDT.anonymous()) {
-          success = convertClangRecordTypeBit(nullptr, &fieldDT);
-          if (success != 0) {
-            return success;
-          }
-          BitEntityInfo bitEntityInfo;
-          bitEntityInfo.set_ekind(K_EK::ERECORD_FIELD);
-          bitEntityInfo.set_eid((uint64_t) fieldDecl);
-          bitEntityInfo.set_parentid((uint64_t)recordDecl);
-          bitEntityInfo.set_allocated_dt(fieldDT);
-          bitEntityInfo.set_strval(fieldDT.typename_());
-          bitEntityInfo.set_allocated_loc(getSrcLocBit(fieldDecl));
-          stu.bittu.mutable_entityinfo()->emplace((uint64_t) fieldDecl, bitEntityInfo);
-        } else if (fieldDecl->getType()->isRecordType()) {
-          auto type = fieldDecl->getType();
-          if (type->isStructureType()) {
-            success = convertClangRecordTypeBit(type->getAsStructureType()->getDecl(), fieldDT);
-          } else if (type->isUnionType()) {
-            success = convertClangRecordTypeBit(type->getAsUnionType()->getDecl(), fieldDT);
-          }
-          if (success != 0) {
-            return success;
-          }
-        } else {
-          success = convertClangTypeBit(fieldDecl->getType(), &fieldDT);
-        }
-
-        recordedDT->mutable_fopIds()->Add((uint64_t) fieldDecl);
-        recordedDT->mutable_fopTypes()->Add(fieldDT);
+    // STEP 2: Convert the parameters one by one.
+    for (auto qType : funcProtoType->getParamTypes()) {
+      auto paramTypeResult = convertClangTypeBit(qType);
+      if (paramTypeResult.errorCode) {
+        return paramTypeResult;
       }
+      dt.mutable_fopTypeEids()->Add(paramTypeResult.value);
     }
 
-    // store for later use (part-of-hack1))
-    lastAnonymousRecordDecl = recordDecl;
-
-    return success;
-  } // convertClangRecordTypeBit()
-
-  std::string convertClangArrayType(QualType qt) {
-    std::stringstream ss;
-
-    const Type *type = qt.getTypePtr();
-    const ArrayType *arrayType = type->getAsArrayTypeUnsafe();
-
-    if (isa<ConstantArrayType>(arrayType)) {
-      ss << "types.ConstSizeArray(of=";
-      ss << convertClangType(arrayType->getElementType());
-      ss << ", ";
-      auto constArrType = cast<ConstantArrayType>(arrayType);
-      auto size = constArrType->getSize();
-      charSv->clear(); size.toString(*charSv, 10, false);
-      ss << "size=" << charSv->data();
-      ss << ")";
-
-    } else if (isa<VariableArrayType>(arrayType)) {
-      ss << "types.VarArray(of=";
-      ss << convertClangType(arrayType->getElementType());
-      ss << ")";
-    } else if (isa<IncompleteArrayType>(arrayType)) {
-      ss << "types.IncompleteArray(of=";
-      ss << convertClangType(arrayType->getElementType());
-      ss << ")";
-
-    } else {
-      ss << "ERROR:UnknownArrayType";
+    // STEP 3: Special variadic flag.
+    if (funcProtoType->isVariadic()) {
+      dt.set_variadic(true);
     }
 
-    return ss.str();
-  } // convertClangArrayType()
+  } else {
+    SLANG_FATAL("Unknown function prototype type.");
+    return MayValue(ERR(112));
+  }
 
-  int convertClangArrayTypeBit(QualType qt, BitDataType *dt) {
-    int success = 0;
+  stu.bittu.mutable_datatypes()->emplace(typeKey, dt);
+  return MayValue(OK, typeKey);
+} // convertFunctionPrototypeBit()
 
-    const Type *type = qt.getTypePtr();
-    const ArrayType *arrayType = type->getAsArrayTypeUnsafe();
+std::string slang::SpirGen::convertFunctionPointerType(QualType qt) {
+  std::stringstream ss;
 
-    if (isa<ConstantArrayType>(arrayType)) {
-      dt->set_vkind(K_VK::TARR_FIXED);
-      auto constArrType = cast<ConstantArrayType>(arrayType);
-      auto size = constArrType->getSize();
-      // Convert llvm::APInt to uint32_t safely
-      uint64_t sizeVal = size.getLimitedValue(UINT32_MAX);
-      if (sizeVal > UINT32_MAX) {
-        SLANG_FATAL("Array size too large");
-        return 106;
-      }
-      dt->set_len(static_cast<uint32_t>(sizeVal));
-    } else if (isa<VariableArrayType>(arrayType)) {
-      dt->set_vkind(K_VK::TARR_VARIABLE);
-    } else if (isa<IncompleteArrayType>(arrayType)) {
-      dt->set_vkind(K_VK::TARR_PARTIAL);
-    } else {
-      SLANG_FATAL("Unknown array type");
-      success = 105;
+  const Type *type = qt.getTypePtr();
+
+  ss << "types.Ptr(to=";
+  const Type *funcType = type->getPointeeType().getTypePtr();
+  funcType = funcType->getUnqualifiedDesugaredType();
+  if (isa<FunctionProtoType>(funcType)) {
+    auto funcProtoType = cast<FunctionProtoType>(funcType);
+    ss << "types.FuncSig(returnType=";
+    ss << convertClangType(funcProtoType->getReturnType());
+    ss << ", "
+       << "paramTypes=[";
+    std::string prefix = "";
+    for (auto qType : funcProtoType->getParamTypes()) {
+      ss << prefix << convertClangType(qType);
+      if (prefix == "")
+        prefix = ", ";
     }
-
-    BitDataType *elemType = new BitDataType();
-    success = convertClangTypeBit(arrayType->getElementType(), elemType);
-    if (success != 0) {
-      return success;
+    ss << "]";
+    if (funcProtoType->isVariadic()) {
+      ss << ", variadic=True";
     }
-    dt->set_allocated_subtype(elemType);
+    ss << ")"; // close types.FuncSig(...
+    ss << ")"; // close types.Ptr(...
 
-    return success;
-  } // convertClangArrayType()
+  } else if (isa<FunctionNoProtoType>(funcType)) {
+    ss << "types.FuncSig(returnType=types.Int32)";
+    ss << ")"; // close types.Ptr(...
 
-  std::string convertFunctionPrototype(QualType qt) {
-    std::stringstream ss;
+  } else if (isa<FunctionType>(funcType)) {
+    ss << "FuncType";
 
-    const Type *funcType = qt.getTypePtr();
+  } else {
+    ss << "ERROR:UnknownFunctionPtrType";
+  }
 
-    funcType = funcType->getUnqualifiedDesugaredType();
-    if (isa<FunctionProtoType>(funcType)) {
-      auto funcProtoType = cast<FunctionProtoType>(funcType);
-      ss << "types.FuncSig(returnType=";
-      ss << convertClangType(funcProtoType->getReturnType());
-      ss << ", "
-         << "paramTypes=[";
-      std::string prefix = "";
-      for (auto qType : funcProtoType->getParamTypes()) {
-        ss << prefix << convertClangType(qType);
-        if (prefix == "")
-          prefix = ", ";
-      }
-      ss << "]";
-      if (funcProtoType->isVariadic()) {
-        ss << ", variadic=True";
-      }
-      ss << ")"; // close types.FuncSig(...
+  return ss.str();
+} // convertFunctionPointerType()
 
-    } else {
-      ss << "ERROR:UnknownFunctionProtoType";
+// Returns 0 if successful, non-zero if error
+MayValue slang::SpirGen::convertFunctionPointerTypeBit(QualType qt,
+                                                       const uint64_t typeKey) {
+  MayValue result;
+
+  spir::BitDataType dt;
+  dt.set_vkind(spir::K_VK::TPTR_TO_FUNC);
+  dt.set_typeid_(typeKey);
+
+  const Type *typePtr = qt.getTypePtr();
+  const Type *funcTypePtr = typePtr->getPointeeType().getTypePtr();
+  const Type *unqualifiedPtr = funcTypePtr->getUnqualifiedDesugaredType();
+
+  if (isa<FunctionProtoType>(unqualifiedPtr)) {
+    result = convertFunctionPrototypeBit(qt, (uint64_t)unqualifiedPtr /*key*/);
+    if (result.errorCode) {
+      return result;
     }
+    dt.set_subTypeEid(result.value);
+    stu.bittu.mutable_datatypes()->emplace(typeKey, dt);
+    return MayValue(OK, typeKey);
 
-    return ss.str();
-  } // convertFunctionPrototype()
+  } else if (isa<FunctionNoProtoType>(unqualifiedPtr)) {
+    // With no function prototype, assume int32 return type with no parameters
+    dt.set_subTypeEid(K_00_INT32_TYPE_EID); // i.e. INT32 -- implying `int32 f(void)`
+    stu.bittu.mutable_datatypes()->emplace(typeKey, dt);
+    return MayValue(OK, typeKey);
 
-  int convertFunctionPrototypeBit(QualType qt, BitDataType *dt) {
-    int success = 0;
-    const Type *funcType = qt.getTypePtr();
+  } else if (isa<FunctionType>(unqualifiedPtr)) {
+    SLANG_FATAL("A FuncType -- not expected");
+    return MayValue(ERR(110));
 
-    funcType = funcType->getUnqualifiedDesugaredType();
-    if (isa<FunctionProtoType>(funcType)) {
-      auto funcProtoType = cast<FunctionProtoType>(funcType);
-      BitDataType *retType = new BitDataType();
-      success = convertClangTypeBit(funcProtoType->getReturnType(), retType);
-      if (success != 0) {
-        return success;
-      }
-      dt->set_allocated_subtype(retType);
+  } else {
+    SLANG_FATAL("Unknown function pointer type");
+    return MayValue(ERR(111));
+  }
 
-      for (auto qType : funcProtoType->getParamTypes()) {
-        BitDataType *paramType = new BitDataType();
-        success = convertClangTypeBit(qType, paramType);
-        if (success != 0) {
-          return success;
-        }
-        dt->mutable_types()->AddAllocated(paramType);
-      }
+} // convertFunctionPointerTypeBit()
 
-      if (funcProtoType->isVariadic()) {
-        dt->set_variadic(true);
-      }
+spir::BitEntity *slang::SpirGen::convertClangTypeToBitEntity(QualType qt,
+                                                       uint64_t eid) {
+  spir::BitEntity *bitEntity = new spir::BitEntity();
+  bitEntity->set_eid(eid);
 
-    } else {
-      SLANG_FATAL("Unknown function prototype type");
-      success = 112;
+  spir::BitEntityInfo *bitEntityInfo = convertClangTypeToBitEntityInfo(qt, eid);
+  stu.moveAndAddBitEntityInfo(eid, *bitEntityInfo);
+
+  return bitEntity;
+} // convertClangTypeToBitEntity()
+
+spir::BitEntityInfo *
+slang::SpirGen::convertClangTypeToBitEntityInfo(QualType qt, uint64_t eid = 0) {
+  spir::BitEntityInfo *bitEntityInfo = new spir::BitEntityInfo();
+  bitEntityInfo->set_eid(eid);
+  bitEntityInfo->set_ekind(spir::K_EK::EDATA_TYPE);
+  spir::BitDataType *bitDataType = new spir::BitDataType();
+  convertClangTypeBit(qt, bitDataType);
+  if (stu.isBasicBitType(
+          bitDataType)) { // Call the member function instead of inline check
+    bitEntityInfo->set_vkind(bitDataType->vkind());
+    bitEntityInfo->set_qtype(bitDataType->qtype());
+    delete bitDataType;
+  } else {
+    bitEntityInfo->set_allocated_dt(bitDataType);
+  }
+  return bitEntityInfo;
+} // convertClangTypeToBitEntityInfo()
+
+// BOUND END  : type_conversion_routines
+// BOUND END  : conversion_routines
+
+// BOUND START: helper_routines
+
+SlangExpr slang::SpirGen::genTmpVariable(std::string suffix,
+                                         std::string typeStr,
+                                         std::string locStr) {
+  std::stringstream ss;
+  SlangExpr slangExpr{};
+
+  // STEP 1: Populate a SlangVar object with unique name.
+  SlangVar slangVar{};
+  slangVar.id = stu.nextUniqueId();
+  uint64_t tmpNumbering = stu.nextTmpId();
+  ss << "" << tmpNumbering << suffix;
+  slangVar.setLocalVarName(ss.str(), stu.getCurrFuncName());
+  slangVar.typeStr = typeStr;
+
+  // STEP 2: Add to the var map.
+  // FIXME: The var's 'id' here should be small enough to not interfere with
+  // uint64_t addresses.
+  stu.addVar(slangVar.id, slangVar);
+
+  // STEP 3: generate var expression.
+  ss.str(""); // empty the stream
+  ss << "expr.VarE(\"" << slangVar.name << "\"";
+  ss << ", " << locStr << ")";
+
+  slangExpr.expr = ss.str();
+  slangExpr.locStr = locStr;
+  // slangExpr.qualType = qt;
+  slangExpr.nonTmpVar = false;
+
+  return slangExpr;
+} // genTmpVariable()
+
+// Generates a temporary (proto bit) variable with the given type and suffix.
+// It creates BitEntity and spir::BitEntityInfo objects, saves the info object
+// and returns the BitEntity object.
+spir::BitEntity slang::SpirGen::genTmpBitEntity(
+    spir::K_VK vType, std::string suffix, BitSrcLoc srcLoc,
+    QualType qt = QualType() /*optional if vType is given*/) {
+  spir::BitEntity bitEntity;
+
+  // STEP 1: Populate an entity with unique ID.
+  bitEntity.set_eid(stu.nextUniqueId());
+  bitEntity.set_line(srcLoc.line());
+  bitEntity.set_col(srcLoc.col());
+
+  // STEP 2: Create and populate the spir::BitEntityInfo object.
+  spir::BitEntityInfo bitEntityInfo;
+  bitEntityInfo.set_eid(bitEntity.eid());
+  bitEntityInfo.set_ekind(spir::K_EK::EVAR_LOCL_TMP); // All tmps are local variables
+  // STEP 2.1: Set the data type to the entity info.
+  if (!qt.isNull()) {
+    MayValue dt = convertClangTypeBit(qt);
+    if (dt.errorCode) {
+      SLANG_FATAL("Couldn't convert the clang type " << qt.getAsString())
     }
+    bitEntityInfo.set_datatypeeid(dt.value);
+    bitEntityInfo.set_vkind(bitEntityInfo.dt().vkind());
+  } else {
+    bitEntityInfo.set_vkind(vType);
+  }
+  bitEntityInfo.set_loc_line(bitEntity.line());
+  bitEntityInfo.set_loc_col(bitEntity.col());
 
-    return success;
-  } // convertFunctionPrototypeBit()
+  // STEP 2.2: Populate the BitEntityInfo object with a unique name.
+  std::stringstream ss;
+  ss << "" << stu.nextTmpId() << suffix;
+  bitEntityInfo.set_strval(ss.str());
 
-  std::string convertFunctionPointerType(QualType qt) {
-    std::stringstream ss;
+  // STEP 3: Add the variable to the TU.
+  // FIXME: The var's 'id' here should be small enough to not interfere with
+  // uint64_t addresses.
+  stu.bitty.mutable_entityinfo()->emplace(bitEntityInfo.eid(), bitEntityInfo);
 
-    const Type *type = qt.getTypePtr();
+  return bitEntity;
+} // genTmpBitEntity()
 
-    ss << "types.Ptr(to=";
-    const Type *funcType = type->getPointeeType().getTypePtr();
-    funcType = funcType->getUnqualifiedDesugaredType();
-    if (isa<FunctionProtoType>(funcType)) {
-      auto funcProtoType = cast<FunctionProtoType>(funcType);
-      ss << "types.FuncSig(returnType=";
-      ss << convertClangType(funcProtoType->getReturnType());
-      ss << ", "
-         << "paramTypes=[";
-      std::string prefix = "";
-      for (auto qType : funcProtoType->getParamTypes()) {
-        ss << prefix << convertClangType(qType);
-        if (prefix == "")
-          prefix = ", ";
-      }
-      ss << "]";
-      if (funcProtoType->isVariadic()) {
-        ss << ", variadic=True";
-      }
-      ss << ")"; // close types.FuncSig(...
-      ss << ")"; // close types.Ptr(...
+SlangExpr slang::SpirGen::genTmpVariable(std::string suffix, QualType qt,
+                                         std::string locStr,
+                                         bool ifTmp = false) {
+  std::stringstream ss;
+  SlangExpr slangExpr{};
 
-    } else if (isa<FunctionNoProtoType>(funcType)) {
-      ss << "types.FuncSig(returnType=types.Int32)";
-      ss << ")"; // close types.Ptr(...
+  // STEP 1: Populate a SlangVar object with unique name.
+  SlangVar slangVar{};
+  slangVar.id = stu.nextUniqueId();
+  uint64_t tmpNumbering = stu.nextTmpId();
+  ss << "" << tmpNumbering << suffix;
+  slangVar.setLocalVarName(ss.str(), stu.getCurrFuncName());
+  slangVar.typeStr = convertClangType(qt);
 
-    } else if (isa<FunctionType>(funcType)) {
-      ss << "FuncType";
+  // STEP 2: Add to the var map.
+  // FIXME: The var's 'id' here should be small enough to not interfere with
+  // uint64_t addresses.
+  stu.addVar(slangVar.id, slangVar);
 
-    } else {
-      ss << "ERROR:UnknownFunctionPtrType";
-    }
+  // STEP 3: generate var expression.
+  ss.str(""); // empty the stream
+  ss << "expr.VarE(\"" << slangVar.name << "\"";
+  ss << ", " << locStr << ")";
 
-    return ss.str();
-  } // convertFunctionPointerType()
+  slangExpr.expr = ss.str();
+  slangExpr.locStr = locStr;
+  slangExpr.qualType = qt;
+  slangExpr.nonTmpVar = false;
+  slangExpr.compound = false;
 
-  // Returns 0 if successful, non-zero if error
-  int convertFunctionPointerTypeBit(QualType qt, BitDataType *dt) {
-    int success = 0;
-    const Type *type = qt.getTypePtr();
-    const Type *funcType = type->getPointeeType().getTypePtr();
-    funcType = funcType->getUnqualifiedDesugaredType();
+  return slangExpr;
+} // genTmpVariable()
 
-    BitDataType *bitFuncType = new BitDataType();
-    if (isa<FunctionProtoType>(funcType)) {
-      success = convertFunctionPrototypeBit(qt, bitFuncType);
-      if (success != 0) {
-        return success;
-      }
-
-    } else if (isa<FunctionNoProtoType>(funcType)) {
-      // With no function prototype, assume int32 return type with no parameters
-      BitDataType *retType = new BitDataType();
-      retType->set_vkind(K_VK::INT32);
-      bitFuncType->set_allocated_subtype(retType);
-
-    } else if (isa<FunctionType>(funcType)) {
-      success = 110; // A FuncType -- not expected
-
-    } else {
-      success = 111; // Unknown function pointer type
-    }
-
-    dt->set_vkind(K_VK::PTR_TO_FUNC);
-    dt->set_allocated_subtype(bitFuncType);
-    return success;
-  } // convertFunctionPointerTypeBit()
-
-
-  BitEntity* convertClangTypeToBitEntity(QualType qt, uint64_t eid) {
-    BitEntity* bitEntity = new BitEntity();
-    bitEntity->set_eid(eid);
-
-    BitEntityInfo* bitEntityInfo = convertClangTypeToBitEntityInfo(qt, eid);
-    stu.moveAndAddBitEntityInfo(eid, *bitEntityInfo);
-
-    return bitEntity;
-  } // convertClangTypeToBitEntity()
-
-  BitEntityInfo* convertClangTypeToBitEntityInfo(QualType qt, uint64_t eid = 0) {
-    BitEntityInfo* bitEntityInfo = new BitEntityInfo();
-    bitEntityInfo->set_eid(eid);
-    bitEntityInfo->set_ekind(K_EK::EDATA_TYPE);
-    BitDataType* bitDataType = new BitDataType();
-    convertClangTypeBit(qt, bitDataType);
-    if (stu.isBasicBitType(bitDataType)) { // Call the member function instead of inline check
-      bitEntityInfo->set_vkind(bitDataType->vkind());
-      bitEntityInfo->set_qtype(bitDataType->qtype());
-      delete bitDataType;
-    } else {
-      bitEntityInfo->set_allocated_dt(bitDataType);
-    }
-    return bitEntityInfo;
-  } // convertClangTypeToBitEntityInfo()
-
-  // BOUND END  : type_conversion_routines
-  // BOUND END  : conversion_routines
-
-  // BOUND START: helper_routines
-
-  SlangExpr genTmpVariable(std::string suffix, std::string typeStr,
-      std::string locStr) {
-    std::stringstream ss;
-    SlangExpr slangExpr{};
-
-    // STEP 1: Populate a SlangVar object with unique name.
-    SlangVar slangVar{};
-    slangVar.id = stu.nextUniqueId();
-    uint64_t tmpNumbering = stu.nextTmpId();
-    ss << "" << tmpNumbering << suffix;
-    slangVar.setLocalVarName(ss.str(), stu.getCurrFuncName());
-    slangVar.typeStr = typeStr;
-
-    // STEP 2: Add to the var map.
-    // FIXME: The var's 'id' here should be small enough to not interfere with uint64_t addresses.
-    stu.addVar(slangVar.id, slangVar);
-
-    // STEP 3: generate var expression.
-    ss.str(""); // empty the stream
-    ss << "expr.VarE(\"" << slangVar.name << "\"";
-    ss << ", " << locStr << ")";
-
-    slangExpr.expr = ss.str();
-    slangExpr.locStr = locStr;
-    // slangExpr.qualType = qt;
-    slangExpr.nonTmpVar = false;
-
-    return slangExpr;
-  } // genTmpVariable()
-
-  // Generates a temporary (proto bit) variable with the given type and suffix.
-  BitEntity* genTmpBitEntity(K_VK vType, std::string suffix,
-      const BitSrcLoc& loc, QualType qt = QualType()/*optional if vType is given*/) {
-    BitEntity* bitEntity = new BitEntity();
-    BitEntityInfo bitEntityInfo;
-
-    // STEP 1: Populate an entity with unique ID.
-    bitEntity->set_eid(stu.nextUniqueId());
-    bitEntity->set_allocated_loc(new BitSrcLoc(loc));
-
-    bitEntityInfo.set_eid(bitEntity->eid());
-    bitEntityInfo.set_ekind(K_EK::EVAR_LOCL_TMP); // All tmps are local variables
-    if (!qt.isNull()) {
-      bitEntityInfo.set_allocated_dt(convertClangTypeBit(qt));
-      bitEntityInfo.set_vkind(bitEntityInfo.dt().vkind());
-    } else {
-      bitEntityInfo.set_vkind(vType);
-    }
-    bitEntityInfo.set_allocated_loc(new BitSrcLoc(loc));
-
-    // STEP 2: Populate a BitEntityInfo object with unique name.
-    std::stringstream ss;
-    ss << "" << stu.nextTmpId() << suffix;
-    bitEntityInfo.set_strval(ss.str());
-
-    // STEP 3: Add the variable to the TU.
-    // FIXME: The var's 'id' here should be small enough to not interfere with uint64_t addresses.
-    stu.moveAndAddBitEntityInfo(bitEntity->eid(), bitEntityInfo);
-
-    return bitEntity;
-  } // genTmpBitEntity()
-
-  SlangExpr genTmpVariable(std::string suffix,
-      QualType qt, std::string locStr, bool ifTmp = false) {
-    std::stringstream ss;
-    SlangExpr slangExpr{};
-
-    // STEP 1: Populate a SlangVar object with unique name.
-    SlangVar slangVar{};
-    slangVar.id = stu.nextUniqueId();
-    uint64_t tmpNumbering = stu.nextTmpId();
-    ss << "" << tmpNumbering << suffix;
-    slangVar.setLocalVarName(ss.str(), stu.getCurrFuncName());
-    slangVar.typeStr = convertClangType(qt);
-
-    // STEP 2: Add to the var map.
-    // FIXME: The var's 'id' here should be small enough to not interfere with uint64_t addresses.
-    stu.addVar(slangVar.id, slangVar);
-
-    // STEP 3: generate var expression.
-    ss.str(""); // empty the stream
-    ss << "expr.VarE(\"" << slangVar.name << "\"";
-    ss << ", " << locStr << ")";
-
-    slangExpr.expr = ss.str();
-    slangExpr.locStr = locStr;
-    slangExpr.qualType = qt;
-    slangExpr.nonTmpVar = false;
-    slangExpr.compound = false;
-
-    return slangExpr;
-  } // genTmpVariable()
-
-  // Remove qualifiers and typedefs
-  QualType getCleanedQualType(QualType qt) {
-    if (qt.isNull())
-      return qt;
-    qt = qt.getCanonicalType();
-    qt.removeLocalConst();
-    qt.removeLocalRestrict();
-    qt.removeLocalVolatile();
+// Remove qualifiers and typedefs
+QualType slang::SpirGen::getCleanedQualType(QualType qt) {
+  if (qt.isNull())
     return qt;
+  qt = qt.getCanonicalType();
+  qt.removeLocalConst();
+  qt.removeLocalRestrict();
+  qt.removeLocalVolatile();
+  return qt;
+}
+
+void slang::SpirGen::addGotoInstr(std::string label) {
+  std::stringstream ss;
+  ss << "instr.GotoI(\"" << label << "\")";
+  stu.addStmt(ss.str());
+}
+
+// Creates and adds a GOTO instruction as a BitInsn to the current statement
+// list.
+void slang::SpirGen::addGotoInstrBit(spir::BitEntity labelBit, BitSrcLoc srcLoc) {
+  BitInsn *insn = new BitInsn();
+  insn->set_ikind(K_IK::IGOTO);      // Set the instruction kind to GOTO
+  insn->set_loc_line(srcLoc.line()); // Set source location line
+  insn->set_loc_col(srcLoc.col());   // Set source location column
+
+  spir::BitExpr *bExpr =
+      createBitExpr(labelBit); // Create the expression for the label entity
+  insn->set_allocated_expr1(
+      bExpr); // Attach label expression to insn (destination)
+
+  stu.addStmtBit(insn); // Add the instruction to stmt bit stream
+} // addGotoInstrBit()
+
+void slang::SpirGen::addLabelInstrBit(spir::BitEntity labelBit, BitSrcLoc srcLoc) {
+  // This method adds a label instruction as a BitInsn to the current Bit
+  // statement stream.
+  BitInsn *insn = new BitInsn();
+  insn->set_ikind(K_IK::ILABEL);     // Set instruction kind to LABEL
+  insn->set_loc_line(srcLoc.line()); // Set source location line
+  insn->set_loc_col(srcLoc.col());   // Set source location column
+
+  spir::BitExpr *bExpr = createBitExpr(labelBit); // Create label bit expression
+  insn->set_allocated_expr1(bExpr);         // Attach label to the instruction
+
+  stu.addStmtBit(insn); // Add the BitInsn to the bit statement stream
+} // addLabelInstrBit()
+
+void slang::SpirGen::addLabelInstr(std::string label) {
+  std::stringstream ss;
+  ss << "instr.LabelI(\"" << label << "\")";
+  stu.addStmt(ss.str());
+}
+
+void slang::SpirGen::addLabelInstrBit(spir::BitEntity label) {
+  BitInsn *insn = new BitInsn();
+  insn->set_ikind(K_IK::ILABEL);
+  insn->set_loc_line(label.line());
+  insn->set_loc_col(label.col());
+  spir::BitExpr *bExpr = createBitExpr(label);
+  insn->set_allocated_expr1(bExpr);
+  stu.addStmtBit(insn);
+}
+
+// Create BitEntityInfo for the label, saves it and return its spir::BitEntity.
+// FIXME: use same label id within a function (use a map for each function).
+spir::BitEntity slang::SpirGen::createLabelBit(std::string name, BitSrcLoc srcLoc) {
+  // Step 1: Create a new BitEntityInfo for the label.
+  spir::BitEntityInfo labelInfo;
+  // Generate a unique entity id for the label (using stu's unique id scheme).
+  uint64_t eid = stu.nextUniqueId();
+  labelInfo.set_eid(eid);
+  labelInfo.set_ekind(spir::K_EK::ELABEL);
+  // Set the label's name as strVal, and source location.
+  labelInfo.set_strval(name);
+  labelInfo.set_loc_line(srcLoc.line());
+  labelInfo.set_loc_col(srcLoc.col());
+
+  // Step 2: Save this spir::BitEntityInfo (assuming stu.addBitEntity is the right
+  // owner).
+  stu.bittu.mutable_entityinfo()->emplace(eid, labelInfo);
+
+  // Step 3: Return the label's eid as the "address".
+  spir::BitEntity be;
+  be.set_eid(eid);
+  be.set_line(srcLoc.line());
+  be.set_col(srcLoc.col());
+  return eid;
+}
+
+void slang::SpirGen::addCondInstr(std::string expr, std::string trueLabel,
+                                  std::string falseLabel, std::string locStr) {
+  std::stringstream ss;
+  ss << "instr.CondI(" << expr;
+  ss << ", \"" << trueLabel << "\"";
+  ss << ", \"" << falseLabel << "\"";
+  ss << ", " << locStr << ")";
+  stu.addStmt(ss.str());
+}
+
+void slang::SpirGen::addCondInstrBit(SlangBitExpr expr, spir::BitEntity trueLabel,
+                                     spir::BitEntity falseLabel, BitSrcLoc srcLoc) {
+  BitInsn *insn = new BitInsn();
+  insn->set_ikind(K_IK::ICOND);
+  insn->set_allocated_expr1(expr.cloneBitExpr());
+
+  // Create an expression with true and false labels.
+  // Set the true label as operand1 and the false label as operand2.
+  spir::BitExpr *bExpr = createBitExpr(K_XK::XVAL, trueLabel, falseLabel, srcLoc);
+
+  insn->set_allocated_expr2(bExpr); // `delete bExpr;` not required
+  insn->set_loc_line(srcLoc.line());
+  insn->set_loc_col(srcLoc.col());
+
+  stu.addStmtBit(insn);
+}
+
+void slang::SpirGen::addAssignInstr(SlangExpr &lhs, SlangExpr rhs,
+                                    std::string locStr) {
+  std::stringstream ss;
+  if (lhs.compound && rhs.compound) {
+    rhs = convertToTmp(rhs); // staticLocal init will not generate tmp
+  }
+  ss << "instr.AssignI(" << lhs.expr;
+  ss << ", " << rhs.expr << ", " << locStr << ")";
+  stu.addStmt(ss.str());
+}
+
+void slang::SpirGen::addAssignBitInstr(SlangBitExpr lhs, SlangBitExpr rhs) {
+  bool tmpRhs = false;
+  // STEP 1: Make sure it remains a 3-address-code assignment (i.e. only one
+  // op).
+  if (lhs.compund && rhs.compund) {
+    rhs = convertToTmpBitExpr(rhs);
+    tmpRhs = true;
   }
 
-  void addGotoInstr(std::string label) {
-    std::stringstream ss;
-    ss << "instr.GotoI(\"" << label << "\")";
-    stu.addStmt(ss.str());
+  // STEP 2: Set the type of assignment instruction.
+  BitInsn *bitInsn = new BitInsn();
+  if (lhs.compound) {
+    bitInsn->set_ikind(K_IK::IASGN_LHS_OP);
+  } else if (rhs.compund) {
+    if (isBitExprCall(rhs.bitExpr)) {
+      bitInsn->set_ikind(K_IK::IASGN_CALL);
+    } else {
+      bitInsn->set_ikind(K_IK::IASGN_RHS_OP);
+    }
+  } else {
+    bitInsn->set_ikind(K_IK::IASGN_SIMPLE);
   }
 
-  void addLabelInstr(std::string label) {
-    std::stringstream ss;
-    ss << "instr.LabelI(\"" << label << "\")";
-    stu.addStmt(ss.str());
+  // STEP 3: Set the lhs, rhs and location.
+  bitInsn->set_allocated_lhs(lhs.cloneBitExpr());
+  bitInsn->set_allocated_rhs(rhs.cloneBitExpr());
+  bitInsn->set_loc_line(lhs.bitExpr->loc_line());
+  bitInsn->set_loc_col(lhs.bitExpr->loc_col());
+  if (tmpRhs) {
+    // This rhs is a temporary created in this function,
+    // hence we know there is no other use, and we can delete the object.
+    rhs.deleteBitExpr();
   }
+  stu.addStmtBit(bitInsn);
+} // addAssignBitInstr()
 
-  void addCondInstr(std::string expr,
-      std::string trueLabel, std::string falseLabel, std::string locStr) {
-    std::stringstream ss;
-    ss << "instr.CondI(" << expr;
-    ss << ", \"" << trueLabel << "\"";
-    ss << ", \"" << falseLabel << "\"";
+bool slang::SpirGen::isBitExprCall(spir::BitExpr *be) {
+  return be->xkind() == K_XK::XCALL || be->xkind() == K_XK::XCALL_0;
+}
+
+bool slang::SpirGen::isBitExprCompound(spir::BitExpr *be) {
+  if (be->xkind() == K_XK::XVAL) {
+    return false;
+  } else {
+    return true;
+  }
+}
+
+// Note: unlike createBinaryExpr, createUnaryExpr doesn't convert its expr to
+// tmp expr.
+SlangExpr slang::SpirGen::createUnaryExpr(std::string op, SlangExpr expr,
+                                          std::string locStr, QualType qt) {
+  SlangExpr unaryExpr;
+
+  std::stringstream ss;
+
+  if (op == "op.UO_ADDROF") {
+    ss << "expr.AddrOfE(";
+    ss << expr.expr;
     ss << ", " << locStr << ")";
-    stu.addStmt(ss.str());
-  }
-
-  void addAssignInstr(SlangExpr& lhs, SlangExpr rhs, std::string locStr) {
-    std::stringstream ss;
-    if (lhs.compound && rhs.compound) {
-      rhs = convertToTmp(rhs); // staticLocal init will not generate tmp
-    }
-    ss << "instr.AssignI(" << lhs.expr;
-    ss << ", " << rhs.expr << ", " << locStr << ")";
-    stu.addStmt(ss.str());
-  }
-
-  void addAssignBitInstr(BitExpr* lhs, BitExpr* rhs) {
-    BitInsn* bitInsn = new BitInsn();
-    if (isBitExprCompound(lhs) && isBitExprCompound(rhs)) {
-      rhs = convertEntityToBitExpr(convertToTmpBit(rhs));
-    }
-    if (isBitExprCompundBit(lhs)) {
-      bitInsn->set_ikind(K_IK::IASGN_LHS_OP)
-    } else if (isBitExprCompound(rhs)) {
-      if (isBitExprCall(rhs)) {
-        bitInsn->set_ikind(K_IK::IASGN_CALL)
-      } else {
-        bitInsn->set_ikind(K_IK::IASGN_RHS_OP)
-      }
-    } else {
-      bitInsn->set_ikind(K_IK::IASGN_SIMPLE)
-    }
-    bitInsn->set_allocated_lhs(lhs);
-    bitInsn->set_allocated_rhs(rhs);
-    bitInsn->set_allocated_loc(new BitSrcLoc(lhs->loc()));
-    stu.addStmtBit(bitInsn);
-  } // addAssignBitInstr()
-
-  bool isBitExprCall(BitExpr* be) {
-    return be->xkind() == K_XK::XCALL || be->xkind() == K_XK::XCALL_0;
-  }
-  
-  bool isBitExprCompound(BitExpr* be) {
-    if (be->xkind() == K_XK::XVAL) {
-      return false;
-    } else {
-      return true;
-    }
-  }
-
-  // Note: unlike createBinaryExpr, createUnaryExpr doesn't convert its expr to tmp expr.
-  SlangExpr createUnaryExpr(std::string op,
-      SlangExpr expr, std::string locStr, QualType qt) {
-    SlangExpr unaryExpr;
-
-    std::stringstream ss;
-
-    if (op == "op.UO_ADDROF") {
-      ss << "expr.AddrOfE(";
-      ss << expr.expr;
-      ss << ", " << locStr << ")";
-    } else if (op == "op.UO_DEREF") {
-      ss << "expr.DerefE(";
-      ss << expr.expr;
-      ss << ", " << locStr << ")";
-    } else {
-      ss << "expr.UnaryE(" << op;
-      ss << ", " << expr.expr;
-      ss << ", " << locStr << ")";
-    }
-
-    unaryExpr.expr = ss.str();
-    unaryExpr.qualType = qt;
-    unaryExpr.compound = true;
-    unaryExpr.locStr = locStr;
-
-    return unaryExpr;
-  } // createUnaryExpr()
-
-  SlangBitExpr createUnaryBitExpr(BitEntity* opr, K_XK op, QualType qt) {
-    SlangBitExpr unaryExpr;
-    unaryExpr.bitExpr = new BitExpr();
-    unaryExpr.bitExpr->set_xkind(op);
-    unaryExpr.bitExpr->set_allocated_opr1(opr);
-    unaryExpr.bitExpr->set_allocated_loc(new BitSrcLoc(opr->loc()));
-    unaryExpr->qualType = qt;
-    return unaryExpr;
-  } // createUnaryBitExpr()
-
-  SlangExpr createBinaryExpr(SlangExpr lhsExpr,
-      std::string op, SlangExpr rhsExpr, std::string locStr,
-      QualType qt) {
-    SlangExpr binaryExpr;
-
-    lhsExpr = convertToTmp(lhsExpr);
-    rhsExpr = convertToTmp(rhsExpr);
-
-    std::stringstream ss;
-    ss << "expr.BinaryE(" << lhsExpr.expr;
-    ss << ", " << op;
-    ss << ", " << rhsExpr.expr;
+  } else if (op == "op.UO_DEREF") {
+    ss << "expr.DerefE(";
+    ss << expr.expr;
     ss << ", " << locStr << ")";
+  } else {
+    ss << "expr.UnaryE(" << op;
+    ss << ", " << expr.expr;
+    ss << ", " << locStr << ")";
+  }
 
-    binaryExpr.expr = ss.str();
-    binaryExpr.qualType = qt;
-    binaryExpr.compound = true;
-    binaryExpr.locStr = locStr;
+  unaryExpr.expr = ss.str();
+  unaryExpr.qualType = qt;
+  unaryExpr.compound = true;
+  unaryExpr.locStr = locStr;
 
-    return binaryExpr;
-  } // createBinaryExpr()
+  return unaryExpr;
+} // createUnaryExpr()
 
-  SlangBitExpr createBinaryBitExpr(BitEntity* opr1, K_XK op, BitEntity* opr2, QualType qt) {
-    SlangBitExpr binaryExpr;
-    binaryExpr.bitExpr = new BitExpr();
-    binaryExpr.bitExpr->set_xkind(op);
-    if (op == XCAST) {
-      BitDataType* bitDataType = convertClangTypeBit(qt);
-    }
-    binaryExpr.bitExpr->set_allocated_opr1(opr1);
-    binaryExpr.bitExpr->set_allocated_opr2(opr2);
-    binaryExpr.bitExpr->set_allocated_loc(new BitSrcLoc(opr1->loc()));
-    binaryExpr.qualType = qt;
-    return binaryExpr;
-  } // createBinaryBitExpr()
+// Note: unlike createBinaryExpr, createUnaryExpr doesn't convert its expr to
+// tmp expr. It reuses the BitExpr object, and returns the same object.
+SlangBitExpr slang::SpirGen::createUnaryBitExpr(K_XK opKind, SlangBitExpr expr,
+                                                slang::SrcLoc srcLoc,
+                                                QualType qt) {
+  SlangBitExpr unaryExpr;
 
-  // If the expression is the child of an implicit cast,
-  // the type of implicit cast is returned, else the given qt is returned
-  QualType getImplicitType(const Stmt *stmt, QualType qt) {
-    const auto &parents = Ctx->getParents(*stmt);
-    if (!parents.empty()) {
-      const Stmt *stmt1 = parents[0].get<Stmt>();
-      if (stmt1) {
-        switch (stmt1->getStmtClass()) {
-          default:
-            return qt; // just return the given type
+  // Assumes that the oprnd1 is already set correctly.
+  expr.bitExpr->set_xkind(opKind);
+  expr.bitExpr->set_loc_line(srcLoc.line);
+  expr.bitExpr->set_loc_col(srcLoc.col);
 
-          case Stmt::ImplicitCastExprClass: {
-            const ImplicitCastExpr *iCast = cast<ImplicitCastExpr>(stmt1);
-            return iCast->getType();
-          } // case
-        } // switch
-      } // if
+  expr.qualType = qt;
+  expr.compound = opKind == K_XK::XVAL ? false : true;
+
+  return expr;
+} // createUnaryBitExpr()
+
+SlangBitExpr slang::SpirGen::createUnaryBitExpr(spir::BitEntity *opr, K_XK op,
+                                                QualType qt) {
+  SlangBitExpr unaryExpr;
+  spir::BitEntity *bitEntity = opr->clone();
+  bitEntity->set_allocated_loc(::spir::BitSrcLoc * loc) unaryExpr.bitExpr =
+      new spir::BitExpr();
+  unaryExpr.bitExpr->set_xkind(op);
+  unaryExpr.bitExpr->set_allocated_opr1(opr->clone());
+  unaryExpr.bitExpr->set_allocated_loc(new BitSrcLoc(opr->loc()));
+  unaryExpr->qualType = qt;
+  return unaryExpr;
+} // createUnaryBitExpr()
+
+SlangExpr slang::SpirGen::createBinaryExpr(SlangExpr lhsExpr, std::string op,
+                                           SlangExpr rhsExpr,
+                                           std::string locStr, QualType qt) {
+  SlangExpr binaryExpr;
+
+  lhsExpr = convertToTmp(lhsExpr);
+  rhsExpr = convertToTmp(rhsExpr);
+
+  std::stringstream ss;
+  ss << "expr.BinaryE(" << lhsExpr.expr;
+  ss << ", " << op;
+  ss << ", " << rhsExpr.expr;
+  ss << ", " << locStr << ")";
+
+  binaryExpr.expr = ss.str();
+  binaryExpr.qualType = qt;
+  binaryExpr.compound = true;
+  binaryExpr.locStr = locStr;
+
+  return binaryExpr;
+} // createBinaryExpr()
+
+SlangBitExpr slang::SpirGen::createBinaryBitExpr(SlangBitExpr opr1, K_XK op,
+                                                 SlangBitExpr opr2,
+                                                 BitSrcLoc srcLoc,
+                                                 QualType qt) {
+  // Convert the operands to simple expression (if they are not)
+  SlangBitExpr leftOpr = convertToTmpBitExpr(opr1);
+  SlangBitExpr rightOpr = convertToTmpBitExpr(opr2);
+
+  SlangBitExpr sbExpr;
+  sbExpr.qualType = qt;
+  sbExpr.bitExpr = new spir::BitExpr();
+
+  // Set operator
+  sbExpr.bitExpr->set_xkind(op);
+
+  // Set left operand and source location
+  sbExpr.bitExpr->set_oprnd1eid(leftOpr.bitExpr->eid());
+  sbExpr.bitExpr->set_oprnd1_line(leftOpr.bitExpr->oprnd1_line());
+  sbExpr.bitExpr->set_oprnd1_col(leftOpr.bitExpr->oprnd1_col());
+
+  // Set right operand and source location
+  sbExpr.bitExpr->set_oprnd2eid(rightOpr.bitExpr->eid());
+  sbExpr.bitExpr->set_oprnd2_line(rightOpr.bitExpr->oprnd1_line());
+  sbExpr.bitExpr->set_oprnd2_col(rightOpr.bitExpr->oprnd1_col());
+
+  // Set source location
+  sbExpr.bitExpr->set_loc_line(srcLoc.line);
+  sbExpr.bitExpr->set_loc_col(srcLoc.col);
+
+  return binaryExpr;
+} // createBinaryBitExpr()
+
+// If the expression is the child of an implicit cast,
+// the type of implicit cast is returned, else the given qt is returned
+QualType slang::SpirGen::getImplicitType(const Stmt *stmt, QualType qt) {
+  const auto &parents = Ctx->getParents(*stmt);
+  if (!parents.empty()) {
+    const Stmt *stmt1 = parents[0].get<Stmt>();
+    if (stmt1) {
+      switch (stmt1->getStmtClass()) {
+      default:
+        return qt; // just return the given type
+
+      case Stmt::ImplicitCastExprClass: {
+        const ImplicitCastExpr *iCast = cast<ImplicitCastExpr>(stmt1);
+        return iCast->getType();
+      } // case
+      } // switch
     } // if
-    return qt; // just return the given type
-  } // getImplicitType()
+  } // if
+  return qt; // just return the given type
+} // getImplicitType()
 
-  // If an element is top level, return true.
-  // e.g. in statement "x = y = z = 10;" the first "=" from left is top level.
-  bool isTopLevel(const Stmt *stmt) {
-    const auto &parents = Ctx->getParents(*stmt);
-    if (!parents.empty()) {
-      const Stmt *stmt1 = parents[0].get<Stmt>();
-      if (stmt1) {
-        switch (stmt1->getStmtClass()) {
-          default:
-            return false;
-
-          case Stmt::CaseStmtClass:
-          case Stmt::DefaultStmtClass:
-          case Stmt::CompoundStmtClass: {
-            return true; // top level
-          }
-
-          case Stmt::ForStmtClass: {
-            auto body = (cast<ForStmt>(stmt1))->getBody();
-            return ((uint64_t)body == (uint64_t)stmt);
-          }
-
-          case Stmt::DoStmtClass: {
-            auto body = (cast<DoStmt>(stmt1))->getBody();
-            return ((uint64_t)body == (uint64_t)stmt);
-          }
-
-          case Stmt::WhileStmtClass: {
-            auto body = (cast<WhileStmt>(stmt1))->getBody();
-            return ((uint64_t)body == (uint64_t)stmt);
-          }
-          case Stmt::IfStmtClass: {
-            auto then_ = (cast<IfStmt>(stmt1))->getThen();
-            auto else_ = (cast<IfStmt>(stmt1))->getElse();
-            return ((uint64_t)then_ == (uint64_t)stmt || (uint64_t)else_ == (uint64_t)stmt);
-          }
-        }
-      } else {
+// If an element is top level, return true.
+// e.g. in statement "x = y = z = 10;" the first "=" from left is top level.
+bool slang::SpirGen::isTopLevel(const Stmt *stmt) {
+  const auto &parents = Ctx->getParents(*stmt);
+  if (!parents.empty()) {
+    const Stmt *stmt1 = parents[0].get<Stmt>();
+    if (stmt1) {
+      switch (stmt1->getStmtClass()) {
+      default:
         return false;
+
+      case Stmt::CaseStmtClass:
+      case Stmt::DefaultStmtClass:
+      case Stmt::CompoundStmtClass: {
+        return true; // top level
+      }
+
+      case Stmt::ForStmtClass: {
+        auto body = (cast<ForStmt>(stmt1))->getBody();
+        return ((uint64_t)body == (uint64_t)stmt);
+      }
+
+      case Stmt::DoStmtClass: {
+        auto body = (cast<DoStmt>(stmt1))->getBody();
+        return ((uint64_t)body == (uint64_t)stmt);
+      }
+
+      case Stmt::WhileStmtClass: {
+        auto body = (cast<WhileStmt>(stmt1))->getBody();
+        return ((uint64_t)body == (uint64_t)stmt);
+      }
+      case Stmt::IfStmtClass: {
+        auto then_ = (cast<IfStmt>(stmt1))->getThen();
+        auto else_ = (cast<IfStmt>(stmt1))->getElse();
+        return ((uint64_t)then_ == (uint64_t)stmt ||
+                (uint64_t)else_ == (uint64_t)stmt);
+      }
       }
     } else {
-      return true; // top level
+      return false;
     }
-  } // isTopLevel()
-
-  SlangExpr addAndReturnSizeOfInstrExpr(SlangExpr tmpElementVarArr) {
-    std::stringstream ss;
-
-    SlangExpr tmpExpr = convertToTmp(tmpElementVarArr);
-
-    SlangExpr sizeOfExpr;
-    ss << "expr.SizeOfE(" << tmpExpr.expr;
-    ss << ", " << tmpElementVarArr.locStr << ")";
-    sizeOfExpr.expr = ss.str();
-    sizeOfExpr.qualType = Ctx->UnsignedIntTy;
-    sizeOfExpr.compound = true;
-    sizeOfExpr.locStr = tmpElementVarArr.locStr;
-
-    SlangExpr slangExpr = convertToTmp(sizeOfExpr);
-
-    return slangExpr;
+  } else {
+    return true; // top level
   }
+} // isTopLevel()
 
-  // BOUND END  : helper_routines
-}; // class SpirGenerator
-} // namespace spir
+SlangExpr
+slang::SpirGen::addAndReturnSizeOfInstrExpr(SlangExpr tmpElementVarArr) {
+  std::stringstream ss;
+
+  SlangExpr tmpExpr = convertToTmp(tmpElementVarArr);
+
+  SlangExpr sizeOfExpr;
+  ss << "expr.SizeOfE(" << tmpExpr.expr;
+  ss << ", " << tmpElementVarArr.locStr << ")";
+  sizeOfExpr.expr = ss.str();
+  sizeOfExpr.qualType = Ctx->UnsignedIntTy;
+  sizeOfExpr.compound = true;
+  sizeOfExpr.locStr = tmpElementVarArr.locStr;
+
+  SlangExpr slangExpr = convertToTmp(sizeOfExpr);
+
+  return slangExpr;
+}
+
+// BOUND END  : helper_routines
 
 ////////////////////////////////////////////////////////////////
 // BOUND START: the_ast_visitors
 ////////////////////////////////////////////////////////////////
 
-class FunctionVisitor : public RecursiveASTVisitor<FunctionVisitor> {
+namespace slang {
+
+class FuncVisitor : public RecursiveASTVisitor<FuncVisitor> {
 public:
-  explicit FunctionVisitor(spir::SpirGenerator *irgen) : irgen(irgen) {
+  explicit FuncVisitor(slang::SpirGen *irgen) : irgen(irgen) {
     // Initialize any other members here if needed
   }
 
@@ -4100,17 +4837,18 @@ public:
   }
 
 private:
-  spir::SpirGenerator *irgen;
+  // This FuncVisitor::irgen and ASTConsumer::irgen are aliases.
+  slang::SpirGen *irgen;
 };
 
-class SpanASTConsumer : public ASTConsumer {
+class ASTConsumer : public ASTConsumer {
 public:
   // Main Entry point for the ASTConsumer (entrypoint for the Slang tool)
   void HandleTranslationUnit(ASTContext &Context) override {
-    this->irgen = new spir::SpirGenerator(&Context);
-    Visitor = new FunctionVisitor(irgen);
+    this->irgen = new slang::SpirGen(&Context);
+    Visitor = new FuncVisitor(irgen);
 
-    llvm::outs() << "SpanASTConsumer: \n";
+    llvm::outs() << "slang::ASTConsumer: \n";
 
     // Initialize the generator: TU name, out file name etc.
     irgen->slangInit(Context.getTranslationUnitDecl());
@@ -4119,24 +4857,27 @@ public:
     irgen->handleGlobalInits(Context.getTranslationUnitDecl());
 
     // Handle function declarations and definitions
-    //delit Visitor->TraverseDecl(Context.getTranslationUnitDecl());
+    // For every function declaration it visits FuncVisitor::VisitFunctionDecl()
+    // delit Visitor->TraverseDecl(Context.getTranslationUnitDecl());
 
     // Perform final actions
     irgen->checkEndOfTranslationUnit(Context.getTranslationUnitDecl());
   }
 
 private:
-  FunctionVisitor *Visitor;
-  spir::SpirGenerator *irgen;
+  FuncVisitor *Visitor;
+  slang::SpirGen *irgen;
 };
 
-class SpanASTAction : public ASTFrontendAction {
+class ASTAction : public ASTFrontendAction {
 public:
   std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &CI,
                                                  StringRef file) override {
-    return std::make_unique<SpanASTConsumer>();
+    return std::make_unique<ASTConsumer>();
   }
 };
+
+} // namespace slang
 
 ////////////////////////////////////////////////////////////////
 // BOUND END: the_ast_visitors
@@ -4153,24 +4894,26 @@ int main(int argc, const char **argv) {
   CommonOptionsParser &OptionsParser = ExpectedParser.get();
 
   // Print the source files we're processing
-  for (const auto& sourcePath : OptionsParser.getSourcePathList()) {
+  for (const auto &sourcePath : OptionsParser.getSourcePathList()) {
     llvm::outs() << "Processing source file: " << sourcePath << "\n";
   }
-  
+
   // If using a compilation database, also print compilation info
   if (!OptionsParser.getCompilations().getAllCompileCommands().empty()) {
-    llvm::outs() << "Using compilation database with "
-                << OptionsParser.getCompilations().getAllCompileCommands().size()
-                << " entries\n";
-                
+    llvm::outs()
+        << "Using compilation database with "
+        << OptionsParser.getCompilations().getAllCompileCommands().size()
+        << " entries\n";
+
     // Print command for each source file we're processing
-    for (const auto& sourcePath : OptionsParser.getSourcePathList()) {
-      auto compileCommands = OptionsParser.getCompilations().getCompileCommands(sourcePath);
-      for (const auto& command : compileCommands) {
+    for (const auto &sourcePath : OptionsParser.getSourcePathList()) {
+      auto compileCommands =
+          OptionsParser.getCompilations().getCompileCommands(sourcePath);
+      for (const auto &command : compileCommands) {
         llvm::outs() << "  File: " << command.Filename << "\n";
         llvm::outs() << "  Directory: " << command.Directory << "\n";
         llvm::outs() << "  Command: ";
-        for (const auto& arg : command.CommandLine) {
+        for (const auto &arg : command.CommandLine) {
           llvm::outs() << arg << " ";
         }
         llvm::outs() << "\n";
@@ -4185,7 +4928,7 @@ int main(int argc, const char **argv) {
                  OptionsParser.getSourcePathList());
 
   // Run our FrontendAction
-  int success = Tool.run(newFrontendActionFactory<SpanASTAction>().get());
+  int success = Tool.run(newFrontendActionFactory<slang::ASTAction>().get());
 
   google::protobuf::ShutdownProtobufLibrary();
   return success;
