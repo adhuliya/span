@@ -59,6 +59,7 @@ PROTOBUF_CONSTEXPR BitEntityInfo::BitEntityInfo(
   , /*decltype(_impl_.ekind_)*/0
   , /*decltype(_impl_.vkind_)*/0
   , /*decltype(_impl_.anonymous_)*/false
+  , /*decltype(_impl_.member_access_)*/false
   , /*decltype(_impl_.qtype_)*/0u
   , /*decltype(_impl_.parenteid_)*/uint64_t{0u}
   , /*decltype(_impl_.datatypeeid_)*/uint64_t{0u}
@@ -271,6 +272,7 @@ const uint32_t TableStruct_spir_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(pro
   PROTOBUF_FIELD_OFFSET(::spir::BitEntityInfo, _impl_.ekind_),
   PROTOBUF_FIELD_OFFSET(::spir::BitEntityInfo, _impl_.vkind_),
   PROTOBUF_FIELD_OFFSET(::spir::BitEntityInfo, _impl_.anonymous_),
+  PROTOBUF_FIELD_OFFSET(::spir::BitEntityInfo, _impl_.member_access_),
   PROTOBUF_FIELD_OFFSET(::spir::BitEntityInfo, _impl_.qtype_),
   PROTOBUF_FIELD_OFFSET(::spir::BitEntityInfo, _impl_.parenteid_),
   PROTOBUF_FIELD_OFFSET(::spir::BitEntityInfo, _impl_.datatypeeid_),
@@ -288,9 +290,10 @@ const uint32_t TableStruct_spir_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(pro
   5,
   6,
   7,
-  0,
   8,
+  0,
   9,
+  10,
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::spir::BitSrcLoc, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -423,16 +426,16 @@ const uint32_t TableStruct_spir_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(pro
 };
 static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, 20, -1, sizeof(::spir::BitDataType)},
-  { 34, 52, -1, sizeof(::spir::BitEntityInfo)},
-  { 64, -1, -1, sizeof(::spir::BitSrcLoc)},
-  { 72, -1, -1, sizeof(::spir::BitEntity)},
-  { 81, 99, -1, sizeof(::spir::BitExpr)},
-  { 111, 122, -1, sizeof(::spir::BitInsn)},
-  { 127, 138, -1, sizeof(::spir::BitFunc)},
-  { 143, 151, -1, sizeof(::spir::BitTU_NamesToIdsEntry_DoNotUse)},
-  { 153, 161, -1, sizeof(::spir::BitTU_DataTypesEntry_DoNotUse)},
-  { 163, 171, -1, sizeof(::spir::BitTU_EntityInfoEntry_DoNotUse)},
-  { 173, 186, -1, sizeof(::spir::BitTU)},
+  { 34, 53, -1, sizeof(::spir::BitEntityInfo)},
+  { 66, -1, -1, sizeof(::spir::BitSrcLoc)},
+  { 74, -1, -1, sizeof(::spir::BitEntity)},
+  { 83, 101, -1, sizeof(::spir::BitExpr)},
+  { 113, 124, -1, sizeof(::spir::BitInsn)},
+  { 129, 140, -1, sizeof(::spir::BitFunc)},
+  { 145, 153, -1, sizeof(::spir::BitTU_NamesToIdsEntry_DoNotUse)},
+  { 155, 163, -1, sizeof(::spir::BitTU_DataTypesEntry_DoNotUse)},
+  { 165, 173, -1, sizeof(::spir::BitTU_EntityInfoEntry_DoNotUse)},
+  { 175, 188, -1, sizeof(::spir::BitTU)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -456,105 +459,107 @@ const char descriptor_table_protodef_spir_2eproto[] PROTOBUF_SECTION_VARIABLE(pr
   "H\002\210\001\001\022\022\n\005align\030\006 \001(\rH\003\210\001\001\022\027\n\nsubTypeEid\030"
   "\007 \001(\004H\004\210\001\001\022\025\n\010typeName\030\010 \001(\tH\005\210\001\001\022\026\n\tano"
   "nymous\030\t \001(\010H\006\210\001\001\022\032\n\rfuncPrototype\030\n \001(\010"
-  "H\007\210\001\001\022\025\n\010variadic\030\r \001(\010H\010\210\001\001\022\016\n\006fopIds\030\013"
-  " \003(\004\022\023\n\013fopTypeEids\030\014 \003(\004\022\025\n\010loc_line\030\016 "
+  "H\007\210\001\001\022\025\n\010variadic\030\013 \001(\010H\010\210\001\001\022\016\n\006fopIds\030\014"
+  " \003(\004\022\023\n\013fopTypeEids\030\r \003(\004\022\025\n\010loc_line\030\016 "
   "\001(\rH\t\210\001\001\022\024\n\007loc_col\030\017 \001(\rH\n\210\001\001B\t\n\007_typeI"
   "dB\r\n\013_attributesB\006\n\004_lenB\010\n\006_alignB\r\n\013_s"
   "ubTypeEidB\013\n\t_typeNameB\014\n\n_anonymousB\020\n\016"
   "_funcPrototypeB\013\n\t_variadicB\013\n\t_loc_line"
-  "B\n\n\010_loc_col\"\235\003\n\rBitEntityInfo\022\013\n\003eid\030\001 "
+  "B\n\n\010_loc_col\"\313\003\n\rBitEntityInfo\022\013\n\003eid\030\001 "
   "\001(\004\022\031\n\005ekind\030\002 \001(\0162\n.spir.K_EK\022\036\n\005vkind\030"
   "\003 \001(\0162\n.spir.K_VKH\000\210\001\001\022\026\n\tanonymous\030\004 \001("
-  "\010H\001\210\001\001\022\022\n\005qtype\030\005 \001(\rH\002\210\001\001\022\026\n\tparentEid\030"
-  "\006 \001(\004H\003\210\001\001\022\030\n\013dataTypeEid\030\007 \001(\004H\004\210\001\001\022\023\n\006"
-  "lowVal\030\010 \001(\004H\005\210\001\001\022\024\n\007highVal\030\t \001(\004H\006\210\001\001\022"
-  "\023\n\006strVal\030\n \001(\tH\007\210\001\001\022\025\n\010loc_line\030\013 \001(\rH\010"
-  "\210\001\001\022\024\n\007loc_col\030\014 \001(\rH\t\210\001\001B\010\n\006_vkindB\014\n\n_"
-  "anonymousB\010\n\006_qtypeB\014\n\n_parentEidB\016\n\014_da"
-  "taTypeEidB\t\n\007_lowValB\n\n\010_highValB\t\n\007_str"
-  "ValB\013\n\t_loc_lineB\n\n\010_loc_col\"&\n\tBitSrcLo"
-  "c\022\014\n\004line\030\001 \001(\r\022\013\n\003col\030\002 \001(\r\"3\n\tBitEntit"
-  "y\022\013\n\003eid\030\001 \001(\004\022\014\n\004line\030\002 \001(\r\022\013\n\003col\030\003 \001("
-  "\r\"\223\003\n\007BitExpr\022\031\n\005xkind\030\001 \001(\0162\n.spir.K_XK"
-  "\022\025\n\010loc_line\030\002 \001(\rH\000\210\001\001\022\024\n\007loc_col\030\003 \001(\r"
-  "H\001\210\001\001\022\026\n\toprnd1eid\030\004 \001(\004H\002\210\001\001\022\030\n\013oprnd1_"
-  "line\030\005 \001(\rH\003\210\001\001\022\027\n\noprnd1_col\030\006 \001(\rH\004\210\001\001"
-  "\022\026\n\toprnd2eid\030\007 \001(\004H\005\210\001\001\022\030\n\013oprnd2_line\030"
-  "\010 \001(\rH\006\210\001\001\022\027\n\noprnd2_col\030\t \001(\rH\007\210\001\001\022\016\n\006o"
-  "prnds\030\n \003(\004\022\023\n\013oprnds_line\030\013 \003(\r\022\022\n\noprn"
-  "ds_col\030\014 \003(\rB\013\n\t_loc_lineB\n\n\010_loc_colB\014\n"
-  "\n_oprnd1eidB\016\n\014_oprnd1_lineB\r\n\013_oprnd1_c"
-  "olB\014\n\n_oprnd2eidB\016\n\014_oprnd2_lineB\r\n\013_opr"
-  "nd2_col\"\304\001\n\007BitInsn\022\031\n\005ikind\030\001 \001(\0162\n.spi"
-  "r.K_IK\022!\n\005expr1\030\002 \001(\0132\r.spir.BitExprH\000\210\001"
-  "\001\022!\n\005expr2\030\003 \001(\0132\r.spir.BitExprH\001\210\001\001\022\025\n\010"
-  "loc_line\030\004 \001(\rH\002\210\001\001\022\024\n\007loc_col\030\005 \001(\rH\003\210\001"
-  "\001B\010\n\006_expr1B\010\n\006_expr2B\013\n\t_loc_lineB\n\n\010_l"
-  "oc_col\"\220\001\n\007BitFunc\022\013\n\003fid\030\001 \001(\004\022\r\n\005fname"
-  "\030\002 \001(\t\022\023\n\013is_variadic\030\003 \001(\010\022\037\n\022calling_c"
-  "onvention\030\004 \001(\tH\000\210\001\001\022\034\n\005insns\030\005 \003(\0132\r.sp"
-  "ir.BitInsnB\025\n\023_calling_convention\"\314\003\n\005Bi"
-  "tTU\022\016\n\006tuName\030\001 \001(\t\022\024\n\007absPath\030\002 \001(\tH\000\210\001"
-  "\001\022\023\n\006origin\030\003 \001(\tH\001\210\001\001\022/\n\nnamesToIds\030\004 \003"
-  "(\0132\033.spir.BitTU.NamesToIdsEntry\022-\n\tdataT"
-  "ypes\030\005 \003(\0132\032.spir.BitTU.DataTypesEntry\022/"
-  "\n\nentityInfo\030\006 \003(\0132\033.spir.BitTU.EntityIn"
-  "foEntry\022 \n\tfunctions\030\007 \003(\0132\r.spir.BitFun"
-  "c\0321\n\017NamesToIdsEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005val"
-  "ue\030\002 \001(\004:\0028\001\032C\n\016DataTypesEntry\022\013\n\003key\030\001 "
-  "\001(\004\022 \n\005value\030\002 \001(\0132\021.spir.BitDataType:\0028"
-  "\001\032F\n\017EntityInfoEntry\022\013\n\003key\030\001 \001(\004\022\"\n\005val"
-  "ue\030\002 \001(\0132\023.spir.BitEntityInfo:\0028\001B\n\n\010_ab"
-  "sPathB\t\n\007_origin*\331\002\n\004K_EK\022\010\n\004ENIL\020\000\022\r\n\tE"
-  "VAR_GLBL\020\001\022\r\n\tEVAR_LOCL\020\002\022\021\n\rEVAR_LOCL_A"
-  "RG\020\003\022\024\n\020EVAR_LOCL_STATIC\020\004\022\021\n\rEVAR_LOCL_"
-  "TMP\020\005\022\021\n\rEVAR_LOCL_SSA\020\006\022\023\n\017EVAR_LOCL_OT"
-  "HER\020\007\022\014\n\010ELIT_NUM\020\010\022\020\n\014ELIT_NUM_IMM\020\t\022\014\n"
-  "\010ELIT_STR\020\n\022\016\n\nEDATA_TYPE\020\013\022\t\n\005EFUNC\020\014\022\017"
-  "\n\013EFUNC_VARGS\020\r\022\n\n\006ELABEL\020\016\022\n\n\006EOTHER\020\017\022"
-  "\021\n\rERECORD_FIELD\020\020\022\t\n\005EINSN\020\021\022\007\n\003EBB\020\022\022\010"
-  "\n\004ECFG\020\023\022\n\n\006ESCOPE\020\024\022\007\n\003ETU\020\025\022\r\n\tESRC_FI"
-  "LE\020\026*\324\001\n\004K_IK\022\010\n\004INIL\020\000\022\010\n\004INOP\020\001\022\014\n\010IBA"
-  "RRIER\020\002\022\013\n\007ISELECT\020\003\022\016\n\nIASGN_SELF\020\004\022\020\n\014"
-  "IASGN_SIMPLE\020\005\022\020\n\014IASGN_RHS_OP\020\006\022\020\n\014IASG"
-  "N_LHS_OP\020\007\022\016\n\nIASGN_CALL\020\010\022\r\n\tIASGN_PHI\020"
-  "\t\022\t\n\005ICALL\020\n\022\t\n\005IGOTO\020\013\022\t\n\005ICOND\020\014\022\n\n\006IL"
-  "ABEL\020\r\022\013\n\007IRETURN\020\016*\202\003\n\004K_XK\022\010\n\004XNIL\020\000\022\010"
-  "\n\004XVAL\020\001\022\010\n\004XADD\020\002\022\010\n\004XSUB\020\003\022\010\n\004XMUL\020\004\022\010"
-  "\n\004XDIV\020\005\022\010\n\004XMOD\020\006\022\010\n\004XAND\020\007\022\007\n\003XOR\020\010\022\010\n"
-  "\004XXOR\020\t\022\010\n\004XSHL\020\n\022\010\n\004XSHR\020\013\022\t\n\005XSHRA\020\014\022\007"
-  "\n\003XEQ\020\r\022\007\n\003XNE\020\016\022\007\n\003XLT\020\017\022\007\n\003XGE\020\020\022\020\n\014XA"
-  "RRAY_INDEX\020\021\022\026\n\022XMEMBER_PTR_ACCESS\020\022\022\026\n\022"
-  "XMEMBER_PTR_ADDROF\020\023\022\t\n\005XCALL\020\024\022\013\n\007XCALL"
-  "_0\020\025\022\t\n\005XCAST\020\026\022\014\n\010XBIT_NOT\020\027\022\013\n\007XNEGATE"
-  "\020\030\022\010\n\004XNOT\020\031\022\n\n\006XDEREF\020\032\022\013\n\007XADDROF\020\033\022\013\n"
-  "\007XSIZEOF\020\034\022\014\n\010XALIGNOF\020\035\022\n\n\006XALLOC\020\036\022\n\n\006"
-  "XOTHER\020\037*\275\004\n\004K_VK\022\010\n\004TNIL\020\000\022\t\n\005TVOID\020\000\022\t"
-  "\n\005TCHAR\020\001\022\t\n\005TINT8\020\002\022\n\n\006TINT16\020\003\022\n\n\006TINT"
-  "32\020\004\022\n\n\006TINT64\020\005\022\n\n\006TUINT8\020\006\022\n\n\006TUCHAR\020\006"
-  "\022\013\n\007TUINT16\020\007\022\013\n\007TUINT32\020\010\022\013\n\007TUINT64\020\t\022"
-  "\013\n\007TCHAR16\020\007\022\n\n\006TWCHAR\020\010\022\013\n\007TCHAR32\020\010\022\013\n"
-  "\007TN_BITS\020\n\022\014\n\010TN_UBITS\020\013\022\t\n\005TBOOL\020\014\022\014\n\010T"
-  "FLOAT16\020\r\022\014\n\010TFLOAT32\020\016\022\n\n\006TFLOAT\020\016\022\014\n\010T"
-  "FLOAT64\020\017\022\013\n\007TDOUBLE\020\017\022\014\n\010TFLOAT80\020\020\022\020\n\014"
-  "TLONG_DOUBLE\020\020\022\020\n\014TPTR_TO_VOID\020\021\022\017\n\013TPTR"
-  "_TO_PTR\020\022\022\017\n\013TPTR_TO_ARR\020\023\022\020\n\014TPTR_TO_CH"
-  "AR\020\024\022\017\n\013TPTR_TO_INT\020\025\022\021\n\rTPTR_TO_FLOAT\020\026"
-  "\022\022\n\016TPTR_TO_RECORD\020\027\022\020\n\014TPTR_TO_FUNC\020\030\022\016"
-  "\n\nTARR_FIXED\020\031\022\021\n\rTARR_VARIABLE\020\032\022\020\n\014TAR"
-  "R_PARTIAL\020\033\022\n\n\006TUNION\020\034\022\013\n\007TSTRUCT\020\035\022\n\n\006"
-  "TCLASS\020\036\022\n\n\006TOTHER\020\037\032\002\020\001*\213\002\n\004K_QK\022\010\n\004QNI"
-  "L\020\000\022\n\n\006QCONST\020\001\022\017\n\013QCONST_DEST\020\002\022\020\n\014QLOC"
-  "L_STATIC\020\004\022\020\n\014QGLBL_STATIC\020\010\022\r\n\tQVOLATIL"
-  "E\020\020\022\t\n\005QWEAK\020 \022\021\n\rQTHREAD_LOCAL\020@\022\r\n\010QNO"
-  "_INIT\020\200\001\022\016\n\tQEXTERNAL\020\200\002\022\014\n\007QNO_DEF\020\200\004\022\016"
-  "\n\tQRESTRICT\020\200\010\022\014\n\007QINLINE\020\200\020\022\014\n\007QATOMIC\020"
-  "\200 \022\016\n\tQREGISTER\020\200@\022\024\n\016QRECORD_MEMBER\020\200\200\001"
-  "\022\014\n\006QOTHER\020\200\200\002B\010Z\006./spirb\006proto3"
+  "\010H\001\210\001\001\022\032\n\rmember_access\030\005 \001(\010H\002\210\001\001\022\022\n\005qt"
+  "ype\030\006 \001(\rH\003\210\001\001\022\026\n\tparentEid\030\007 \001(\004H\004\210\001\001\022\030"
+  "\n\013dataTypeEid\030\010 \001(\004H\005\210\001\001\022\023\n\006lowVal\030\t \001(\004"
+  "H\006\210\001\001\022\024\n\007highVal\030\n \001(\004H\007\210\001\001\022\023\n\006strVal\030\013 "
+  "\001(\tH\010\210\001\001\022\025\n\010loc_line\030\014 \001(\rH\t\210\001\001\022\024\n\007loc_c"
+  "ol\030\r \001(\rH\n\210\001\001B\010\n\006_vkindB\014\n\n_anonymousB\020\n"
+  "\016_member_accessB\010\n\006_qtypeB\014\n\n_parentEidB"
+  "\016\n\014_dataTypeEidB\t\n\007_lowValB\n\n\010_highValB\t"
+  "\n\007_strValB\013\n\t_loc_lineB\n\n\010_loc_col\"&\n\tBi"
+  "tSrcLoc\022\014\n\004line\030\001 \001(\r\022\013\n\003col\030\002 \001(\r\"3\n\tBi"
+  "tEntity\022\013\n\003eid\030\001 \001(\004\022\014\n\004line\030\002 \001(\r\022\013\n\003co"
+  "l\030\003 \001(\r\"\223\003\n\007BitExpr\022\031\n\005xkind\030\001 \001(\0162\n.spi"
+  "r.K_XK\022\025\n\010loc_line\030\002 \001(\rH\000\210\001\001\022\024\n\007loc_col"
+  "\030\003 \001(\rH\001\210\001\001\022\026\n\toprnd1eid\030\004 \001(\004H\002\210\001\001\022\030\n\013o"
+  "prnd1_line\030\005 \001(\rH\003\210\001\001\022\027\n\noprnd1_col\030\006 \001("
+  "\rH\004\210\001\001\022\026\n\toprnd2eid\030\007 \001(\004H\005\210\001\001\022\030\n\013oprnd2"
+  "_line\030\010 \001(\rH\006\210\001\001\022\027\n\noprnd2_col\030\t \001(\rH\007\210\001"
+  "\001\022\016\n\006oprnds\030\n \003(\004\022\023\n\013oprnds_line\030\013 \003(\r\022\022"
+  "\n\noprnds_col\030\014 \003(\rB\013\n\t_loc_lineB\n\n\010_loc_"
+  "colB\014\n\n_oprnd1eidB\016\n\014_oprnd1_lineB\r\n\013_op"
+  "rnd1_colB\014\n\n_oprnd2eidB\016\n\014_oprnd2_lineB\r"
+  "\n\013_oprnd2_col\"\304\001\n\007BitInsn\022\031\n\005ikind\030\001 \001(\016"
+  "2\n.spir.K_IK\022!\n\005expr1\030\002 \001(\0132\r.spir.BitEx"
+  "prH\000\210\001\001\022!\n\005expr2\030\003 \001(\0132\r.spir.BitExprH\001\210"
+  "\001\001\022\025\n\010loc_line\030\004 \001(\rH\002\210\001\001\022\024\n\007loc_col\030\005 \001"
+  "(\rH\003\210\001\001B\010\n\006_expr1B\010\n\006_expr2B\013\n\t_loc_line"
+  "B\n\n\010_loc_col\"\220\001\n\007BitFunc\022\013\n\003fid\030\001 \001(\004\022\r\n"
+  "\005fname\030\002 \001(\t\022\023\n\013is_variadic\030\003 \001(\010\022\037\n\022cal"
+  "ling_convention\030\004 \001(\tH\000\210\001\001\022\034\n\005insns\030\005 \003("
+  "\0132\r.spir.BitInsnB\025\n\023_calling_convention\""
+  "\314\003\n\005BitTU\022\016\n\006tuName\030\001 \001(\t\022\024\n\007absPath\030\002 \001"
+  "(\tH\000\210\001\001\022\023\n\006origin\030\003 \001(\tH\001\210\001\001\022/\n\nnamesToI"
+  "ds\030\004 \003(\0132\033.spir.BitTU.NamesToIdsEntry\022-\n"
+  "\tdataTypes\030\005 \003(\0132\032.spir.BitTU.DataTypesE"
+  "ntry\022/\n\nentityInfo\030\006 \003(\0132\033.spir.BitTU.En"
+  "tityInfoEntry\022 \n\tfunctions\030\007 \003(\0132\r.spir."
+  "BitFunc\0321\n\017NamesToIdsEntry\022\013\n\003key\030\001 \001(\t\022"
+  "\r\n\005value\030\002 \001(\004:\0028\001\032C\n\016DataTypesEntry\022\013\n\003"
+  "key\030\001 \001(\004\022 \n\005value\030\002 \001(\0132\021.spir.BitDataT"
+  "ype:\0028\001\032F\n\017EntityInfoEntry\022\013\n\003key\030\001 \001(\004\022"
+  "\"\n\005value\030\002 \001(\0132\023.spir.BitEntityInfo:\0028\001B"
+  "\n\n\010_absPathB\t\n\007_origin*\341\002\n\004K_EK\022\010\n\004ENIL\020"
+  "\000\022\r\n\tEVAR_GLBL\020\001\022\r\n\tEVAR_LOCL\020\002\022\021\n\rEVAR_"
+  "LOCL_ARG\020\003\022\024\n\020EVAR_LOCL_STATIC\020\004\022\021\n\rEVAR"
+  "_LOCL_TMP\020\005\022\021\n\rEVAR_LOCL_SSA\020\006\022\023\n\017EVAR_L"
+  "OCL_OTHER\020\007\022\014\n\010ELIT_NUM\020\010\022\020\n\014ELIT_NUM_IM"
+  "M\020\t\022\014\n\010ELIT_STR\020\n\022\016\n\nEDATA_TYPE\020\013\022\t\n\005EFU"
+  "NC\020\014\022\021\n\rERECORD_FIELD\020\r\022\n\n\006ELABEL\020\016\022\n\n\006E"
+  "OTHER\020\017\022\n\n\006EINSN0\020\020\022\n\n\006EINSN1\020\021\022\n\n\006EINSN"
+  "2\020\022\022\007\n\003EBB\020\023\022\010\n\004ECFG\020\024\022\n\n\006ESCOPE\020\025\022\007\n\003ET"
+  "U\020\026\022\r\n\tESRC_FILE\020\027*\324\001\n\004K_IK\022\010\n\004INIL\020\000\022\010\n"
+  "\004INOP\020\001\022\014\n\010IBARRIER\020\002\022\013\n\007ISELECT\020\003\022\016\n\nIA"
+  "SGN_SELF\020\004\022\020\n\014IASGN_SIMPLE\020\005\022\020\n\014IASGN_RH"
+  "S_OP\020\006\022\020\n\014IASGN_LHS_OP\020\007\022\016\n\nIASGN_CALL\020\010"
+  "\022\r\n\tIASGN_PHI\020\t\022\t\n\005ICALL\020\n\022\t\n\005IGOTO\020\013\022\t\n"
+  "\005ICOND\020\014\022\n\n\006ILABEL\020\r\022\013\n\007IRETURN\020\016*\200\003\n\004K_"
+  "XK\022\010\n\004XNIL\020\000\022\010\n\004XVAL\020\001\022\010\n\004XADD\020\002\022\010\n\004XSUB"
+  "\020\003\022\010\n\004XMUL\020\004\022\010\n\004XDIV\020\005\022\010\n\004XMOD\020\006\022\010\n\004XAND"
+  "\020\007\022\007\n\003XOR\020\010\022\010\n\004XXOR\020\t\022\010\n\004XSHL\020\n\022\010\n\004XSHR\020"
+  "\013\022\t\n\005XSHRA\020\014\022\007\n\003XEQ\020\r\022\007\n\003XNE\020\016\022\007\n\003XLT\020\017\022"
+  "\007\n\003XGE\020\020\022\r\n\tXARR_INDX\020\021\022\024\n\020XARR_INDX_ADD"
+  "ROF\020\022\022\022\n\016XMEMBER_ACCESS\020\023\022\022\n\016XMEMBER_ADD"
+  "ROF\020\024\022\t\n\005XCALL\020\025\022\t\n\005XCAST\020\026\022\014\n\010XBIT_NOT\020"
+  "\027\022\013\n\007XNEGATE\020\030\022\010\n\004XNOT\020\031\022\n\n\006XDEREF\020\032\022\013\n\007"
+  "XADDROF\020\033\022\013\n\007XSIZEOF\020\034\022\014\n\010XALIGNOF\020\035\022\n\n\006"
+  "XALLOC\020\036\022\n\n\006XOTHER\020\037*\275\004\n\004K_VK\022\010\n\004TNIL\020\000\022"
+  "\t\n\005TVOID\020\000\022\t\n\005TCHAR\020\001\022\t\n\005TINT8\020\002\022\n\n\006TINT"
+  "16\020\003\022\n\n\006TINT32\020\004\022\n\n\006TINT64\020\005\022\n\n\006TUINT8\020\006"
+  "\022\n\n\006TUCHAR\020\006\022\013\n\007TUINT16\020\007\022\013\n\007TUINT32\020\010\022\013"
+  "\n\007TUINT64\020\t\022\013\n\007TCHAR16\020\007\022\n\n\006TWCHAR\020\010\022\013\n\007"
+  "TCHAR32\020\010\022\013\n\007TN_BITS\020\n\022\014\n\010TN_UBITS\020\013\022\t\n\005"
+  "TBOOL\020\014\022\014\n\010TFLOAT16\020\r\022\014\n\010TFLOAT32\020\016\022\n\n\006T"
+  "FLOAT\020\016\022\014\n\010TFLOAT64\020\017\022\013\n\007TDOUBLE\020\017\022\014\n\010TF"
+  "LOAT80\020\020\022\020\n\014TLONG_DOUBLE\020\020\022\020\n\014TPTR_TO_VO"
+  "ID\020\021\022\017\n\013TPTR_TO_PTR\020\022\022\017\n\013TPTR_TO_ARR\020\023\022\020"
+  "\n\014TPTR_TO_CHAR\020\024\022\017\n\013TPTR_TO_INT\020\025\022\021\n\rTPT"
+  "R_TO_FLOAT\020\026\022\022\n\016TPTR_TO_RECORD\020\027\022\020\n\014TPTR"
+  "_TO_FUNC\020\030\022\016\n\nTARR_FIXED\020\031\022\021\n\rTARR_VARIA"
+  "BLE\020\032\022\020\n\014TARR_PARTIAL\020\033\022\n\n\006TUNION\020\034\022\013\n\007T"
+  "STRUCT\020\035\022\n\n\006TCLASS\020\036\022\n\n\006TOTHER\020\037\032\002\020\001*\213\002\n"
+  "\004K_QK\022\010\n\004QNIL\020\000\022\n\n\006QCONST\020\001\022\017\n\013QCONST_DE"
+  "ST\020\002\022\020\n\014QLOCL_STATIC\020\004\022\020\n\014QGLBL_STATIC\020\010"
+  "\022\r\n\tQVOLATILE\020\020\022\t\n\005QWEAK\020 \022\021\n\rQTHREAD_LO"
+  "CAL\020@\022\r\n\010QNO_INIT\020\200\001\022\016\n\tQEXTERNAL\020\200\002\022\014\n\007"
+  "QNO_DEF\020\200\004\022\016\n\tQRESTRICT\020\200\010\022\014\n\007QINLINE\020\200\020"
+  "\022\014\n\007QATOMIC\020\200 \022\016\n\tQREGISTER\020\200@\022\024\n\016QRECOR"
+  "D_MEMBER\020\200\200\001\022\014\n\006QOTHER\020\200\200\002B\010Z\006./spirb\006pr"
+  "oto3"
   ;
 static ::_pbi::once_flag descriptor_table_spir_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_spir_2eproto = {
-    false, false, 4032, descriptor_table_protodef_spir_2eproto,
+    false, false, 4084, descriptor_table_protodef_spir_2eproto,
     "spir.proto",
     &descriptor_table_spir_2eproto_once, nullptr, 0, 11,
     schemas, file_default_instances, TableStruct_spir_2eproto::offsets,
@@ -597,6 +602,7 @@ bool K_EK_IsValid(int value) {
     case 20:
     case 21:
     case 22:
+    case 23:
       return true;
     default:
       return false;
@@ -1018,33 +1024,33 @@ const char* BitDataType::_InternalParse(const char* ptr, ::_pbi::ParseContext* c
         } else
           goto handle_unusual;
         continue;
-      // repeated uint64 fopIds = 11;
+      // optional bool variadic = 11;
       case 11:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 90)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 88)) {
+          _Internal::set_has_variadic(&has_bits);
+          _impl_.variadic_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // repeated uint64 fopIds = 12;
+      case 12:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 98)) {
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::PackedUInt64Parser(_internal_mutable_fopids(), ptr, ctx);
           CHK_(ptr);
-        } else if (static_cast<uint8_t>(tag) == 88) {
+        } else if (static_cast<uint8_t>(tag) == 96) {
           _internal_add_fopids(::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr));
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // repeated uint64 fopTypeEids = 12;
-      case 12:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 98)) {
+      // repeated uint64 fopTypeEids = 13;
+      case 13:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 106)) {
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::PackedUInt64Parser(_internal_mutable_foptypeeids(), ptr, ctx);
           CHK_(ptr);
-        } else if (static_cast<uint8_t>(tag) == 96) {
+        } else if (static_cast<uint8_t>(tag) == 104) {
           _internal_add_foptypeeids(::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr));
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // optional bool variadic = 13;
-      case 13:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 104)) {
-          _Internal::set_has_variadic(&has_bits);
-          _impl_.variadic_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -1160,28 +1166,28 @@ uint8_t* BitDataType::_InternalSerialize(
     target = ::_pbi::WireFormatLite::WriteBoolToArray(10, this->_internal_funcprototype(), target);
   }
 
-  // repeated uint64 fopIds = 11;
+  // optional bool variadic = 11;
+  if (_internal_has_variadic()) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteBoolToArray(11, this->_internal_variadic(), target);
+  }
+
+  // repeated uint64 fopIds = 12;
   {
     int byte_size = _impl_._fopids_cached_byte_size_.load(std::memory_order_relaxed);
     if (byte_size > 0) {
       target = stream->WriteUInt64Packed(
-          11, _internal_fopids(), byte_size, target);
+          12, _internal_fopids(), byte_size, target);
     }
   }
 
-  // repeated uint64 fopTypeEids = 12;
+  // repeated uint64 fopTypeEids = 13;
   {
     int byte_size = _impl_._foptypeeids_cached_byte_size_.load(std::memory_order_relaxed);
     if (byte_size > 0) {
       target = stream->WriteUInt64Packed(
-          12, _internal_foptypeeids(), byte_size, target);
+          13, _internal_foptypeeids(), byte_size, target);
     }
-  }
-
-  // optional bool variadic = 13;
-  if (_internal_has_variadic()) {
-    target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteBoolToArray(13, this->_internal_variadic(), target);
   }
 
   // optional uint32 loc_line = 14;
@@ -1212,7 +1218,7 @@ size_t BitDataType::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // repeated uint64 fopIds = 11;
+  // repeated uint64 fopIds = 12;
   {
     size_t data_size = ::_pbi::WireFormatLite::
       UInt64Size(this->_impl_.fopids_);
@@ -1226,7 +1232,7 @@ size_t BitDataType::ByteSizeLong() const {
     total_size += data_size;
   }
 
-  // repeated uint64 fopTypeEids = 12;
+  // repeated uint64 fopTypeEids = 13;
   {
     size_t data_size = ::_pbi::WireFormatLite::
       UInt64Size(this->_impl_.foptypeeids_);
@@ -1296,7 +1302,7 @@ size_t BitDataType::ByteSizeLong() const {
 
   }
   if (cached_has_bits & 0x00000700u) {
-    // optional bool variadic = 13;
+    // optional bool variadic = 11;
     if (cached_has_bits & 0x00000100u) {
       total_size += 1 + 1;
     }
@@ -1433,29 +1439,32 @@ class BitEntityInfo::_Internal {
   static void set_has_anonymous(HasBits* has_bits) {
     (*has_bits)[0] |= 4u;
   }
-  static void set_has_qtype(HasBits* has_bits) {
+  static void set_has_member_access(HasBits* has_bits) {
     (*has_bits)[0] |= 8u;
   }
-  static void set_has_parenteid(HasBits* has_bits) {
+  static void set_has_qtype(HasBits* has_bits) {
     (*has_bits)[0] |= 16u;
   }
-  static void set_has_datatypeeid(HasBits* has_bits) {
+  static void set_has_parenteid(HasBits* has_bits) {
     (*has_bits)[0] |= 32u;
   }
-  static void set_has_lowval(HasBits* has_bits) {
+  static void set_has_datatypeeid(HasBits* has_bits) {
     (*has_bits)[0] |= 64u;
   }
-  static void set_has_highval(HasBits* has_bits) {
+  static void set_has_lowval(HasBits* has_bits) {
     (*has_bits)[0] |= 128u;
+  }
+  static void set_has_highval(HasBits* has_bits) {
+    (*has_bits)[0] |= 256u;
   }
   static void set_has_strval(HasBits* has_bits) {
     (*has_bits)[0] |= 1u;
   }
   static void set_has_loc_line(HasBits* has_bits) {
-    (*has_bits)[0] |= 256u;
+    (*has_bits)[0] |= 512u;
   }
   static void set_has_loc_col(HasBits* has_bits) {
-    (*has_bits)[0] |= 512u;
+    (*has_bits)[0] |= 1024u;
   }
 };
 
@@ -1476,6 +1485,7 @@ BitEntityInfo::BitEntityInfo(const BitEntityInfo& from)
     , decltype(_impl_.ekind_){}
     , decltype(_impl_.vkind_){}
     , decltype(_impl_.anonymous_){}
+    , decltype(_impl_.member_access_){}
     , decltype(_impl_.qtype_){}
     , decltype(_impl_.parenteid_){}
     , decltype(_impl_.datatypeeid_){}
@@ -1511,6 +1521,7 @@ inline void BitEntityInfo::SharedCtor(
     , decltype(_impl_.ekind_){0}
     , decltype(_impl_.vkind_){0}
     , decltype(_impl_.anonymous_){false}
+    , decltype(_impl_.member_access_){false}
     , decltype(_impl_.qtype_){0u}
     , decltype(_impl_.parenteid_){uint64_t{0u}}
     , decltype(_impl_.datatypeeid_){uint64_t{0u}}
@@ -1558,13 +1569,13 @@ void BitEntityInfo::Clear() {
       reinterpret_cast<char*>(&_impl_.eid_)) + sizeof(_impl_.ekind_));
   if (cached_has_bits & 0x000000feu) {
     ::memset(&_impl_.vkind_, 0, static_cast<size_t>(
-        reinterpret_cast<char*>(&_impl_.highval_) -
-        reinterpret_cast<char*>(&_impl_.vkind_)) + sizeof(_impl_.highval_));
+        reinterpret_cast<char*>(&_impl_.lowval_) -
+        reinterpret_cast<char*>(&_impl_.vkind_)) + sizeof(_impl_.lowval_));
   }
-  if (cached_has_bits & 0x00000300u) {
-    ::memset(&_impl_.loc_line_, 0, static_cast<size_t>(
+  if (cached_has_bits & 0x00000700u) {
+    ::memset(&_impl_.highval_, 0, static_cast<size_t>(
         reinterpret_cast<char*>(&_impl_.loc_col_) -
-        reinterpret_cast<char*>(&_impl_.loc_line_)) + sizeof(_impl_.loc_col_));
+        reinterpret_cast<char*>(&_impl_.highval_)) + sizeof(_impl_.loc_col_));
   }
   _impl_._has_bits_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
@@ -1612,54 +1623,63 @@ const char* BitEntityInfo::_InternalParse(const char* ptr, ::_pbi::ParseContext*
         } else
           goto handle_unusual;
         continue;
-      // optional uint32 qtype = 5;
+      // optional bool member_access = 5;
       case 5:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 40)) {
+          _Internal::set_has_member_access(&has_bits);
+          _impl_.member_access_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // optional uint32 qtype = 6;
+      case 6:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 48)) {
           _Internal::set_has_qtype(&has_bits);
           _impl_.qtype_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // optional uint64 parentEid = 6;
-      case 6:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 48)) {
+      // optional uint64 parentEid = 7;
+      case 7:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 56)) {
           _Internal::set_has_parenteid(&has_bits);
           _impl_.parenteid_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // optional uint64 dataTypeEid = 7;
-      case 7:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 56)) {
+      // optional uint64 dataTypeEid = 8;
+      case 8:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 64)) {
           _Internal::set_has_datatypeeid(&has_bits);
           _impl_.datatypeeid_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // optional uint64 lowVal = 8;
-      case 8:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 64)) {
+      // optional uint64 lowVal = 9;
+      case 9:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 72)) {
           _Internal::set_has_lowval(&has_bits);
           _impl_.lowval_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // optional uint64 highVal = 9;
-      case 9:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 72)) {
+      // optional uint64 highVal = 10;
+      case 10:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 80)) {
           _Internal::set_has_highval(&has_bits);
           _impl_.highval_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // optional string strVal = 10;
-      case 10:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 82)) {
+      // optional string strVal = 11;
+      case 11:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 90)) {
           auto str = _internal_mutable_strval();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
@@ -1667,18 +1687,18 @@ const char* BitEntityInfo::_InternalParse(const char* ptr, ::_pbi::ParseContext*
         } else
           goto handle_unusual;
         continue;
-      // optional uint32 loc_line = 11;
-      case 11:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 88)) {
+      // optional uint32 loc_line = 12;
+      case 12:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 96)) {
           _Internal::set_has_loc_line(&has_bits);
           _impl_.loc_line_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // optional uint32 loc_col = 12;
-      case 12:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 96)) {
+      // optional uint32 loc_col = 13;
+      case 13:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 104)) {
           _Internal::set_has_loc_col(&has_bits);
           _impl_.loc_col_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
@@ -1741,56 +1761,62 @@ uint8_t* BitEntityInfo::_InternalSerialize(
     target = ::_pbi::WireFormatLite::WriteBoolToArray(4, this->_internal_anonymous(), target);
   }
 
-  // optional uint32 qtype = 5;
+  // optional bool member_access = 5;
+  if (_internal_has_member_access()) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteBoolToArray(5, this->_internal_member_access(), target);
+  }
+
+  // optional uint32 qtype = 6;
   if (_internal_has_qtype()) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(5, this->_internal_qtype(), target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(6, this->_internal_qtype(), target);
   }
 
-  // optional uint64 parentEid = 6;
+  // optional uint64 parentEid = 7;
   if (_internal_has_parenteid()) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(6, this->_internal_parenteid(), target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(7, this->_internal_parenteid(), target);
   }
 
-  // optional uint64 dataTypeEid = 7;
+  // optional uint64 dataTypeEid = 8;
   if (_internal_has_datatypeeid()) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(7, this->_internal_datatypeeid(), target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(8, this->_internal_datatypeeid(), target);
   }
 
-  // optional uint64 lowVal = 8;
+  // optional uint64 lowVal = 9;
   if (_internal_has_lowval()) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(8, this->_internal_lowval(), target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(9, this->_internal_lowval(), target);
   }
 
-  // optional uint64 highVal = 9;
+  // optional uint64 highVal = 10;
   if (_internal_has_highval()) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(9, this->_internal_highval(), target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(10, this->_internal_highval(), target);
   }
 
-  // optional string strVal = 10;
+  // optional string strVal = 11;
   if (_internal_has_strval()) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       this->_internal_strval().data(), static_cast<int>(this->_internal_strval().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
       "spir.BitEntityInfo.strVal");
     target = stream->WriteStringMaybeAliased(
-        10, this->_internal_strval(), target);
+        11, this->_internal_strval(), target);
   }
 
-  // optional uint32 loc_line = 11;
+  // optional uint32 loc_line = 12;
   if (_internal_has_loc_line()) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(11, this->_internal_loc_line(), target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(12, this->_internal_loc_line(), target);
   }
 
-  // optional uint32 loc_col = 12;
+  // optional uint32 loc_col = 13;
   if (_internal_has_loc_col()) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(12, this->_internal_loc_col(), target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(13, this->_internal_loc_col(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -1809,7 +1835,7 @@ size_t BitEntityInfo::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // optional string strVal = 10;
+  // optional string strVal = 11;
   cached_has_bits = _impl_._has_bits_[0];
   if (cached_has_bits & 0x00000001u) {
     total_size += 1 +
@@ -1840,40 +1866,45 @@ size_t BitEntityInfo::ByteSizeLong() const {
       total_size += 1 + 1;
     }
 
-    // optional uint32 qtype = 5;
+    // optional bool member_access = 5;
     if (cached_has_bits & 0x00000008u) {
+      total_size += 1 + 1;
+    }
+
+    // optional uint32 qtype = 6;
+    if (cached_has_bits & 0x00000010u) {
       total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_qtype());
     }
 
-    // optional uint64 parentEid = 6;
-    if (cached_has_bits & 0x00000010u) {
+    // optional uint64 parentEid = 7;
+    if (cached_has_bits & 0x00000020u) {
       total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_parenteid());
     }
 
-    // optional uint64 dataTypeEid = 7;
-    if (cached_has_bits & 0x00000020u) {
+    // optional uint64 dataTypeEid = 8;
+    if (cached_has_bits & 0x00000040u) {
       total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_datatypeeid());
     }
 
-    // optional uint64 lowVal = 8;
-    if (cached_has_bits & 0x00000040u) {
+    // optional uint64 lowVal = 9;
+    if (cached_has_bits & 0x00000080u) {
       total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_lowval());
     }
 
-    // optional uint64 highVal = 9;
-    if (cached_has_bits & 0x00000080u) {
+  }
+  if (cached_has_bits & 0x00000700u) {
+    // optional uint64 highVal = 10;
+    if (cached_has_bits & 0x00000100u) {
       total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_highval());
     }
 
-  }
-  if (cached_has_bits & 0x00000300u) {
-    // optional uint32 loc_line = 11;
-    if (cached_has_bits & 0x00000100u) {
+    // optional uint32 loc_line = 12;
+    if (cached_has_bits & 0x00000200u) {
       total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_loc_line());
     }
 
-    // optional uint32 loc_col = 12;
-    if (cached_has_bits & 0x00000200u) {
+    // optional uint32 loc_col = 13;
+    if (cached_has_bits & 0x00000400u) {
       total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_loc_col());
     }
 
@@ -1914,27 +1945,30 @@ void BitEntityInfo::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::
       _this->_impl_.anonymous_ = from._impl_.anonymous_;
     }
     if (cached_has_bits & 0x00000008u) {
-      _this->_impl_.qtype_ = from._impl_.qtype_;
+      _this->_impl_.member_access_ = from._impl_.member_access_;
     }
     if (cached_has_bits & 0x00000010u) {
-      _this->_impl_.parenteid_ = from._impl_.parenteid_;
+      _this->_impl_.qtype_ = from._impl_.qtype_;
     }
     if (cached_has_bits & 0x00000020u) {
-      _this->_impl_.datatypeeid_ = from._impl_.datatypeeid_;
+      _this->_impl_.parenteid_ = from._impl_.parenteid_;
     }
     if (cached_has_bits & 0x00000040u) {
-      _this->_impl_.lowval_ = from._impl_.lowval_;
+      _this->_impl_.datatypeeid_ = from._impl_.datatypeeid_;
     }
     if (cached_has_bits & 0x00000080u) {
-      _this->_impl_.highval_ = from._impl_.highval_;
+      _this->_impl_.lowval_ = from._impl_.lowval_;
     }
     _this->_impl_._has_bits_[0] |= cached_has_bits;
   }
-  if (cached_has_bits & 0x00000300u) {
+  if (cached_has_bits & 0x00000700u) {
     if (cached_has_bits & 0x00000100u) {
-      _this->_impl_.loc_line_ = from._impl_.loc_line_;
+      _this->_impl_.highval_ = from._impl_.highval_;
     }
     if (cached_has_bits & 0x00000200u) {
+      _this->_impl_.loc_line_ = from._impl_.loc_line_;
+    }
+    if (cached_has_bits & 0x00000400u) {
       _this->_impl_.loc_col_ = from._impl_.loc_col_;
     }
     _this->_impl_._has_bits_[0] |= cached_has_bits;

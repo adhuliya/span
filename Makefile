@@ -58,6 +58,8 @@ gen-proto: ## Generate proto files
 		span/pkg/spir/spir.proto
 	$(PROTOC) --cpp_out=slang/src --proto_path=span/pkg/spir \
 		span/pkg/spir/spir.proto
+	$(PROTOC) --python_out=tools/spir_proto_to_text --proto_path=span/pkg/spir \
+		span/pkg/spir/spir.proto
 
 gen-go: ## Generate auto-generated code
 	cd span && $(GO) generate ./...

@@ -1,0 +1,401 @@
+MyOwnChecker object 1 initialized.
+SLANG: ERROR: Cannot load from file 'spanTest165.c.spanreport'
+SLANG: Total bugs loaded: 0
+
+  02-04-2022 12:41:00: EVENT: (40):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:checkASTCodeBody():690:
+BOUND START: SLANG_Generated_Output.
+
+
+  02-04-2022 12:41:00: DEBUG: (20):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:handleVarDecl():826:
+NEW_VAR: "": types.Int32,
+
+  02-04-2022 12:41:00: INFO:  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():967:
+ConvertingStmt : IntegerLiteral
+
+
+  02-04-2022 12:41:00: TRACE: (10):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertIntegerLiteral():2138:
+expr.LitE(10, Info(Loc(1,9)))
+
+  02-04-2022 12:41:00: DEBUG: (20):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:handleVarDecl():826:
+NEW_VAR: "": types.Int32,
+
+  02-04-2022 12:41:00: INFO:  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():967:
+ConvertingStmt : IntegerLiteral
+
+
+  02-04-2022 12:41:00: TRACE: (10):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertIntegerLiteral():2138:
+expr.LitE(20, Info(Loc(2,9)))
+
+  02-04-2022 12:41:00: DEBUG: (20):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:handleFuncNameAndType():784:
+AddingFunction: g 94327691299496 1 94327691299496
+
+  02-04-2022 12:41:00: DEBUG: (20):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:handleVarDecl():826:
+NEW_VAR: "": types.Int32,
+
+  02-04-2022 12:41:00: DEBUG: (20):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:checkASTCodeBody():709:
+CurrentFunction: g 94327691299496
+
+  02-04-2022 12:41:00: INFO:  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():967:
+ConvertingStmt : CompoundStmt
+
+
+  02-04-2022 12:41:00: INFO:  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():967:
+ConvertingStmt : BinaryOperator
+
+
+  02-04-2022 12:41:00: INFO:  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():967:
+ConvertingStmt : ImplicitCastExpr
+
+
+  02-04-2022 12:41:00: INFO:  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():967:
+ConvertingStmt : DeclRefExpr
+
+
+  02-04-2022 12:41:00: INFO:  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():967:
+ConvertingStmt : DeclRefExpr
+
+
+  02-04-2022 12:41:00: DEBUG: (20):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:handleFunctionBody():759:
+FunctionHasBody: g
+
+  02-04-2022 12:41:00: EVENT: (40):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/MyTraverseAST.cpp:checkASTCodeBody():87:
+Starting the AST Trace print.
+BB0.
+EXIT BB
+Preds: |BB1, 
+Succs: 
+
+
+
+BB1.
+Preds: |BB2, 
+Succs: |BB0, 
+
+Visiting: DeclRefExpr
+DeclRefExpr 0x55ca60884b70 'int' lvalue ParmVar 0x55ca608849e8 'd' 'int'
+Parent: ImplicitCastExpr
+Loc(spanTest165.c:5:7)
+
+Visiting: ImplicitCastExpr
+ImplicitCastExpr 0x55ca60884b90 'int' <LValueToRValue>
+`-DeclRefExpr 0x55ca60884b70 'int' lvalue ParmVar 0x55ca608849e8 'd' 'int'
+Parent: BinaryOperator
+Loc(spanTest165.c:5:7)
+
+Visiting: DeclRefExpr
+DeclRefExpr 0x55ca60884b50 'int' lvalue Var 0x55ca60884860 'a' 'int'
+Parent: BinaryOperator
+Loc(spanTest165.c:5:3)
+
+Visiting: BinaryOperator
+BinaryOperator 0x55ca60884ba8 'int' '='
+|-DeclRefExpr 0x55ca60884b50 'int' lvalue Var 0x55ca60884860 'a' 'int'
+`-ImplicitCastExpr 0x55ca60884b90 'int' <LValueToRValue>
+  `-DeclRefExpr 0x55ca60884b70 'int' lvalue ParmVar 0x55ca608849e8 'd' 'int'
+Parent: CompoundStmt
+Loc(spanTest165.c:5:3)
+
+
+
+BB2.
+ENTRY BB
+Preds: 
+Succs: |BB1, 
+
+
+
+
+BOUND END  : SLANG_Generated_Output.
+Function count: 1
+Slang: Hello, World!
+SLANG: ERROR: Cannot load from file 'spanTest165.c.spanreport'
+SLANG: Total bugs loaded: 0
+
+  02-04-2022 12:41:00: EVENT: (40):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:checkASTCodeBody():690:
+BOUND START: SLANG_Generated_Output.
+
+
+  02-04-2022 12:41:00: DEBUG: (20):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:handleFuncNameAndType():784:
+AddingFunction: f 94327691299976 1 94327691299976
+
+  02-04-2022 12:41:00: DEBUG: (20):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:handleVarDecl():826:
+NEW_VAR: "": types.Int32,
+
+  02-04-2022 12:41:00: DEBUG: (20):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:checkASTCodeBody():709:
+CurrentFunction: f 94327691299976
+
+  02-04-2022 12:41:00: INFO:  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():967:
+ConvertingStmt : CompoundStmt
+
+
+  02-04-2022 12:41:00: INFO:  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():967:
+ConvertingStmt : BinaryOperator
+
+
+  02-04-2022 12:41:00: INFO:  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():967:
+ConvertingStmt : ImplicitCastExpr
+
+
+  02-04-2022 12:41:00: INFO:  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():967:
+ConvertingStmt : DeclRefExpr
+
+
+  02-04-2022 12:41:00: INFO:  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():967:
+ConvertingStmt : DeclRefExpr
+
+
+  02-04-2022 12:41:00: INFO:  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():967:
+ConvertingStmt : CallExpr
+
+
+  02-04-2022 12:41:00: INFO:  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():967:
+ConvertingStmt : ImplicitCastExpr
+
+
+  02-04-2022 12:41:00: INFO:  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():967:
+ConvertingStmt : DeclRefExpr
+
+
+  02-04-2022 12:41:00: INFO:  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():967:
+ConvertingStmt : IntegerLiteral
+
+
+  02-04-2022 12:41:00: TRACE: (10):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertIntegerLiteral():2138:
+expr.LitE(200, Info(Loc(10,5)))
+
+  02-04-2022 12:41:00: DEBUG: (20):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:handleFunctionBody():759:
+FunctionHasBody: f
+
+  02-04-2022 12:41:00: EVENT: (40):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/MyTraverseAST.cpp:checkASTCodeBody():87:
+Starting the AST Trace print.
+BB0.
+EXIT BB
+Preds: |BB1, 
+Succs: 
+
+
+
+BB1.
+Preds: |BB2, 
+Succs: |BB0, 
+
+Visiting: DeclRefExpr
+DeclRefExpr 0x55ca60884d50 'int' lvalue ParmVar 0x55ca60884bf8 'c' 'int'
+Parent: ImplicitCastExpr
+Loc(spanTest165.c:9:7)
+
+Visiting: ImplicitCastExpr
+ImplicitCastExpr 0x55ca60884d70 'int' <LValueToRValue>
+`-DeclRefExpr 0x55ca60884d50 'int' lvalue ParmVar 0x55ca60884bf8 'c' 'int'
+Parent: BinaryOperator
+Loc(spanTest165.c:9:7)
+
+Visiting: DeclRefExpr
+DeclRefExpr 0x55ca60884d30 'int' lvalue Var 0x55ca60884948 'b' 'int'
+Parent: BinaryOperator
+Loc(spanTest165.c:9:3)
+
+Visiting: BinaryOperator
+BinaryOperator 0x55ca60884d88 'int' '='
+|-DeclRefExpr 0x55ca60884d30 'int' lvalue Var 0x55ca60884948 'b' 'int'
+`-ImplicitCastExpr 0x55ca60884d70 'int' <LValueToRValue>
+  `-DeclRefExpr 0x55ca60884d50 'int' lvalue ParmVar 0x55ca60884bf8 'c' 'int'
+Parent: CompoundStmt
+Loc(spanTest165.c:9:3)
+
+Visiting: DeclRefExpr
+DeclRefExpr 0x55ca60884da8 'void (int)' Function 0x55ca60884aa8 'g' 'void (int)'
+Parent: ImplicitCastExpr
+Loc(spanTest165.c:10:3)
+
+Visiting: ImplicitCastExpr
+ImplicitCastExpr 0x55ca60884e18 'void (*)(int)' <FunctionToPointerDecay>
+`-DeclRefExpr 0x55ca60884da8 'void (int)' Function 0x55ca60884aa8 'g' 'void (int)'
+Parent: CallExpr
+Loc(spanTest165.c:10:3)
+
+Visiting: IntegerLiteral
+IntegerLiteral 0x55ca60884dc8 'int' 200
+Parent: CallExpr
+Loc(spanTest165.c:10:5)
+
+Visiting: CallExpr
+CallExpr 0x55ca60884e30 'void'
+|-ImplicitCastExpr 0x55ca60884e18 'void (*)(int)' <FunctionToPointerDecay>
+| `-DeclRefExpr 0x55ca60884da8 'void (int)' Function 0x55ca60884aa8 'g' 'void (int)'
+`-IntegerLiteral 0x55ca60884dc8 'int' 200
+Parent: CompoundStmt
+Loc(spanTest165.c:10:3)
+
+
+
+BB2.
+ENTRY BB
+Preds: 
+Succs: |BB1, 
+
+
+
+
+BOUND END  : SLANG_Generated_Output.
+Function count: 2
+Slang: Hello, World!
+SLANG: ERROR: Cannot load from file 'spanTest165.c.spanreport'
+SLANG: Total bugs loaded: 0
+
+  02-04-2022 12:41:00: EVENT: (40):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:checkASTCodeBody():690:
+BOUND START: SLANG_Generated_Output.
+
+
+  02-04-2022 12:41:00: DEBUG: (20):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:handleFuncNameAndType():784:
+AddingFunction: main 94327691300560 1 94327691300560
+
+  02-04-2022 12:41:00: DEBUG: (20):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:checkASTCodeBody():709:
+CurrentFunction: main 94327691300560
+
+  02-04-2022 12:41:00: INFO:  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():967:
+ConvertingStmt : CompoundStmt
+
+
+  02-04-2022 12:41:00: INFO:  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():967:
+ConvertingStmt : BinaryOperator
+
+
+  02-04-2022 12:41:00: INFO:  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():967:
+ConvertingStmt : IntegerLiteral
+
+
+  02-04-2022 12:41:00: TRACE: (10):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertIntegerLiteral():2138:
+expr.LitE(30, Info(Loc(14,7)))
+
+  02-04-2022 12:41:00: INFO:  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():967:
+ConvertingStmt : DeclRefExpr
+
+
+  02-04-2022 12:41:00: INFO:  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():967:
+ConvertingStmt : CallExpr
+
+
+  02-04-2022 12:41:00: INFO:  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():967:
+ConvertingStmt : ImplicitCastExpr
+
+
+  02-04-2022 12:41:00: INFO:  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():967:
+ConvertingStmt : DeclRefExpr
+
+
+  02-04-2022 12:41:00: INFO:  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():967:
+ConvertingStmt : IntegerLiteral
+
+
+  02-04-2022 12:41:00: TRACE: (10):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertIntegerLiteral():2138:
+expr.LitE(100, Info(Loc(15,5)))
+
+  02-04-2022 12:41:00: INFO:  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():967:
+ConvertingStmt : ReturnStmt
+
+
+  02-04-2022 12:41:00: INFO:  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():967:
+ConvertingStmt : ImplicitCastExpr
+
+
+  02-04-2022 12:41:00: INFO:  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():967:
+ConvertingStmt : DeclRefExpr
+
+
+  02-04-2022 12:41:00: DEBUG: (20):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:handleFunctionBody():759:
+FunctionHasBody: main
+
+  02-04-2022 12:41:00: EVENT: (40):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/MyTraverseAST.cpp:checkASTCodeBody():87:
+Starting the AST Trace print.
+BB0.
+EXIT BB
+Preds: |BB1, 
+Succs: 
+
+
+
+BB1.
+Preds: |BB2, 
+Succs: |BB0, 
+
+Visiting: IntegerLiteral
+IntegerLiteral 0x55ca60884f90 'int' 30
+Parent: BinaryOperator
+Loc(spanTest165.c:14:7)
+
+Visiting: DeclRefExpr
+DeclRefExpr 0x55ca60884f70 'int' lvalue Var 0x55ca60884860 'a' 'int'
+Parent: BinaryOperator
+Loc(spanTest165.c:14:3)
+
+Visiting: BinaryOperator
+BinaryOperator 0x55ca60884fb0 'int' '='
+|-DeclRefExpr 0x55ca60884f70 'int' lvalue Var 0x55ca60884860 'a' 'int'
+`-IntegerLiteral 0x55ca60884f90 'int' 30
+Parent: CompoundStmt
+Loc(spanTest165.c:14:3)
+
+Visiting: DeclRefExpr
+DeclRefExpr 0x55ca60884fd0 'void (int)' Function 0x55ca60884c88 'f' 'void (int)'
+Parent: ImplicitCastExpr
+Loc(spanTest165.c:15:3)
+
+Visiting: ImplicitCastExpr
+ImplicitCastExpr 0x55ca60885010 'void (*)(int)' <FunctionToPointerDecay>
+`-DeclRefExpr 0x55ca60884fd0 'void (int)' Function 0x55ca60884c88 'f' 'void (int)'
+Parent: CallExpr
+Loc(spanTest165.c:15:3)
+
+Visiting: IntegerLiteral
+IntegerLiteral 0x55ca60884ff0 'int' 100
+Parent: CallExpr
+Loc(spanTest165.c:15:5)
+
+Visiting: CallExpr
+CallExpr 0x55ca60885028 'void'
+|-ImplicitCastExpr 0x55ca60885010 'void (*)(int)' <FunctionToPointerDecay>
+| `-DeclRefExpr 0x55ca60884fd0 'void (int)' Function 0x55ca60884c88 'f' 'void (int)'
+`-IntegerLiteral 0x55ca60884ff0 'int' 100
+Parent: CompoundStmt
+Loc(spanTest165.c:15:3)
+
+Visiting: DeclRefExpr
+DeclRefExpr 0x55ca60885050 'int' lvalue Var 0x55ca60884948 'b' 'int'
+Parent: ImplicitCastExpr
+Loc(spanTest165.c:16:10)
+
+Visiting: ImplicitCastExpr
+ImplicitCastExpr 0x55ca60885070 'int' <LValueToRValue>
+`-DeclRefExpr 0x55ca60885050 'int' lvalue Var 0x55ca60884948 'b' 'int'
+Parent: ReturnStmt
+Loc(spanTest165.c:16:10)
+
+Visiting: ReturnStmt
+ReturnStmt 0x55ca60885088
+`-ImplicitCastExpr 0x55ca60885070 'int' <LValueToRValue>
+  `-DeclRefExpr 0x55ca60885050 'int' lvalue Var 0x55ca60884948 'b' 'int'
+Parent: CompoundStmt
+Loc(spanTest165.c:16:3)
+
+
+
+BB2.
+ENTRY BB
+Preds: 
+Succs: |BB1, 
+
+
+
+
+BOUND END  : SLANG_Generated_Output.
+Function count: 3
+Slang: Hello, World!
+
+  02-04-2022 12:41:00: EVENT: (40):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:checkEndOfTranslationUnit():725:
+Translation Unit Ended.
+
+
+  02-04-2022 12:41:00: EVENT: (40):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:checkEndOfTranslationUnit():726:
+BOUND END  : SLANG_Generated_Output.
+

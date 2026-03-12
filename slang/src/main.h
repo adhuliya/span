@@ -181,6 +181,15 @@ public:
     compound = false;
   };
 
+  SlangBitExpr(spir::BitExpr *be, QualType qt = QualType(),
+      uint64_t varId = 0, bool tmpVar = false, bool compound = false) {
+    bitExpr = be;
+    qualType = QualType();
+    varId = 0;
+    nonTmpVar = !tmpVar;
+    compound = false;
+  };
+
   std::string toString() {
     std::stringstream ss;
     ss << "SlangBitExpr:\n";
@@ -207,13 +216,13 @@ public:
     return false;
   }
 
-  spir::BitSrcLoc srcLoc() {
-    spir::BitSrcLoc bsl;
+  SrcLoc srcLoc() {
+    SrcLoc srcLoc;
     if (bitExpr != nullptr) {
-      bsl.set_line(bitExpr->loc_line());
-      bsl.set_col(bitExpr->loc_col());
+      srcLoc.line = bitExpr->loc_line();
+      srcLoc.col = bitExpr->loc_col();
     }
-    return bsl;
+    return srcLoc;
   }
 }; // class SlangBitExpr
 
@@ -574,11 +583,16 @@ public:
     void handleGlobalInits(const TranslationUnitDecl *tuDecl);
     
     // Handles all variable declarations: both global and local.
+    // For local declarations, funcName should not be empty,
+    // as it becomes part of the variable name to keep the name unique.
     int handleVarDecl(const VarDecl *varDecl, std::string funcName = "");
     void handleValueDecl(const ValueDecl *valueDecl, std::string funcName);
     void handleFunctionDecl(FunctionDecl *D);
     void handleFunctionBody(FunctionDecl *funcDecl);
     const FunctionDecl* handleFuncNameAndType(const FunctionDecl *funcDecl, bool force=false);
+    void handleDeclStmt(const DeclStmt *declStmt);
+
+    void handleDeclStmtBit(const DeclStmt *declStmt);
 
     // Entry/Exit Points
     void checkEndOfTranslationUnit(const TranslationUnitDecl *tuDecl);
@@ -592,11 +606,13 @@ public:
     void addVar(uint64_t id, const SlangVar &var);
     std::string convertClangType(QualType qt);
     MayValue convertClangTypeBit(QualType qt);
+    std::string convertClangBuiltinType(QualType qt);
     std::string convertClangArrayType(QualType qt);
     MayValue convertClangArrayTypeBit(QualType qt, const uint64_t typeKey);
     std::string convertFunctionPrototype(QualType qt);
     MayValue convertFunctionPrototypeBit(QualType qt, const uint64_t typeKey);
     std::string convertFunctionPointerType(QualType qt);
+    std::string convertClangRecordType(const RecordDecl *recordDecl, SlangRecord *&returnSlangRecord);
 
     // Statement Conversion
     SlangExpr convertStmt(const Stmt *stmt);
@@ -641,7 +657,37 @@ public:
     SlangExpr convertUnaryOperator(const UnaryOperator *unOp);
     SlangExpr convertParenExpr(const ParenExpr *parenExpr);
     SlangExpr convertSwitchStmtNew(const SwitchStmt *switchStmt);
+    SlangExpr createBinaryExpr(SlangExpr lhsExpr, std::string op, SlangExpr rhsExpr, std::string locStr, QualType qt);
+    SlangExpr convertToIfTmp(SlangExpr slangExpr, bool force = false);
+    SlangExpr convertInitListExpr(SlangVar &slangVar, const InitListExpr *initListExpr,
+        const VarDecl *varDecl, std::vector<uint32_t> &indexVector, bool staticLocal);
+    SlangExpr genInitLhsExpr(SlangVar &slangVar, const VarDecl *varDecl, std::vector<uint32_t> &indexVector);
+    bool isCompoundTypeAt(const VarDecl *varDecl, std::vector<int> &indexVector);
+    SlangExpr genInitLhsExprNew(SlangExpr &lhs, QualType initExprListQt, int index);
+    SlangBitExpr convertBinaryCommaOpBit(const BinaryOperator *binOp);
+    void addCondInstr(std::string expr, std::string trueLabel, std::string falseLabel, std::string locStr);
+    SlangExpr convertImplicitValueInitExpr(SlangExpr &lhs, const ImplicitValueInitExpr *initListExpr);
+    SlangExpr convertToTmp2(SlangExpr slangExpr, bool force = false);
+    SlangExpr convertSwitchStmt(const SwitchStmt *switchStmt);
+    SlangExpr convertUnaryIncDecOp(const UnaryOperator *unOp);
+    MayValue convertClangBuiltinTypeBit(QualType qt, const uint64_t typeKey);
+    spir::K_VK getPtrKindBit(spir::K_VK pointeeKind);
+    MayValue convertClangRecordTypeBit(const RecordDecl *recordDecl, const uint64_t typeKey);
+    MayValue convertFunctionPointerTypeBit(QualType qt, const uint64_t typeKey);
+    spir::BitEntityInfo * convertClangTypeToBitEntityInfo(QualType qt, uint64_t eid = 0);
+    void addLabelInstrBit(spir::BitEntity label);
 
+
+    bool isTopLevel(const Stmt *stmt);
+    bool hasVoidReturnType(const CallExpr *callExpr);
+    QualType getCleanedQualType(QualType qt);
+    bool caseOrDefaultStmtHasSiblingBreak(const Stmt *stmt);
+    bool isIncompleteType(const Type *type);
+    void getCaseStmts(std::vector<const Stmt *> &caseStmtsWithDefault, const Stmt *stmt);
+    void getDefaultStmt(std::vector<const Stmt *> &defaultStmt, const Stmt *stmt);
+    SlangExpr genTmpVariable(std::string suffix, std::string typeStr, std::string locStr);
+    SlangExpr genTmpVariable(std::string suffix, QualType qt, std::string locStr, bool ifTmp = false);
+    SlangExpr createUnaryExpr(std::string op, SlangExpr expr, std::string locStr, QualType qt);
 
     // Bit-level statement variants
     SlangBitExpr convertStmtBit(const Stmt *stmt);
@@ -650,20 +696,44 @@ public:
     SlangBitExpr convertCompoundAssignmentOpBit(const BinaryOperator *binOp);
     SlangBitExpr convertAssignmentOpBit(const BinaryOperator *binOp);
     SlangBitExpr convertVarArrayVariableBit(QualType valueType, QualType elementType);
-    spir::BitEntity convertVariableBit(const VarDecl *varDecl);
+    spir::BitEntity convertVarDeclToBitEntity(const VarDecl *varDecl);
     SlangBitExpr createUnaryBitExpr(spir::K_XK opKind, SlangBitExpr expr, slang::SrcLoc srcLoc, QualType qt);
     SlangBitExpr convertToTmpBitExpr(SlangBitExpr expr, bool force = false, bool gc = false);
-    spir::BitEntity *convertClangTypeToBitEntity(QualType qt, uint64_t eid);
-    SlangBitExpr createBinaryBitExpr(SlangBitExpr opr1, spir::K_XK op, SlangBitExpr opr2, spir::BitSrcLoc srcLoc, QualType qt);
+    SlangBitExpr convertToTmp2BitExpr(SlangBitExpr slangExpr, bool force = false, bool gc = false);
+    SlangBitExpr convertToIfTmpBit(SlangBitExpr expr, bool force = false, bool gc = false);
+    spir::BitEntity convertClangTypeToBitEntity(QualType qt, uint64_t eid);
+    SlangBitExpr createBinaryBitExpr(SlangBitExpr opr1, spir::K_XK op, SlangBitExpr opr2, SrcLoc srcLoc, QualType qt);
     spir::BitExpr *createBitExpr(spir::BitEntity be);
     SlangBitExpr convertSlangVarBit(uint64_t eid, const VarDecl *varDecl);
     SlangBitExpr convertPredefinedExprBit(const PredefinedExpr *pe);
     SlangBitExpr convertStmtExprBit(const StmtExpr *stmt);
     SlangBitExpr convertParenExprBit(const ParenExpr *parenExpr);
+    SlangBitExpr convertGotoStmtBit(const GotoStmt *gotoStmt);
+    spir::BitEntity createLabelBit(std::string name, SrcLoc srcLoc);
+    spir::BitEntity genTmpBitEntity(spir::K_VK vType, std::string suffix,
+        SrcLoc srcLoc, QualType qt = QualType() /*optional if vType is given*/);
+    SlangBitExpr createLiteralBitExpr_Integer(uint64_t value, bool isSigned, slang::SrcLoc srcLoc);
+    SlangBitExpr convertInitListExprBit(SlangBitExpr &lhs, const InitListExpr *initListExpr);
+    SlangBitExpr convertImplicitValueInitExprBit(SlangBitExpr &lhs, const ImplicitValueInitExpr *initListExpr);
+    SlangBitExpr genInitLhsBitExpr(SlangBitExpr lhs, QualType initExprListQt, int index);
+    SlangBitExpr convertReturnStmtBit(const ReturnStmt *returnStmt);
+    SlangBitExpr genMemberAccessBitExpr(SlangBitExpr of, int index, uint64_t recordEid, QualType qt, SrcLoc srcLoc);
+    SlangBitExpr convertMemberExprBit(const MemberExpr *memberExpr);
+    SlangBitExpr genMemberAccessBitExpr(SlangBitExpr of, const MemberExpr *memberExpr, uint64_t recordEid, QualType qt, SrcLoc srcLoc);
+    SlangBitExpr convertLogicalOpBit(const BinaryOperator *binOp);
+    SlangBitExpr convertUnaryIncDecOpBit(const UnaryOperator *unOp);
+    QualType getIntegerValueQualType(uint64_t value, bool isSigned);
+    spir::K_VK getIntegerValueKind(uint64_t value, bool isSigned);
     // ... Add all other bit-level methods similarly
 
+    SlangBitExpr createSlangExprFromBitExpr(spir::BitExpr *bitExpr, QualType type, bool isTmp);
+    QualType getImplicitType(const Stmt *stmt, QualType qt);
+    void addLabelInstrBit(spir::BitEntity labelBit, SrcLoc srcLoc);
+    void addGotoInstrBit(spir::BitEntity labelBit, SrcLoc srcLoc);
+    bool isBitExprCompound(spir::BitExpr *be);
     // Cast-conversion helpers
     SlangExpr convertCastExpr(const Stmt *expr, QualType qt, std::string locStr);
+    spir::BitEntity createBitEntity(uint64_t eid, SrcLoc srcLoc = SrcLoc());
 
     // Miscellaneous / Utility
     template <typename T>
@@ -671,13 +741,19 @@ public:
     std::string genNextLabelCountStr();
     template <typename T>
     slang::SrcLoc getSrcLocBit(const T *decl);
+    void addBitExprOperand1(spir::BitExpr *expr, spir::BitEntity be);
+    void addBitExprOperand2(spir::BitExpr *expr, spir::BitEntity be);
+    spir::BitEntity convertBitExprToBitEntity(spir::BitExpr *expr, bool freeExpr = false);
+    spir::BitExpr *createBitExpr(spir::K_XK op, spir::BitEntity be1, spir::BitEntity be2, SrcLoc srcLoc);
+    bool isBitExprCall(spir::BitExpr *be);
 
     // Add instruction emission methods
     void addAssignInstr(SlangExpr &lhs, SlangExpr rhs, std::string locStr);
-    void addCondInstrBit(SlangBitExpr expr, spir::BitEntity trueLabel, spir::BitEntity falseLabel, spir::BitSrcLoc srcLoc);
+    void addCondInstrBit(SlangBitExpr expr, spir::BitEntity trueLabel, spir::BitEntity falseLabel, SrcLoc srcLoc);
     void addAssignBitInstr(SlangBitExpr lhs, SlangBitExpr rhs);
     void addLabelInstr(const std::string &label);
     void addGotoInstr(const std::string &label);
+    slang::SlangExpr addAndReturnSizeOfInstrExpr(SlangExpr tmpElementVarArr);
 
 private:
   // Private helper functions and data members.

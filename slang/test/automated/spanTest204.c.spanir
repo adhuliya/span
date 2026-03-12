@@ -1,0 +1,61 @@
+
+# START: A_SPAN_translation_unit!
+
+# eval() the contents of this file.
+# Keep the following imports in effect when calling eval.
+
+# import span.ir.types as types
+# import span.ir.op as op
+# import span.ir.expr as expr
+# import span.ir.instr as instr
+# import span.ir.constructs as constructs
+# import span.ir.tunit as tunit
+# from span.ir.types import Loc
+
+# An instance of span.ir.tunit.TranslationUnit class.
+tunit.TranslationUnit(
+  name = "spanTest204.c",
+  description = "Auto-Translated from Clang AST.",
+
+  allVars = {
+    "g:g": types.Int32,
+  }, # end allVars dict
+
+  globalInits = [
+  ], # end globalInits.
+
+  allRecords = {
+  }, # end allRecords dict
+
+  allFunctions = {
+    "f:main":
+      constructs.Func(
+        name = "f:main",
+        paramNames = [],
+        variadic = False,
+        returnType = types.Int32,
+
+        instrSeq = [
+            instr.AssignI(expr.VarE("g:g", Info(Loc(12,3))), expr.CallE(expr.VarE("f:f", Info(Loc(12,7))), None, Info(Loc(12,7))), Info(Loc(12,3))),
+            instr.ReturnI(expr.VarE("g:g", Info(Loc(13,10))), Info(Loc(13,3))),
+        ], # instrSeq end.
+      ), # f:main() end. 
+
+    "f:f":
+      constructs.Func(
+        name = "f:f",
+        paramNames = [],
+        variadic = False,
+        returnType = types.Int32,
+
+        instrSeq = [
+            instr.AssignI(expr.VarE("g:g", Info(Loc(7,3))), expr.LitE(20, Info(Loc(7,7))), Info(Loc(7,3))),
+            instr.ReturnI(expr.LitE(0, Info(Loc(8,10))), Info(Loc(8,3))),
+        ], # instrSeq end.
+      ), # f:f() end. 
+
+  }, # end allFunctions dict
+
+) # tunit.TranslationUnit() ends
+
+# END  : A_SPAN_translation_unit!

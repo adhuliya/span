@@ -1,0 +1,352 @@
+MyOwnChecker object 1 initialized.
+SLANG: ERROR: Cannot load from file 'spanTest023.c'
+SLANG: Total bugs loaded: 0
+
+  04-03-2021 16:49:06: EVENT (40):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:checkASTCodeBody():667:
+BOUND START: SLANG_Generated_Output.
+
+
+  04-03-2021 16:49:06: DEBUG (20):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:handleFuncNameAndType():762:
+AddingFunction: main 94361764654560 1 94361764654560
+
+  04-03-2021 16:49:06: DEBUG (20):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:checkASTCodeBody():686:
+CurrentFunction: main 94361764654560
+
+  04-03-2021 16:49:06: INFO  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():939:
+ConvertingStmt : CompoundStmt
+
+
+  04-03-2021 16:49:06: INFO  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():939:
+ConvertingStmt : DeclStmt
+
+
+  04-03-2021 16:49:06: DEBUG (20):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:handleDeclStmt():917:
+Set last DeclStmt to DeclStmt at 94361764655832
+
+  04-03-2021 16:49:06: DEBUG (20):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:handleVarDecl():801:
+NEW_VAR: "": types.ConstSizeArray(of=types.Struct("s:node"), size=2),
+
+  04-03-2021 16:49:06: ERROR (50):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:handleVarDecl():865:
+ERROR:AggregateInit: Check if the output is correct.
+VarDecl 0x55d24f766f88 <spanTest023.c:9:3, col:36> col:15 arr 'struct node [2]' cinit
+`-InitListExpr 0x55d24f767160 <col:23, col:36> 'struct node [2]'
+  |-InitListExpr 0x55d24f7671a0 <col:24, col:28> 'struct node':'struct node'
+  | |-IntegerLiteral 0x55d24f766ff0 <col:25> 'int' 1
+  | `-IntegerLiteral 0x55d24f767010 <col:27> 'int' 2
+  `-InitListExpr 0x55d24f7671f8 <col:31, col:35> 'struct node':'struct node'
+    |-IntegerLiteral 0x55d24f767080 <col:32> 'int' 2
+    `-IntegerLiteral 0x55d24f7670a0 <col:34> 'int' 3
+
+  04-03-2021 16:49:06: INFO  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():939:
+ConvertingStmt : IntegerLiteral
+
+
+  04-03-2021 16:49:06: TRACE (10):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertIntegerLiteral():1964:
+expr.LitE(1, Info(Loc(9,25)))
+
+  04-03-2021 16:49:06: INFO  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():939:
+ConvertingStmt : IntegerLiteral
+
+
+  04-03-2021 16:49:06: TRACE (10):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertIntegerLiteral():1964:
+expr.LitE(2, Info(Loc(9,27)))
+
+  04-03-2021 16:49:06: INFO  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():939:
+ConvertingStmt : IntegerLiteral
+
+
+  04-03-2021 16:49:06: TRACE (10):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertIntegerLiteral():1964:
+expr.LitE(2, Info(Loc(9,32)))
+
+  04-03-2021 16:49:06: INFO  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():939:
+ConvertingStmt : IntegerLiteral
+
+
+  04-03-2021 16:49:06: TRACE (10):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertIntegerLiteral():1964:
+expr.LitE(3, Info(Loc(9,34)))
+
+  04-03-2021 16:49:06: INFO  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():939:
+ConvertingStmt : DeclStmt
+
+
+  04-03-2021 16:49:06: DEBUG (20):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:handleDeclStmt():917:
+Set last DeclStmt to DeclStmt at 94361764656216
+
+  04-03-2021 16:49:06: DEBUG (20):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:handleVarDecl():801:
+NEW_VAR: "": types.Struct("s:node"),
+
+  04-03-2021 16:49:06: ERROR (50):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:handleVarDecl():865:
+ERROR:AggregateInit: Check if the output is correct.
+VarDecl 0x55d24f767310 <spanTest023.c:10:3, col:23> col:15 used n 'struct node':'struct node' cinit
+`-InitListExpr 0x55d24f767408 <col:19, col:23> 'struct node':'struct node'
+  |-IntegerLiteral 0x55d24f767378 <col:20> 'int' 1
+  `-IntegerLiteral 0x55d24f767398 <col:22> 'int' 2
+
+  04-03-2021 16:49:06: INFO  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():939:
+ConvertingStmt : IntegerLiteral
+
+
+  04-03-2021 16:49:06: TRACE (10):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertIntegerLiteral():1964:
+expr.LitE(1, Info(Loc(10,20)))
+
+------------------------
+2
+
+------------------------
+1
+
+------------------------
+00
+
+  04-03-2021 16:49:06: INFO  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():939:
+ConvertingStmt : IntegerLiteral
+
+
+  04-03-2021 16:49:06: TRACE (10):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertIntegerLiteral():1964:
+expr.LitE(2, Info(Loc(10,22)))
+
+------------------------
+2
+
+------------------------
+1
+
+------------------------
+10
+
+  04-03-2021 16:49:06: INFO  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():939:
+ConvertingStmt : ReturnStmt
+
+
+  04-03-2021 16:49:06: INFO  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():939:
+ConvertingStmt : ImplicitCastExpr
+
+
+  04-03-2021 16:49:06: INFO  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():939:
+ConvertingStmt : MemberExpr
+
+
+  04-03-2021 16:49:06: INFO  (30):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertStmt():939:
+ConvertingStmt : DeclRefExpr
+
+
+  04-03-2021 16:49:06: DEBUG (20):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:convertMemberExpr():1335:
+Array_Member_Expr: mem: expr.MemberE("val", expr.VarE("v:main:n", Info(Loc(11,10))), Info(Loc(11,10)))
+
+  04-03-2021 16:49:06: DEBUG (20):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:handleFunctionBody():736:
+FunctionHasBody: main
+
+  04-03-2021 16:49:06: EVENT (40):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/MyTraverseAST.cpp:checkASTCodeBody():87:
+Starting the AST Trace print.
+BB0.
+EXIT BB
+Preds: |BB1, 
+Succs: 
+
+
+
+BB1.
+Preds: |BB2, 
+Succs: |BB0, 
+
+Visiting: IntegerLiteral
+IntegerLiteral 0x55d24f766ff0 'int' 1
+Parent: InitListExpr
+Loc(spanTest023.c:9:25)
+
+Visiting: IntegerLiteral
+IntegerLiteral 0x55d24f767010 'int' 2
+Parent: InitListExpr
+Loc(spanTest023.c:9:27)
+
+Visiting: InitListExpr
+InitListExpr 0x55d24f7671a0 'struct node':'struct node'
+|-IntegerLiteral 0x55d24f766ff0 'int' 1
+`-IntegerLiteral 0x55d24f767010 'int' 2
+Parent: InitListExpr
+Loc(spanTest023.c:9:24)
+
+Visiting: IntegerLiteral
+IntegerLiteral 0x55d24f767080 'int' 2
+Parent: InitListExpr
+Loc(spanTest023.c:9:32)
+
+Visiting: IntegerLiteral
+IntegerLiteral 0x55d24f7670a0 'int' 3
+Parent: InitListExpr
+Loc(spanTest023.c:9:34)
+
+Visiting: InitListExpr
+InitListExpr 0x55d24f7671f8 'struct node':'struct node'
+|-IntegerLiteral 0x55d24f767080 'int' 2
+`-IntegerLiteral 0x55d24f7670a0 'int' 3
+Parent: InitListExpr
+Loc(spanTest023.c:9:31)
+
+Visiting: InitListExpr
+InitListExpr 0x55d24f767160 'struct node [2]'
+|-InitListExpr 0x55d24f7671a0 'struct node':'struct node'
+| |-IntegerLiteral 0x55d24f766ff0 'int' 1
+| `-IntegerLiteral 0x55d24f767010 'int' 2
+`-InitListExpr 0x55d24f7671f8 'struct node':'struct node'
+  |-IntegerLiteral 0x55d24f767080 'int' 2
+  `-IntegerLiteral 0x55d24f7670a0 'int' 3
+Parent: Cannot print.
+Loc(spanTest023.c:9:23)
+
+Visiting: DeclStmt
+DeclStmt 0x55d24f7672d8
+`-VarDecl 0x55d24f766f88  arr 'struct node [2]' cinit
+  `-InitListExpr 0x55d24f767160 'struct node [2]'
+    |-InitListExpr 0x55d24f7671a0 'struct node':'struct node'
+    | |-IntegerLiteral 0x55d24f766ff0 'int' 1
+    | `-IntegerLiteral 0x55d24f767010 'int' 2
+    `-InitListExpr 0x55d24f7671f8 'struct node':'struct node'
+      |-IntegerLiteral 0x55d24f767080 'int' 2
+      `-IntegerLiteral 0x55d24f7670a0 'int' 3
+Parent: CompoundStmt
+Loc(spanTest023.c:9:3)
+
+Visiting: IntegerLiteral
+IntegerLiteral 0x55d24f767378 'int' 1
+Parent: InitListExpr
+Loc(spanTest023.c:10:20)
+
+Visiting: IntegerLiteral
+IntegerLiteral 0x55d24f767398 'int' 2
+Parent: InitListExpr
+Loc(spanTest023.c:10:22)
+
+Visiting: InitListExpr
+InitListExpr 0x55d24f767408 'struct node':'struct node'
+|-IntegerLiteral 0x55d24f767378 'int' 1
+`-IntegerLiteral 0x55d24f767398 'int' 2
+Parent: Cannot print.
+Loc(spanTest023.c:10:19)
+
+Visiting: DeclStmt
+DeclStmt 0x55d24f767458
+`-VarDecl 0x55d24f767310  used n 'struct node':'struct node' cinit
+  `-InitListExpr 0x55d24f767408 'struct node':'struct node'
+    |-IntegerLiteral 0x55d24f767378 'int' 1
+    `-IntegerLiteral 0x55d24f767398 'int' 2
+Parent: CompoundStmt
+Loc(spanTest023.c:10:3)
+
+Visiting: DeclRefExpr
+DeclRefExpr 0x55d24f767470 'struct node':'struct node' lvalue Var 0x55d24f767310 'n' 'struct node':'struct node'
+Parent: MemberExpr
+Loc(spanTest023.c:11:10)
+
+Visiting: MemberExpr
+MemberExpr 0x55d24f767490 'int' lvalue .val 0x55d24f766cd8
+`-DeclRefExpr 0x55d24f767470 'struct node':'struct node' lvalue Var 0x55d24f767310 'n' 'struct node':'struct node'
+Parent: ImplicitCastExpr
+Loc(spanTest023.c:11:10)
+
+Visiting: ImplicitCastExpr
+ImplicitCastExpr 0x55d24f7674c0 'int' <LValueToRValue>
+`-MemberExpr 0x55d24f767490 'int' lvalue .val 0x55d24f766cd8
+  `-DeclRefExpr 0x55d24f767470 'struct node':'struct node' lvalue Var 0x55d24f767310 'n' 'struct node':'struct node'
+Parent: ReturnStmt
+Loc(spanTest023.c:11:10)
+
+Visiting: ReturnStmt
+ReturnStmt 0x55d24f7674d8
+`-ImplicitCastExpr 0x55d24f7674c0 'int' <LValueToRValue>
+  `-MemberExpr 0x55d24f767490 'int' lvalue .val 0x55d24f766cd8
+    `-DeclRefExpr 0x55d24f767470 'struct node':'struct node' lvalue Var 0x55d24f767310 'n' 'struct node':'struct node'
+Parent: CompoundStmt
+Loc(spanTest023.c:11:3)
+
+
+
+BB2.
+ENTRY BB
+Preds: 
+Succs: |BB1, 
+
+
+
+
+BOUND END  : SLANG_Generated_Output.
+Function count: 1
+Slang: Hello, World!
+
+# START: A_SPAN_translation_unit!
+
+# eval() the contents of this file.
+# Keep the following imports in effect when calling eval.
+
+# import span.ir.types as types
+# import span.ir.op as op
+# import span.ir.expr as expr
+# import span.ir.instr as instr
+# import span.ir.constructs as constructs
+# import span.ir.tunit as tunit
+# from span.ir.types import Loc
+
+# An instance of span.ir.tunit.TranslationUnit class.
+tunit.TranslationUnit(
+  name = "spanTest023.c",
+  description = "Auto-Translated from Clang AST.",
+
+  allVars = {
+    "v:main:1t": types.Int32,
+    "v:main:arr": types.ConstSizeArray(of=types.Struct("s:node"), size=2),
+    "v:main:n": types.Struct("s:node"),
+  }, # end allVars dict
+
+  globalInits = [
+  ], # end globalInits.
+
+  allRecords = {
+    "s:node":
+      types.Struct(
+        name = "s:node",
+        members = [
+          ("val", types.Int32),
+          ("level", types.Int32),
+        ],
+        info = Info(Loc(3,1)),
+      ),
+
+  }, # end allRecords dict
+
+  allFunctions = {
+    "f:main":
+      constructs.Func(
+        name = "f:main",
+        paramNames = [],
+        variadic = False,
+        returnType = types.Int32,
+
+        instrSeq = [
+            instr.AssignI(expr.ArrayE(expr.LitE(0, Info(Loc(9,3))), expr.ArrayE(expr.LitE(0, Info(Loc(9,3))), expr.VarE("v:main:arr", Info(Loc(9,3))), Info(Loc(9,3))), Info(Loc(9,3))), expr.LitE(1, Info(Loc(9,25))), Info(Loc(9,25))),
+            instr.AssignI(expr.ArrayE(expr.LitE(1, Info(Loc(9,3))), expr.ArrayE(expr.LitE(0, Info(Loc(9,3))), expr.VarE("v:main:arr", Info(Loc(9,3))), Info(Loc(9,3))), Info(Loc(9,3))), expr.LitE(2, Info(Loc(9,27))), Info(Loc(9,27))),
+            instr.AssignI(expr.ArrayE(expr.LitE(0, Info(Loc(9,3))), expr.ArrayE(expr.LitE(1, Info(Loc(9,3))), expr.VarE("v:main:arr", Info(Loc(9,3))), Info(Loc(9,3))), Info(Loc(9,3))), expr.LitE(2, Info(Loc(9,32))), Info(Loc(9,32))),
+            instr.AssignI(expr.ArrayE(expr.LitE(1, Info(Loc(9,3))), expr.ArrayE(expr.LitE(1, Info(Loc(9,3))), expr.VarE("v:main:arr", Info(Loc(9,3))), Info(Loc(9,3))), Info(Loc(9,3))), expr.LitE(3, Info(Loc(9,34))), Info(Loc(9,34))),
+            instr.AssignI(expr.MemberE("val", expr.VarE("v:main:n", Info(Loc(10,3))), Info(Loc(10,3))), expr.LitE(1, Info(Loc(10,20))), Info(Loc(10,20))),
+            instr.AssignI(expr.MemberE("level", expr.VarE("v:main:n", Info(Loc(10,3))), Info(Loc(10,3))), expr.LitE(2, Info(Loc(10,22))), Info(Loc(10,22))),
+            instr.AssignI(expr.VarE("v:main:1t", Info(Loc(11,10))), expr.MemberE("val", expr.VarE("v:main:n", Info(Loc(11,10))), Info(Loc(11,10))), Info(Loc(11,10))),
+            instr.ReturnI(expr.VarE("v:main:1t", Info(Loc(11,10))), Info(Loc(11,3))),
+        ], # instrSeq end.
+      ), # f:main() end. 
+
+  }, # end allFunctions dict
+
+) # tunit.TranslationUnit() ends
+
+# END  : A_SPAN_translation_unit!
+
+  04-03-2021 16:49:06: EVENT (40):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:checkEndOfTranslationUnit():702:
+Translation Unit Ended.
+
+
+  04-03-2021 16:49:06: EVENT (40):/home/codeman/.itsoflife/mydata/local/packages-live/llvm-clang9.0.0/llvm/tools/clang/lib/StaticAnalyzer/Checkers/SlangCheckers/SlangGenAstChecker.cpp:checkEndOfTranslationUnit():703:
+BOUND END  : SLANG_Generated_Output.
+
+spanTest023.c:9:15: warning: Value stored to 'arr' during its initialization is never read
+  struct node arr[] = {{1,2}, {2,3}};
+              ^~~     ~~~~~~~~~~~~~~
+1 warning generated.

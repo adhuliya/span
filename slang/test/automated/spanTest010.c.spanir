@@ -1,0 +1,66 @@
+
+# START: A_SPAN_translation_unit!
+
+# eval() the contents of this file.
+# Keep the following imports in effect when calling eval.
+
+# import span.ir.types as types
+# import span.ir.op as op
+# import span.ir.expr as expr
+# import span.ir.instr as instr
+# import span.ir.constructs as constructs
+# import span.ir.tunit as tunit
+# from span.ir.types import Loc
+
+# An instance of span.ir.tunit.TranslationUnit class.
+tunit.TranslationUnit(
+  name = "spanTest010.c",
+  description = "Auto-Translated from Clang AST.",
+
+  allVars = {
+    "v:main:1if": types.UInt32,
+    "v:main:x": types.Int32,
+    "v:main:argv": types.Ptr(to=types.Ptr(to=types.Int8)),
+    "v:main:argc": types.Int32,
+  }, # end allVars dict
+
+  globalInits = [
+  ], # end globalInits.
+
+  allRecords = {
+  }, # end allRecords dict
+
+  allFunctions = {
+    "f:main":
+      constructs.Func(
+        name = "f:main",
+        paramNames = ["v:main:argc", "v:main:argv"],
+        variadic = False,
+        returnType = types.Int32,
+
+        instrSeq = [
+            instr.AssignI(expr.VarE("v:main:x", Info(Loc(4,3))), expr.LitE(4, Info(Loc(4,11))), Info(Loc(4,3))),
+            instr.LabelI("1SwitchStart"),
+            instr.LabelI("1CaseCond1"),
+            instr.AssignI(expr.VarE("v:main:1if", Info(Loc(6,5))), expr.BinaryE(expr.VarE("v:main:argc", Info(Loc(5,10))), op.BO_EQ, expr.LitE(1, Info(Loc(6,10))), Info(Loc(6,5))), Info(Loc(6,5))),
+            instr.CondI(expr.VarE("v:main:1if", Info(Loc(6,5))), "1CaseBody1", "1CaseCond2", Info(Loc(6,5))),
+            instr.LabelI("1CaseBody1"),
+            instr.AssignI(expr.VarE("v:main:x", Info(Loc(7,7))), expr.BinaryE(expr.VarE("v:main:x", Info(Loc(7,11))), op.BO_ADD, expr.LitE(1, Info(Loc(7,15))), Info(Loc(7,11))), Info(Loc(7,7))),
+            instr.GotoI("1CaseBody2"),
+            instr.LabelI("1Default"),
+            instr.LabelI("1CaseBody2"),
+            instr.AssignI(expr.VarE("v:main:x", Info(Loc(9,7))), expr.BinaryE(expr.VarE("v:main:x", Info(Loc(9,11))), op.BO_ADD, expr.LitE(2, Info(Loc(9,15))), Info(Loc(9,11))), Info(Loc(9,7))),
+            instr.GotoI("1CaseBody3"),
+            instr.LabelI("1CaseCond2"),
+            instr.GotoI("1Default"),
+            instr.LabelI("1CaseBody3"),
+            instr.LabelI("1SwitchExit"),
+            instr.ReturnI(expr.VarE("v:main:x", Info(Loc(11,10))), Info(Loc(11,3))),
+        ], # instrSeq end.
+      ), # f:main() end. 
+
+  }, # end allFunctions dict
+
+) # tunit.TranslationUnit() ends
+
+# END  : A_SPAN_translation_unit!

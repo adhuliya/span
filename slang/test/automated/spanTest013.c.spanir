@@ -1,0 +1,73 @@
+
+# START: A_SPAN_translation_unit!
+
+# eval() the contents of this file.
+# Keep the following imports in effect when calling eval.
+
+# import span.ir.types as types
+# import span.ir.op as op
+# import span.ir.expr as expr
+# import span.ir.instr as instr
+# import span.ir.constructs as constructs
+# import span.ir.tunit as tunit
+# from span.ir.types import Loc
+
+# An instance of span.ir.tunit.TranslationUnit class.
+tunit.TranslationUnit(
+  name = "spanTest013.c",
+  description = "Auto-Translated from Clang AST.",
+
+  allVars = {
+    "v:main:1if": types.Int32,
+    "v:main:2if": types.Int32,
+    "v:main:z": types.Int32,
+    "v:main:y": types.Int32,
+    "v:main:x": types.Int32,
+    "v:main:p": types.Ptr(to=types.Int32),
+    "v:main:argv": types.Ptr(to=types.Ptr(to=types.Int8)),
+    "v:main:argc": types.Int32,
+  }, # end allVars dict
+
+  globalInits = [
+  ], # end globalInits.
+
+  allRecords = {
+  }, # end allRecords dict
+
+  allFunctions = {
+    "f:main":
+      constructs.Func(
+        name = "f:main",
+        paramNames = ["v:main:argc", "v:main:argv"],
+        variadic = False,
+        returnType = types.Int32,
+
+        instrSeq = [
+            instr.AssignI(expr.VarE("v:main:x", Info(Loc(11,3))), expr.VarE("v:main:argc", Info(Loc(11,7))), Info(Loc(11,3))),
+            instr.AssignI(expr.VarE("v:main:p", Info(Loc(12,3))), expr.LitE(0, Info(Loc(12,7))), Info(Loc(12,3))),
+            instr.AssignI(expr.VarE("v:main:z", Info(Loc(13,7))), expr.LitE(0, Info(Loc(13,11))), Info(Loc(13,7))),
+            instr.AssignI(expr.VarE("v:main:y", Info(Loc(13,3))), expr.VarE("v:main:z", Info(Loc(13,7))), Info(Loc(13,3))),
+            instr.AssignI(expr.VarE("v:main:1if", Info(Loc(14,7))), expr.BinaryE(expr.VarE("v:main:x", Info(Loc(14,7))), op.BO_GT, expr.LitE(10, Info(Loc(14,11))), Info(Loc(14,7))), Info(Loc(14,7))),
+            instr.CondI(expr.VarE("v:main:1if", Info(Loc(14,7))), "1IfTrue", "1IfFalse", Info(Loc(14,3))),
+            instr.LabelI("1IfTrue"),
+            instr.AssignI(expr.VarE("v:main:2if", Info(Loc(15,9))), expr.BinaryE(expr.VarE("v:main:x", Info(Loc(15,9))), op.BO_LT, expr.LitE(0, Info(Loc(15,13))), Info(Loc(15,9))), Info(Loc(15,9))),
+            instr.CondI(expr.VarE("v:main:2if", Info(Loc(15,9))), "2IfTrue", "2IfFalse", Info(Loc(15,5))),
+            instr.LabelI("2IfTrue"),
+            instr.AssignI(expr.VarE("v:main:p", Info(Loc(16,7))), expr.AddrOfE(expr.VarE("v:main:y", Info(Loc(16,12))), Info(Loc(16,11))), Info(Loc(16,7))),
+            instr.GotoI("2IfExit"),
+            instr.LabelI("2IfFalse"),
+            instr.AssignI(expr.VarE("v:main:p", Info(Loc(18,7))), expr.AddrOfE(expr.VarE("v:main:z", Info(Loc(18,12))), Info(Loc(18,11))), Info(Loc(18,7))),
+            instr.LabelI("2IfExit"),
+            instr.AssignI(expr.DerefE(expr.VarE("v:main:p", Info(Loc(20,6))), Info(Loc(20,5))), expr.LitE(1, Info(Loc(20,10))), Info(Loc(20,5))),
+            instr.GotoI("1IfExit"),
+            instr.LabelI("1IfFalse"),
+            instr.LabelI("1IfExit"),
+            instr.ReturnI(expr.VarE("v:main:z", Info(Loc(23,10))), Info(Loc(23,3))),
+        ], # instrSeq end.
+      ), # f:main() end. 
+
+  }, # end allFunctions dict
+
+) # tunit.TranslationUnit() ends
+
+# END  : A_SPAN_translation_unit!

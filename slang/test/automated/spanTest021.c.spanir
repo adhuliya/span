@@ -1,0 +1,77 @@
+
+# START: A_SPAN_translation_unit!
+
+# eval() the contents of this file.
+# Keep the following imports in effect when calling eval.
+
+# import span.ir.types as types
+# import span.ir.op as op
+# import span.ir.expr as expr
+# import span.ir.instr as instr
+# import span.ir.constructs as constructs
+# import span.ir.tunit as tunit
+# from span.ir.types import Loc
+
+# An instance of span.ir.tunit.TranslationUnit class.
+tunit.TranslationUnit(
+  name = "spanTest021.c",
+  description = "Auto-Translated from Clang AST.",
+
+  allVars = {
+    "v:f2:1t": types.Int32,
+    "g:f2:i": types.Int32,
+    "v:f1:1t": types.Int32,
+    "g:f1:i": types.Int32,
+  }, # end allVars dict
+
+  globalInits = [
+    instr.AssignI(expr.VarE("g:f1:i", Info(Loc(4,3))), expr.LitE(10, Info(Loc(4,18))), Info(Loc(4,3))),
+  ], # end globalInits.
+
+  allRecords = {
+  }, # end allRecords dict
+
+  allFunctions = {
+    "f:main":
+      constructs.Func(
+        name = "f:main",
+        paramNames = [],
+        variadic = False,
+        returnType = types.Void,
+
+        instrSeq = [
+            instr.NopI(),
+        ], # instrSeq end.
+      ), # f:main() end. 
+
+    "f:f2":
+      constructs.Func(
+        name = "f:f2",
+        paramNames = [],
+        variadic = False,
+        returnType = types.Void,
+
+        instrSeq = [
+            instr.AssignI(expr.VarE("v:f2:1t", Info(Loc(10,3))), expr.VarE("g:f2:i", Info(Loc(10,3))), Info(Loc(10,3))),
+            instr.AssignI(expr.VarE("g:f2:i", Info(Loc(10,3))), expr.BinaryE(expr.VarE("g:f2:i", Info(Loc(10,3))), op.BO_ADD, expr.LitE(1, Info(Loc(10,3))), Info(Loc(10,3))), Info(Loc(10,3))),
+        ], # instrSeq end.
+      ), # f:f2() end. 
+
+    "f:f1":
+      constructs.Func(
+        name = "f:f1",
+        paramNames = [],
+        variadic = False,
+        returnType = types.Void,
+
+        instrSeq = [
+            instr.AssignI(expr.VarE("v:f1:1t", Info(Loc(5,3))), expr.VarE("g:f1:i", Info(Loc(5,3))), Info(Loc(5,3))),
+            instr.AssignI(expr.VarE("g:f1:i", Info(Loc(5,3))), expr.BinaryE(expr.VarE("g:f1:i", Info(Loc(5,3))), op.BO_ADD, expr.LitE(1, Info(Loc(5,3))), Info(Loc(5,3))), Info(Loc(5,3))),
+        ], # instrSeq end.
+      ), # f:f1() end. 
+
+  }, # end allFunctions dict
+
+) # tunit.TranslationUnit() ends
+
+# END  : A_SPAN_translation_unit!

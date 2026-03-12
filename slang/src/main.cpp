@@ -13,6 +13,9 @@
 
 
 #include "main.h"
+#include "spir.pb.h"
+#include "util.h"
+#include "clang/AST/Type.h"
 
 // Generate the SPAN IR from Clang AST.
 
@@ -33,13 +36,13 @@ static llvm::cl::opt<std::string> OptOutputDir(
 
 // Command line option for protobuf output
 static llvm::cl::opt<bool> OptProtoOutputKnob(
-    "proto",
+    "bit-spir",
     llvm::cl::desc("Output SPAN IR in protobuf format (default: true)"),
     llvm::cl::init(true), llvm::cl::cat(SlangOptions));
 
 // Command line option for Python SPAN IR output
 static llvm::cl::opt<bool> OptPySpanIrOutputKnob(
-    "py-spanir",
+    "py-spir",
     llvm::cl::desc("Output SPAN IR in Python format (default: false)"),
     llvm::cl::init(false), llvm::cl::cat(SlangOptions));
 
@@ -176,6 +179,7 @@ void slang::SlangTU::moveAndAddBitEntityInfo(uint64_t eid,
   // STEP 3: Move the entity info object to the 'eid -> EntityInfo' map.
   bittu.mutable_entityinfo()->emplace(eid, std::move(bitEntityInfo));
 }
+
 
 // BOUND START: dump_routines
 
@@ -348,6 +352,48 @@ void slang::SlangTU::writeProtoToFile(const spir::BitTU &bittu,
 
 // BOUND END  : dump_routines
 
+slang::SlangBitExpr slang::SpirGen::genMemberAccessBitExpr(SlangBitExpr of,
+    const MemberExpr *memberExpr, uint64_t recordEid, QualType qt, SrcLoc srcLoc) {
+  assert(!of.compound);
+
+  // STEP 1: Get the eid of the memberExpr
+  uint64_t fieldEid = (uint64_t)(memberExpr->getMemberDecl());
+
+  // STEP 2: Get the index of the field in the record.
+  int fieldIdx = -1;
+  auto itr = std::find(stu.bittu.datatypes().at(recordEid).fopids().begin(),
+                   stu.bittu.datatypes().at(recordEid).fopids().end(),
+                   fieldEid);
+  if (itr != stu.bittu.datatypes().at(recordEid).fopids().end()) {
+      fieldIdx = itr - stu.bittu.datatypes().at(recordEid).fopids().begin();
+      if (fieldIdx < 0) {
+        SLANG_ERROR("Failed to find field index: " << fieldIdx << " for field eid: " << fieldEid);
+      }
+  } else {
+    SLANG_ERROR("Failed to find field eid: " << fieldEid << " in record eid: " << recordEid);
+  }
+
+  // STEP 3: Generate the member access bit expression.
+  return genMemberAccessBitExpr(of, fieldIdx, recordEid, qt, srcLoc);
+} // genMemberAccessBitExpr()
+
+// Similar to a expr.MemberE() expression generator.
+slang::SlangBitExpr slang::SpirGen::genMemberAccessBitExpr(SlangBitExpr of,
+    int index, uint64_t recordEid, QualType qt, SrcLoc srcLoc) {
+  assert(!of.compound);
+
+  std::stringstream ss;
+
+  uint64_t fieldEid = stu.bittu.datatypes().at(recordEid).fopids(index);
+
+  spir::BitEntity be;
+  be.set_eid(fieldEid);
+  be.set_line(srcLoc.line);
+  be.set_col(srcLoc.col);
+  return createBinaryBitExpr(of, spir::K_XK::XMEMBER_ACCESS,
+     SlangBitExpr(createBitExpr(be)), srcLoc, qt);
+} // genMemberAccessBitExpr()
+
 slang::SpirGen::SpirGen(ASTContext *ctx) : Ctx(ctx) {
   stu.uniqLabelCounter = 1;
   stu.uniqIdCounter = 1;
@@ -375,11 +421,9 @@ void slang::SpirGen::slangInit(const TranslationUnitDecl *TU) {
   stu.tuName = fullPath.substr(lastSlash + 1);
   stu.tuDirectory = fullPath.substr(0, lastSlash);
 
-  // Store the translation unit name in the protobuf message
+  // Add the name, full path and origin of the TU.
   stu.bittu.set_tuname(stu.tuName);
   stu.bittu.set_abspath(fullPath);
-
-  // Add the origin and version of the TU
   stu.bittu.set_origin("Clang AST " + clang::getClangFullVersion());
 }
 
@@ -546,10 +590,12 @@ int slang::SpirGen::handleVarDecl(const VarDecl *varDecl, std::string funcName) 
     slangVar.id = varAddr;
     varName = varDecl->getNameAsString();
 
-    // delit slangVar.typeStr = convertClangType(varDecl->getType());
+    if (OptPySpanIrOutputKnob) {
+      slangVar.typeStr = convertClangType(varDecl->getType());
+    }
 
     // Create spir::BitDataType for the variable and store in BitTU
-    MayValue result = convertClangTypeBit(varDecl->getType());
+    slang::MayValue result = convertClangTypeBit(varDecl->getType());
     if (result.errorCode) {
       SLANG_ERROR("ERROR: Failed to convert variable type: "
                   << varDecl->getNameAsString()
@@ -571,24 +617,27 @@ int slang::SpirGen::handleVarDecl(const VarDecl *varDecl, std::string funcName) 
     if (varDecl->isStaticLocal()) {
       slangVar.setLocalVarNameStatic(varName, funcName);
       bitEntityInfo.set_ekind(spir::K_EK::EVAR_LOCL_STATIC);
+
     } else if (varDecl->hasLocalStorage()) {
       slangVar.setLocalVarName(varName, funcName);
       bitEntityInfo.set_ekind(spir::K_EK::EVAR_LOCL);
       if (stu.varCountMap.find(slangVar.name) != stu.varCountMap.end()) {
-        stu.varCountMap[slangVar.name]++;
-        uint64_t newVarId = stu.varCountMap[slangVar.name];
+        uint64_t newVarId = ++stu.varCountMap[slangVar.name];
         slangVar.setLocalVarName(std::to_string(newVarId) + "D" + varName,
                                  funcName);
       } else {
         stu.varCountMap[slangVar.name] = 1;
       }
+
     } else if (varDecl->hasGlobalStorage()) {
       slangVar.setGlobalVarName(varName);
       bitEntityInfo.set_ekind(spir::K_EK::EVAR_GLBL);
+
     } else if (varDecl->hasExternalStorage()) {
       // Treat these as global storage by default
       slangVar.setGlobalVarName(varName);
       bitEntityInfo.set_ekind(spir::K_EK::EVAR_GLBL);
+
     } else {
       SLANG_ERROR("ERROR:Unknown variable storage.")
     }
@@ -635,20 +684,22 @@ int slang::SpirGen::handleVarDecl(const VarDecl *varDecl, std::string funcName) 
         }
 
         if (OptProtoOutputKnob) {
-          spir::BitEntity varEntity = convertVariableBit(varDecl);
-          spir::BitEntity sizeEntity = convertVarArrayVariableBit(
+          spir::BitEntity varEntity = convertVarDeclToBitEntity(varDecl);
+          SlangBitExpr sizeExpr = convertVarArrayVariableBit(
               varDecl->getType(), arrayType->getElementType());
 
           SlangBitExpr allocExpr =
-              createUnaryBitExpr(&sizeEntity, spir::K_XK::XALLOC, Ctx->VoidPtrTy);
-          spir::BitEntity *tmpVoidPtr = convertToTmpBitExpr(allocExpr);
+              createUnaryBitExpr(spir::K_XK::XALLOC, sizeExpr, getSrcLocBit(varDecl), Ctx->VoidPtrTy);
+          SlangBitExpr tmpVoidPtr = convertToTmpBitExpr(allocExpr);
 
-          spir::BitEntity *typeEntity = convertClangTypeToBitEntity(
+          spir::BitEntity typeEntity = convertClangTypeToBitEntity(
               varDecl->getType(), ::slang::Util::getNextUniqueId());
           SlangBitExpr castExprBit = createBinaryBitExpr(
-              tmpVoidPtr, spir::K_XK::XCAST, typeEntity, varDecl->getType());
+              tmpVoidPtr, spir::K_XK::XCAST, SlangBitExpr(createBitExpr(typeEntity)), getSrcLocBit(varDecl), varDecl->getType());
 
-          addAssignBitInstr(createBitExpr(varEntity), castExprBit->bitExpr);
+          SlangBitExpr lhsExpr;
+          lhsExpr.bitExpr = createBitExpr(varEntity);
+          addAssignBitInstr(lhsExpr, castExprBit);
         }
       }
     }
@@ -657,6 +708,8 @@ int slang::SpirGen::handleVarDecl(const VarDecl *varDecl, std::string funcName) 
     if (varDecl->hasInit()) {
       // yes it has, so initialize it
       if (varDecl->getInit()->getStmtClass() == Stmt::InitListExprClass) {
+        SLANG_DEBUG("AggregateInit: " << slangVar.name << " : Not Supported yet (todo)"); //delete this after testing
+
         if (OptPySpanIrOutputKnob) {
           SLANG_ERROR("ERROR:AggregateInit: Check if the output is correct.")
           varDecl->dump();
@@ -666,9 +719,8 @@ int slang::SpirGen::handleVarDecl(const VarDecl *varDecl, std::string funcName) 
         }
 
         if (OptProtoOutputKnob) {
-          SlangBitExpr slangBitExpr = convertSlangVar(slangVar, varDecl);
-          convertInitListExprNew(slangExpr,
-                                 cast<InitListExpr>(varDecl->getInit()));
+          SlangBitExpr bExpr = convertSlangVarBit(slangVar.id, varDecl);
+          convertInitListExprBit(bExpr, cast<InitListExpr>(varDecl->getInit()));
         }
       } else {
         if (OptPySpanIrOutputKnob) {
@@ -693,18 +745,20 @@ int slang::SpirGen::handleVarDecl(const VarDecl *varDecl, std::string funcName) 
 
         if (OptProtoOutputKnob) {
           // FIXME: autogenerated -- incomplete
-          spir::BitEntity varEntity = convertVariableBit(varDecl);
-          SlangBitExpr bExpr = convertStmtBit(varDecl->getInit());
-          addAssignBitInstr(createBitExpr(varEntity),
-                            std::move(bExpr.cloneBitExpr())));
+          spir::BitEntity varEntity = convertVarDeclToBitEntity(varDecl);
+          SlangBitExpr rhsExpr = convertStmtBit(varDecl->getInit());
+          SlangBitExpr lhsExpr;
+          lhsExpr.bitExpr = createBitExpr(varEntity);
+          addAssignBitInstr(lhsExpr, rhsExpr);
         }
       }
     }
   } // if (stu.isNewVar(varAddr))
 
-  // else: No need to re-process an already processed variable.
+  // else: Not a new variable? No need to re-process an already processed variable.
 
   stu.isStaticLocal = false;
+  return 0;
 } // handleVarDecl()
 
 // record the variable name and type
@@ -750,7 +804,7 @@ void slang::SpirGen::handleDeclStmtBit(const DeclStmt *declStmt) {
 // BOUND START: conversion_routines
 
 // stmtconversion
-SlangExpr slang::SpirGen::convertStmt(const Stmt *stmt) {
+slang::SlangExpr slang::SpirGen::convertStmt(const Stmt *stmt) {
   SlangExpr slangExpr;
 
   if (!stmt) {
@@ -878,7 +932,7 @@ SlangExpr slang::SpirGen::convertStmt(const Stmt *stmt) {
 } // convertStmt()
 
 // stmtconversion
-SlangBitExpr slang::SpirGen::convertStmtBit(const Stmt *stmt) {
+slang::SlangBitExpr slang::SpirGen::convertStmtBit(const Stmt *stmt) {
   SlangBitExpr slangBitExpr;
 
   if (!stmt) {
@@ -894,8 +948,8 @@ SlangBitExpr slang::SpirGen::convertStmtBit(const Stmt *stmt) {
   case Stmt::StmtExprClass:
     return convertStmtExprBit(cast<StmtExpr>(stmt));
 
-  case Stmt::LabelStmtClass:
-    return convertLabel(cast<LabelStmt>(stmt));
+  // AD: case Stmt::LabelStmtClass:
+  // AD:   return convertLabelBit(cast<LabelStmt>(stmt));
 
   case Stmt::UnaryOperatorClass:
     return convertUnaryOperatorBit(cast<UnaryOperator>(stmt));
@@ -907,58 +961,58 @@ SlangBitExpr slang::SpirGen::convertStmtBit(const Stmt *stmt) {
   case Stmt::ParenExprClass:
     return convertParenExprBit(cast<ParenExpr>(stmt));
 
-  case Stmt::CompoundStmtClass:
-    return convertCompoundStmt(cast<CompoundStmt>(stmt));
+  // AD: case Stmt::CompoundStmtClass:
+  // AD:   return convertCompoundStmtBit(cast<CompoundStmt>(stmt));
 
   case Stmt::DeclStmtClass:
     handleDeclStmt(cast<DeclStmt>(stmt));
     break;
 
-  case Stmt::DeclRefExprClass:
-    return convertDeclRefExpr(cast<DeclRefExpr>(stmt));
+  // AD case Stmt::DeclRefExprClass:
+  // AD   return convertDeclRefExprBit(cast<DeclRefExpr>(stmt));
 
-  case Stmt::ConstantExprClass:
-    return convertConstantExpr(cast<ConstantExpr>(stmt));
+  // AD case Stmt::ConstantExprClass:
+  // AD   return convertConstantExprBit(cast<ConstantExpr>(stmt));
 
-  case Stmt::IntegerLiteralClass:
-    return convertIntegerLiteral(cast<IntegerLiteral>(stmt));
+  // AD case Stmt::IntegerLiteralClass:
+  // AD   return convertIntegerLiteralBit(cast<IntegerLiteral>(stmt));
 
-  case Stmt::CharacterLiteralClass:
-    return convertCharacterLiteral(cast<CharacterLiteral>(stmt));
+  // AD case Stmt::CharacterLiteralClass:
+  // AD   return convertCharacterLiteralBit(cast<CharacterLiteral>(stmt));
 
-  case Stmt::FloatingLiteralClass:
-    return convertFloatingLiteral(cast<FloatingLiteral>(stmt));
+  // AD case Stmt::FloatingLiteralClass:
+  // AD   return convertFloatingLiteralBit(cast<FloatingLiteral>(stmt));
 
-  case Stmt::StringLiteralClass:
-    return convertStringLiteral(cast<StringLiteral>(stmt));
+  //AD: case Stmt::StringLiteralClass:
+  //AD:   return convertStringLiteralBit(cast<StringLiteral>(stmt));
 
-  case Stmt::ImplicitCastExprClass:
-    return convertImplicitCastExpr(cast<ImplicitCastExpr>(stmt));
+  //AD: case Stmt::ImplicitCastExprClass:
+  //AD:   return convertImplicitCastExpr(cast<ImplicitCastExpr>(stmt));
 
-  case Stmt::ReturnStmtClass:
-    return convertReturnStmtBit(cast<ReturnStmt>(stmt));
+  //AD: case Stmt::ReturnStmtClass:
+  //AD:   return convertReturnStmtBit(cast<ReturnStmt>(stmt));
 
-  case Stmt::SwitchStmtClass:
-    return convertSwitchStmtNew(cast<SwitchStmt>(stmt));
+  //AD: case Stmt::SwitchStmtClass:
+  //AD:   return convertSwitchStmtNew(cast<SwitchStmt>(stmt));
 
-  case Stmt::GotoStmtClass:
-    return convertGotoStmtBit(cast<GotoStmt>(stmt));
+  //AD: case Stmt::GotoStmtClass:
+  //AD:   return convertGotoStmtBit(cast<GotoStmt>(stmt));
 
-  case Stmt::CStyleCastExprClass:
-    return convertCStyleCastExpr(cast<CStyleCastExpr>(stmt));
+  //AD: case Stmt::CStyleCastExprClass:
+  //AD:   return convertCStyleCastExpr(cast<CStyleCastExpr>(stmt));
 
-  case Stmt::MemberExprClass:
-    return convertMemberExpr(cast<MemberExpr>(stmt));
+  //AD: case Stmt::MemberExprClass:
+  //AD:   return convertMemberExpr(cast<MemberExpr>(stmt));
 
-  case Stmt::ArraySubscriptExprClass:
-    return convertArraySubscriptExpr(cast<ArraySubscriptExpr>(stmt));
+  //AD: case Stmt::ArraySubscriptExprClass:
+  //AD:   return convertArraySubscriptExpr(cast<ArraySubscriptExpr>(stmt));
 
-  case Stmt::UnaryExprOrTypeTraitExprClass:
-    return convertUnaryExprOrTypeTraitExpr(
-        cast<UnaryExprOrTypeTraitExpr>(stmt));
+  //AD: case Stmt::UnaryExprOrTypeTraitExprClass:
+  //AD:   return convertUnaryExprOrTypeTraitExpr(
+  //AD:       cast<UnaryExprOrTypeTraitExpr>(stmt));
 
-  case Stmt::CallExprClass:
-    return convertCallExpr(cast<CallExpr>(stmt));
+  //AD: case Stmt::CallExprClass:
+  //AD:   return convertCallExpr(cast<CallExpr>(stmt));
 
     // case Stmt::CaseStmtClass:
     //   // we manually handle case stmt when we handle switch stmt
@@ -974,8 +1028,7 @@ SlangBitExpr slang::SpirGen::convertStmtBit(const Stmt *stmt) {
     break;
   }
 
-  slangExpr.expr = "ERROR:Unknown";
-  return slangExpr;
+  return slangBitExpr;
 } // convertStmtBit()
 
 /*
@@ -985,7 +1038,7 @@ SlangBitExpr slang::SpirGen::convertStmtBit(const Stmt *stmt) {
  *   `-StringLiteral 0x563d8a43fd88 <col:233> 'const char [23]' lvalue "int
  * main(int, char **)"
  */
-SlangExpr slang::SpirGen::convertPredefinedExpr(const PredefinedExpr *pe) {
+slang::SlangExpr slang::SpirGen::convertPredefinedExpr(const PredefinedExpr *pe) {
   auto it = pe->child_begin();
   return convertStmt(*it);
 } // convertPredefinedExpr()
@@ -997,7 +1050,7 @@ SlangExpr slang::SpirGen::convertPredefinedExpr(const PredefinedExpr *pe) {
  *   `-StringLiteral 0x563d8a43fd88 <col:233> 'const char [23]' lvalue "int
  * main(int, char **)"
  */
-SlangBitExpr
+slang::SlangBitExpr
 slang::SpirGen::convertPredefinedExprBit(const PredefinedExpr *pe) {
   auto it = pe->child_begin();
   return convertStmtBit(*it);
@@ -1006,7 +1059,7 @@ slang::SpirGen::convertPredefinedExprBit(const PredefinedExpr *pe) {
 /*
  * StmtExpr - This is the GNU Statement Expression extension: ({int X=4; X;}).
  */
-SlangExpr slang::SpirGen::convertStmtExpr(const StmtExpr *stmt) {
+slang::SlangExpr slang::SpirGen::convertStmtExpr(const StmtExpr *stmt) {
   SlangExpr expr;
 
   for (auto it = stmt->child_begin(); it != stmt->child_end(); ++it) {
@@ -1019,7 +1072,7 @@ SlangExpr slang::SpirGen::convertStmtExpr(const StmtExpr *stmt) {
 /*
  * StmtExpr - This is the GNU Statement Expression extension: ({int X=4; X;}).
  */
-SlangBitExpr slang::SpirGen::convertStmtExprBit(const StmtExpr *stmt) {
+slang::SlangBitExpr slang::SpirGen::convertStmtExprBit(const StmtExpr *stmt) {
   SlangBitExpr bitExpr;
 
   for (auto it = stmt->child_begin(); it != stmt->child_end(); ++it) {
@@ -1029,7 +1082,7 @@ SlangBitExpr slang::SpirGen::convertStmtExprBit(const StmtExpr *stmt) {
   return bitExpr; // return the last expression
 }
 
-SlangExpr slang::SpirGen::convertVarArrayVariable(QualType valueType,
+slang::SlangExpr slang::SpirGen::convertVarArrayVariable(QualType valueType,
                                                   QualType elementType) {
   const Type *elemTypePtr = elementType.getTypePtr();
   const VariableArrayType *varArrayType =
@@ -1075,7 +1128,7 @@ SlangExpr slang::SpirGen::convertVarArrayVariable(QualType valueType,
   }
 } // convertVarArrayVariable()
 
-spir::BitExpr slang::SpirGen::convertVarArrayVariableBit(QualType valueType,
+slang::SlangBitExpr slang::SpirGen::convertVarArrayVariableBit(QualType valueType,
                                                    QualType elementType) {
   const Type *elemTypePtr = elementType.getTypePtr();
   const VariableArrayType *varArrayType =
@@ -1083,17 +1136,17 @@ spir::BitExpr slang::SpirGen::convertVarArrayVariableBit(QualType valueType,
 
   if (elemTypePtr->isArrayType()) {
     // it will definitely be a VarArray Type (since this func is called)
-    SlangExpr tmpSubArraySize = convertVarArrayVariable(
+    SlangBitExpr tmpSubArraySize = convertVarArrayVariableBit(
         elementType, elemTypePtr->getAsArrayTypeUnsafe()->getElementType());
 
-    SlangExpr thisVarArrSizeExpr =
-        convertToTmp(convertStmt(varArrayType->getSizeExpr()));
+    SlangBitExpr thisVarArrSizeExpr =
+        convertToTmpBitExpr(convertStmtBit(varArrayType->getSizeExpr()));
 
-    SlangExpr sizeOfThisVarArrExpr = convertToTmp(createBinaryExpr(
-        thisVarArrSizeExpr, "op.BO_MUL", tmpSubArraySize,
-        thisVarArrSizeExpr.locStr, varArrayType->getSizeExpr()->getType()));
+    SlangBitExpr sizeOfThisVarArrExpr = convertToTmpBitExpr(createBinaryBitExpr(
+        thisVarArrSizeExpr, spir::K_XK::XMUL, tmpSubArraySize,
+        thisVarArrSizeExpr.srcLoc(), varArrayType->getSizeExpr()->getType()), false, true);
 
-    SlangExpr tmpThisArraySize = convertToTmp(sizeOfThisVarArrExpr);
+    SlangBitExpr tmpThisArraySize = convertToTmpBitExpr(sizeOfThisVarArrExpr, false, true);
     return tmpThisArraySize;
 
   } else {
@@ -1101,27 +1154,90 @@ spir::BitExpr slang::SpirGen::convertVarArrayVariableBit(QualType valueType,
     TypeInfo typeInfo = Ctx->getTypeInfo(elementType);
     uint64_t size = typeInfo.Width / 8;
 
-    SlangExpr thisVarArrSizeExpr =
-        convertToTmp(convertStmt(varArrayType->getSizeExpr()));
+    SlangBitExpr thisVarArrSizeExpr =
+        convertToTmpBitExpr(convertStmtBit(varArrayType->getSizeExpr()));
 
-    SlangExpr sizeOfInnerNonVarArrType;
-    std::stringstream ss;
-    ss << "expr.LitE(" << size;
-    ss << ", " << thisVarArrSizeExpr.locStr << ")";
-    sizeOfInnerNonVarArrType.expr = ss.str();
+    SlangBitExpr sizeOfInnerNonVarArrType = createLiteralBitExpr_Integer(size, false, thisVarArrSizeExpr.srcLoc());
     sizeOfInnerNonVarArrType.qualType = Ctx->UnsignedIntTy;
-    sizeOfInnerNonVarArrType.locStr = thisVarArrSizeExpr.locStr;
 
-    SlangExpr sizeOfThisVarArrExpr = convertToTmp(createBinaryExpr(
-        thisVarArrSizeExpr, "op.BO_MUL", sizeOfInnerNonVarArrType,
-        thisVarArrSizeExpr.locStr, sizeOfInnerNonVarArrType.qualType));
+    SlangBitExpr sizeOfThisVarArrExpr = convertToTmpBitExpr(createBinaryBitExpr(
+        thisVarArrSizeExpr, spir::K_XK::XMUL, sizeOfInnerNonVarArrType,
+        thisVarArrSizeExpr.srcLoc(), sizeOfInnerNonVarArrType.qualType), false, true);
 
-    SlangExpr tmpThisArraySize = convertToTmp(sizeOfThisVarArrExpr);
+    SlangBitExpr tmpThisArraySize = convertToTmpBitExpr(sizeOfThisVarArrExpr, false, true);
     return tmpThisArraySize;
   }
 } // convertVarArrayVariableBit()
 
-SlangExpr
+slang::SlangBitExpr
+slang::SpirGen::convertInitListExprBit(SlangBitExpr &lhs, const InitListExpr *initListExpr) {
+  uint32_t index = 0;
+  SLANG_DEBUG("INIT_LIST_EXPR_NEW dump:");
+  SLANG_DEBUG_GUARD(initListExpr->dump(); initListExpr->getType().dump(););
+
+  for (const auto *it = initListExpr->begin(); it != initListExpr->end();
+       ++it) {
+    const Stmt *stmt = *it;
+    // compute the lhs of the assignment
+    SlangBitExpr currLhs = genInitLhsBitExpr(lhs, initListExpr->getType(), index);
+
+    if (stmt->getStmtClass() == Stmt::InitListExprClass) {
+      // handle sub-init-list here
+      auto subInitExpr = cast<InitListExpr>(stmt);
+      SlangBitExpr subLhs = convertToTmp2BitExpr(currLhs); //, subInitExpr->getType());
+      convertInitListExprBit(subLhs, subInitExpr);
+    } else if (stmt->getStmtClass() == Stmt::ImplicitValueInitExprClass) {
+      // handle sub-init-list here
+      auto subInitExpr = cast<ImplicitValueInitExpr>(stmt);
+      SlangBitExpr subLhs = convertToTmp2BitExpr(currLhs); //, subInitExpr->getType());
+      convertImplicitValueInitExprBit(subLhs, subInitExpr);
+    } else {
+      // compute the rhs part
+      SlangBitExpr rhs = convertToTmpBitExpr(convertStmtBit(stmt));
+      addAssignBitInstr(currLhs, rhs);
+    }
+    index += 1;
+  }
+
+  return SlangBitExpr{};
+} // convertInitListExprBit()
+
+slang::SlangBitExpr slang::SpirGen::convertImplicitValueInitExprBit(
+    SlangBitExpr &lhs, // SlangVar& slangVar,
+    const ImplicitValueInitExpr *initListExpr) {
+//TODO  uint32_t index = 0;
+//TODO  SLANG_DEBUG("INIT_LIST_EXPR_NEW dump:");
+//TODO  initListExpr->dump();
+//TODO  initListExpr->getType().dump();
+//TODO
+//TODO  for (auto it = initListExpr->child_begin(); it != initListExpr->child_end();
+//TODO       ++it) {
+//TODO    const Stmt *stmt = *it;
+//TODO    // compute the lhs of the assignment
+//TODO    SlangExpr currLhs = genInitLhsExprNew(lhs, initListExpr->getType(), index);
+//TODO
+//TODO    if (stmt->getStmtClass() == Stmt::InitListExprClass) {
+//TODO      // handle sub-init-list here
+//TODO      auto subInitExpr = cast<InitListExpr>(stmt);
+//TODO      SlangExpr subLhs = convertToTmp2BitExpr(currLhs); //, subInitExpr->getType());
+//TODO      convertInitListExprNew(subLhs, subInitExpr);
+//TODO    } else if (stmt->getStmtClass() == Stmt::ImplicitValueInitExprClass) {
+//TODO      // handle sub-init-list here
+//TODO      auto subInitExpr = cast<ImplicitValueInitExpr>(stmt);
+//TODO      SlangExpr subLhs = convertToTmp2BitExpr(currLhs); //, subInitExpr->getType());
+//TODO      convertImplicitValueInitExprBit(subLhs, subInitExpr);
+//TODO    } else {
+//TODO      // compute the rhs part
+//TODO      SlangExpr rhs = convertToTmp(convertStmt(stmt));
+//TODO      addAssignInstr(currLhs, rhs, getLocationString(stmt));
+//TODO    }
+//TODO    index += 1;
+//TODO  }
+//TODO
+  return SlangBitExpr{};
+} // convertImplicitValueInitExprBit()
+
+slang::SlangExpr
 slang::SpirGen::convertInitListExprNew(SlangExpr &lhs, // SlangVar& slangVar,
                                        const InitListExpr *initListExpr) {
   uint32_t index = 0;
@@ -1156,7 +1272,7 @@ slang::SpirGen::convertInitListExprNew(SlangExpr &lhs, // SlangVar& slangVar,
   return SlangExpr{};
 } // convertInitListExprNew()
 
-SlangExpr slang::SpirGen::convertImplicitValueInitExpr(
+slang::SlangExpr slang::SpirGen::convertImplicitValueInitExpr(
     SlangExpr &lhs, // SlangVar& slangVar,
     const ImplicitValueInitExpr *initListExpr) {
   uint32_t index = 0;
@@ -1191,7 +1307,7 @@ SlangExpr slang::SpirGen::convertImplicitValueInitExpr(
   return SlangExpr{};
 } // convertImplicitCastExpr()
 
-SlangExpr slang::SpirGen::convertInitListExpr(
+slang::SlangExpr slang::SpirGen::convertInitListExpr(
     SlangVar &slangVar, const InitListExpr *initListExpr,
     const VarDecl *varDecl, std::vector<uint32_t> &indexVector,
     bool staticLocal) {
@@ -1229,7 +1345,39 @@ bool slang::SpirGen::isCompoundTypeAt(const VarDecl *varDecl,
   return true;
 }
 
-SlangExpr
+slang::SlangBitExpr
+slang::SpirGen::genInitLhsBitExpr(SlangBitExpr lhs, QualType initExprListQt, int index) {
+  SlangBitExpr slangExpr;
+
+  const auto *type = initExprListQt.getTypePtr();
+
+  if (type->isArrayType()) {
+    SlangBitExpr indexExpr = createLiteralBitExpr_Integer(index, false, lhs.srcLoc());
+    slangExpr = createBinaryBitExpr(lhs, spir::K_XK::XARR_INDX,
+        indexExpr, lhs.srcLoc(), type->getAsArrayTypeUnsafe()->getElementType());
+
+  } else {
+    // must be a record type
+    const RecordDecl *recordDecl;
+
+    if (type->isStructureType()) {
+      recordDecl = type->getAsStructureType()->getDecl();
+    } else { // must be a union then
+      recordDecl = type->getAsUnionType()->getDecl();
+    }
+
+    //TODO: complete the function
+    auto slangRecord = stu.getRecord((uint64_t)recordDecl);
+    //TODO slangRecord.genMemberAccessExpr(lhs.expr, lhs.locStr, index, slangExpr);
+  }
+
+  slangExpr.compound = true;
+  slangExpr.bitExpr->set_loc_line(lhs.srcLoc().line);
+  slangExpr.bitExpr->set_loc_col(lhs.srcLoc().col);
+  return SlangBitExpr{};
+} // genInitLhsBitExpr()
+
+slang::SlangExpr
 slang::SpirGen::genInitLhsExprNew(SlangExpr &lhs, // SlangVar& slangVar,
                                   QualType initExprListQt, int index) {
   SlangExpr slangExpr;
@@ -1268,7 +1416,7 @@ slang::SpirGen::genInitLhsExprNew(SlangExpr &lhs, // SlangVar& slangVar,
 // used to generate lhs (lvalue) for initializer lists like
 // int arr[][2] = {{1, 2}, {3, 4}, {5, 6}}; // for each element
 // it also works for the struct types
-SlangExpr slang::SpirGen::genInitLhsExpr(SlangVar &slangVar,
+slang::SlangExpr slang::SpirGen::genInitLhsExpr(SlangVar &slangVar,
                                          const VarDecl *varDecl,
                                          std::vector<uint32_t> &indexVector) {
   SlangExpr slangExpr;
@@ -1328,7 +1476,7 @@ SlangExpr slang::SpirGen::genInitLhsExpr(SlangVar &slangVar,
 } // genInitLhsExpr()
 
 // guaranteed to be a comma operator
-SlangExpr slang::SpirGen::convertBinaryCommaOp(const BinaryOperator *binOp) {
+slang::SlangExpr slang::SpirGen::convertBinaryCommaOp(const BinaryOperator *binOp) {
   auto it = binOp->child_begin();
   const Stmt *leftOprnd = *it;
   ++it;
@@ -1342,7 +1490,7 @@ SlangExpr slang::SpirGen::convertBinaryCommaOp(const BinaryOperator *binOp) {
 } // convertBinaryCommaOp()
 
 // guaranteed to be a comma operator
-SlangBitExpr
+slang::SlangBitExpr
 slang::SpirGen::convertBinaryCommaOpBit(const BinaryOperator *binOp) {
   auto it = binOp->child_begin();
   const Stmt *leftOprnd = *it;
@@ -1357,7 +1505,7 @@ slang::SpirGen::convertBinaryCommaOpBit(const BinaryOperator *binOp) {
   return rightExpr;
 } // convertBinaryCommaOpBit()
 
-SlangExpr slang::SpirGen::convertCallExpr(const CallExpr *callExpr) {
+slang::SlangExpr slang::SpirGen::convertCallExpr(const CallExpr *callExpr) {
   SlangExpr slangExpr;
 
   auto it = callExpr->child_begin();
@@ -1416,7 +1564,7 @@ bool slang::SpirGen::hasVoidReturnType(const CallExpr *callExpr) {
   return type->isVoidType();
 } // hasVoidReturnType()
 
-SlangExpr
+slang::SlangExpr
 slang::SpirGen::convertArraySubscriptExpr(const ArraySubscriptExpr *arrayExpr) {
   SlangExpr slangExpr;
   std::stringstream ss;
@@ -1445,7 +1593,57 @@ slang::SpirGen::convertArraySubscriptExpr(const ArraySubscriptExpr *arrayExpr) {
   return slangExpr;
 } // convertArraySubscript()
 
-SlangExpr slang::SpirGen::convertMemberExpr(const MemberExpr *memberExpr) {
+slang::SlangBitExpr slang::SpirGen::convertMemberExprBit(const MemberExpr *memberExpr) {
+  auto it = memberExpr->child_begin();
+  const Stmt *child = *it;
+  SlangBitExpr parentExpr = convertStmtBit(child);
+  SlangBitExpr parentTmpExpr;
+  SlangBitExpr memSlangExpr;
+  uint64_t recordTypeEid = 0;
+  std::stringstream ss;
+
+  // STEP 1: Get the id of the parent record type
+  auto recordQt = parentExpr.qualType;
+  if (parentExpr.qualType.getTypePtr()->isPointerType()) {
+    recordQt = parentExpr.qualType.getTypePtr()->getPointeeType();
+  }
+  auto mayVal = convertClangTypeBit(recordQt);
+  if (mayVal.errorCode) {
+    SLANG_ERROR("Failed to convert record type: " << mayVal.errorCode);
+  }
+  recordTypeEid = mayVal.value;
+
+  // STEP 2: Store parent to a temporary if it is a compound expression
+  parentTmpExpr = parentExpr;
+  if (parentExpr.compound) {
+    if (parentExpr.qualType.getTypePtr()->isPointerType()) {
+      //|| !(parentExpr.expr.substr(0,12) == "expr.MemberE"))
+      parentTmpExpr = convertToTmpBitExpr(parentExpr);
+    } else {
+      switch (parentExpr.bitExpr->xkind()) {
+        case spir::K_XK::XMEMBER_ACCESS:
+          parentExpr.bitExpr->set_xkind(spir::K_XK::XMEMBER_ADDROF);
+          break;
+        case spir::K_XK::XARR_INDX:
+          parentExpr.bitExpr->set_xkind(spir::K_XK::XARR_INDX_ADDROF);
+          break;
+        case spir::K_XK::XVAL:
+          parentExpr.bitExpr->set_xkind(spir::K_XK::XADDROF);
+          parentExpr.compound = true;
+          break;
+        default:
+          break;
+      }  
+      parentTmpExpr = convertToTmpBitExpr(parentExpr);
+    }
+  }
+
+  // STEP 3: Generate the member access bit expression.
+  auto expr = genMemberAccessBitExpr(parentTmpExpr, memberExpr, recordTypeEid, memberExpr->getType(), getSrcLocBit(memberExpr));
+  return expr;
+} // convertMemberExprBit()
+
+slang::SlangExpr slang::SpirGen::convertMemberExpr(const MemberExpr *memberExpr) {
   auto it = memberExpr->child_begin();
   const Stmt *child = *it;
   SlangExpr parentExpr = convertStmt(child);
@@ -1493,38 +1691,38 @@ SlangExpr slang::SpirGen::convertMemberExpr(const MemberExpr *memberExpr) {
   return memSlangExpr;
 } // convertMemberExpr()
 
-SlangExpr slang::SpirGen::convertCStyleCastExpr(const CStyleCastExpr *cCast) {
+slang::SlangExpr slang::SpirGen::convertCStyleCastExpr(const CStyleCastExpr *cCast) {
   auto it = cCast->child_begin();
   QualType qt = cCast->getType();
 
   return convertCastExpr(*it, qt, getLocationString(cCast));
 } // convertCStyleCastExpr()
 
-SlangExpr slang::SpirGen::convertGotoStmt(const GotoStmt *gotoStmt) {
+slang::SlangExpr slang::SpirGen::convertGotoStmt(const GotoStmt *gotoStmt) {
   std::string label = gotoStmt->getLabel()->getNameAsString();
   addGotoInstr(label);
   return SlangExpr{};
 } // convertGotoStmt()
 
-SlangBitExpr slang::SpirGen::convertGotoStmtBit(const GotoStmt *gotoStmt) {
+slang::SlangBitExpr slang::SpirGen::convertGotoStmtBit(const GotoStmt *gotoStmt) {
   std::string label = gotoStmt->getLabel()->getNameAsString();
-  BitEntity labelBit = createLabelBit(label, getSrcLocBit(gotoStmt));
-  addGotoInstrBit(labelBit);
+  spir::BitEntity labelBit = createLabelBit(label, getSrcLocBit(gotoStmt));
+  addGotoInstrBit(labelBit, getSrcLocBit(gotoStmt));
   return SlangBitExpr{};
 } // convertGotoStmt()
 
-SlangExpr slang::SpirGen::convertBreakStmt(const BreakStmt *breakStmt) {
+slang::SlangExpr slang::SpirGen::convertBreakStmt(const BreakStmt *breakStmt) {
   addGotoInstr(stu.peekExitLabel());
   return SlangExpr{};
 }
 
-SlangExpr
+slang::SlangExpr
 slang::SpirGen::convertContinueStmt(const ContinueStmt *continueStmt) {
   addGotoInstr(stu.peekEntryLabel());
   return SlangExpr{};
 }
 
-SlangExpr slang::SpirGen::convertSwitchStmtNew(const SwitchStmt *switchStmt) {
+slang::SlangExpr slang::SpirGen::convertSwitchStmtNew(const SwitchStmt *switchStmt) {
   auto oldSwitchCfls = stu.switchCfls;
   auto switchCfls = SwitchCtrlFlowLabels(stu.genNextLabelCountStr());
   stu.switchCfls = &switchCfls;
@@ -1561,7 +1759,7 @@ SlangExpr slang::SpirGen::convertSwitchStmtNew(const SwitchStmt *switchStmt) {
   return SlangExpr{};
 } // convertSwitchStmtNew()
 
-SlangExpr slang::SpirGen::convertCaseStmt(const CaseStmt *caseStmt) {
+slang::SlangExpr slang::SpirGen::convertCaseStmt(const CaseStmt *caseStmt) {
   if (stu.switchCfls->thisCaseCondLabel != "") {
     addGotoInstr(
         stu.switchCfls->nextBodyLabel); // add a fall through for prev body
@@ -1597,7 +1795,7 @@ SlangExpr slang::SpirGen::convertCaseStmt(const CaseStmt *caseStmt) {
   return SlangExpr{};
 }
 
-SlangExpr
+slang::SlangExpr
 slang::SpirGen::convertDefaultCaseStmt(const DefaultStmt *defaultStmt) {
   if (stu.switchCfls->thisCaseCondLabel != "") {
     addGotoInstr(
@@ -1618,7 +1816,7 @@ slang::SpirGen::convertDefaultCaseStmt(const DefaultStmt *defaultStmt) {
   return SlangExpr{};
 }
 
-SlangExpr slang::SpirGen::convertSwitchStmt(const SwitchStmt *switchStmt) {
+slang::SlangExpr slang::SpirGen::convertSwitchStmt(const SwitchStmt *switchStmt) {
   std::string id = stu.genNextLabelCountStr();
   std::string switchStartLabel = id + "SwitchStart";
   std::string switchExitLabel = id + "SwitchExit";
@@ -1877,7 +2075,7 @@ void slang::SpirGen::getDefaultStmt(std::vector<const Stmt *> &defaultStmt,
   }
 }
 
-SlangExpr slang::SpirGen::convertReturnStmt(const ReturnStmt *returnStmt) {
+slang::SlangExpr slang::SpirGen::convertReturnStmt(const ReturnStmt *returnStmt) {
   const Expr *retVal = returnStmt->getRetValue();
 
   SlangExpr retExpr = convertToTmp(convertStmt(retVal));
@@ -1893,18 +2091,18 @@ SlangExpr slang::SpirGen::convertReturnStmt(const ReturnStmt *returnStmt) {
   return SlangExpr{};
 }
 
-SlangBitExpr
+slang::SlangBitExpr
 slang::SpirGen::convertReturnStmtBit(const ReturnStmt *returnStmt) {
   const Expr *retVal = returnStmt->getRetValue();
 
-  SlangBitExpr retExpr = convertToTmpBit(convertStmtBit(retVal), false, true);
+  SlangBitExpr retExpr = convertToTmpBitExpr(convertStmtBit(retVal), false, true);
 
-  BitInsn *insn = new BitInsn();
-  BitSrcLoc srcLoc = getSrcLocBit(returnStmt);
+  spir::BitInsn *insn = new spir::BitInsn();
+  SrcLoc srcLoc = getSrcLocBit(returnStmt);
   insn->set_ikind(::spir::K_IK::IRETURN);
   insn->set_allocated_expr1(retExpr.bitExpr);
-  insn->set_loc_line(srcLoc.line());
-  insn->set_loc_col(srcLoc.col());
+  insn->set_loc_line(srcLoc.line);
+  insn->set_loc_col(srcLoc.col);
 
   stu.addStmtBit(insn);
 
@@ -1912,7 +2110,7 @@ slang::SpirGen::convertReturnStmtBit(const ReturnStmt *returnStmt) {
   return SlangBitExpr{};
 } // convertReturnStmtBit()
 
-SlangExpr
+slang::SlangExpr
 slang::SpirGen::convertConditionalOp(const ConditionalOperator *condOp) {
   const Expr *condition = condOp->getCond();
 
@@ -1933,7 +2131,7 @@ slang::SpirGen::convertConditionalOp(const ConditionalOperator *condOp) {
   return slangExpr;
 } // convertConditionalOp()
 
-SlangExpr slang::SpirGen::convertIfStmt(const IfStmt *ifStmt) {
+slang::SlangExpr slang::SpirGen::convertIfStmt(const IfStmt *ifStmt) {
   std::string id = stu.genNextLabelCountStr();
   std::string ifTrueLabel = id + "IfTrue";
   std::string ifFalseLabel = id + "IfFalse";
@@ -1966,7 +2164,7 @@ SlangExpr slang::SpirGen::convertIfStmt(const IfStmt *ifStmt) {
   return SlangExpr{}; // return empty expression
 } // convertIfStmt()
 
-SlangExpr slang::SpirGen::convertWhileStmt(const WhileStmt *whileStmt) {
+slang::SlangExpr slang::SpirGen::convertWhileStmt(const WhileStmt *whileStmt) {
   std::string id = stu.genNextLabelCountStr();
   std::string whileCondLabel = id + "WhileCond";
   std::string whileBodyLabel = id + "WhileBody";
@@ -1999,7 +2197,7 @@ SlangExpr slang::SpirGen::convertWhileStmt(const WhileStmt *whileStmt) {
   return SlangExpr{}; // return empty expression
 } // convertWhileStmt()
 
-SlangExpr slang::SpirGen::convertDoStmt(const DoStmt *doStmt) {
+slang::SlangExpr slang::SpirGen::convertDoStmt(const DoStmt *doStmt) {
   std::string id = stu.genNextLabelCountStr();
   std::string doEntry = "DoEntry" + id;
   std::string doCond = "DoCond" + id;
@@ -2027,7 +2225,7 @@ SlangExpr slang::SpirGen::convertDoStmt(const DoStmt *doStmt) {
   return SlangExpr{}; // return empty expression
 } // convertDoStmt()
 
-SlangExpr slang::SpirGen::convertForStmt(const ForStmt *forStmt) {
+slang::SlangExpr slang::SpirGen::convertForStmt(const ForStmt *forStmt) {
   std::string id = stu.genNextLabelCountStr();
   std::string forCondLabel = id + "ForCond";
   std::string forBodyLabel = id + "ForBody";
@@ -2076,7 +2274,7 @@ SlangExpr slang::SpirGen::convertForStmt(const ForStmt *forStmt) {
   return SlangExpr{}; // return empty expression
 } // convertForStmt()
 
-SlangExpr slang::SpirGen::convertCastExpr(const Stmt *expr, QualType qt,
+slang::SlangExpr slang::SpirGen::convertCastExpr(const Stmt *expr, QualType qt,
                                           std::string locStr) {
   // Generates CastE() expression.
   SlangExpr castExpr;
@@ -2102,7 +2300,7 @@ SlangExpr slang::SpirGen::convertCastExpr(const Stmt *expr, QualType qt,
   return castExpr;
 } // convertCastExpr()
 
-SlangExpr
+slang::SlangExpr
 slang::SpirGen::convertImplicitCastExpr(const ImplicitCastExpr *iCast) {
   // only one child is expected
   auto it = iCast->child_begin();
@@ -2122,7 +2320,7 @@ slang::SpirGen::convertImplicitCastExpr(const ImplicitCastExpr *iCast) {
   }
 }
 
-SlangExpr slang::SpirGen::convertCharacterLiteral(const CharacterLiteral *cl) {
+slang::SlangExpr slang::SpirGen::convertCharacterLiteral(const CharacterLiteral *cl) {
   std::stringstream ss;
   ss << "expr.LitE(" << cl->getValue();
   ss << ", " << getLocationString(cl) << ")";
@@ -2135,12 +2333,12 @@ SlangExpr slang::SpirGen::convertCharacterLiteral(const CharacterLiteral *cl) {
   return slangExpr;
 } // convertCharacterLiteral()
 
-SlangExpr slang::SpirGen::convertConstantExpr(const ConstantExpr *constExpr) {
+slang::SlangExpr slang::SpirGen::convertConstantExpr(const ConstantExpr *constExpr) {
   // a ConstantExpr contains a literal expression
   return convertStmt(constExpr->getSubExpr());
 } // convertConstantExpr()
 
-SlangExpr slang::SpirGen::convertIntegerLiteral(const IntegerLiteral *il) {
+slang::SlangExpr slang::SpirGen::convertIntegerLiteral(const IntegerLiteral *il) {
   std::stringstream ss;
   std::string suffix = ""; // helps make int appear float
 
@@ -2186,7 +2384,7 @@ SlangExpr slang::SpirGen::convertIntegerLiteral(const IntegerLiteral *il) {
   return slangExpr;
 } // convertIntegerLiteral()
 
-SlangExpr slang::SpirGen::convertFloatingLiteral(const FloatingLiteral *fl) {
+slang::SlangExpr slang::SpirGen::convertFloatingLiteral(const FloatingLiteral *fl) {
   std::stringstream ss;
   bool toInt = false;
 
@@ -2232,7 +2430,7 @@ SlangExpr slang::SpirGen::convertFloatingLiteral(const FloatingLiteral *fl) {
   return slangExpr;
 } // convertFloatingLiteral()
 
-SlangExpr slang::SpirGen::convertStringLiteral(const StringLiteral *sl) {
+slang::SlangExpr slang::SpirGen::convertStringLiteral(const StringLiteral *sl) {
   SlangExpr slangExpr;
   std::stringstream ss;
 
@@ -2248,7 +2446,7 @@ SlangExpr slang::SpirGen::convertStringLiteral(const StringLiteral *sl) {
   return slangExpr;
 } // convertStringLiteral()
 
-SlangExpr
+slang::SlangExpr
 slang::SpirGen::convertVariable(const VarDecl *varDecl, std::string locStr) {
   std::stringstream ss;
   SlangExpr slangExpr;
@@ -2263,22 +2461,22 @@ slang::SpirGen::convertVariable(const VarDecl *varDecl, std::string locStr) {
   return slangExpr;
 } // convertVariable()
 
-spir::BitEntity slang::SpirGen::convertVariableBit(const VarDecl *varDecl) {
+spir::BitEntity slang::SpirGen::convertVarDeclToBitEntity(const VarDecl *varDecl) {
   spir::BitEntity be;
   be.set_eid((uint64_t)varDecl);
-  spir::BitSrcLoc srcLoc = getSrcLocBit(varDecl);
-  be.set_line(srcLoc.line());
-  be.set_col(srcLoc.col());
+  SrcLoc srcLoc = getSrcLocBit(varDecl);
+  be.set_line(srcLoc.line);
+  be.set_col(srcLoc.col);
   return be;
-} // convertVariableBit()
+} // convertVarDeclToBitEntity()
 
-void slang::SpirGen::addBitExprOperand1(spir::BitExpr *expr, BitEntity be) {
+void slang::SpirGen::addBitExprOperand1(spir::BitExpr *expr, spir::BitEntity be) {
   expr->set_oprnd1eid(be.eid());
   expr->set_oprnd1_line(be.line());
   expr->set_oprnd1_col(be.col());
 }
 
-void slang::SpirGen::addBitExprOperand2(spir::BitExpr *expr, BitEntity be) {
+void slang::SpirGen::addBitExprOperand2(spir::BitExpr *expr, spir::BitEntity be) {
   expr->set_oprnd2eid(be.eid());
   expr->set_oprnd2_line(be.line());
   expr->set_oprnd2_col(be.col());
@@ -2288,7 +2486,7 @@ spir::BitExpr *slang::SpirGen::createBitExpr(spir::BitEntity be) {
   spir::BitExpr *expr = new spir::BitExpr();
 
   // Assumes a simple expression with no operators.
-  expr->set_xkind(K_XK::XVAL);
+  expr->set_xkind(spir::K_XK::XVAL);
 
   // Set the first operand only.
   expr->set_oprnd1eid(be.eid());
@@ -2301,8 +2499,8 @@ spir::BitExpr *slang::SpirGen::createBitExpr(spir::BitEntity be) {
   return expr;
 } // createBitExpr()
 
-spir::BitExpr *slang::SpirGen::createBitExpr(K_XK op, spir::BitEntity be1, spir::BitEntity be2,
-                                       BitSrcLoc srcLoc) {
+spir::BitExpr *slang::SpirGen::createBitExpr(spir::K_XK op, spir::BitEntity be1, spir::BitEntity be2,
+                                       SrcLoc srcLoc) {
   spir::BitExpr *expr = new spir::BitExpr();
   expr->set_xkind(op);
 
@@ -2321,17 +2519,16 @@ spir::BitExpr *slang::SpirGen::createBitExpr(K_XK op, spir::BitEntity be1, spir:
 
 // Extracts the spir::BitEntity from the spir::BitExpr.
 // It assumes the entity is the first operand of the expression.
-spir::BitEntity slang::SpirGen::convertBitExprToBitEntity(spir::BitExpr *expr,
-                                                    bool freeExpr = false) {
+spir::BitEntity slang::SpirGen::convertBitExprToBitEntity(spir::BitExpr *expr, bool freeExpr) {
   assert(expr != nullptr);
 
-  if (expr->xkind() != K_XK::XVAL) {
+  if (expr->xkind() != spir::K_XK::XVAL) {
     SLANG_ERROR("ERROR: Not a value expression: " << K_XK_Name(expr->xkind()));
-    return nullptr;
+    return spir::BitEntity{};
   }
 
   spir::BitEntity be;
-  be.set_eid(expr->opr1()->eid());
+  be.set_eid(expr->oprnd1eid());
   be.set_line(expr->oprnd1_line());
   be.set_col(expr->oprnd1_col());
 
@@ -2341,7 +2538,7 @@ spir::BitEntity slang::SpirGen::convertBitExprToBitEntity(spir::BitExpr *expr,
   return be;
 } // convertBitExprToBitEntity()
 
-SlangExpr slang::SpirGen::convertSlangVar(SlangVar &slangVar,
+slang::SlangExpr slang::SpirGen::convertSlangVar(SlangVar &slangVar,
                                           const VarDecl *varDecl) {
   std::stringstream ss;
   SlangExpr slangExpr;
@@ -2357,16 +2554,24 @@ SlangExpr slang::SpirGen::convertSlangVar(SlangVar &slangVar,
   return slangExpr;
 } // convertSlangVar()
 
-SlangBitExpr slang::SpirGen::convertSlangVarBit(uint64_t eid,
+slang::SlangBitExpr slang::SpirGen::convertSlangVarBit(uint64_t eid,
                                                 const VarDecl *varDecl) {
   SlangBitExpr slangBitExpr;
 
-  slangBitExpr.bitExpr = convertEntityToBitExpr(new spir::BitEntity(eid));
+  slangBitExpr.bitExpr = createBitExpr(createBitEntity(eid));
 
   return slangBitExpr;
 } // convertSlangVarBit()
 
-SlangExpr slang::SpirGen::convertEnumConst(const EnumConstantDecl *ecd,
+spir::BitEntity slang::SpirGen::createBitEntity(uint64_t eid, SrcLoc srcLoc) {
+  spir::BitEntity be;
+  be.set_eid(eid);
+  be.set_line(srcLoc.line);
+  be.set_col(srcLoc.col);
+  return be;
+} // createBitEntity()
+
+slang::SlangExpr slang::SpirGen::convertEnumConst(const EnumConstantDecl *ecd,
                                            std::string &locStr) {
   SlangExpr slangExpr;
 
@@ -2384,7 +2589,7 @@ SlangExpr slang::SpirGen::convertEnumConst(const EnumConstantDecl *ecd,
   return slangExpr;
 }
 
-SlangExpr slang::SpirGen::convertDeclRefExpr(const DeclRefExpr *dre) {
+slang::SlangExpr slang::SpirGen::convertDeclRefExpr(const DeclRefExpr *dre) {
   SlangExpr slangExpr;
   std::stringstream ss;
 
@@ -2427,7 +2632,7 @@ SlangExpr slang::SpirGen::convertDeclRefExpr(const DeclRefExpr *dre) {
 } // convertDeclRefExpr()
 
 // a || b , a && b
-SlangExpr slang::SpirGen::convertLogicalOp(const BinaryOperator *binOp) {
+slang::SlangExpr slang::SpirGen::convertLogicalOp(const BinaryOperator *binOp) {
   std::string nextCheck;
   std::string tmpReAssign;
   std::string exitLabel;
@@ -2492,7 +2697,7 @@ SlangExpr slang::SpirGen::convertLogicalOp(const BinaryOperator *binOp) {
 } // convertLogicalOp()
 
 // a || b , a && b
-SlangBitExpr slang::SpirGen::convertLogicalOpBit(const BinaryOperator *binOp) {
+slang::SlangBitExpr slang::SpirGen::convertLogicalOpBit(const BinaryOperator *binOp) {
   std::string nextCheck;
   std::string tmpReAssign;
   std::string exitLabel;
@@ -2527,18 +2732,16 @@ SlangBitExpr slang::SpirGen::convertLogicalOpBit(const BinaryOperator *binOp) {
   ++it;
   const Stmt *rightOprStmt = *it;
 
-  SlangExpr trueValue;
-  SlangExpr falseValue;
   auto trueValue = createLiteralBitExpr_Integer(1, false, getSrcLocBit(binOp));
   auto falseValue = createLiteralBitExpr_Integer(0, false, getSrcLocBit(binOp));
 
   // assign tmp = 1
   auto tmpVar =
       createBitExpr(genTmpBitEntity(spir::K_VK::TINT32, "L", getSrcLocBit(binOp)));
-  addAssignBitInstr(tmpVar, trueValue, getSrcLocBit(binOp));
+  addAssignBitInstr(tmpVar, trueValue);
 
   // check first part "a ||" or "a &&"
-  SlangBitExpr leftOprExpr = convertToIfTmp(convertStmt(leftOprStmt));
+  SlangBitExpr leftOprExpr = convertToIfTmpBit(convertStmtBit(leftOprStmt));
   if (op == "||") {
     addCondInstrBit(leftOprExpr, exitLabelBit, nextCheckLabelBit,
                     getSrcLocBit(leftOprStmt));
@@ -2548,22 +2751,22 @@ SlangBitExpr slang::SpirGen::convertLogicalOpBit(const BinaryOperator *binOp) {
   }
 
   // check second part || b, && b
-  addLabelInstrBit(nextCheckLabelBit);
+  addLabelInstrBit(nextCheckLabelBit, getSrcLocBit(rightOprStmt));
   SlangBitExpr rightOprExpr = convertToIfTmpBit(convertStmtBit(rightOprStmt));
   addCondInstrBit(rightOprExpr, exitLabelBit, tmpReAssignLabelBit,
                   getSrcLocBit(rightOprStmt));
 
   // assign tmp = 0
-  addLabelInstrBit(tmpReAssignLabelBit);
-  addAssignInstr(tmpVar, falseValue, getLocationString(binOp));
+  addLabelInstrBit(tmpReAssignLabelBit, getSrcLocBit(rightOprStmt) );
+  addAssignBitInstr(tmpVar, falseValue);
 
   // exit label
-  addLabelInstrBit(exitLabelBit);
+  addLabelInstrBit(exitLabelBit, getSrcLocBit(rightOprStmt));
 
   return tmpVar;
 } // convertLogicalOpBit()
 
-SlangExpr slang::SpirGen::convertUnaryIncDecOp(const UnaryOperator *unOp) {
+slang::SlangExpr slang::SpirGen::convertUnaryIncDecOp(const UnaryOperator *unOp) {
   auto it = unOp->child_begin();
   SlangExpr exprArg = convertStmt(*it);
 
@@ -2628,7 +2831,7 @@ spir::K_VK slang::SpirGen::getIntegerValueKind(uint64_t value, bool isSigned) {
       kind = spir::K_VK::TINT64;
     } else {
       kind =
-          spir::K_VK::TINT128; // Assume TINT128 exists and handles even bigger values
+          spir::K_VK::TINT64; // Assume TINT128 as TINT64 bit signed integer
     }
   } else { // unsigned
     if (value <= static_cast<uint64_t>(std::numeric_limits<uint8_t>::max())) {
@@ -2643,7 +2846,7 @@ spir::K_VK slang::SpirGen::getIntegerValueKind(uint64_t value, bool isSigned) {
                static_cast<uint64_t>(std::numeric_limits<uint64_t>::max())) {
       kind = spir::K_VK::TUINT64;
     } else {
-      kind = spir::K_VK::TUINT128; // Assume TUINT128 exists for much larger constants
+      kind = spir::K_VK::TUINT64; // Assume TUINT128 as TUINT64 bit unsigned integer
     }
   }
   return kind;
@@ -2692,15 +2895,15 @@ QualType slang::SpirGen::getIntegerValueQualType(uint64_t value,
     } else {
       // If value does not fit in 64-bit unsigned, use a custom 128-bit type if
       // available
-      if (Ctx->UInt128Ty.isNull()) {
+      if (Ctx->UnsignedInt128Ty.isNull()) {
         return Ctx->UnsignedLongLongTy;
       }
-      return Ctx->UInt128Ty;
+      return Ctx->UnsignedInt128Ty;
     }
   }
 } // getIntegerValueQualType()
 
-SlangBitExpr
+slang::SlangBitExpr
 slang::SpirGen::createLiteralBitExpr_Integer(uint64_t value, bool isSigned,
                                              slang::SrcLoc srcLoc) {
   SlangBitExpr slangExpr;
@@ -2716,15 +2919,15 @@ slang::SpirGen::createLiteralBitExpr_Integer(uint64_t value, bool isSigned,
   uint64_t entityId = (uint64_t)bitEntityInfo;
 
   // Create BitEntity from BitEntityInfo and entityId
-  spir::BitEntity *bitEntity = new spir::BitEntity();
-  bitEntity->set_id(entityId);
-  bitEntity->set_line(srcLoc.line);
-  bitEntity->set_col(srcLoc.col);
+  spir::BitEntity bitEntity;
+  bitEntity.set_eid(entityId);
+  bitEntity.set_line(srcLoc.line);
+  bitEntity.set_col(srcLoc.col);
 
   // Create BitExpr from the BitEntity with VAL operator type
   spir::BitExpr *bitExpr = new spir::BitExpr();
-  bitExpr->set_xkind(K_XK::XVAL);
-  addBitExprOperand1(bitExpr, bitEntity);
+  bitExpr->set_xkind(spir::K_XK::XVAL);
+  addBitExprOperand1(bitExpr,bitEntity);
   bitExpr->set_loc_line(srcLoc.line);
   bitExpr->set_loc_col(srcLoc.col);
 
@@ -2736,20 +2939,20 @@ slang::SpirGen::createLiteralBitExpr_Integer(uint64_t value, bool isSigned,
   return slangExpr;
 } // createLiteralBitExpr_Integer()
 
-SlangBitExpr
+slang::SlangBitExpr
 slang::SpirGen::convertUnaryIncDecOpBit(const UnaryOperator *unOp) {
   auto it = unOp->child_begin();
   SlangBitExpr bitExprArg = convertStmtBit(*it);
 
-  K_XK incDecOp;
+  spir::K_XK incDecOp;
   switch (unOp->getOpcode()) {
   case UO_PreInc:
   case UO_PostInc:
-    incDecOp = K_XK::XADD;
+    incDecOp = spir::K_XK::XADD;
     break;
   case UO_PostDec:
   case UO_PreDec:
-    incDecOp = K_XK::XSUB;
+    incDecOp = spir::K_XK::XSUB;
     break;
   default:
     break;
@@ -2759,7 +2962,7 @@ slang::SpirGen::convertUnaryIncDecOpBit(const UnaryOperator *unOp) {
       createLiteralBitExpr_Integer(1, false, getSrcLocBit(unOp));
 
   // Expression to add or subtract constant 1.
-  SlangExpr incDecExpr = createBinaryBitExpr(
+  SlangBitExpr incDecExpr = createBinaryBitExpr(
       bitExprArg /*left operand*/, incDecOp, litOne /*right operand*/,
       getSrcLocBit(unOp), bitExprArg.qualType);
 
@@ -2768,7 +2971,7 @@ slang::SpirGen::convertUnaryIncDecOpBit(const UnaryOperator *unOp) {
   case UO_PreDec: {
     addAssignBitInstr(bitExprArg, incDecExpr);
     incDecExpr.deleteBitExpr();
-    return convertToTmpBit(bitExprArg, true); // FIXME: why force=true?
+    return convertToTmpBitExpr(bitExprArg, true); // FIXME: why force=true?
   }
 
   case UO_PostInc:
@@ -2776,7 +2979,7 @@ slang::SpirGen::convertUnaryIncDecOpBit(const UnaryOperator *unOp) {
     // Keep the original value in a temporary and return it.
     // In the current expression the temporary gets used.
     // Assign the inc/decremented value in the original variable.
-    SlangBitExpr tmpExpr = convertToTmpBit(bitExprArg, true);
+    SlangBitExpr tmpExpr = convertToTmpBitExpr(bitExprArg, true);
     addAssignBitInstr(bitExprArg, incDecExpr);
     incDecExpr.deleteBitExpr();
     return tmpExpr;
@@ -2787,10 +2990,10 @@ slang::SpirGen::convertUnaryIncDecOpBit(const UnaryOperator *unOp) {
                 << unOp->getOpcodeStr(unOp->getOpcode()));
     break;
   }
-  return exprArg;
+  return SlangBitExpr{}; // FIXME
 } // convertUnaryIncDecOpBit()
 
-SlangExpr slang::SpirGen::convertUnaryOperator(const UnaryOperator *unOp) {
+slang::SlangExpr slang::SpirGen::convertUnaryOperator(const UnaryOperator *unOp) {
   switch (unOp->getOpcode()) {
   case UO_PreInc:
   case UO_PostInc:
@@ -2845,7 +3048,7 @@ SlangExpr slang::SpirGen::convertUnaryOperator(const UnaryOperator *unOp) {
                          getImplicitType(unOp, unOp->getType()));
 } // convertUnaryOperator()
 
-SlangBitExpr
+slang::SlangBitExpr
 slang::SpirGen::convertUnaryOperatorBit(const UnaryOperator *unOp) {
   switch (unOp->getOpcode()) {
   case UO_PreInc:
@@ -2861,28 +3064,28 @@ slang::SpirGen::convertUnaryOperatorBit(const UnaryOperator *unOp) {
   auto it = unOp->child_begin();
   SlangBitExpr sbExpr = convertToTmpBitExpr(convertStmtBit(*it), false, true);
 
-  K_XK opKind;
+  spir::K_XK opKind;
   switch (unOp->getOpcode()) {
   default:
     SLANG_DEBUG("convertUnaryOp: " << unOp->getOpcodeStr(unOp->getOpcode()))
     break;
   case UO_AddrOf:
-    opKind = K_XK::XADDROF;
+    opKind = spir::K_XK::XADDROF;
     break;
   case UO_Deref:
-    opKind = K_XK::XDEREF;
+    opKind = spir::K_XK::XDEREF;
     break;
   case UO_Minus:
-    opKind = K_XK::XNEGATE;
+    opKind = spir::K_XK::XNEGATE;
     break;
   case UO_Plus:
-    opKind = K_XK::XVAL;
+    opKind = spir::K_XK::XVAL;
     break; // silently remove the + sign
   case UO_LNot:
-    opKind = K_XK::XNOT;
+    opKind = spir::K_XK::XNOT;
     break;
   case UO_Not:
-    opKind = K_XK::XBIT_NOT;
+    opKind = spir::K_XK::XBIT_NOT;
     break;
   case UO_Extension:
     // doesn't handle __extension__ expressions -- return a 0 constant instead.
@@ -2893,7 +3096,7 @@ slang::SpirGen::convertUnaryOperatorBit(const UnaryOperator *unOp) {
                             getImplicitType(unOp, unOp->getType()));
 } // convertUnaryOperatorBit()
 
-SlangExpr slang::SpirGen::convertUnaryExprOrTypeTraitExpr(
+slang::SlangExpr slang::SpirGen::convertUnaryExprOrTypeTraitExpr(
     const UnaryExprOrTypeTraitExpr *stmt) {
   SlangExpr slangExpr;
   SlangExpr innerExpr;
@@ -2948,7 +3151,7 @@ SlangExpr slang::SpirGen::convertUnaryExprOrTypeTraitExpr(
   return slangExpr;
 } // convertUnaryExprOrTypeTraitExpr()
 
-SlangExpr slang::SpirGen::convertBinaryOperator(const BinaryOperator *binOp) {
+slang::SlangExpr slang::SpirGen::convertBinaryOperator(const BinaryOperator *binOp) {
   SlangExpr slangExpr;
 
   if (binOp->isCompoundAssignmentOp()) {
@@ -3038,7 +3241,7 @@ SlangExpr slang::SpirGen::convertBinaryOperator(const BinaryOperator *binOp) {
   return slangExpr;
 } // convertBinaryOperator()
 
-SlangBitExpr
+slang::SlangBitExpr
 slang::SpirGen::convertBinaryOperatorBit(const BinaryOperator *binOp) {
   if (binOp->isCompoundAssignmentOp()) {
     return convertCompoundAssignmentOpBit(binOp);
@@ -3048,70 +3251,70 @@ slang::SpirGen::convertBinaryOperatorBit(const BinaryOperator *binOp) {
     return convertLogicalOpBit(binOp);
   }
 
-  K_XK op;
+  spir::K_XK op;
   bool flipOperands = false;
   switch (binOp->getOpcode()) {
     // NOTE : && and || are handled in convertConditionalOp()
 
   case BO_Add:
-    op = K_XK::XADD;
+    op = spir::K_XK::XADD;
     break;
   case BO_Sub:
-    op = K_XK::XSUB;
+    op = spir::K_XK::XSUB;
     break;
   case BO_Mul:
-    op = K_XK::XMUL;
+    op = spir::K_XK::XMUL;
     break;
   case BO_Div:
-    op = K_XK::XDIV;
+    op = spir::K_XK::XDIV;
     break;
   case BO_Rem:
-    op = K_XK::XMOD;
+    op = spir::K_XK::XMOD;
     break;
 
   case BO_LT:
-    op = K_XK::XLT;
+    op = spir::K_XK::XLT;
     break;
   case BO_LE:
-    op = K_XK::XGE;
+    op = spir::K_XK::XGE;
     flipOperands = true;
     break;
   case BO_EQ:
-    op = K_XK::XEQ;
+    op = spir::K_XK::XEQ;
     break;
   case BO_NE:
-    op = K_XK::XNE;
+    op = spir::K_XK::XNE;
     break;
   case BO_GE:
-    op = K_XK::XGE;
+    op = spir::K_XK::XGE;
     break;
   case BO_GT:
-    op = K_XK::XLT;
+    op = spir::K_XK::XLT;
     flipOperands = true;
     break;
 
   case BO_Or:
-    op = K_XK::XBIT_OR;
+    op = spir::K_XK::XOR;
     break;
   case BO_And:
-    op = K_XK::XBIT_AND;
+    op = spir::K_XK::XAND;
     break;
   case BO_Xor:
-    op = K_XK::XBIT_XOR;
+    op = spir::K_XK::XXOR;
     break;
 
   case BO_Shl:
-    op = K_XK::XLSHIFT;
+    op = spir::K_XK::XSHL;
     break;
   case BO_Shr:
-    op = K_XK::XRSHIFT;
+    op = spir::K_XK::XSHR;
     break;
 
   case BO_Comma:
     return convertBinaryCommaOpBit(binOp);
 
   default:
-    op = K_XK::XNIL;
+    op = spir::K_XK::XNIL;
     break;
   }
 
@@ -3120,18 +3323,18 @@ slang::SpirGen::convertBinaryOperatorBit(const BinaryOperator *binOp) {
   ++it;
   const Stmt *rightOprStmt = *it;
 
-  SlangExpr leftOprExpr = convertStmt(leftOprStmt);
-  SlangExpr rightOprExpr = convertStmt(rightOprStmt);
+  SlangBitExpr leftOprExpr = convertStmtBit(leftOprStmt);
+  SlangBitExpr rightOprExpr = convertStmtBit(rightOprStmt);
 
   SlangBitExpr sbExpr;
   if (flipOperands) {
     // Used to replace GT with LT and LE with GE by flipping the operands.
     sbExpr = createBinaryBitExpr(rightOprExpr, op, leftOprExpr,
-                                 getLocationString(binOp),
+                                 getSrcLocBit(binOp),
                                  getImplicitType(binOp, binOp->getType()));
   } else {
     sbExpr = createBinaryBitExpr(leftOprExpr, op, rightOprExpr,
-                                 getLocationString(binOp),
+                                 getSrcLocBit(binOp),
                                  getImplicitType(binOp, binOp->getType()));
   }
 
@@ -3141,7 +3344,7 @@ slang::SpirGen::convertBinaryOperatorBit(const BinaryOperator *binOp) {
 } // convertBinaryOperatorBit()
 
 // stores the given expression into a tmp variable
-SlangExpr slang::SpirGen::convertToTmp(SlangExpr slangExpr, bool force) {
+slang::SlangExpr slang::SpirGen::convertToTmp(SlangExpr slangExpr, bool force) {
   if (slangExpr.compound || force == true) {
     SlangExpr tmpExpr;
     if (slangExpr.qualType.isNull() ||
@@ -3179,9 +3382,7 @@ SlangExpr slang::SpirGen::convertToTmp(SlangExpr slangExpr, bool force) {
 // Stores the given expression into a tmp variable if it is compound,
 // or the force flag is true.
 // To assign constant literals to a temporary, use force = true.
-SlangBitExpr slang::SpirGen::convertToTmpBitExpr(SlangBitExpr expr,
-                                                 bool force = false,
-                                                 bool gc = false) {
+slang::SlangBitExpr slang::SpirGen::convertToTmpBitExpr(SlangBitExpr expr, bool force, bool gc) {
   // STEP 1: Return the expr unchanged if it is a simple value (unless forced
   // otherwise)
   if (force == false) {
@@ -3197,7 +3398,7 @@ SlangBitExpr slang::SpirGen::convertToTmpBitExpr(SlangBitExpr expr,
   // Always use a default signed 32-bit int type for tmpVarType.
   QualType tmpVarType = Ctx->getIntTypeForBitwidth(32, /*Signed=*/true);
   if (expr.qualType.isNull() || expr.qualType.getTypePtr()->isVoidType()) {
-      bEntity = genTmpBitEntity(spir::K_VK::TINT32, "t", expr.srcLoc()));
+      bEntity = genTmpBitEntity(spir::K_VK::TINT32, "t", expr.srcLoc());
   } else {
     if (expr.qualType.getTypePtr()->isArrayType()) {
       // for array type, generate a tmp variable which is a pointer
@@ -3221,29 +3422,69 @@ SlangBitExpr slang::SpirGen::convertToTmpBitExpr(SlangBitExpr expr,
 
   spir::BitExpr *bExpr = createBitExpr(bEntity);
   SlangBitExpr sbExpr = createSlangExprFromBitExpr(bExpr, tmpVarType, true);
-  stu.addAssignBitInstr(sbExpr, expr);
+  addAssignBitInstr(sbExpr, expr);
   if (gc == true) {
     expr.deleteBitExpr();
   }
   return sbExpr;
 } // convertToTmpBitExpr()
 
-SlangBitExpr *slang::SpirGen::createSlangExprFromBitExpr(spir::BitExpr *bitExpr,
-                                                         QualType type,
-                                                         bool isTmp = false) {
-  SlangBitExpr *slangBitExpr = new SlangBitExpr();
+slang::SlangBitExpr slang::SpirGen::createSlangExprFromBitExpr(spir::BitExpr *bitExpr, QualType type, bool isTmp) {
+  SlangBitExpr slangBitExpr;
 
-  slangBitExpr->bitExpr = bitExpr;
-  slangBitExpr->qualType = type;
-  slangBitExpr->nonTmpVar = !isTmp;
-  slangBitExpr->compound = isBitExprCompound(bitExpr);
+  slangBitExpr.bitExpr = bitExpr;
+  slangBitExpr.qualType = type;
+  slangBitExpr.nonTmpVar = !isTmp;
+  slangBitExpr.compound = isBitExprCompound(bitExpr);
 
   return slangBitExpr;
 }
 
 // stores the given expression into a tmp variable
-SlangExpr slang::SpirGen::convertToTmp2(SlangExpr slangExpr,
-                                        bool force = false) {
+slang::SlangBitExpr
+slang::SpirGen::convertToTmp2BitExpr(SlangBitExpr slangExpr, bool force, bool gc) {
+  if (slangExpr.compound || force == true) {
+    spir::BitEntity tmpEntity;
+    if (slangExpr.qualType.isNull() ||
+        slangExpr.qualType.getTypePtr()->isVoidType()) {
+      tmpEntity = genTmpBitEntity(spir::K_VK::TINT32, "t", slangExpr.srcLoc());
+
+    } else {
+      if (slangExpr.qualType.getTypePtr()->isArrayType()) {
+        // for array type, generate a tmp variable which is a pointer
+        // to its element types.
+        const Type *type = slangExpr.qualType.getTypePtr();
+        const ArrayType *arrayType = type->getAsArrayTypeUnsafe();
+        QualType elementType = arrayType->getElementType();
+        QualType tmpVarType = Ctx->getPointerType(elementType);
+        tmpEntity = genTmpBitEntity(spir::K_VK::TNIL, "t", slangExpr.srcLoc(), tmpVarType);
+
+      } else if (slangExpr.qualType.getTypePtr()->isFunctionType()) {
+        // create a tmp variable which is a pointer to the function type
+        QualType tmpVarType = Ctx->getPointerType(slangExpr.qualType);
+        tmpEntity = genTmpBitEntity(spir::K_VK::TNIL, "t", slangExpr.srcLoc(), tmpVarType);
+
+      } else if (slangExpr.qualType.getTypePtr()->isRecordType()) {
+        QualType recordPtr = Ctx->getPointerType(slangExpr.qualType);
+        tmpEntity = genTmpBitEntity(spir::K_VK::TNIL, "t", slangExpr.srcLoc(), recordPtr);
+        slangExpr = createUnaryBitExpr(spir::K_XK::XADDROF, slangExpr,
+            slangExpr.srcLoc(), recordPtr);
+
+      } else {
+        tmpEntity = genTmpBitEntity(spir::K_VK::TNIL, "t", slangExpr.srcLoc(), slangExpr.qualType);
+      }
+    }
+
+    SlangBitExpr tmpExpr = createBitExpr(tmpEntity);
+    addAssignBitInstr(tmpExpr, slangExpr);
+    return tmpExpr;
+  } else {
+    return slangExpr;
+  }
+} // convertToTmp2BitExpr()
+
+// stores the given expression into a tmp variable
+slang::SlangExpr slang::SpirGen::convertToTmp2(SlangExpr slangExpr, bool force) {
 
   if (slangExpr.compound || force == true) {
     bool takeAddress = false;
@@ -3292,8 +3533,7 @@ SlangExpr slang::SpirGen::convertToTmp2(SlangExpr slangExpr,
 } // convertToTmp2()
 
 // special tmp variable for if "t.1if", "t.2if" etc...
-SlangExpr slang::SpirGen::convertToIfTmp(SlangExpr slangExpr,
-                                         bool force = false) {
+slang::SlangExpr slang::SpirGen::convertToIfTmp(SlangExpr slangExpr, bool force) {
   if (slangExpr.compound || force == true) {
     SlangExpr tmpExpr;
     if (slangExpr.qualType.isNull()) {
@@ -3314,15 +3554,13 @@ SlangExpr slang::SpirGen::convertToIfTmp(SlangExpr slangExpr,
 } // convertToIfTmp()
 
 // special tmp variable for if "t.1if", "t.2if" etc...
-SlangBitExpr slang::SpirGen::convertToIfTmpBit(SlangBitExpr expr,
-                                               bool force = false,
-                                               bool gc = false) {
+slang::SlangBitExpr slang::SpirGen::convertToIfTmpBit(SlangBitExpr expr, bool force, bool gc) {
   if (expr.compound || force == true) {
     spir::BitEntity tmp =
         genTmpBitEntity(spir::K_VK::TINT32, "if", expr.srcLoc(), expr.qualType);
-    SlangBitExpr *tmpExpr = createBitExpr(tmp);
-    tmpExpr->nonTmpVar = false;
-    stu.addAssignBitInstr(tmpExpr, expr);
+    SlangBitExpr tmpExpr = SlangBitExpr(createBitExpr(tmp));
+    tmpExpr.nonTmpVar = false;
+    addAssignBitInstr(tmpExpr, expr);
     if (gc) {
       expr.deleteBitExpr();
     }
@@ -3332,7 +3570,7 @@ SlangBitExpr slang::SpirGen::convertToIfTmpBit(SlangBitExpr expr,
   }
 } // convertToIfTmpBit()
 
-SlangExpr
+slang::SlangExpr
 slang::SpirGen::convertCompoundAssignmentOp(const BinaryOperator *binOp) {
   auto it = binOp->child_begin();
   const Stmt *lhs = *it;
@@ -3398,7 +3636,7 @@ slang::SpirGen::convertCompoundAssignmentOp(const BinaryOperator *binOp) {
   return lhsExpr;
 } // convertCompoundAssignmentOp()
 
-SlangBitExpr
+slang::SlangBitExpr
 slang::SpirGen::convertCompoundAssignmentOpBit(const BinaryOperator *binOp) {
   auto it = binOp->child_begin();
   const Stmt *lhs = *it;
@@ -3411,49 +3649,49 @@ slang::SpirGen::convertCompoundAssignmentOpBit(const BinaryOperator *binOp) {
     rhsExpr = convertToTmpBitExpr(rhsExpr, false, true);
   }
 
-  K_XK op;
+  spir::K_XK op;
   switch (binOp->getOpcode()) {
   case BO_ShlAssign:
-    op = K_XK::XLSHIFT;
+    op = spir::K_XK::XSHL;
     break;
   case BO_ShrAssign:
-    op = K_XK::XRSHIFT;
+    op = spir::K_XK::XSHR;
     break;
 
   case BO_OrAssign:
-    op = K_XK::XBIT_OR;
+    op = spir::K_XK::XOR;
     break;
   case BO_AndAssign:
-    op = K_XK::XBIT_AND;
+    op = spir::K_XK::XAND;
     break;
   case BO_XorAssign:
-    op = K_XK::XBIT_XOR;
+    op = spir::K_XK::XXOR;
     break;
 
   case BO_AddAssign:
-    op = K_XK::XADD;
+    op = spir::K_XK::XADD;
     break;
   case BO_SubAssign:
-    op = K_XK::XSUB;
+    op = spir::K_XK::XSUB;
     break;
   case BO_MulAssign:
-    op = K_XK::XMUL;
+    op = spir::K_XK::XMUL;
     break;
   case BO_DivAssign:
-    op = K_XK::XDIV;
+    op = spir::K_XK::XDIV;
     break;
   case BO_RemAssign:
-    op = K_XK::XMOD;
+    op = spir::K_XK::XMOD;
     break;
 
   default:
-    op = K_XK::XNIL;
+    op = spir::K_XK::XNIL;
     break;
   }
 
   SlangBitExpr newRhsExpr;
   newRhsExpr = createBinaryBitExpr(lhsExpr, op, rhsExpr,
-                                   getLocationString(binOp), lhsExpr.qualType);
+                                   getSrcLocBit(binOp), lhsExpr.qualType);
   if (lhsExpr.compound) {
     newRhsExpr = convertToTmpBitExpr(newRhsExpr, false, true);
   }
@@ -3463,7 +3701,7 @@ slang::SpirGen::convertCompoundAssignmentOpBit(const BinaryOperator *binOp) {
   return lhsExpr;
 } // convertCompoundAssignmentOp()
 
-SlangExpr slang::SpirGen::convertAssignmentOp(const BinaryOperator *binOp) {
+slang::SlangExpr slang::SpirGen::convertAssignmentOp(const BinaryOperator *binOp) {
   SlangExpr lhsExpr, rhsExpr;
 
   auto it = binOp->child_begin();
@@ -3482,7 +3720,7 @@ SlangExpr slang::SpirGen::convertAssignmentOp(const BinaryOperator *binOp) {
   return lhsExpr;
 } // convertAssignmentOp()
 
-SlangBitExpr
+slang::SlangBitExpr
 slang::SpirGen::convertAssignmentOpBit(const BinaryOperator *binOp) {
   SlangBitExpr lhsExpr, rhsExpr;
 
@@ -3494,14 +3732,14 @@ slang::SpirGen::convertAssignmentOpBit(const BinaryOperator *binOp) {
   lhsExpr = convertStmtBit(lhs);
 
   if (lhsExpr.compound && rhsExpr.compound) {
-    rhsExpr = convertToTmpBit(rhsExpr, false, true);
+    rhsExpr = convertToTmpBitExpr(rhsExpr, false, true);
   }
 
-  addAssignBitInstr(lhsExpr, rhsExpr, getLocationString(binOp));
+  addAssignBitInstr(lhsExpr, rhsExpr);
   return lhsExpr;
 } // convertAssignmentOp()
 
-SlangExpr
+slang::SlangExpr
 slang::SpirGen::convertCompoundStmt(const CompoundStmt *compoundStmt) {
   SlangExpr slangExpr;
 
@@ -3514,17 +3752,17 @@ slang::SpirGen::convertCompoundStmt(const CompoundStmt *compoundStmt) {
   return slangExpr;
 } // convertCompoundStmt()
 
-SlangExpr slang::SpirGen::convertParenExpr(const ParenExpr *parenExpr) {
+slang::SlangExpr slang::SpirGen::convertParenExpr(const ParenExpr *parenExpr) {
   auto it = parenExpr->child_begin(); // should have only one child
   return convertStmt(*it);
 } // convertParenExpr()
 
-SlangBitExpr slang::SpirGen::convertParenExprBit(const ParenExpr *parenExpr) {
+slang::SlangBitExpr slang::SpirGen::convertParenExprBit(const ParenExpr *parenExpr) {
   auto it = parenExpr->child_begin(); // should have only one child
   return convertStmtBit(*it);
 } // convertParenExprBit()
 
-SlangExpr slang::SpirGen::convertLabel(const LabelStmt *labelStmt) {
+slang::SlangExpr slang::SpirGen::convertLabel(const LabelStmt *labelStmt) {
   SlangExpr slangExpr;
   std::stringstream ss;
 
@@ -3606,21 +3844,21 @@ std::string slang::SpirGen::convertClangType(QualType qt) {
 
 // convertClangTypeBit converts clang type to span ir proto types.
 // It uses an existing or a new spir::BitDataType and returns its id (pointer address
-// of the qualtype). It returns errorCode 0 if successful.
-MayValue slang::SpirGen::convertClangTypeBit(QualType qt) {
+// of the qualtype). It returns a slang::MayValue with errorCode 0 if successful.
+slang::MayValue slang::SpirGen::convertClangTypeBit(QualType qt) {
   spir::BitDataType dt;
-  MayValue result;
+  slang::MayValue result;
 
   if (qt.isNull()) {
     if (stu.bittu.datatypes().find(uint64_t(K_00_INT32_TYPE_EID)) !=
         stu.bittu.datatypes().end()) {
-      return MayValue(OK /*errorCode*/, 0 /*value*/);
+      return slang::MayValue(OK /*errorCode*/, 0 /*value*/);
     } else {
       // By default, assume the type is int32
       dt.set_vkind(spir::K_VK::TINT32);
       dt.set_typeid_(K_00_INT32_TYPE_EID);
       stu.bittu.mutable_datatypes()->emplace(K_00_INT32_TYPE_EID, dt);
-      return MayValue(OK /*errorCode*/, 0 /*value*/);
+      return slang::MayValue(OK /*errorCode*/, 0 /*value*/);
     }
 
     return 0;
@@ -3632,7 +3870,7 @@ MayValue slang::SpirGen::convertClangTypeBit(QualType qt) {
 
   // Return the id (pointer address of the qualtype) if it exists.
   if (stu.bittu.datatypes().find(typeKey) != stu.bittu.datatypes().end()) {
-    return MayValue(OK /*errorCode*/, typeKey);
+    return slang::MayValue(OK /*errorCode*/, typeKey);
   }
 
   if (typePtr->isBuiltinType()) {
@@ -3642,7 +3880,7 @@ MayValue slang::SpirGen::convertClangTypeBit(QualType qt) {
     dt.set_vkind(spir::K_VK::TINT32); // Default to int32
     dt.set_typeid_(typeKey);
     stu.bittu.mutable_datatypes()->emplace(typeKey, dt);
-    return MayValue(OK, typeKey);
+    return slang::MayValue(OK, typeKey);
 
   } else if (typePtr->isFunctionPointerType()) {
     // should be before ->isPointerType() check below
@@ -3655,10 +3893,10 @@ MayValue slang::SpirGen::convertClangTypeBit(QualType qt) {
       return result;
     }
     dt.set_vkind(getPtrKindBit(stu.bittu.datatypes().at(result.value).vkind()));
-    dt.set_subTypeEid(result.value);
+    dt.set_subtypeeid(result.value);
     dt.set_typeid_(typeKey);
     stu.bittu.mutable_datatypes()->emplace(typeKey, dt);
-    return MayValue(OK, typeKey);
+    return slang::MayValue(OK, typeKey);
 
   } else if (typePtr->isRecordType()) {
     const RecordDecl *rdecl;
@@ -3667,7 +3905,7 @@ MayValue slang::SpirGen::convertClangTypeBit(QualType qt) {
     } else if (typePtr->isUnionType()) {
       rdecl = typePtr->getAsUnionType()->getDecl();
     } else {
-      return MayValue(ERR(120));
+      return slang::MayValue(ERR(120));
     }
     return convertClangRecordTypeBit(rdecl, typeKey);
 
@@ -3678,7 +3916,7 @@ MayValue slang::SpirGen::convertClangTypeBit(QualType qt) {
     return convertFunctionPrototypeBit(qt, typeKey);
 
   } else {
-    return MayValue(ERR(121));
+    return slang::MayValue(ERR(121));
   }
 
 } // convertClangTypeBit()
@@ -3718,7 +3956,6 @@ spir::K_VK slang::SpirGen::getPtrKindBit(spir::K_VK pointeeKind) {
     return spir::K_VK::TPTR_TO_VOID;
   }
 } // getPtrKindBit()
-}
 
 std::string slang::SpirGen::convertClangBuiltinType(QualType qt) {
   std::stringstream ss;
@@ -3764,7 +4001,7 @@ std::string slang::SpirGen::convertClangBuiltinType(QualType qt) {
 } // convertClangBuiltinType()
 
 // Returns 0 if successful, non-zero if error
-MayValue slang::SpirGen::convertClangBuiltinTypeBit(QualType qt,
+slang::MayValue slang::SpirGen::convertClangBuiltinTypeBit(QualType qt,
                                                     const uint64_t typeKey) {
   spir::BitDataType dt;
   dt.set_typeid_(typeKey);
@@ -3784,10 +4021,10 @@ MayValue slang::SpirGen::convertClangBuiltinTypeBit(QualType qt,
       } else if (size == 64) {
         dt.set_vkind(spir::K_VK::TINT64);
       } else {
-        return MayValue(ERR(100));
+        return slang::MayValue(ERR(100));
       }
     } else {
-      return MayValue(ERR(101));
+      return slang::MayValue(ERR(101));
     }
 
   } else if (typePtr->isUnsignedIntegerType()) {
@@ -3803,10 +4040,10 @@ MayValue slang::SpirGen::convertClangBuiltinTypeBit(QualType qt,
       } else if (size == 64) {
         dt.set_vkind(spir::K_VK::TUINT64);
       } else {
-        return MayValue(ERR(102));
+        return slang::MayValue(ERR(102));
       }
     } else {
-      return MayValue(ERR(103));
+      return slang::MayValue(ERR(103));
     }
 
   } else if (typePtr->isFloatingType()) {
@@ -3814,11 +4051,11 @@ MayValue slang::SpirGen::convertClangBuiltinTypeBit(QualType qt,
   } else if (typePtr->isVoidType()) {
     dt.set_vkind(spir::K_VK::TVOID);
   } else {
-    return MayValue(ERR(104));
+    return slang::MayValue(ERR(104));
   }
 
   stu.bittu.mutable_datatypes()->emplace(typeKey, dt);
-  return MayValue(OK, typeKey);
+  return slang::MayValue(OK, typeKey);
 } // convertClangBuiltinTypeBit()
 
 std::string
@@ -3921,7 +4158,7 @@ slang::SpirGen::convertClangRecordType(const RecordDecl *recordDecl,
   return newSlangRecord.toShortString();
 } // convertClangRecordType()
 
-MayValue slang::SpirGen::convertClangRecordTypeBit(const RecordDecl *recordDecl,
+slang::MayValue slang::SpirGen::convertClangRecordTypeBit(const RecordDecl *recordDecl,
                                                    const uint64_t typeKey) {
   spir::BitDataType dt;
   dt.set_typeid_(typeKey);
@@ -3943,7 +4180,7 @@ MayValue slang::SpirGen::convertClangRecordTypeBit(const RecordDecl *recordDecl,
   if (stu.hasTypeKey(typeKey)) {
     // Get the existing record id (it avoids infinite recursion for self
     // referencing records)
-    return MayValue(OK, typeKey);
+    return slang::MayValue(OK, typeKey);
   }
 
   std::string namePrefix;
@@ -3988,7 +4225,7 @@ MayValue slang::SpirGen::convertClangRecordTypeBit(const RecordDecl *recordDecl,
   stu.bittu.mutable_datatypes()->emplace(typeKey, dt);
 
   // Iterate over each field of the record (struct/union)
-  MayValue fieldDtEid;
+  slang::MayValue fieldDtEid;
   std::string fieldName;
   for (auto it = recordDecl->decls_begin(); it != recordDecl->decls_end();
        ++it) {
@@ -4000,15 +4237,15 @@ MayValue slang::SpirGen::convertClangRecordTypeBit(const RecordDecl *recordDecl,
       if (fieldDtEid.errorCode) {
         return fieldDtEid;
       }
-      fieldName = stu.bittu.datatypes()[fieldDtEid.value].typename();
-      bitEntityInfo.set_loc_line(stu.bittu.datatypes()[fieldDtEid.value].loc_line());
-      bitEntityInfo.set_loc_col(stu.bittu.datatypes()[fieldDtEid.value].loc_col());
+      fieldName = stu.bittu.datatypes().at(fieldDtEid.value).typename_();
+      bitEntityInfo.set_loc_line(stu.bittu.datatypes().at(fieldDtEid.value).loc_line());
+      bitEntityInfo.set_loc_col(stu.bittu.datatypes().at(fieldDtEid.value).loc_col());
 
     } else if (isa<FieldDecl>(*it)) {
       const FieldDecl *fieldDecl = cast<FieldDecl>(*it);
       bool anonymous = false;
 
-      if (fieldDecl.getNameAsString() == "") {
+      if (fieldDecl->getNameAsString() == "") {
         anonymous = true;
         fieldName = ::slang::Util::getNextUniqueIdStr() + "a";
       } else {
@@ -4023,14 +4260,14 @@ MayValue slang::SpirGen::convertClangRecordTypeBit(const RecordDecl *recordDecl,
         }
       } else if (fieldDecl->getType()->isRecordType()) {
         auto type = fieldDecl->getType();
-        auto fieldTypeKey = (uint64_t)type;
+        auto fieldTypeKey = (uint64_t)type.getTypePtr();
         const RecordDecl *rdecl;
         if (type->isStructureType()) {
           rdecl = type->getAsStructureType()->getDecl();
         } else if (type->isUnionType()) {
           rdecl = type->getAsUnionType()->getDecl();
         } else {
-          return MayValue(ERR(201));
+          return slang::MayValue(ERR(201));
         }
         fieldDtEid = convertClangRecordTypeBit(rdecl, fieldTypeKey);
         if (fieldDtEid.errorCode) {
@@ -4055,8 +4292,8 @@ MayValue slang::SpirGen::convertClangRecordTypeBit(const RecordDecl *recordDecl,
     bitEntityInfo.set_strval(fieldName);
     stu.bittu.mutable_entityinfo()->emplace(fieldKey, bitEntityInfo);
 
-    dt.mutable_fopIds()->Add(fieldKey);
-    dt.mutable_fopTypes()->Add(fieldDtEid.value);
+    dt.mutable_fopids()->Add(fieldKey);
+    dt.mutable_foptypeeids()->Add(fieldDtEid.value);
   } // for loop
 
   // Place the record type with complete fields information in the
@@ -4066,7 +4303,7 @@ MayValue slang::SpirGen::convertClangRecordTypeBit(const RecordDecl *recordDecl,
   // store for later use (part-of-hack1))
   lastAnonymousRecordDecl = recordDecl;
 
-  return MayValue(OK, typeKey);
+  return slang::MayValue(OK, typeKey);
 } // convertClangRecordTypeBit()
 
 std::string slang::SpirGen::convertClangArrayType(QualType qt) {
@@ -4102,7 +4339,7 @@ std::string slang::SpirGen::convertClangArrayType(QualType qt) {
   return ss.str();
 } // convertClangArrayType()
 
-MayValue slang::SpirGen::convertClangArrayTypeBit(QualType qt,
+slang::MayValue slang::SpirGen::convertClangArrayTypeBit(QualType qt,
                                                   const uint64_t typeKey) {
   spir::BitDataType dt;
   dt.set_typeid_(typeKey);
@@ -4118,7 +4355,7 @@ MayValue slang::SpirGen::convertClangArrayTypeBit(QualType qt,
     uint64_t sizeVal = size.getLimitedValue(UINT32_MAX);
     if (sizeVal > UINT32_MAX) {
       SLANG_FATAL("Array size too large");
-      return MayValue(ERR(106));
+      return slang::MayValue(ERR(106));
     }
     dt.set_len(static_cast<uint32_t>(sizeVal));
   } else if (isa<VariableArrayType>(arrayType)) {
@@ -4127,21 +4364,18 @@ MayValue slang::SpirGen::convertClangArrayTypeBit(QualType qt,
     dt.set_vkind(spir::K_VK::TARR_PARTIAL);
   } else {
     SLANG_FATAL("Unknown array type");
-    return MayValue(ERR(105));
+    return slang::MayValue(ERR(105));
   }
 
-  MayValue elemType = convertClangTypeBit(arrayType->getElementType());
+  slang::MayValue elemType = convertClangTypeBit(arrayType->getElementType());
   if (elemType.errorCode) {
     return elemType;
   }
   dt.set_subtypeeid(elemType.value);
-  SrcLoc srcLoc = getSrcLocBit(arrayType);
-  dt.set_loc_line(srcLoc.line);
-  dt.set_loc_col(srcLoc.col);
 
   stu.bittu.mutable_datatypes()->emplace(typeKey, dt);
 
-  return MayValue(OK, typeKey);
+  return slang::MayValue(OK, typeKey);
 } // convertClangArrayTypeBit()
 
 std::string slang::SpirGen::convertFunctionPrototype(QualType qt) {
@@ -4175,7 +4409,7 @@ std::string slang::SpirGen::convertFunctionPrototype(QualType qt) {
   return ss.str();
 } // convertFunctionPrototype()
 
-MayValue slang::SpirGen::convertFunctionPrototypeBit(QualType qt,
+slang::MayValue slang::SpirGen::convertFunctionPrototypeBit(QualType qt,
                                                      const uint64_t typeKey) {
   spir::BitDataType dt;
   dt.set_typeid_(typeKey);
@@ -4200,7 +4434,7 @@ MayValue slang::SpirGen::convertFunctionPrototypeBit(QualType qt,
       if (paramTypeResult.errorCode) {
         return paramTypeResult;
       }
-      dt.mutable_fopTypeEids()->Add(paramTypeResult.value);
+      dt.mutable_foptypeeids()->Add(paramTypeResult.value);
     }
 
     // STEP 3: Special variadic flag.
@@ -4210,11 +4444,11 @@ MayValue slang::SpirGen::convertFunctionPrototypeBit(QualType qt,
 
   } else {
     SLANG_FATAL("Unknown function prototype type.");
-    return MayValue(ERR(112));
+    return slang::MayValue(ERR(112));
   }
 
   stu.bittu.mutable_datatypes()->emplace(typeKey, dt);
-  return MayValue(OK, typeKey);
+  return slang::MayValue(OK, typeKey);
 } // convertFunctionPrototypeBit()
 
 std::string slang::SpirGen::convertFunctionPointerType(QualType qt) {
@@ -4259,9 +4493,9 @@ std::string slang::SpirGen::convertFunctionPointerType(QualType qt) {
 } // convertFunctionPointerType()
 
 // Returns 0 if successful, non-zero if error
-MayValue slang::SpirGen::convertFunctionPointerTypeBit(QualType qt,
+slang::MayValue slang::SpirGen::convertFunctionPointerTypeBit(QualType qt,
                                                        const uint64_t typeKey) {
-  MayValue result;
+  slang::MayValue result;
 
   spir::BitDataType dt;
   dt.set_vkind(spir::K_VK::TPTR_TO_FUNC);
@@ -4276,31 +4510,32 @@ MayValue slang::SpirGen::convertFunctionPointerTypeBit(QualType qt,
     if (result.errorCode) {
       return result;
     }
-    dt.set_subTypeEid(result.value);
+    dt.set_subtypeeid(result.value);
     stu.bittu.mutable_datatypes()->emplace(typeKey, dt);
-    return MayValue(OK, typeKey);
+    return slang::MayValue(OK, typeKey);
 
   } else if (isa<FunctionNoProtoType>(unqualifiedPtr)) {
     // With no function prototype, assume int32 return type with no parameters
-    dt.set_subTypeEid(K_00_INT32_TYPE_EID); // i.e. INT32 -- implying `int32 f(void)`
+    dt.set_subtypeeid(K_00_INT32_TYPE_EID); // i.e. INT32 -- implying `int32 f(void)`
     stu.bittu.mutable_datatypes()->emplace(typeKey, dt);
-    return MayValue(OK, typeKey);
+    return slang::MayValue(OK, typeKey);
 
   } else if (isa<FunctionType>(unqualifiedPtr)) {
     SLANG_FATAL("A FuncType -- not expected");
-    return MayValue(ERR(110));
+    return slang::MayValue(ERR(110));
 
   } else {
     SLANG_FATAL("Unknown function pointer type");
-    return MayValue(ERR(111));
+    return slang::MayValue(ERR(111));
   }
 
 } // convertFunctionPointerTypeBit()
 
-spir::BitEntity *slang::SpirGen::convertClangTypeToBitEntity(QualType qt,
+// FIXME:
+spir::BitEntity slang::SpirGen::convertClangTypeToBitEntity(QualType qt,
                                                        uint64_t eid) {
-  spir::BitEntity *bitEntity = new spir::BitEntity();
-  bitEntity->set_eid(eid);
+  spir::BitEntity bitEntity;
+  bitEntity.set_eid(eid);
 
   spir::BitEntityInfo *bitEntityInfo = convertClangTypeToBitEntityInfo(qt, eid);
   stu.moveAndAddBitEntityInfo(eid, *bitEntityInfo);
@@ -4308,20 +4543,21 @@ spir::BitEntity *slang::SpirGen::convertClangTypeToBitEntity(QualType qt,
   return bitEntity;
 } // convertClangTypeToBitEntity()
 
+// FIXME:
 spir::BitEntityInfo *
-slang::SpirGen::convertClangTypeToBitEntityInfo(QualType qt, uint64_t eid = 0) {
+slang::SpirGen::convertClangTypeToBitEntityInfo(QualType qt, uint64_t eid) {
   spir::BitEntityInfo *bitEntityInfo = new spir::BitEntityInfo();
   bitEntityInfo->set_eid(eid);
   bitEntityInfo->set_ekind(spir::K_EK::EDATA_TYPE);
   spir::BitDataType *bitDataType = new spir::BitDataType();
-  convertClangTypeBit(qt, bitDataType);
+  convertClangTypeBit(qt);
   if (stu.isBasicBitType(
           bitDataType)) { // Call the member function instead of inline check
     bitEntityInfo->set_vkind(bitDataType->vkind());
-    bitEntityInfo->set_qtype(bitDataType->qtype());
+    //FIXME bitEntityInfo->set_qtype(bitDataType->qtype());
     delete bitDataType;
   } else {
-    bitEntityInfo->set_allocated_dt(bitDataType);
+    //FIXME bitEntityInfo->set_allocated_dt(bitDataType);
   }
   return bitEntityInfo;
 } // convertClangTypeToBitEntityInfo()
@@ -4331,7 +4567,7 @@ slang::SpirGen::convertClangTypeToBitEntityInfo(QualType qt, uint64_t eid = 0) {
 
 // BOUND START: helper_routines
 
-SlangExpr slang::SpirGen::genTmpVariable(std::string suffix,
+slang::SlangExpr slang::SpirGen::genTmpVariable(std::string suffix,
                                          std::string typeStr,
                                          std::string locStr) {
   std::stringstream ss;
@@ -4367,14 +4603,14 @@ SlangExpr slang::SpirGen::genTmpVariable(std::string suffix,
 // It creates BitEntity and spir::BitEntityInfo objects, saves the info object
 // and returns the BitEntity object.
 spir::BitEntity slang::SpirGen::genTmpBitEntity(
-    spir::K_VK vType, std::string suffix, BitSrcLoc srcLoc,
-    QualType qt = QualType() /*optional if vType is given*/) {
+    spir::K_VK vType, std::string suffix, SrcLoc srcLoc,
+    QualType qt/*optional if vType is given*/) {
   spir::BitEntity bitEntity;
 
   // STEP 1: Populate an entity with unique ID.
   bitEntity.set_eid(stu.nextUniqueId());
-  bitEntity.set_line(srcLoc.line());
-  bitEntity.set_col(srcLoc.col());
+  bitEntity.set_line(srcLoc.line);
+  bitEntity.set_col(srcLoc.col);
 
   // STEP 2: Create and populate the spir::BitEntityInfo object.
   spir::BitEntityInfo bitEntityInfo;
@@ -4382,12 +4618,12 @@ spir::BitEntity slang::SpirGen::genTmpBitEntity(
   bitEntityInfo.set_ekind(spir::K_EK::EVAR_LOCL_TMP); // All tmps are local variables
   // STEP 2.1: Set the data type to the entity info.
   if (!qt.isNull()) {
-    MayValue dt = convertClangTypeBit(qt);
+    slang::MayValue dt = convertClangTypeBit(qt);
     if (dt.errorCode) {
       SLANG_FATAL("Couldn't convert the clang type " << qt.getAsString())
     }
     bitEntityInfo.set_datatypeeid(dt.value);
-    bitEntityInfo.set_vkind(bitEntityInfo.dt().vkind());
+    bitEntityInfo.set_vkind(stu.bittu.datatypes().at(dt.value).vkind());
   } else {
     bitEntityInfo.set_vkind(vType);
   }
@@ -4402,14 +4638,13 @@ spir::BitEntity slang::SpirGen::genTmpBitEntity(
   // STEP 3: Add the variable to the TU.
   // FIXME: The var's 'id' here should be small enough to not interfere with
   // uint64_t addresses.
-  stu.bitty.mutable_entityinfo()->emplace(bitEntityInfo.eid(), bitEntityInfo);
+  stu.bittu.mutable_entityinfo()->emplace(bitEntityInfo.eid(), bitEntityInfo);
 
   return bitEntity;
 } // genTmpBitEntity()
 
-SlangExpr slang::SpirGen::genTmpVariable(std::string suffix, QualType qt,
-                                         std::string locStr,
-                                         bool ifTmp = false) {
+slang::SlangExpr slang::SpirGen::genTmpVariable(std::string suffix, QualType qt,
+                                         std::string locStr, bool ifTmp) {
   std::stringstream ss;
   SlangExpr slangExpr{};
 
@@ -4451,7 +4686,7 @@ QualType slang::SpirGen::getCleanedQualType(QualType qt) {
   return qt;
 }
 
-void slang::SpirGen::addGotoInstr(std::string label) {
+void slang::SpirGen::addGotoInstr(const std::string &label) {
   std::stringstream ss;
   ss << "instr.GotoI(\"" << label << "\")";
   stu.addStmt(ss.str());
@@ -4459,11 +4694,11 @@ void slang::SpirGen::addGotoInstr(std::string label) {
 
 // Creates and adds a GOTO instruction as a BitInsn to the current statement
 // list.
-void slang::SpirGen::addGotoInstrBit(spir::BitEntity labelBit, BitSrcLoc srcLoc) {
-  BitInsn *insn = new BitInsn();
-  insn->set_ikind(K_IK::IGOTO);      // Set the instruction kind to GOTO
-  insn->set_loc_line(srcLoc.line()); // Set source location line
-  insn->set_loc_col(srcLoc.col());   // Set source location column
+void slang::SpirGen::addGotoInstrBit(spir::BitEntity labelBit, SrcLoc srcLoc) {
+  spir::BitInsn *insn = new spir::BitInsn();
+  insn->set_ikind(spir::K_IK::IGOTO);      // Set the instruction kind to GOTO
+  insn->set_loc_line(srcLoc.line); // Set source location line
+  insn->set_loc_col(srcLoc.col);   // Set source location column
 
   spir::BitExpr *bExpr =
       createBitExpr(labelBit); // Create the expression for the label entity
@@ -4473,13 +4708,13 @@ void slang::SpirGen::addGotoInstrBit(spir::BitEntity labelBit, BitSrcLoc srcLoc)
   stu.addStmtBit(insn); // Add the instruction to stmt bit stream
 } // addGotoInstrBit()
 
-void slang::SpirGen::addLabelInstrBit(spir::BitEntity labelBit, BitSrcLoc srcLoc) {
+void slang::SpirGen::addLabelInstrBit(spir::BitEntity labelBit, SrcLoc srcLoc) {
   // This method adds a label instruction as a BitInsn to the current Bit
   // statement stream.
-  BitInsn *insn = new BitInsn();
-  insn->set_ikind(K_IK::ILABEL);     // Set instruction kind to LABEL
-  insn->set_loc_line(srcLoc.line()); // Set source location line
-  insn->set_loc_col(srcLoc.col());   // Set source location column
+  spir::BitInsn *insn = new spir::BitInsn();
+  insn->set_ikind(spir::K_IK::ILABEL);     // Set instruction kind to LABEL
+  insn->set_loc_line(srcLoc.line); // Set source location line
+  insn->set_loc_col(srcLoc.col);   // Set source location column
 
   spir::BitExpr *bExpr = createBitExpr(labelBit); // Create label bit expression
   insn->set_allocated_expr1(bExpr);         // Attach label to the instruction
@@ -4487,15 +4722,15 @@ void slang::SpirGen::addLabelInstrBit(spir::BitEntity labelBit, BitSrcLoc srcLoc
   stu.addStmtBit(insn); // Add the BitInsn to the bit statement stream
 } // addLabelInstrBit()
 
-void slang::SpirGen::addLabelInstr(std::string label) {
+void slang::SpirGen::addLabelInstr(const std::string &label) {
   std::stringstream ss;
   ss << "instr.LabelI(\"" << label << "\")";
   stu.addStmt(ss.str());
 }
 
 void slang::SpirGen::addLabelInstrBit(spir::BitEntity label) {
-  BitInsn *insn = new BitInsn();
-  insn->set_ikind(K_IK::ILABEL);
+  spir::BitInsn *insn = new spir::BitInsn();
+  insn->set_ikind(spir::K_IK::ILABEL);
   insn->set_loc_line(label.line());
   insn->set_loc_col(label.col());
   spir::BitExpr *bExpr = createBitExpr(label);
@@ -4505,7 +4740,7 @@ void slang::SpirGen::addLabelInstrBit(spir::BitEntity label) {
 
 // Create BitEntityInfo for the label, saves it and return its spir::BitEntity.
 // FIXME: use same label id within a function (use a map for each function).
-spir::BitEntity slang::SpirGen::createLabelBit(std::string name, BitSrcLoc srcLoc) {
+spir::BitEntity slang::SpirGen::createLabelBit(std::string name, SrcLoc srcLoc) {
   // Step 1: Create a new BitEntityInfo for the label.
   spir::BitEntityInfo labelInfo;
   // Generate a unique entity id for the label (using stu's unique id scheme).
@@ -4514,8 +4749,8 @@ spir::BitEntity slang::SpirGen::createLabelBit(std::string name, BitSrcLoc srcLo
   labelInfo.set_ekind(spir::K_EK::ELABEL);
   // Set the label's name as strVal, and source location.
   labelInfo.set_strval(name);
-  labelInfo.set_loc_line(srcLoc.line());
-  labelInfo.set_loc_col(srcLoc.col());
+  labelInfo.set_loc_line(srcLoc.line);
+  labelInfo.set_loc_col(srcLoc.col);
 
   // Step 2: Save this spir::BitEntityInfo (assuming stu.addBitEntity is the right
   // owner).
@@ -4524,9 +4759,9 @@ spir::BitEntity slang::SpirGen::createLabelBit(std::string name, BitSrcLoc srcLo
   // Step 3: Return the label's eid as the "address".
   spir::BitEntity be;
   be.set_eid(eid);
-  be.set_line(srcLoc.line());
-  be.set_col(srcLoc.col());
-  return eid;
+  be.set_line(srcLoc.line);
+  be.set_col(srcLoc.col);
+  return be;
 }
 
 void slang::SpirGen::addCondInstr(std::string expr, std::string trueLabel,
@@ -4540,18 +4775,20 @@ void slang::SpirGen::addCondInstr(std::string expr, std::string trueLabel,
 }
 
 void slang::SpirGen::addCondInstrBit(SlangBitExpr expr, spir::BitEntity trueLabel,
-                                     spir::BitEntity falseLabel, BitSrcLoc srcLoc) {
-  BitInsn *insn = new BitInsn();
-  insn->set_ikind(K_IK::ICOND);
+                                     spir::BitEntity falseLabel, SrcLoc srcLoc) {
+  assert(!expr.compound);
+
+  spir::BitInsn *insn = new spir::BitInsn();
+  insn->set_ikind(spir::K_IK::ICOND);
   insn->set_allocated_expr1(expr.cloneBitExpr());
 
   // Create an expression with true and false labels.
   // Set the true label as operand1 and the false label as operand2.
-  spir::BitExpr *bExpr = createBitExpr(K_XK::XVAL, trueLabel, falseLabel, srcLoc);
-
+  spir::BitExpr *bExpr = createBitExpr(spir::K_XK::XVAL, trueLabel, falseLabel, srcLoc);
   insn->set_allocated_expr2(bExpr); // `delete bExpr;` not required
-  insn->set_loc_line(srcLoc.line());
-  insn->set_loc_col(srcLoc.col());
+
+  insn->set_loc_line(srcLoc.line);
+  insn->set_loc_col(srcLoc.col);
 
   stu.addStmtBit(insn);
 }
@@ -4571,28 +4808,28 @@ void slang::SpirGen::addAssignBitInstr(SlangBitExpr lhs, SlangBitExpr rhs) {
   bool tmpRhs = false;
   // STEP 1: Make sure it remains a 3-address-code assignment (i.e. only one
   // op).
-  if (lhs.compund && rhs.compund) {
+  if (lhs.compound && rhs.compound) {
     rhs = convertToTmpBitExpr(rhs);
     tmpRhs = true;
   }
 
   // STEP 2: Set the type of assignment instruction.
-  BitInsn *bitInsn = new BitInsn();
+  spir::BitInsn *bitInsn = new spir::BitInsn();
   if (lhs.compound) {
-    bitInsn->set_ikind(K_IK::IASGN_LHS_OP);
-  } else if (rhs.compund) {
+    bitInsn->set_ikind(spir::K_IK::IASGN_LHS_OP);
+  } else if (rhs.compound) {
     if (isBitExprCall(rhs.bitExpr)) {
-      bitInsn->set_ikind(K_IK::IASGN_CALL);
+      bitInsn->set_ikind(spir::K_IK::IASGN_CALL);
     } else {
-      bitInsn->set_ikind(K_IK::IASGN_RHS_OP);
+      bitInsn->set_ikind(spir::K_IK::IASGN_RHS_OP);
     }
   } else {
-    bitInsn->set_ikind(K_IK::IASGN_SIMPLE);
+    bitInsn->set_ikind(spir::K_IK::IASGN_SIMPLE);
   }
 
   // STEP 3: Set the lhs, rhs and location.
-  bitInsn->set_allocated_lhs(lhs.cloneBitExpr());
-  bitInsn->set_allocated_rhs(rhs.cloneBitExpr());
+  bitInsn->set_allocated_expr1(lhs.cloneBitExpr());
+  bitInsn->set_allocated_expr2(rhs.cloneBitExpr());
   bitInsn->set_loc_line(lhs.bitExpr->loc_line());
   bitInsn->set_loc_col(lhs.bitExpr->loc_col());
   if (tmpRhs) {
@@ -4604,11 +4841,11 @@ void slang::SpirGen::addAssignBitInstr(SlangBitExpr lhs, SlangBitExpr rhs) {
 } // addAssignBitInstr()
 
 bool slang::SpirGen::isBitExprCall(spir::BitExpr *be) {
-  return be->xkind() == K_XK::XCALL || be->xkind() == K_XK::XCALL_0;
+  return be->xkind() == spir::K_XK::XCALL;
 }
 
 bool slang::SpirGen::isBitExprCompound(spir::BitExpr *be) {
-  if (be->xkind() == K_XK::XVAL) {
+  if (be->xkind() == spir::K_XK::XVAL) {
     return false;
   } else {
     return true;
@@ -4617,7 +4854,7 @@ bool slang::SpirGen::isBitExprCompound(spir::BitExpr *be) {
 
 // Note: unlike createBinaryExpr, createUnaryExpr doesn't convert its expr to
 // tmp expr.
-SlangExpr slang::SpirGen::createUnaryExpr(std::string op, SlangExpr expr,
+slang::SlangExpr slang::SpirGen::createUnaryExpr(std::string op, SlangExpr expr,
                                           std::string locStr, QualType qt) {
   SlangExpr unaryExpr;
 
@@ -4647,36 +4884,20 @@ SlangExpr slang::SpirGen::createUnaryExpr(std::string op, SlangExpr expr,
 
 // Note: unlike createBinaryExpr, createUnaryExpr doesn't convert its expr to
 // tmp expr. It reuses the BitExpr object, and returns the same object.
-SlangBitExpr slang::SpirGen::createUnaryBitExpr(K_XK opKind, SlangBitExpr expr,
-                                                slang::SrcLoc srcLoc,
-                                                QualType qt) {
-  SlangBitExpr unaryExpr;
-
+slang::SlangBitExpr slang::SpirGen::createUnaryBitExpr(spir::K_XK opKind, SlangBitExpr expr,
+                                                SrcLoc srcLoc, QualType qt) {
   // Assumes that the oprnd1 is already set correctly.
   expr.bitExpr->set_xkind(opKind);
   expr.bitExpr->set_loc_line(srcLoc.line);
   expr.bitExpr->set_loc_col(srcLoc.col);
 
   expr.qualType = qt;
-  expr.compound = opKind == K_XK::XVAL ? false : true;
+  expr.compound = opKind == spir::K_XK::XVAL ? false : true;
 
   return expr;
 } // createUnaryBitExpr()
 
-SlangBitExpr slang::SpirGen::createUnaryBitExpr(spir::BitEntity *opr, K_XK op,
-                                                QualType qt) {
-  SlangBitExpr unaryExpr;
-  spir::BitEntity *bitEntity = opr->clone();
-  bitEntity->set_allocated_loc(::spir::BitSrcLoc * loc) unaryExpr.bitExpr =
-      new spir::BitExpr();
-  unaryExpr.bitExpr->set_xkind(op);
-  unaryExpr.bitExpr->set_allocated_opr1(opr->clone());
-  unaryExpr.bitExpr->set_allocated_loc(new BitSrcLoc(opr->loc()));
-  unaryExpr->qualType = qt;
-  return unaryExpr;
-} // createUnaryBitExpr()
-
-SlangExpr slang::SpirGen::createBinaryExpr(SlangExpr lhsExpr, std::string op,
+slang::SlangExpr slang::SpirGen::createBinaryExpr(SlangExpr lhsExpr, std::string op,
                                            SlangExpr rhsExpr,
                                            std::string locStr, QualType qt) {
   SlangExpr binaryExpr;
@@ -4698,9 +4919,9 @@ SlangExpr slang::SpirGen::createBinaryExpr(SlangExpr lhsExpr, std::string op,
   return binaryExpr;
 } // createBinaryExpr()
 
-SlangBitExpr slang::SpirGen::createBinaryBitExpr(SlangBitExpr opr1, K_XK op,
+slang::SlangBitExpr slang::SpirGen::createBinaryBitExpr(SlangBitExpr opr1, spir::K_XK op,
                                                  SlangBitExpr opr2,
-                                                 BitSrcLoc srcLoc,
+                                                 SrcLoc srcLoc,
                                                  QualType qt) {
   // Convert the operands to simple expression (if they are not)
   SlangBitExpr leftOpr = convertToTmpBitExpr(opr1);
@@ -4709,17 +4930,18 @@ SlangBitExpr slang::SpirGen::createBinaryBitExpr(SlangBitExpr opr1, K_XK op,
   SlangBitExpr sbExpr;
   sbExpr.qualType = qt;
   sbExpr.bitExpr = new spir::BitExpr();
+  sbExpr.compound = true;
 
   // Set operator
   sbExpr.bitExpr->set_xkind(op);
 
   // Set left operand and source location
-  sbExpr.bitExpr->set_oprnd1eid(leftOpr.bitExpr->eid());
+  sbExpr.bitExpr->set_oprnd1eid(leftOpr.bitExpr->oprnd1eid());
   sbExpr.bitExpr->set_oprnd1_line(leftOpr.bitExpr->oprnd1_line());
   sbExpr.bitExpr->set_oprnd1_col(leftOpr.bitExpr->oprnd1_col());
 
   // Set right operand and source location
-  sbExpr.bitExpr->set_oprnd2eid(rightOpr.bitExpr->eid());
+  sbExpr.bitExpr->set_oprnd2eid(rightOpr.bitExpr->oprnd1eid());
   sbExpr.bitExpr->set_oprnd2_line(rightOpr.bitExpr->oprnd1_line());
   sbExpr.bitExpr->set_oprnd2_col(rightOpr.bitExpr->oprnd1_col());
 
@@ -4727,7 +4949,7 @@ SlangBitExpr slang::SpirGen::createBinaryBitExpr(SlangBitExpr opr1, K_XK op,
   sbExpr.bitExpr->set_loc_line(srcLoc.line);
   sbExpr.bitExpr->set_loc_col(srcLoc.col);
 
-  return binaryExpr;
+  return sbExpr;
 } // createBinaryBitExpr()
 
 // If the expression is the child of an implicit cast,
@@ -4797,7 +5019,7 @@ bool slang::SpirGen::isTopLevel(const Stmt *stmt) {
   }
 } // isTopLevel()
 
-SlangExpr
+slang::SlangExpr
 slang::SpirGen::addAndReturnSizeOfInstrExpr(SlangExpr tmpElementVarArr) {
   std::stringstream ss;
 
@@ -4837,18 +5059,18 @@ public:
   }
 
 private:
-  // This FuncVisitor::irgen and ASTConsumer::irgen are aliases.
-  slang::SpirGen *irgen;
+  // This irgen and SlangASTConsumer::irgen are aliases.
+  SpirGen *irgen;
 };
 
-class ASTConsumer : public ASTConsumer {
+class SlangASTConsumer : public ASTConsumer {
 public:
   // Main Entry point for the ASTConsumer (entrypoint for the Slang tool)
   void HandleTranslationUnit(ASTContext &Context) override {
     this->irgen = new slang::SpirGen(&Context);
     Visitor = new FuncVisitor(irgen);
 
-    llvm::outs() << "slang::ASTConsumer: \n";
+    llvm::outs() << "SlangASTConsumer: \n";
 
     // Initialize the generator: TU name, out file name etc.
     irgen->slangInit(Context.getTranslationUnitDecl());
@@ -4866,14 +5088,15 @@ public:
 
 private:
   FuncVisitor *Visitor;
-  slang::SpirGen *irgen;
+  // This irgen and SlangASTConsumer::irgen are aliases.
+  SpirGen *irgen;
 };
 
 class ASTAction : public ASTFrontendAction {
 public:
   std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &CI,
                                                  StringRef file) override {
-    return std::make_unique<ASTConsumer>();
+    return std::make_unique<SlangASTConsumer>();
   }
 };
 
@@ -4927,7 +5150,7 @@ int main(int argc, const char **argv) {
   ClangTool Tool(OptionsParser.getCompilations(),
                  OptionsParser.getSourcePathList());
 
-  // Run our FrontendAction
+  // Run our FrontendAction: it eventually calls the HandleTranslationUnit() function.
   int success = Tool.run(newFrontendActionFactory<slang::ASTAction>().get());
 
   google::protobuf::ShutdownProtobufLibrary();

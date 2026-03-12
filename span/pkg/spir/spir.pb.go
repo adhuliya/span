@@ -49,17 +49,18 @@ const (
 	K_EK_ELIT_STR         K_EK = 10 // A string literal.
 	K_EK_EDATA_TYPE       K_EK = 11 // A data type, like int, function sig, record, class etc.
 	K_EK_EFUNC            K_EK = 12 // A function with/without definition.
-	K_EK_EFUNC_VARGS      K_EK = 13 // A function with varargs, e.g. printf().
+	K_EK_ERECORD_FIELD    K_EK = 13 // Refers to a field in a record (stating it is not a top level varible)
 	K_EK_ELABEL           K_EK = 14 // A label in an if-then-else statement.
 	K_EK_EOTHER           K_EK = 15 // Other entity kind - used in case ID space is exhausted.
 	// Entity kinds which cannot be in an expression (5 bit values)
-	K_EK_ERECORD_FIELD K_EK = 16 // A field in a record
-	K_EK_EINSN         K_EK = 17 // An instruction.
-	K_EK_EBB           K_EK = 18 // A basic block.
-	K_EK_ECFG          K_EK = 19 // A control flow graph.
-	K_EK_ESCOPE        K_EK = 20 // A scope, e.g. a block scope.
-	K_EK_ETU           K_EK = 21 // A translation unit (TU).
-	K_EK_ESRC_FILE     K_EK = 22 // A source file.
+	K_EK_EINSN0    K_EK = 16 // An instruction.
+	K_EK_EINSN1    K_EK = 17 // An instruction.
+	K_EK_EINSN2    K_EK = 18 // An instruction.
+	K_EK_EBB       K_EK = 19 // A basic block.
+	K_EK_ECFG      K_EK = 20 // A control flow graph.
+	K_EK_ESCOPE    K_EK = 21 // A scope, e.g. a block scope.
+	K_EK_ETU       K_EK = 22 // A translation unit (TU).
+	K_EK_ESRC_FILE K_EK = 23 // A source file.
 )
 
 // Enum value maps for K_EK.
@@ -78,16 +79,17 @@ var (
 		10: "ELIT_STR",
 		11: "EDATA_TYPE",
 		12: "EFUNC",
-		13: "EFUNC_VARGS",
+		13: "ERECORD_FIELD",
 		14: "ELABEL",
 		15: "EOTHER",
-		16: "ERECORD_FIELD",
-		17: "EINSN",
-		18: "EBB",
-		19: "ECFG",
-		20: "ESCOPE",
-		21: "ETU",
-		22: "ESRC_FILE",
+		16: "EINSN0",
+		17: "EINSN1",
+		18: "EINSN2",
+		19: "EBB",
+		20: "ECFG",
+		21: "ESCOPE",
+		22: "ETU",
+		23: "ESRC_FILE",
 	}
 	K_EK_value = map[string]int32{
 		"ENIL":             0,
@@ -103,16 +105,17 @@ var (
 		"ELIT_STR":         10,
 		"EDATA_TYPE":       11,
 		"EFUNC":            12,
-		"EFUNC_VARGS":      13,
+		"ERECORD_FIELD":    13,
 		"ELABEL":           14,
 		"EOTHER":           15,
-		"ERECORD_FIELD":    16,
-		"EINSN":            17,
-		"EBB":              18,
-		"ECFG":             19,
-		"ESCOPE":           20,
-		"ETU":              21,
-		"ESRC_FILE":        22,
+		"EINSN0":           16,
+		"EINSN1":           17,
+		"EINSN2":           18,
+		"EBB":              19,
+		"ECFG":             20,
+		"ESCOPE":           21,
+		"ETU":              22,
+		"ESRC_FILE":        23,
 	}
 )
 
@@ -239,38 +242,38 @@ type K_XK int32
 
 const (
 	// Expression kinds that can be used in expressions
-	K_XK_XNIL               K_XK = 0  // No expression
-	K_XK_XVAL               K_XK = 1  // A unit expression, i.e. a constant, variable, function, or upto two labels.
-	K_XK_XADD               K_XK = 2  // A binary addition expression
-	K_XK_XSUB               K_XK = 3  // A binary subtraction expression
-	K_XK_XMUL               K_XK = 4  // A binary multiplication expression
-	K_XK_XDIV               K_XK = 5  // A binary division expression
-	K_XK_XMOD               K_XK = 6  // A binary modulo expression
-	K_XK_XAND               K_XK = 7  // A binary bit AND expression
-	K_XK_XOR                K_XK = 8  // A binary bit OR expression
-	K_XK_XXOR               K_XK = 9  // A binary bit XOR expression
-	K_XK_XSHL               K_XK = 10 // A binary shift left expression
-	K_XK_XSHR               K_XK = 11 // A binary shift right expression (logical)
-	K_XK_XSHRA              K_XK = 12 // A binary shift right expression (arithmetic)
-	K_XK_XEQ                K_XK = 13 // Equality comparison (binary expr).
-	K_XK_XNE                K_XK = 14 // Inequality comparison (binary expr).
-	K_XK_XLT                K_XK = 15 // Less than comparison (binary expr).
-	K_XK_XGE                K_XK = 16 // Greater than or equal to comparison (binary expr).
-	K_XK_XARRAY_INDEX       K_XK = 17 // An array index expression (binary expr)
-	K_XK_XMEMBER_PTR_ACCESS K_XK = 18 // A member pointer access expression (binary expr)
-	K_XK_XMEMBER_PTR_ADDROF K_XK = 19 // A member pointer address expression (binary expr)
-	K_XK_XCALL              K_XK = 20 // A function call expression (all arguments may be stored separately)
-	K_XK_XCALL_0            K_XK = 21 // A call with zero arguments (unary expr)
-	K_XK_XCAST              K_XK = 22 // A unary cast expression
-	K_XK_XBIT_NOT           K_XK = 23 // A unary bitwise NOT expression
-	K_XK_XNEGATE            K_XK = 24 // A unary minus expression
-	K_XK_XNOT               K_XK = 25 // A unary logical NOT expression
-	K_XK_XDEREF             K_XK = 26 // A dereference expression (unary expr)
-	K_XK_XADDROF            K_XK = 27 // An address expression (unary expr)
-	K_XK_XSIZEOF            K_XK = 28 // A unary sizeof expression
-	K_XK_XALIGNOF           K_XK = 29 // A unary alignof expression
-	K_XK_XALLOC             K_XK = 30 // A unary stack allocation expression
-	K_XK_XOTHER             K_XK = 31 // Other expression.
+	K_XK_XNIL             K_XK = 0  // No expression
+	K_XK_XVAL             K_XK = 1  // A unit expression, i.e. a constant, variable, function, or upto two labels.
+	K_XK_XADD             K_XK = 2  // A binary addition expression
+	K_XK_XSUB             K_XK = 3  // A binary subtraction expression
+	K_XK_XMUL             K_XK = 4  // A binary multiplication expression
+	K_XK_XDIV             K_XK = 5  // A binary division expression
+	K_XK_XMOD             K_XK = 6  // A binary modulo expression
+	K_XK_XAND             K_XK = 7  // A binary bit AND expression
+	K_XK_XOR              K_XK = 8  // A binary bit OR expression
+	K_XK_XXOR             K_XK = 9  // A binary bit XOR expression
+	K_XK_XSHL             K_XK = 10 // A binary SHift Left expression
+	K_XK_XSHR             K_XK = 11 // A binary SHift Right expression (logical)
+	K_XK_XSHRA            K_XK = 12 // A binary SHift Right expression (Arithmetic)
+	K_XK_XEQ              K_XK = 13 // EQuality comparison (binary expr).
+	K_XK_XNE              K_XK = 14 // Not-Equal comparison (binary expr).
+	K_XK_XLT              K_XK = 15 // Less Than comparison (binary expr).
+	K_XK_XGE              K_XK = 16 // Greater than or Equal to comparison (binary expr).
+	K_XK_XARR_INDX        K_XK = 17 // An array index expression (binary expr)
+	K_XK_XARR_INDX_ADDROF K_XK = 18 // An array index expression (expr with two operators)
+	K_XK_XMEMBER_ACCESS   K_XK = 19 // A member access expression (binary expr)
+	K_XK_XMEMBER_ADDROF   K_XK = 20 // A member address expression (expr with two operators)
+	K_XK_XCALL            K_XK = 21 // A function call expression (all arguments may be stored separately)
+	K_XK_XCAST            K_XK = 22 // A unary cast expression
+	K_XK_XBIT_NOT         K_XK = 23 // A unary bitwise NOT expression
+	K_XK_XNEGATE          K_XK = 24 // A unary minus expression
+	K_XK_XNOT             K_XK = 25 // A unary logical NOT expression
+	K_XK_XDEREF           K_XK = 26 // A dereference expression (unary expr)
+	K_XK_XADDROF          K_XK = 27 // An address expression (unary expr)
+	K_XK_XSIZEOF          K_XK = 28 // A unary sizeof expression
+	K_XK_XALIGNOF         K_XK = 29 // A unary alignof expression
+	K_XK_XALLOC           K_XK = 30 // A unary stack allocation expression
+	K_XK_XOTHER           K_XK = 31 // Other expression.
 )
 
 // Enum value maps for K_XK.
@@ -293,11 +296,11 @@ var (
 		14: "XNE",
 		15: "XLT",
 		16: "XGE",
-		17: "XARRAY_INDEX",
-		18: "XMEMBER_PTR_ACCESS",
-		19: "XMEMBER_PTR_ADDROF",
-		20: "XCALL",
-		21: "XCALL_0",
+		17: "XARR_INDX",
+		18: "XARR_INDX_ADDROF",
+		19: "XMEMBER_ACCESS",
+		20: "XMEMBER_ADDROF",
+		21: "XCALL",
 		22: "XCAST",
 		23: "XBIT_NOT",
 		24: "XNEGATE",
@@ -310,38 +313,38 @@ var (
 		31: "XOTHER",
 	}
 	K_XK_value = map[string]int32{
-		"XNIL":               0,
-		"XVAL":               1,
-		"XADD":               2,
-		"XSUB":               3,
-		"XMUL":               4,
-		"XDIV":               5,
-		"XMOD":               6,
-		"XAND":               7,
-		"XOR":                8,
-		"XXOR":               9,
-		"XSHL":               10,
-		"XSHR":               11,
-		"XSHRA":              12,
-		"XEQ":                13,
-		"XNE":                14,
-		"XLT":                15,
-		"XGE":                16,
-		"XARRAY_INDEX":       17,
-		"XMEMBER_PTR_ACCESS": 18,
-		"XMEMBER_PTR_ADDROF": 19,
-		"XCALL":              20,
-		"XCALL_0":            21,
-		"XCAST":              22,
-		"XBIT_NOT":           23,
-		"XNEGATE":            24,
-		"XNOT":               25,
-		"XDEREF":             26,
-		"XADDROF":            27,
-		"XSIZEOF":            28,
-		"XALIGNOF":           29,
-		"XALLOC":             30,
-		"XOTHER":             31,
+		"XNIL":             0,
+		"XVAL":             1,
+		"XADD":             2,
+		"XSUB":             3,
+		"XMUL":             4,
+		"XDIV":             5,
+		"XMOD":             6,
+		"XAND":             7,
+		"XOR":              8,
+		"XXOR":             9,
+		"XSHL":             10,
+		"XSHR":             11,
+		"XSHRA":            12,
+		"XEQ":              13,
+		"XNE":              14,
+		"XLT":              15,
+		"XGE":              16,
+		"XARR_INDX":        17,
+		"XARR_INDX_ADDROF": 18,
+		"XMEMBER_ACCESS":   19,
+		"XMEMBER_ADDROF":   20,
+		"XCALL":            21,
+		"XCAST":            22,
+		"XBIT_NOT":         23,
+		"XNEGATE":          24,
+		"XNOT":             25,
+		"XDEREF":           26,
+		"XADDROF":          27,
+		"XSIZEOF":          28,
+		"XALIGNOF":         29,
+		"XALLOC":           30,
+		"XOTHER":           31,
 	}
 )
 
@@ -650,12 +653,12 @@ type BitDataType struct {
 	TypeName      *string `protobuf:"bytes,8,opt,name=typeName,proto3,oneof" json:"typeName,omitempty"`
 	Anonymous     *bool   `protobuf:"varint,9,opt,name=anonymous,proto3,oneof" json:"anonymous,omitempty"`          // Whether the data type is anonymous (anonymous nested structures, anonymous function parameters, etc.)
 	FuncPrototype *bool   `protobuf:"varint,10,opt,name=funcPrototype,proto3,oneof" json:"funcPrototype,omitempty"` // Whether the type is a function prototype
-	Variadic      *bool   `protobuf:"varint,13,opt,name=variadic,proto3,oneof" json:"variadic,omitempty"`           // Whether the function is variadic
+	Variadic      *bool   `protobuf:"varint,11,opt,name=variadic,proto3,oneof" json:"variadic,omitempty"`           // Whether the function is variadic
 	// Used for record fields and function parameters
 	// length of fopIds and fopTypeEids sequences must be the same
 	// Use hyphen '-' for anonymous fields or parameters (fop)
-	FopIds        []uint64 `protobuf:"varint,11,rep,packed,name=fopIds,proto3" json:"fopIds,omitempty"`
-	FopTypeEids   []uint64 `protobuf:"varint,12,rep,packed,name=fopTypeEids,proto3" json:"fopTypeEids,omitempty"`
+	FopIds        []uint64 `protobuf:"varint,12,rep,packed,name=fopIds,proto3" json:"fopIds,omitempty"`
+	FopTypeEids   []uint64 `protobuf:"varint,13,rep,packed,name=fopTypeEids,proto3" json:"fopTypeEids,omitempty"`
 	LocLine       *uint32  `protobuf:"varint,14,opt,name=loc_line,json=locLine,proto3,oneof" json:"loc_line,omitempty"` // Line number of the type definition
 	LocCol        *uint32  `protobuf:"varint,15,opt,name=loc_col,json=locCol,proto3,oneof" json:"loc_col,omitempty"`    // Column number of the type definition
 	unknownFields protoimpl.UnknownFields
@@ -795,18 +798,20 @@ type BitEntityInfo struct {
 	Eid   uint64                 `protobuf:"varint,1,opt,name=eid,proto3" json:"eid,omitempty"` // Entity id
 	Ekind K_EK                   `protobuf:"varint,2,opt,name=ekind,proto3,enum=spir.K_EK" json:"ekind,omitempty"`
 	Vkind *K_VK                  `protobuf:"varint,3,opt,name=vkind,proto3,enum=spir.K_VK,oneof" json:"vkind,omitempty"` // Sufficient for basic types
-	// Wheter this record, or record field is anonymous
-	Anonymous *bool   `protobuf:"varint,4,opt,name=anonymous,proto3,oneof" json:"anonymous,omitempty"`
-	Qtype     *uint32 `protobuf:"varint,5,opt,name=qtype,proto3,oneof" json:"qtype,omitempty"` // Bitwise OR of one or more K_QK values
+	// Whether this record, or record field is anonymous
+	Anonymous *bool `protobuf:"varint,4,opt,name=anonymous,proto3,oneof" json:"anonymous,omitempty"`
+	// If this entity represents a member access 'x.y.z' (no use of `->`)
+	MemberAccess *bool   `protobuf:"varint,5,opt,name=member_access,json=memberAccess,proto3,oneof" json:"member_access,omitempty"`
+	Qtype        *uint32 `protobuf:"varint,6,opt,name=qtype,proto3,oneof" json:"qtype,omitempty"` // Bitwise OR of one or more K_QK values
 	// Id of the parent if this entity is a record field or a function parameter
-	ParentEid   *uint64 `protobuf:"varint,6,opt,name=parentEid,proto3,oneof" json:"parentEid,omitempty"`
-	DataTypeEid *uint64 `protobuf:"varint,7,opt,name=dataTypeEid,proto3,oneof" json:"dataTypeEid,omitempty"` // Entity id of the type
+	ParentEid   *uint64 `protobuf:"varint,7,opt,name=parentEid,proto3,oneof" json:"parentEid,omitempty"`
+	DataTypeEid *uint64 `protobuf:"varint,8,opt,name=dataTypeEid,proto3,oneof" json:"dataTypeEid,omitempty"` // Entity id of the type
 	// Store value if entity is a constant value.
-	LowVal        *uint64 `protobuf:"varint,8,opt,name=lowVal,proto3,oneof" json:"lowVal,omitempty"`                   // for a numeric literal (int, float, etc.)
-	HighVal       *uint64 `protobuf:"varint,9,opt,name=highVal,proto3,oneof" json:"highVal,omitempty"`                 // Used for >64 bit and <=128 bit numeric literals
-	StrVal        *string `protobuf:"bytes,10,opt,name=strVal,proto3,oneof" json:"strVal,omitempty"`                   // for a string literal or entity name
-	LocLine       *uint32 `protobuf:"varint,11,opt,name=loc_line,json=locLine,proto3,oneof" json:"loc_line,omitempty"` // Line number of the entity definition
-	LocCol        *uint32 `protobuf:"varint,12,opt,name=loc_col,json=locCol,proto3,oneof" json:"loc_col,omitempty"`    // Column number of the entity definition
+	LowVal        *uint64 `protobuf:"varint,9,opt,name=lowVal,proto3,oneof" json:"lowVal,omitempty"`                   // for a numeric literal (int, float, etc.)
+	HighVal       *uint64 `protobuf:"varint,10,opt,name=highVal,proto3,oneof" json:"highVal,omitempty"`                // Used for >64 bit and <=128 bit numeric literals
+	StrVal        *string `protobuf:"bytes,11,opt,name=strVal,proto3,oneof" json:"strVal,omitempty"`                   // for a string literal or entity name
+	LocLine       *uint32 `protobuf:"varint,12,opt,name=loc_line,json=locLine,proto3,oneof" json:"loc_line,omitempty"` // Line number of the entity definition
+	LocCol        *uint32 `protobuf:"varint,13,opt,name=loc_col,json=locCol,proto3,oneof" json:"loc_col,omitempty"`    // Column number of the entity definition
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -865,6 +870,13 @@ func (x *BitEntityInfo) GetVkind() K_VK {
 func (x *BitEntityInfo) GetAnonymous() bool {
 	if x != nil && x.Anonymous != nil {
 		return *x.Anonymous
+	}
+	return false
+}
+
+func (x *BitEntityInfo) GetMemberAccess() bool {
+	if x != nil && x.MemberAccess != nil {
+		return *x.MemberAccess
 	}
 	return false
 }
@@ -1453,9 +1465,9 @@ const file_span_pkg_spir_spir_proto_rawDesc = "" +
 	"\tanonymous\x18\t \x01(\bH\x06R\tanonymous\x88\x01\x01\x12)\n" +
 	"\rfuncPrototype\x18\n" +
 	" \x01(\bH\aR\rfuncPrototype\x88\x01\x01\x12\x1f\n" +
-	"\bvariadic\x18\r \x01(\bH\bR\bvariadic\x88\x01\x01\x12\x16\n" +
-	"\x06fopIds\x18\v \x03(\x04R\x06fopIds\x12 \n" +
-	"\vfopTypeEids\x18\f \x03(\x04R\vfopTypeEids\x12\x1e\n" +
+	"\bvariadic\x18\v \x01(\bH\bR\bvariadic\x88\x01\x01\x12\x16\n" +
+	"\x06fopIds\x18\f \x03(\x04R\x06fopIds\x12 \n" +
+	"\vfopTypeEids\x18\r \x03(\x04R\vfopTypeEids\x12\x1e\n" +
 	"\bloc_line\x18\x0e \x01(\rH\tR\alocLine\x88\x01\x01\x12\x1c\n" +
 	"\aloc_col\x18\x0f \x01(\rH\n" +
 	"R\x06locCol\x88\x01\x01B\t\n" +
@@ -1471,26 +1483,29 @@ const file_span_pkg_spir_spir_proto_rawDesc = "" +
 	"\t_variadicB\v\n" +
 	"\t_loc_lineB\n" +
 	"\n" +
-	"\b_loc_col\"\x84\x04\n" +
+	"\b_loc_col\"\xc0\x04\n" +
 	"\rBitEntityInfo\x12\x10\n" +
 	"\x03eid\x18\x01 \x01(\x04R\x03eid\x12 \n" +
 	"\x05ekind\x18\x02 \x01(\x0e2\n" +
 	".spir.K_EKR\x05ekind\x12%\n" +
 	"\x05vkind\x18\x03 \x01(\x0e2\n" +
 	".spir.K_VKH\x00R\x05vkind\x88\x01\x01\x12!\n" +
-	"\tanonymous\x18\x04 \x01(\bH\x01R\tanonymous\x88\x01\x01\x12\x19\n" +
-	"\x05qtype\x18\x05 \x01(\rH\x02R\x05qtype\x88\x01\x01\x12!\n" +
-	"\tparentEid\x18\x06 \x01(\x04H\x03R\tparentEid\x88\x01\x01\x12%\n" +
-	"\vdataTypeEid\x18\a \x01(\x04H\x04R\vdataTypeEid\x88\x01\x01\x12\x1b\n" +
-	"\x06lowVal\x18\b \x01(\x04H\x05R\x06lowVal\x88\x01\x01\x12\x1d\n" +
-	"\ahighVal\x18\t \x01(\x04H\x06R\ahighVal\x88\x01\x01\x12\x1b\n" +
-	"\x06strVal\x18\n" +
-	" \x01(\tH\aR\x06strVal\x88\x01\x01\x12\x1e\n" +
-	"\bloc_line\x18\v \x01(\rH\bR\alocLine\x88\x01\x01\x12\x1c\n" +
-	"\aloc_col\x18\f \x01(\rH\tR\x06locCol\x88\x01\x01B\b\n" +
+	"\tanonymous\x18\x04 \x01(\bH\x01R\tanonymous\x88\x01\x01\x12(\n" +
+	"\rmember_access\x18\x05 \x01(\bH\x02R\fmemberAccess\x88\x01\x01\x12\x19\n" +
+	"\x05qtype\x18\x06 \x01(\rH\x03R\x05qtype\x88\x01\x01\x12!\n" +
+	"\tparentEid\x18\a \x01(\x04H\x04R\tparentEid\x88\x01\x01\x12%\n" +
+	"\vdataTypeEid\x18\b \x01(\x04H\x05R\vdataTypeEid\x88\x01\x01\x12\x1b\n" +
+	"\x06lowVal\x18\t \x01(\x04H\x06R\x06lowVal\x88\x01\x01\x12\x1d\n" +
+	"\ahighVal\x18\n" +
+	" \x01(\x04H\aR\ahighVal\x88\x01\x01\x12\x1b\n" +
+	"\x06strVal\x18\v \x01(\tH\bR\x06strVal\x88\x01\x01\x12\x1e\n" +
+	"\bloc_line\x18\f \x01(\rH\tR\alocLine\x88\x01\x01\x12\x1c\n" +
+	"\aloc_col\x18\r \x01(\rH\n" +
+	"R\x06locCol\x88\x01\x01B\b\n" +
 	"\x06_vkindB\f\n" +
 	"\n" +
-	"_anonymousB\b\n" +
+	"_anonymousB\x10\n" +
+	"\x0e_member_accessB\b\n" +
 	"\x06_qtypeB\f\n" +
 	"\n" +
 	"_parentEidB\x0e\n" +
@@ -1584,7 +1599,7 @@ const file_span_pkg_spir_spir_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\v2\x13.spir.BitEntityInfoR\x05value:\x028\x01B\n" +
 	"\n" +
 	"\b_absPathB\t\n" +
-	"\a_origin*\xd9\x02\n" +
+	"\a_origin*\xe1\x02\n" +
 	"\x04K_EK\x12\b\n" +
 	"\x04ENIL\x10\x00\x12\r\n" +
 	"\tEVAR_GLBL\x10\x01\x12\r\n" +
@@ -1600,20 +1615,24 @@ const file_span_pkg_spir_spir_proto_rawDesc = "" +
 	"\x12\x0e\n" +
 	"\n" +
 	"EDATA_TYPE\x10\v\x12\t\n" +
-	"\x05EFUNC\x10\f\x12\x0f\n" +
-	"\vEFUNC_VARGS\x10\r\x12\n" +
+	"\x05EFUNC\x10\f\x12\x11\n" +
+	"\rERECORD_FIELD\x10\r\x12\n" +
 	"\n" +
 	"\x06ELABEL\x10\x0e\x12\n" +
 	"\n" +
-	"\x06EOTHER\x10\x0f\x12\x11\n" +
-	"\rERECORD_FIELD\x10\x10\x12\t\n" +
-	"\x05EINSN\x10\x11\x12\a\n" +
-	"\x03EBB\x10\x12\x12\b\n" +
-	"\x04ECFG\x10\x13\x12\n" +
+	"\x06EOTHER\x10\x0f\x12\n" +
 	"\n" +
-	"\x06ESCOPE\x10\x14\x12\a\n" +
-	"\x03ETU\x10\x15\x12\r\n" +
-	"\tESRC_FILE\x10\x16*\xd4\x01\n" +
+	"\x06EINSN0\x10\x10\x12\n" +
+	"\n" +
+	"\x06EINSN1\x10\x11\x12\n" +
+	"\n" +
+	"\x06EINSN2\x10\x12\x12\a\n" +
+	"\x03EBB\x10\x13\x12\b\n" +
+	"\x04ECFG\x10\x14\x12\n" +
+	"\n" +
+	"\x06ESCOPE\x10\x15\x12\a\n" +
+	"\x03ETU\x10\x16\x12\r\n" +
+	"\tESRC_FILE\x10\x17*\xd4\x01\n" +
 	"\x04K_IK\x12\b\n" +
 	"\x04INIL\x10\x00\x12\b\n" +
 	"\x04INOP\x10\x01\x12\f\n" +
@@ -1633,7 +1652,7 @@ const file_span_pkg_spir_spir_proto_rawDesc = "" +
 	"\x05ICOND\x10\f\x12\n" +
 	"\n" +
 	"\x06ILABEL\x10\r\x12\v\n" +
-	"\aIRETURN\x10\x0e*\x82\x03\n" +
+	"\aIRETURN\x10\x0e*\x80\x03\n" +
 	"\x04K_XK\x12\b\n" +
 	"\x04XNIL\x10\x00\x12\b\n" +
 	"\x04XVAL\x10\x01\x12\b\n" +
@@ -1652,12 +1671,12 @@ const file_span_pkg_spir_spir_proto_rawDesc = "" +
 	"\x03XEQ\x10\r\x12\a\n" +
 	"\x03XNE\x10\x0e\x12\a\n" +
 	"\x03XLT\x10\x0f\x12\a\n" +
-	"\x03XGE\x10\x10\x12\x10\n" +
-	"\fXARRAY_INDEX\x10\x11\x12\x16\n" +
-	"\x12XMEMBER_PTR_ACCESS\x10\x12\x12\x16\n" +
-	"\x12XMEMBER_PTR_ADDROF\x10\x13\x12\t\n" +
-	"\x05XCALL\x10\x14\x12\v\n" +
-	"\aXCALL_0\x10\x15\x12\t\n" +
+	"\x03XGE\x10\x10\x12\r\n" +
+	"\tXARR_INDX\x10\x11\x12\x14\n" +
+	"\x10XARR_INDX_ADDROF\x10\x12\x12\x12\n" +
+	"\x0eXMEMBER_ACCESS\x10\x13\x12\x12\n" +
+	"\x0eXMEMBER_ADDROF\x10\x14\x12\t\n" +
+	"\x05XCALL\x10\x15\x12\t\n" +
 	"\x05XCAST\x10\x16\x12\f\n" +
 	"\bXBIT_NOT\x10\x17\x12\v\n" +
 	"\aXNEGATE\x10\x18\x12\b\n" +

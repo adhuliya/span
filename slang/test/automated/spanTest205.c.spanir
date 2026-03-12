@@ -1,0 +1,65 @@
+
+# START: A_SPAN_translation_unit!
+
+# eval() the contents of this file.
+# Keep the following imports in effect when calling eval.
+
+# import span.ir.types as types
+# import span.ir.op as op
+# import span.ir.expr as expr
+# import span.ir.instr as instr
+# import span.ir.constructs as constructs
+# import span.ir.tunit as tunit
+# from span.ir.types import Loc
+
+# An instance of span.ir.tunit.TranslationUnit class.
+tunit.TranslationUnit(
+  name = "spanTest205.c",
+  description = "Auto-Translated from Clang AST.",
+
+  allVars = {
+    "v:f:x": types.Int32,
+    "g:h": types.Int32,
+    "g:g": types.Int32,
+  }, # end allVars dict
+
+  globalInits = [
+    instr.AssignI(expr.VarE("g:h", Info(Loc(4,1))), expr.LitE(10, Info(Loc(4,9))), Info(Loc(4,1))),
+  ], # end globalInits.
+
+  allRecords = {
+  }, # end allRecords dict
+
+  allFunctions = {
+    "f:main":
+      constructs.Func(
+        name = "f:main",
+        paramNames = [],
+        variadic = False,
+        returnType = types.Int32,
+
+        instrSeq = [
+            instr.AssignI(expr.VarE("g:g", Info(Loc(14,3))), expr.LitE(10, Info(Loc(14,7))), Info(Loc(14,3))),
+            instr.AssignI(expr.VarE("g:g", Info(Loc(15,3))), expr.CallE(expr.VarE("f:f", Info(Loc(15,7))), None, Info(Loc(15,7))), Info(Loc(15,3))),
+            instr.ReturnI(expr.VarE("g:g", Info(Loc(16,10))), Info(Loc(16,3))),
+        ], # instrSeq end.
+      ), # f:main() end. 
+
+    "f:f":
+      constructs.Func(
+        name = "f:f",
+        paramNames = [],
+        variadic = False,
+        returnType = types.Int32,
+
+        instrSeq = [
+            instr.AssignI(expr.VarE("v:f:x", Info(Loc(9,3))), expr.BinaryE(expr.VarE("g:h", Info(Loc(9,7))), op.BO_ADD, expr.VarE("g:g", Info(Loc(9,11))), Info(Loc(9,7))), Info(Loc(9,3))),
+            instr.ReturnI(expr.VarE("v:f:x", Info(Loc(10,10))), Info(Loc(10,3))),
+        ], # instrSeq end.
+      ), # f:f() end. 
+
+  }, # end allFunctions dict
+
+) # tunit.TranslationUnit() ends
+
+# END  : A_SPAN_translation_unit!

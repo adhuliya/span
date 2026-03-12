@@ -1,0 +1,75 @@
+
+# START: A_SPAN_translation_unit!
+
+# eval() the contents of this file.
+# Keep the following imports in effect when calling eval.
+
+# import span.ir.types as types
+# import span.ir.op as op
+# import span.ir.expr as expr
+# import span.ir.instr as instr
+# import span.ir.constructs as constructs
+# import span.ir.tunit as tunit
+# from span.ir.types import Loc
+
+# An instance of span.ir.tunit.TranslationUnit class.
+tunit.TranslationUnit(
+  name = "spanTest167.c",
+  description = "Auto-Translated from Clang AST.",
+
+  allVars = {
+    "v:main:1t": types.Int32,
+    "v:main:argv": types.Ptr(to=types.Ptr(to=types.Int8)),
+    "v:main:argc": types.Int32,
+    "v:f:c": types.Int32,
+    "g:b": types.Int32,
+    "g:a": types.Int32,
+  }, # end allVars dict
+
+  globalInits = [
+    instr.AssignI(expr.VarE("g:a", Info(Loc(1,1))), expr.LitE(10, Info(Loc(1,9))), Info(Loc(1,1))),
+    instr.AssignI(expr.VarE("g:b", Info(Loc(2,1))), expr.LitE(20, Info(Loc(2,9))), Info(Loc(2,1))),
+  ], # end globalInits.
+
+  allRecords = {
+  }, # end allRecords dict
+
+  allFunctions = {
+    "f:main":
+      constructs.Func(
+        name = "f:main",
+        paramNames = ["v:main:argc", "v:main:argv"],
+        variadic = False,
+        returnType = types.Int32,
+
+        instrSeq = [
+            instr.AssignI(expr.VarE("g:a", Info(Loc(10,3))), expr.LitE(30, Info(Loc(10,7))), Info(Loc(10,3))),
+            instr.LabelI("1WhileCond"),
+            instr.AssignI(expr.VarE("v:main:1t", Info(Loc(11,10))), expr.VarE("v:main:argc", Info(Loc(11,10))), Info(Loc(11,10))),
+            instr.AssignI(expr.VarE("v:main:argc", Info(Loc(11,10))), expr.BinaryE(expr.VarE("v:main:argc", Info(Loc(11,10))), op.BO_SUB, expr.LitE(1, Info(Loc(11,10))), Info(Loc(11,10))), Info(Loc(11,10))),
+            instr.CondI(expr.VarE("v:main:1t", Info(Loc(11,10))), "1WhileBody", "1WhileExit", Info(Loc(11,10))),
+            instr.LabelI("1WhileBody"),
+            instr.CallI(expr.CallE(expr.VarE("f:f", Info(Loc(12,5))), [expr.LitE(100, Info(Loc(12,7)))], Info(Loc(12,5))), Info(Loc(12,5))),
+            instr.GotoI("1WhileCond"),
+            instr.LabelI("1WhileExit"),
+            instr.ReturnI(expr.VarE("g:b", Info(Loc(14,10))), Info(Loc(14,3))),
+        ], # instrSeq end.
+      ), # f:main() end. 
+
+    "f:f":
+      constructs.Func(
+        name = "f:f",
+        paramNames = ["v:f:c"],
+        variadic = False,
+        returnType = types.Void,
+
+        instrSeq = [
+            instr.AssignI(expr.VarE("g:b", Info(Loc(6,3))), expr.VarE("v:f:c", Info(Loc(6,7))), Info(Loc(6,3))),
+        ], # instrSeq end.
+      ), # f:f() end. 
+
+  }, # end allFunctions dict
+
+) # tunit.TranslationUnit() ends
+
+# END  : A_SPAN_translation_unit!

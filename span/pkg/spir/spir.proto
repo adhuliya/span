@@ -29,20 +29,19 @@ enum K_EK {
 	ELIT_STR			= 10; // A string literal.
 	EDATA_TYPE			= 11; // A data type, like int, function sig, record, class etc.
 	EFUNC				= 12; // A function with/without definition.
-	EFUNC_VARGS			= 13; // A function with varargs, e.g. printf().
+	ERECORD_FIELD		= 13; // Refers to a field in a record (stating it is not a top level varible)
 	ELABEL				= 14; // A label in an if-then-else statement.
 	EOTHER				= 15; // Other entity kind - used in case ID space is exhausted.
 
 	// Entity kinds which cannot be in an expression (5 bit values)
-	ERECORD_FIELD		= 16; // A field in a record
-	EINSN0				= 17; // An instruction.
-	EINSN1              = 18; // An instruction.
+	EINSN0				= 16; // An instruction.
+	EINSN1              = 17; // An instruction.
 	EINSN2              = 18; // An instruction.
-	EBB					= 20; // A basic block.
-	ECFG				= 21; // A control flow graph.
-	ESCOPE				= 22; // A scope, e.g. a block scope.
-	ETU					= 23; // A translation unit (TU).
-	ESRC_FILE			= 24; // A source file.
+	EBB					= 19; // A basic block.
+	ECFG				= 20; // A control flow graph.
+	ESCOPE				= 21; // A scope, e.g. a block scope.
+	ETU					= 22; // A translation unit (TU).
+	ESRC_FILE			= 23; // A source file.
 
 	// More K_EK values can be dynamically created by SPAN, if the ID space is exhausted.
 }
@@ -91,22 +90,22 @@ enum K_XK {
 	XAND	= 7;  // A binary bit AND expression
 	XOR		= 8;  // A binary bit OR expression
 	XXOR	= 9;  // A binary bit XOR expression
-	XSHL	= 10; // A binary shift left expression
-	XSHR	= 11; // A binary shift right expression (logical)
-	XSHRA	= 12; // A binary shift right expression (arithmetic)
+	XSHL	= 10; // A binary SHift Left expression
+	XSHR	= 11; // A binary SHift Right expression (logical)
+	XSHRA	= 12; // A binary SHift Right expression (Arithmetic)
 
-	XEQ = 13; // Equality comparison (binary expr).
-	XNE = 14; // Inequality comparison (binary expr).
-	XLT = 15; // Less than comparison (binary expr).
-	XGE = 16; // Greater than or equal to comparison (binary expr).
+	XEQ = 13; // EQuality comparison (binary expr).
+	XNE = 14; // Not-Equal comparison (binary expr).
+	XLT = 15; // Less Than comparison (binary expr).
+	XGE = 16; // Greater than or Equal to comparison (binary expr).
 	// XGT and XLE can be represented using XLT and XGE respectively by reordering operands.
 
-	XARRAY_INDEX		= 17; // An array index expression (binary expr)
-	XMEMBER_PTR_ACCESS	= 18; // A member pointer access expression (binary expr)
-	XMEMBER_PTR_ADDROF	= 19; // A member pointer address expression (binary expr)
+	XARR_INDX			= 17; // An array index expression (binary expr)
+	XARR_INDX_ADDROF	= 18; // An array index expression (expr with two operators)
+	XMEMBER_ACCESS		= 19; // A member access expression (binary expr)
+	XMEMBER_ADDROF		= 20; // A member address expression (expr with two operators)
 
-	XCALL	= 20; // A function call expression (all arguments may be stored separately)
-	XCALL_0	= 21; // A call with zero arguments (unary expr)
+	XCALL	= 21; // A function call expression (all arguments may be stored separately)
 
 	XCAST	= 22; // A unary cast expression
 
@@ -241,22 +240,25 @@ message BitEntityInfo {
 	uint64 eid					= 1; // Entity id
 	K_EK ekind					= 2;
 	optional K_VK vkind			= 3; // Sufficient for basic types
-	// Wheter this record, or record field is anonymous
+	// Whether this record, or record field is anonymous
 	optional bool anonymous		= 4;
 
-	optional uint32 qtype		= 5; // Bitwise OR of one or more K_QK values
+	// If this entity represents a member access 'x.y.z' (no use of `->`)
+	optional bool member_access = 5;
+
+	optional uint32 qtype		= 6; // Bitwise OR of one or more K_QK values
 
 	// Id of the parent if this entity is a record field or a function parameter
-	optional uint64 parentEid	= 6;
-	optional uint64 dataTypeEid	= 7; // Entity id of the type
+	optional uint64 parentEid	= 7;
+	optional uint64 dataTypeEid	= 8; // Entity id of the type
 
 	// Store value if entity is a constant value.
-	optional uint64 lowVal		= 8; // for a numeric literal (int, float, etc.)
-	optional uint64 highVal		= 9; // Used for >64 bit and <=128 bit numeric literals
-	optional string strVal		= 10; // for a string literal or entity name
+	optional uint64 lowVal		= 9; // for a numeric literal (int, float, etc.)
+	optional uint64 highVal		= 10; // Used for >64 bit and <=128 bit numeric literals
+	optional string strVal		= 11; // for a string literal or entity name
 
-	optional uint32 loc_line    = 11; // Line number of the entity definition
-	optional uint32 loc_col     = 12; // Column number of the entity definition
+	optional uint32 loc_line    = 12; // Line number of the entity definition
+	optional uint32 loc_col     = 13; // Column number of the entity definition
 }
 
 // BitSrcLoc is the source location of an entity.
@@ -292,7 +294,6 @@ message BitExpr {
 	repeated uint64 oprnds      = 10;
 	repeated uint32 oprnds_line = 11;
 	repeated uint32 oprnds_col  = 12;
-
 }
 
 // All kinds of instructions.

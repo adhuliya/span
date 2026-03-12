@@ -1,0 +1,108 @@
+running>  clang --analyze -Xanalyzer -analyzer-checker=core.span.SlangGenAst spanTest169.c 2> spanTest169.c.clang.log
+SPAN: clang return code: 0
+TimeElapsed(ParseTranslationUnit): 65.75608253479004 ms (Starts: 1, Stops: 1)
+TUnitObjSize: 39642
+TimeElapsed(HostSetup): 1.5096664428710938 ms (Starts: 1, Stops: 1)
+TimeElapsed(HostAnalyze): 5.291461944580078 ms (Starts: 1, Stops: 1)
+TimeElapsed(HostSetup): 1.0249614715576172 ms (Starts: 1, Stops: 1)
+ AnalyzingFunction(IpaHost): f:main (Site(f:main, (0, 0))) [MISS]
+TimeElapsed(HostAnalyze): 19.04153823852539 ms (Starts: 1, Stops: 1)
+TimeElapsed(HostSetup): 1.0216236114501953 ms (Starts: 1, Stops: 1)
+> AnalyzingFunction(IpaHost): f:f1 (Site(f:f1, (3, 7))) [MISS]
+TimeElapsed(HostAnalyze): 8.978605270385742 ms (Starts: 1, Stops: 1)
+TimeElapsed(HostAnalyze): 19.561052322387695 ms (Starts: 1, Stops: 1)
+> AnalyzingFunction(IpaHost): f:f1 (Site(f:f1, (3, 7))) [MISS]
+TimeElapsed(HostAnalyze): 4.918813705444336 ms (Starts: 1, Stops: 1)
+TimeElapsed(HostAnalyze): 7.4481964111328125 ms (Starts: 1, Stops: 1)
+> AnalyzingFunction(IpaHost): f:f1 (Site(f:f1, (3, 7))) [MISS]
+TimeElapsed(HostAnalyze): 4.607200622558594 ms (Starts: 1, Stops: 1)
+TimeElapsed(HostAnalyze): 1.4362335205078125 ms (Starts: 1, Stops: 1)
+> AnalyzingFunction(IpaHost): f:f1 (Site(f:f1, (3, 7))) [HIT]
+TimeElapsed(HostSetup): 0.885009765625 ms (Starts: 1, Stops: 1)
+> AnalyzingFunction(IpaHost): f:f1 (Site(f:f1, (3, 9))) [MISS]
+TimeElapsed(HostAnalyze): 8.769989013671875 ms (Starts: 1, Stops: 1)
+TimeElapsed(HostAnalyze): 6.012201309204102 ms (Starts: 1, Stops: 1)
+> AnalyzingFunction(IpaHost): f:f1 (Site(f:f1, (3, 7))) [HIT]
+> AnalyzingFunction(IpaHost): f:f1 (Site(f:f1, (3, 9))) [HIT]
+TotalValueContexts: 3, SizeInBytes: 211765,VCI(Total): 213305
+
+GLOBAL_STATS
+================================================================
+  Cond__to__UnCond: 0
+  Deref__to__Vars: 2
+  LhsVar__to__Nil: 0
+  Node__to__Nil: 0
+  Num_Bin__to__Num_Lit: 0
+  Num_Var__to__Num_Lit: 0
+
+MergingResultsOfFunctions: Total 2     NotVisited(1): ['f:1_global_inits']
+
+
+FINAL RESULTS of IpaHost:
+================================================
+
+Function: 'f:f1', TUnit: spanTest169.c *****
+IntervalA: 'f:f1'
+>> 1. (nop(); VOID): NodeDfvL: : IN == OUT: (Len:1) {v:f1:i: Bot}
+>> 2. (*p = i; INT32): NodeDfvL: : IN == OUT: (Len:1) {v:f1:i: Bot}
+>> 3. (1t = g; INT32): NodeDfvL: :
+ IN : (Len:1) {v:f1:i: Bot} 
+ OUT: (Len:2) {v:f1:1t: Bot, v:f1:i: Bot}
+>> 4. (g = g + 1; INT32): NodeDfvL: : IN == OUT: (Len:2) {v:f1:1t: Bot, v:f1:i: Bot}
+>> 5. (nop(); VOID): NodeDfvL: : IN == OUT: (Len:2) {v:f1:1t: Bot, v:f1:i: Bot}
+PointsToA: 'f:f1'
+>> 1. (nop(); VOID): NodeDfvL: : IN == OUT: (Len:1) {g:p: ['v:main:a']}
+>> 2. (*p = i; INT32): NodeDfvL: : IN == OUT: (Len:1) {g:p: ['v:main:a']}
+>> 3. (1t = g; INT32): NodeDfvL: : IN == OUT: (Len:1) {g:p: ['v:main:a']}
+>> 4. (g = g + 1; INT32): NodeDfvL: : IN == OUT: (Len:1) {g:p: ['v:main:a']}
+>> 5. (nop(); VOID): NodeDfvL: : IN == OUT: (Len:1) {g:p: ['v:main:a']}
+
+Function: 'f:main', TUnit: spanTest169.c *****
+IntervalA: 'f:main'
+>> 1. (nop(); VOID): NodeDfvL: : IN == OUT: (Len:2) {g:g: 0, v:main:a: Top}
+>> 2. (p = &a; Ptr(INT32, 1)): NodeDfvL: : IN == OUT: (Len:2) {g:g: 0, v:main:a: Top}
+>> 3. (c = 10; INT32): NodeDfvL: :
+ IN : (Len:2) {g:g: 0, v:main:a: Top} 
+ OUT: (Len:3) {g:g: 0, v:main:a: Top, v:main:c: 10}
+>> 4. (c = c - 1; INT32): NodeDfvL: : IN == OUT: (Len:2) {v:main:1t: Bot, v:main:c: Bot}
+>> 5. (1t = c; INT32): NodeDfvL: : IN == OUT: (Len:2) {v:main:1t: Bot, v:main:c: Bot}
+>> 6. (if (1t) BB2 BB3; VOID): NodeDfvL: :
+ IN   : (Len:2) {v:main:1t: Bot, v:main:c: Bot}
+ OUT  : (Len:2) {v:main:1t: Bot, v:main:c: Bot}
+ TRUE : (Len:2) {v:main:1t: Bot, v:main:c: Bot}
+ FALSE: (Len:2) {v:main:1t: 0, v:main:c: Bot}
+>> 7. (f1(c); VOID): NodeDfvL: :
+ IN : (Len:2) {v:main:1t: Bot, v:main:c: Bot} 
+ OUT: (Len:2) {v:main:1t: Bot, v:main:c: Bot}
+>> 8. (a = 5; INT32): NodeDfvL: :
+ IN : (Len:2) {v:main:1t: 0, v:main:c: Bot} 
+ OUT: (Len:3) {v:main:1t: 0, v:main:a: 5, v:main:c: Bot}
+>> 9. (f1(11); VOID): NodeDfvL: :
+ IN : (Len:3) {v:main:1t: 0, v:main:a: 5, v:main:c: Bot} 
+ OUT: (Len:3) {v:main:1t: 0, v:main:a: 11, v:main:c: Bot}
+>> 10. (b = a; INT32): NodeDfvL: :
+ IN : (Len:3) {v:main:1t: 0, v:main:a: 11, v:main:c: Bot} 
+ OUT: (Len:4) {v:main:1t: 0, v:main:a: 11, v:main:b: 11, v:main:c: Bot}
+>> 11. (return a; INT32): NodeDfvL: : IN == OUT: (Len:4) {v:main:1t: 0, v:main:a: 11, v:main:b: 11, v:main:c: Bot}
+>> 12. (nop(); VOID): NodeDfvL: : IN == OUT: (Len:4) {v:main:1t: 0, v:main:a: 11, v:main:b: 11, v:main:c: Bot}
+PointsToA: 'f:main'
+>> 1. (nop(); VOID): NodeDfvL: : IN == OUT: (Len:1) {g:p: ['g:0Null']}
+>> 2. (p = &a; Ptr(INT32, 1)): NodeDfvL: :
+ IN : (Len:1) {g:p: ['g:0Null']} 
+ OUT: (Len:1) {g:p: ['v:main:a']}
+>> 3. (c = 10; INT32): NodeDfvL: : IN == OUT: (Len:1) {g:p: ['v:main:a']}
+>> 4. (c = c - 1; INT32): NodeDfvL: : IN == OUT: (Len:1) {g:p: ['v:main:a']}
+>> 5. (1t = c; INT32): NodeDfvL: : IN == OUT: (Len:1) {g:p: ['v:main:a']}
+>> 6. (if (1t) BB2 BB3; VOID): NodeDfvL: : IN == OUT: (Len:1) {g:p: ['v:main:a']}
+>> 7. (f1(c); VOID): NodeDfvL: :
+ IN : (Len:1) {g:p: ['v:main:a']} 
+ OUT: (Len:1) {g:p: ['v:main:a']}
+>> 8. (a = 5; INT32): NodeDfvL: : IN == OUT: (Len:1) {g:p: ['v:main:a']}
+>> 9. (f1(11); VOID): NodeDfvL: :
+ IN : (Len:1) {g:p: ['v:main:a']} 
+ OUT: (Len:1) {g:p: ['v:main:a']}
+>> 10. (b = a; INT32): NodeDfvL: : IN == OUT: (Len:1) {g:p: ['v:main:a']}
+>> 11. (return a; INT32): NodeDfvL: : IN == OUT: (Len:1) {g:p: ['v:main:a']}
+>> 12. (nop(); VOID): NodeDfvL: : IN == OUT: (Len:1) {g:p: ['v:main:a']}
+TimeElapsed(IpaAnalysis): 147.14503288269043 ms (Starts: 1, Stops: 1)
+TimeElapsed(TotalTimeTaken): 214.13898468017578 ms (Starts: 1, Stops: 1)

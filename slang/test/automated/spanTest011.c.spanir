@@ -1,0 +1,102 @@
+
+# START: A_SPAN_translation_unit!
+
+# eval() the contents of this file.
+# Keep the following imports in effect when calling eval.
+
+# import span.ir.types as types
+# import span.ir.op as op
+# import span.ir.expr as expr
+# import span.ir.instr as instr
+# import span.ir.constructs as constructs
+# import span.ir.tunit as tunit
+# from span.ir.types import Loc
+
+# An instance of span.ir.tunit.TranslationUnit class.
+tunit.TranslationUnit(
+  name = "spanTest011.c",
+  description = "Auto-Translated from Clang AST.",
+
+  allVars = {
+    "v:main:6if": types.UInt32,
+    "v:main:5if": types.UInt32,
+    "v:main:3if": types.UInt32,
+    "v:main:2if": types.UInt32,
+    "v:main:1if": types.Int32,
+    "v:main:argv": types.Ptr(to=types.Ptr(to=types.Int8)),
+    "v:main:4if": types.UInt32,
+    "v:main:argc": types.Int32,
+  }, # end allVars dict
+
+  globalInits = [
+  ], # end globalInits.
+
+  allRecords = {
+  }, # end allRecords dict
+
+  allFunctions = {
+    "f:main":
+      constructs.Func(
+        name = "f:main",
+        paramNames = ["v:main:argc", "v:main:argv"],
+        variadic = False,
+        returnType = types.Int32,
+
+        instrSeq = [
+            instr.AssignI(expr.VarE("v:main:1if", Info(Loc(2,7))), expr.BinaryE(expr.VarE("v:main:argc", Info(Loc(2,7))), op.BO_GT, expr.LitE(1, Info(Loc(2,14))), Info(Loc(2,7))), Info(Loc(2,7))),
+            instr.CondI(expr.VarE("v:main:1if", Info(Loc(2,7))), "1IfTrue", "1IfFalse", Info(Loc(2,3))),
+            instr.LabelI("1IfTrue"),
+            instr.GotoI("caseone"),
+            instr.GotoI("1IfExit"),
+            instr.LabelI("1IfFalse"),
+            instr.LabelI("1IfExit"),
+            instr.LabelI("2SwitchStart"),
+            instr.LabelI("2CaseCond1"),
+            instr.AssignI(expr.VarE("v:main:2if", Info(Loc(4,5))), expr.BinaryE(expr.VarE("v:main:argc", Info(Loc(3,10))), op.BO_EQ, expr.LitE(6, Info(Loc(4,10))), Info(Loc(4,5))), Info(Loc(4,5))),
+            instr.CondI(expr.VarE("v:main:2if", Info(Loc(4,5))), "2CaseBody1", "2CaseCond2", Info(Loc(4,5))),
+            instr.LabelI("2CaseBody1"),
+            instr.AssignI(expr.VarE("v:main:argc", Info(Loc(5,7))), expr.LitE(6, Info(Loc(5,14))), Info(Loc(5,7))),
+            instr.GotoI("2CaseBody2"),
+            instr.LabelI("2Default"),
+            instr.LabelI("2CaseBody2"),
+            instr.AssignI(expr.VarE("v:main:argc", Info(Loc(7,7))), expr.LitE(30, Info(Loc(7,14))), Info(Loc(7,7))),
+            instr.GotoI("2CaseBody3"),
+            instr.LabelI("2CaseCond2"),
+            instr.AssignI(expr.VarE("v:main:3if", Info(Loc(9,5))), expr.BinaryE(expr.VarE("v:main:argc", Info(Loc(3,10))), op.BO_EQ, expr.LitE(1, Info(Loc(9,10))), Info(Loc(9,5))), Info(Loc(9,5))),
+            instr.CondI(expr.VarE("v:main:3if", Info(Loc(9,5))), "2CaseBody3", "2CaseCond4", Info(Loc(9,5))),
+            instr.LabelI("caseone", Info(Loc(8,1))),
+            instr.LabelI("2CaseBody3"),
+            instr.AssignI(expr.VarE("v:main:argc", Info(Loc(10,7))), expr.LitE(1, Info(Loc(10,14))), Info(Loc(10,7))),
+            instr.GotoI("2CaseBody4"),
+            instr.LabelI("2CaseCond4"),
+            instr.AssignI(expr.VarE("v:main:4if", Info(Loc(11,5))), expr.BinaryE(expr.VarE("v:main:argc", Info(Loc(3,10))), op.BO_EQ, expr.LitE(2, Info(Loc(11,10))), Info(Loc(11,5))), Info(Loc(11,5))),
+            instr.CondI(expr.VarE("v:main:4if", Info(Loc(11,5))), "2CaseBody4", "2CaseCond5", Info(Loc(11,5))),
+            instr.LabelI("2CaseBody4"),
+            instr.ReturnI(expr.LitE(2, Info(Loc(12,14))), Info(Loc(12,7))),
+            instr.GotoI("2CaseBody5"),
+            instr.LabelI("2CaseCond5"),
+            instr.AssignI(expr.VarE("v:main:5if", Info(Loc(13,5))), expr.BinaryE(expr.VarE("v:main:argc", Info(Loc(3,10))), op.BO_EQ, expr.LitE(3, Info(Loc(13,10))), Info(Loc(13,5))), Info(Loc(13,5))),
+            instr.CondI(expr.VarE("v:main:5if", Info(Loc(13,5))), "2CaseBody5", "2CaseCond6", Info(Loc(13,5))),
+            instr.LabelI("2CaseBody5"),
+            instr.AssignI(expr.VarE("v:main:argc", Info(Loc(14,7))), expr.LitE(3, Info(Loc(14,14))), Info(Loc(14,7))),
+            instr.GotoI("2SwitchExit"),
+            instr.GotoI("2CaseBody6"),
+            instr.LabelI("2CaseCond6"),
+            instr.AssignI(expr.VarE("v:main:6if", Info(Loc(16,5))), expr.BinaryE(expr.VarE("v:main:argc", Info(Loc(3,10))), op.BO_EQ, expr.LitE(4, Info(Loc(16,10))), Info(Loc(16,5))), Info(Loc(16,5))),
+            instr.CondI(expr.VarE("v:main:6if", Info(Loc(16,5))), "2CaseBody6", "2CaseCond7", Info(Loc(16,5))),
+            instr.LabelI("2CaseBody6"),
+            instr.AssignI(expr.VarE("v:main:argc", Info(Loc(17,7))), expr.LitE(4, Info(Loc(17,14))), Info(Loc(17,7))),
+            instr.GotoI("2CaseBody7"),
+            instr.LabelI("2CaseCond7"),
+            instr.GotoI("2Default"),
+            instr.LabelI("2CaseBody7"),
+            instr.LabelI("2SwitchExit"),
+            instr.ReturnI(expr.LitE(10, Info(Loc(19,10))), Info(Loc(19,3))),
+        ], # instrSeq end.
+      ), # f:main() end. 
+
+  }, # end allFunctions dict
+
+) # tunit.TranslationUnit() ends
+
+# END  : A_SPAN_translation_unit!
