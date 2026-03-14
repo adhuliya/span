@@ -583,12 +583,14 @@ public:
     // Handle all global data declarations and initializations 
     // and put their initialization in a special function with id zero (0).
     void handleGlobalInits(const TranslationUnitDecl *tuDecl);
+    const FunctionDecl *handleFuncNameAndTypeBit(const FunctionDecl *funcDecl, bool force);
     
     // Handles all variable declarations: both global and local.
     // For local declarations, funcName should not be empty,
     // as it becomes part of the variable name to keep the name unique.
     int handleVarDecl(const VarDecl *varDecl, std::string funcName = "");
     void handleValueDecl(const ValueDecl *valueDecl, std::string funcName);
+    void handleValueDeclBit(const ValueDecl *valueDecl, std::string funcName);
     void handleFunctionDecl(FunctionDecl *D);
     void handleFunctionBody(FunctionDecl *funcDecl);
     const FunctionDecl* handleFuncNameAndType(const FunctionDecl *funcDecl, bool force=false);
@@ -736,6 +738,13 @@ public:
     // Cast-conversion helpers
     SlangExpr convertCastExpr(const Stmt *expr, QualType qt, std::string locStr);
     spir::BitEntity createBitEntity(uint64_t eid, SrcLoc srcLoc = SrcLoc());
+    SlangBitExpr convertCompoundStmtBit(const CompoundStmt *compoundStmt);
+    SlangBitExpr convertDeclRefExprBit(const DeclRefExpr *dre);
+    SlangBitExpr convertEnumConstBit(const EnumConstantDecl *ecd, SrcLoc srcLoc);
+    SlangBitExpr convertVariableBit(const VarDecl *varDecl, SrcLoc srcLoc);
+    SlangBitExpr convertIntegerLiteralBit(const IntegerLiteral *il);
+    SlangBitExpr createLiteralBitExpr_Floating(double value, slang::SrcLoc srcLoc);
+    SlangBitExpr convertImplicitCastExprBit(const ImplicitCastExpr *iCast);
 
     // Miscellaneous / Utility
     template <typename T>

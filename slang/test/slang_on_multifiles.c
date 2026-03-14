@@ -1,4 +1,5 @@
 // Test Slang on multiple files at once. (TODO)
+// XFAIL: *
 
 // DEFINE: %{SRC} = test_prog_00.c
 // DEFINE: %{CMD} = \

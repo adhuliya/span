@@ -154,6 +154,9 @@ class Util {
     static uint32_t getNextUniqueId();
     static std::string getNextUniqueIdStr();
 
+    static uint64_t double_to_u64(double d);
+    static double u64_to_double(uint64_t u);
+
     /** The global level of logging.
      *
      *  Set logging level to SLANG_EVENT_LEVEL on deployment.

@@ -93,3 +93,15 @@ std::string slang::Util::getNextUniqueIdStr() {
     ss << getNextUniqueId();
     return ss.str();
 }
+
+uint64_t slang::Util::double_to_u64(double d) {
+    uint64_t u;
+    memcpy(&u, &d, sizeof(u));
+    return u;
+}
+
+double slang::Util::u64_to_double(uint64_t u) {
+    double d;
+    memcpy(&d, &u, sizeof(d));
+    return d;
+}

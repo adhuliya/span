@@ -31,7 +31,7 @@ static llvm::cl::opt<std::string> OptOutputDir(
     "out-dir",
     llvm::cl::desc(
         "Specify output directory for output (current dir by default)."
-        " The .spir.proto/.spir.py extension is automatically added to each output file."),
+        " The .spir.pb/.spir.py extension is automatically added to each output file."),
     llvm::cl::value_desc("directory"), llvm::cl::cat(SlangOptions));
 
 // Command line option for protobuf output
@@ -200,7 +200,7 @@ std::string slang::SlangTU::getOutFilename(std::string suffix) {
 void slang::SlangTU::dumpSlangIr() {
   // Write the bit translation unit to a file
   if (OptProtoOutputKnob) {
-    writeProtoToFile(bittu, getOutFilename(".spir.proto"));
+    writeProtoToFile(bittu, getOutFilename(".spir.pb"));
   }
 
   if (!OptPySpanIrOutputKnob) {
@@ -435,6 +435,7 @@ void slang::SpirGen::slangInit(const TranslationUnitDecl *TU) {
 void slang::SpirGen::handleFunctionDecl(FunctionDecl *D) {
   SLANG_EVENT("BOUND START: SLANG_Generated_Output.\n")
 
+  FD = D;
   if (FD) {
     FD = FD->getCanonicalDecl();
     FD = const_cast<FunctionDecl *>(handleFuncNameAndType(FD, true));
@@ -528,7 +529,11 @@ void slang::SpirGen::handleFunctionBody(FunctionDecl *funcDecl) {
   const Stmt *body = funcDecl->getBody();
   if (funcDecl->hasBody()) {
     stu.currFunc->hasBody = true;
-    convertStmt(body);
+    if (OptProtoOutputKnob) {
+      convertStmtBit(body);
+    } else {
+      convertStmt(body);
+    }
     SLANG_DEBUG("FunctionHasBody: " << funcDecl->getNameAsString())
   } else {
     // FIXME: control doesn't reach here :(
@@ -539,8 +544,11 @@ void slang::SpirGen::handleFunctionBody(FunctionDecl *funcDecl) {
 
 // records the function details
 const FunctionDecl *
-slang::SpirGen::handleFuncNameAndType(const FunctionDecl *funcDecl,
-                                      bool force) {
+slang::SpirGen::handleFuncNameAndType(const FunctionDecl *funcDecl, bool force) {
+  if (OptProtoOutputKnob) {
+    return handleFuncNameAndTypeBit(funcDecl, force);
+  }
+
   const FunctionDecl *realFuncDecl = funcDecl;
 
   if (funcDecl->isDefined()) {
@@ -579,6 +587,96 @@ slang::SpirGen::handleFuncNameAndType(const FunctionDecl *funcDecl,
 
   return realFuncDecl;
 } // handleFuncNameAndType()
+
+// records the function details
+const FunctionDecl *
+slang::SpirGen::handleFuncNameAndTypeBit(const FunctionDecl *funcDecl, bool force) {
+  const FunctionDecl *realFuncDecl = funcDecl;
+
+  // STEP 1.1: Get the definition of the function.
+  if (funcDecl->isDefined()) {
+    funcDecl = funcDecl->getDefinition();
+    realFuncDecl = funcDecl;
+    // funcDecl = funcDecl->getCanonicalDecl();
+  }
+
+  if (stu.funcMap.find((uint64_t)funcDecl) == stu.funcMap.end() || force) {
+    // if here, function not already present. Add its details.
+
+    SlangFunc slangFunc{};
+    slangFunc.name = funcDecl->getNameInfo().getAsString();
+    slangFunc.fullName = stu.convertFuncName(slangFunc.name);
+    SLANG_DEBUG("AddingFunction: " << slangFunc.name << " "
+                                   << (uint64_t)funcDecl << " "
+                                   << funcDecl->isDefined() << " "
+                                   << (uint64_t)funcDecl->getCanonicalDecl())
+
+    spir::BitFunc *bitFunc = stu.bittu.add_functions();
+    bitFunc->set_fid((uint64_t)funcDecl);
+    bitFunc->set_fname(slangFunc.fullName);
+    bitFunc->set_is_variadic(funcDecl->isVariadic());
+    stu.currBitFunc = bitFunc; // mark the current function being processed
+
+    spir::BitEntityInfo beInfo;
+    beInfo.set_eid((uint64_t)funcDecl);
+    beInfo.set_ekind(spir::K_EK::EFUNC);
+    beInfo.set_loc_line(getSrcLocBit(funcDecl).line);
+    beInfo.set_loc_col(getSrcLocBit(funcDecl).col);
+    beInfo.set_strval(slangFunc.fullName);
+
+    spir::BitDataType bdType;
+    bdType.set_typeid_((uint64_t)funcDecl);
+    bdType.set_funcprototype(true);
+    bdType.set_loc_line(getSrcLocBit(funcDecl).line);
+    bdType.set_loc_col(getSrcLocBit(funcDecl).col);
+    bdType.set_typename_(slangFunc.fullName);
+    stu.bittu.mutable_datatypes()->insert({(uint64_t)funcDecl, std::move(bdType)});
+
+    // STEP 1.2: Get function parameters.
+    // if (funcDecl->doesThisDeclarationHaveABody())  //&
+    // !funcDecl->hasPrototype())
+    if (OptProtoOutputKnob) {
+      for (unsigned i = 0, e = funcDecl->getNumParams(); i != e; ++i) {
+        const ParmVarDecl *paramVarDecl = funcDecl->getParamDecl(i);
+        uint64_t paramEid = (uint64_t)paramVarDecl;
+        handleValueDecl(paramVarDecl, slangFunc.name); // adds the var too
+        bdType.add_foptypeeids(stu.bittu.entityinfo().at(paramEid).datatypeeid());
+        bdType.add_fopids(paramEid);
+      }
+    } else {
+      for (unsigned i = 0, e = funcDecl->getNumParams(); i != e; ++i) {
+        const ParmVarDecl *paramVarDecl = funcDecl->getParamDecl(i);
+        handleValueDecl(paramVarDecl, slangFunc.name); // adds the var too
+        slangFunc.paramNames.push_back(stu.getVar((uint64_t)paramVarDecl).name);
+      }
+    }
+    slangFunc.variadic = funcDecl->isVariadic();
+
+    // STEP 1.3: Get function return type.
+    if (OptProtoOutputKnob) {
+      MayValue result = convertClangTypeBit(funcDecl->getReturnType());
+      if (result.errorCode) {
+        SLANG_ERROR("ERROR: Failed to convert function return type: "
+                    << funcDecl->getNameAsString()
+                    << " Error code: " << result.errorCode)
+        return nullptr;
+      }
+      bdType.set_vkind(stu.bittu.datatypes().at(result.value).vkind());
+      bdType.set_subtypeeid(result.value);
+    } else {
+      slangFunc.retType = convertClangType(funcDecl->getReturnType());
+    }
+
+    // STEP 2: Copy the function to the map.
+    stu.funcMap[(uint64_t)funcDecl] = slangFunc;
+
+    stu.bittu.mutable_entityinfo()->insert({(uint64_t)funcDecl, beInfo});
+    stu.bittu.mutable_datatypes()->insert({(uint64_t)funcDecl, bdType});
+    stu.bittu.mutable_namestoids()->insert({slangFunc.fullName, (uint64_t)funcDecl});
+  }
+
+  return realFuncDecl;
+} // handleFuncNameAndTypeBit()
 
 // All variable declarations are handled here.
 int slang::SpirGen::handleVarDecl(const VarDecl *varDecl, std::string funcName) {
@@ -765,8 +863,11 @@ int slang::SpirGen::handleVarDecl(const VarDecl *varDecl, std::string funcName) 
 } // handleVarDecl()
 
 // record the variable name and type
-void slang::SpirGen::handleValueDecl(const ValueDecl *valueDecl,
-                                     std::string funcName) {
+void slang::SpirGen::handleValueDecl(const ValueDecl *valueDecl, std::string funcName) {
+  if (OptProtoOutputKnob) {
+    return handleValueDeclBit(valueDecl, funcName);
+  }
+
   const VarDecl *varDecl = dyn_cast<VarDecl>(valueDecl);
 
   std::string varName;
@@ -781,6 +882,23 @@ void slang::SpirGen::handleValueDecl(const ValueDecl *valueDecl,
     SLANG_TRACE_GUARD(valueDecl->dump());
   }
 } // handleValueDecl()
+
+// record the variable name and type
+void slang::SpirGen::handleValueDeclBit(const ValueDecl *valueDecl, std::string funcName) {
+  const VarDecl *varDecl = dyn_cast<VarDecl>(valueDecl);
+
+  std::string varName;
+  if (varDecl) {
+    handleVarDecl(varDecl, funcName);
+
+  } else if (valueDecl->getAsFunction()) {
+    handleFuncNameAndType(valueDecl->getAsFunction());
+
+  } else {
+    SLANG_ERROR("ValueDecl is not a VarDecl or a FunctionDecl!")
+    SLANG_TRACE_GUARD(valueDecl->dump());
+  }
+} // handleValueDeclBit()
 
 void slang::SpirGen::handleDeclStmt(const DeclStmt *declStmt) {
   SLANG_DEBUG("Set last DeclStmt to DeclStmt at " << (uint64_t)(declStmt));
@@ -964,21 +1082,21 @@ slang::SlangBitExpr slang::SpirGen::convertStmtBit(const Stmt *stmt) {
   case Stmt::ParenExprClass:
     return convertParenExprBit(cast<ParenExpr>(stmt));
 
-  // AD: case Stmt::CompoundStmtClass:
-  // AD:   return convertCompoundStmtBit(cast<CompoundStmt>(stmt));
+  case Stmt::CompoundStmtClass:
+    return convertCompoundStmtBit(cast<CompoundStmt>(stmt));
 
   case Stmt::DeclStmtClass:
     handleDeclStmt(cast<DeclStmt>(stmt));
     break;
 
-  // AD case Stmt::DeclRefExprClass:
-  // AD   return convertDeclRefExprBit(cast<DeclRefExpr>(stmt));
+  case Stmt::DeclRefExprClass:
+    return convertDeclRefExprBit(cast<DeclRefExpr>(stmt));
 
   // AD case Stmt::ConstantExprClass:
   // AD   return convertConstantExprBit(cast<ConstantExpr>(stmt));
 
-  // AD case Stmt::IntegerLiteralClass:
-  // AD   return convertIntegerLiteralBit(cast<IntegerLiteral>(stmt));
+  case Stmt::IntegerLiteralClass:
+    return convertIntegerLiteralBit(cast<IntegerLiteral>(stmt));
 
   // AD case Stmt::CharacterLiteralClass:
   // AD   return convertCharacterLiteralBit(cast<CharacterLiteral>(stmt));
@@ -989,11 +1107,11 @@ slang::SlangBitExpr slang::SpirGen::convertStmtBit(const Stmt *stmt) {
   //AD: case Stmt::StringLiteralClass:
   //AD:   return convertStringLiteralBit(cast<StringLiteral>(stmt));
 
-  //AD: case Stmt::ImplicitCastExprClass:
-  //AD:   return convertImplicitCastExpr(cast<ImplicitCastExpr>(stmt));
+  case Stmt::ImplicitCastExprClass:
+    return convertImplicitCastExprBit(cast<ImplicitCastExpr>(stmt));
 
-  //AD: case Stmt::ReturnStmtClass:
-  //AD:   return convertReturnStmtBit(cast<ReturnStmt>(stmt));
+  case Stmt::ReturnStmtClass:
+    return convertReturnStmtBit(cast<ReturnStmt>(stmt));
 
   //AD: case Stmt::SwitchStmtClass:
   //AD:   return convertSwitchStmtNew(cast<SwitchStmt>(stmt));
@@ -1308,7 +1426,7 @@ slang::SlangExpr slang::SpirGen::convertImplicitValueInitExpr(
   }
 
   return SlangExpr{};
-} // convertImplicitCastExpr()
+} // convertImplicitValueInitExpr()
 
 slang::SlangExpr slang::SpirGen::convertInitListExpr(
     SlangVar &slangVar, const InitListExpr *initListExpr,
@@ -2321,7 +2439,27 @@ slang::SpirGen::convertImplicitCastExpr(const ImplicitCastExpr *iCast) {
     return convertStmt(*it);
     // return convertCastExpr(*it, iCast->getType(), getLocationString(iCast));
   }
-}
+} // convertImplicitCastExpr()
+
+slang::SlangBitExpr
+slang::SpirGen::convertImplicitCastExprBit(const ImplicitCastExpr *iCast) {
+  // only one child is expected
+  auto it = iCast->child_begin();
+  auto ck = iCast->getCastKind();
+
+  switch (ck) {
+  case CastKind::CK_IntegralToFloating:
+  case CastKind::CK_FloatingToIntegral:
+  case CastKind::CK_IntegralCast:
+  case CastKind::CK_ArrayToPointerDecay: {
+    return convertStmtBit(*it);
+  }
+
+  default:
+    return convertStmtBit(*it);
+    // return convertCastExpr(*it, iCast->getType(), getLocationString(iCast));
+  }
+} // convertImplicitCastExprBit()
 
 slang::SlangExpr slang::SpirGen::convertCharacterLiteral(const CharacterLiteral *cl) {
   std::stringstream ss;
@@ -2386,6 +2524,38 @@ slang::SlangExpr slang::SpirGen::convertIntegerLiteral(const IntegerLiteral *il)
 
   return slangExpr;
 } // convertIntegerLiteral()
+
+slang::SlangBitExpr slang::SpirGen::convertIntegerLiteralBit(const IntegerLiteral *il) {
+  bool isFloat = false;
+
+  // check if int is implicitly casted to floating
+  const auto &parents = Ctx->getParents(*il);
+  if (!parents.empty()) {
+    const Stmt *stmt1 = parents[0].get<Stmt>();
+    if (stmt1) {
+      switch (stmt1->getStmtClass()) {
+      default:
+        break;
+      case Stmt::ImplicitCastExprClass: {
+        const ImplicitCastExpr *ice = cast<ImplicitCastExpr>(stmt1);
+        switch (ice->getCastKind()) {
+        default:
+          break;
+        case CastKind::CK_IntegralToFloating:
+          isFloat = true;
+          break;
+        }
+      }
+      }
+    }
+  }
+
+  bool is_signed = il->getType()->isSignedIntegerType();
+  if (!isFloat) {
+    return createLiteralBitExpr_Floating(il->getValue().getLimitedValue(), getSrcLocBit(il));
+  }
+  return createLiteralBitExpr_Integer(il->getValue().getLimitedValue(), is_signed, getSrcLocBit(il));
+} // convertIntegerLiteralBit()
 
 slang::SlangExpr slang::SpirGen::convertFloatingLiteral(const FloatingLiteral *fl) {
   std::stringstream ss;
@@ -2463,6 +2633,22 @@ slang::SpirGen::convertVariable(const VarDecl *varDecl, std::string locStr) {
 
   return slangExpr;
 } // convertVariable()
+
+slang::SlangBitExpr
+slang::SpirGen::convertVariableBit(const VarDecl *varDecl, SrcLoc srcLoc) {
+  SlangBitExpr sbExpr;
+  uint64_t varAddr = (uint64_t)varDecl;
+  // auto varName = stu.convertVarExpr(varAddr); // keeping for reference
+  sbExpr.bitExpr = createBitExpr(createBitEntity(varAddr, srcLoc));
+  sbExpr.bitExpr->set_xkind(spir::K_XK::XVAL);
+  sbExpr.bitExpr->set_oprnd1eid(varAddr);
+  sbExpr.bitExpr->set_loc_line(srcLoc.line);
+  sbExpr.bitExpr->set_loc_col(srcLoc.col);
+  sbExpr.bitExpr->set_oprnd1_line(srcLoc.line);
+  sbExpr.bitExpr->set_oprnd1_col(srcLoc.col);
+
+  return sbExpr;
+} // convertVariableBit()
 
 spir::BitEntity slang::SpirGen::convertVarDeclToBitEntity(const VarDecl *varDecl) {
   spir::BitEntity be;
@@ -2590,7 +2776,17 @@ slang::SlangExpr slang::SpirGen::convertEnumConst(const EnumConstantDecl *ecd,
   slangExpr.qualType = ecd->getType();
 
   return slangExpr;
-}
+} // convertEnumConst()
+
+slang::SlangBitExpr slang::SpirGen::convertEnumConstBit(const EnumConstantDecl *ecd, SrcLoc srcLoc) {
+  SlangBitExpr slangBitExpr;
+
+  auto value = ecd->getInitVal();
+  slangBitExpr = createLiteralBitExpr_Integer(value.getLimitedValue(),
+      value.isSigned(), srcLoc);
+
+  return slangBitExpr;
+} // convertEnumConstBit()
 
 slang::SlangExpr slang::SpirGen::convertDeclRefExpr(const DeclRefExpr *dre) {
   SlangExpr slangExpr;
@@ -2633,6 +2829,42 @@ slang::SlangExpr slang::SpirGen::convertDeclRefExpr(const DeclRefExpr *dre) {
     return slangExpr;
   }
 } // convertDeclRefExpr()
+
+slang::SlangBitExpr slang::SpirGen::convertDeclRefExprBit(const DeclRefExpr *dre) {
+  SlangBitExpr sbExpr;
+
+  const ValueDecl *valueDecl = dre->getDecl();
+  if (isa<EnumConstantDecl>(valueDecl)) {
+    auto ecd = cast<EnumConstantDecl>(valueDecl);
+    return convertEnumConstBit(ecd, getSrcLocBit(dre));
+  }
+
+  // it may be a VarDecl or FunctionDecl
+  handleValueDecl(valueDecl, stu.currFunc->name);
+
+  if (isa<VarDecl>(valueDecl)) {
+    auto varDecl = cast<VarDecl>(valueDecl);
+    sbExpr = convertVariableBit(varDecl, getSrcLocBit(dre));
+    return sbExpr;
+
+  } else if (isa<FunctionDecl>(valueDecl)) {
+    const FunctionDecl *funcDecl = cast<FunctionDecl>(valueDecl);
+    uint64_t funcAddr = (uint64_t)funcDecl;
+    sbExpr.bitExpr = createBitExpr(createBitEntity(funcAddr, getSrcLocBit(dre)));
+    sbExpr.bitExpr->set_xkind(spir::K_XK::XVAL);
+    sbExpr.bitExpr->set_oprnd1eid(funcAddr);
+    sbExpr.bitExpr->set_oprnd1_line(getSrcLocBit(dre).line);
+    sbExpr.bitExpr->set_oprnd1_col(getSrcLocBit(dre).col);
+    sbExpr.bitExpr->set_loc_line(getSrcLocBit(dre).line);
+    sbExpr.bitExpr->set_loc_col(getSrcLocBit(dre).col);
+    sbExpr.qualType = funcDecl->getType();
+    sbExpr.varId = funcAddr;
+    return sbExpr;
+  } else {
+    SLANG_ERROR("Not_a_VarDecl or FunctionDecl.")
+    return sbExpr;
+  }
+} // convertDeclRefExprBit()
 
 // a || b , a && b
 slang::SlangExpr slang::SpirGen::convertLogicalOp(const BinaryOperator *binOp) {
@@ -2941,6 +3173,42 @@ slang::SpirGen::createLiteralBitExpr_Integer(uint64_t value, bool isSigned,
 
   return slangExpr;
 } // createLiteralBitExpr_Integer()
+
+slang::SlangBitExpr
+slang::SpirGen::createLiteralBitExpr_Floating(double value, slang::SrcLoc srcLoc) {
+  SlangBitExpr slangExpr;
+  // Create a BitEntityInfo object and set its value and source location
+  spir::BitEntityInfo *bitEntityInfo = new spir::BitEntityInfo();
+  bitEntityInfo->set_ekind(spir::K_EK::ELIT_NUM); // Numeric literal entity kind
+  bitEntityInfo->set_vkind(spir::K_VK::TFLOAT64);
+  bitEntityInfo->set_lowval(slang::Util::double_to_u64(value));
+  bitEntityInfo->set_loc_line(srcLoc.line);
+  bitEntityInfo->set_loc_col(srcLoc.col);
+
+  // Use the address of BitEntityInfo as entityId
+  uint64_t entityId = (uint64_t)bitEntityInfo;
+
+  // Create BitEntity from BitEntityInfo and entityId
+  spir::BitEntity bitEntity;
+  bitEntity.set_eid(entityId);
+  bitEntity.set_line(srcLoc.line);
+  bitEntity.set_col(srcLoc.col);
+
+  // Create BitExpr from the BitEntity with VAL operator type
+  spir::BitExpr *bitExpr = new spir::BitExpr();
+  bitExpr->set_xkind(spir::K_XK::XVAL);
+  addBitExprOperand1(bitExpr,bitEntity);
+  bitExpr->set_loc_line(srcLoc.line);
+  bitExpr->set_loc_col(srcLoc.col);
+
+  // Initialize the SlangBitExpr and assign the BitExpr
+  slangExpr.bitExpr = bitExpr;
+  slangExpr.compound = false;
+  slangExpr.qualType = Ctx->FloatTy;
+  slangExpr.varId = (uint64_t)bitEntityInfo;
+
+  return slangExpr;
+} // createLiteralBitExpr_Floating()
 
 slang::SlangBitExpr
 slang::SpirGen::convertUnaryIncDecOpBit(const UnaryOperator *unOp) {
@@ -3754,6 +4022,19 @@ slang::SpirGen::convertCompoundStmt(const CompoundStmt *compoundStmt) {
 
   return slangExpr;
 } // convertCompoundStmt()
+
+slang::SlangBitExpr
+slang::SpirGen::convertCompoundStmtBit(const CompoundStmt *compoundStmt) {
+  SlangBitExpr slangExpr;
+
+  for (auto it = compoundStmt->body_begin(); it != compoundStmt->body_end();
+       ++it) {
+    // don't care about the return value
+    convertStmtBit(*it);
+  }
+
+  return slangExpr;
+} // convertCompoundStmtBit()
 
 slang::SlangExpr slang::SpirGen::convertParenExpr(const ParenExpr *parenExpr) {
   auto it = parenExpr->child_begin(); // should have only one child
@@ -5077,15 +5358,13 @@ public:
 
     // Initialize the generator: TU name, out file name etc.
     irgen->slangInit(Context.getTranslationUnitDecl());
-    irgen->checkEndOfTranslationUnit(Context.getTranslationUnitDecl());
-    return; //delit
 
     // Handle global variables and inits
     irgen->handleGlobalInits(Context.getTranslationUnitDecl());
 
     // Handle function declarations and definitions
     // For every function declaration it visits FuncVisitor::VisitFunctionDecl()
-    // delit Visitor->TraverseDecl(Context.getTranslationUnitDecl());
+    Visitor->TraverseDecl(Context.getTranslationUnitDecl());
 
     // Perform final actions
     irgen->checkEndOfTranslationUnit(Context.getTranslationUnitDecl());
