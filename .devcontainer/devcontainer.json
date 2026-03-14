@@ -32,19 +32,23 @@
             "ms-vscode.cmake",
             "ms-azuretools.vscode-docker",
             "twxs.cmake",
-            "joaompinto.vscode-graphviz"
+            "joaompinto.vscode-graphviz",
+            "ms-toolsai.jupyter"
           ]
         }
       },
   
-    "forwardPorts": [3000],
+    "forwardPorts": [3000, 8888],
   
     "portsAttributes": {
       "3000": {
         "label": "Documentation",
         "onAutoForward": "notify"
+      },
+      "8888": {
+        "label": "Jupyter Notebook",
+        "onAutoForward": "notify"
       }
     }
-  
     // "remoteUser": "root"
   }

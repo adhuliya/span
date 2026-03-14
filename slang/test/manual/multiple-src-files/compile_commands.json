@@ -1,0 +1,17 @@
+[
+  {
+    "directory": "/workspaces/span/slang/test/manual/multiple-src-files/zar",
+    "command": "gcc -c zar.c -o zar.o",
+    "file": "zar.c"
+  },
+  {
+    "directory": "/workspaces/span/slang/test/manual/multiple-src-files",
+    "command": "gcc -c foo.c -o foo.o",
+    "file": "foo.c"
+  },
+  {
+    "directory": "/workspaces/span/slang/test/manual/multiple-src-files",
+    "command": "gcc -c bar.c -o bar.o",
+    "file": "bar.c"
+  }
+]

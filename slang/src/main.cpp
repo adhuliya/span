@@ -28,10 +28,10 @@
 static llvm::cl::OptionCategory SlangOptions("slang options");
 
 static llvm::cl::opt<std::string> OptOutputDir(
-    "o",
+    "out-dir",
     llvm::cl::desc(
-        "Must specify output directory for output."
-        " The .spir extension is automatically added to each output file."),
+        "Specify output directory for output (current dir by default)."
+        " The .spir.proto/.spir.py extension is automatically added to each output file."),
     llvm::cl::value_desc("directory"), llvm::cl::cat(SlangOptions));
 
 // Command line option for protobuf output
@@ -200,7 +200,7 @@ std::string slang::SlangTU::getOutFilename(std::string suffix) {
 void slang::SlangTU::dumpSlangIr() {
   // Write the bit translation unit to a file
   if (OptProtoOutputKnob) {
-    writeProtoToFile(bittu, getOutFilename(".spir"));
+    writeProtoToFile(bittu, getOutFilename(".spir.proto"));
   }
 
   if (!OptPySpanIrOutputKnob) {
@@ -216,7 +216,7 @@ void slang::SlangTU::dumpSlangIr() {
   dumpFooter(ss);
 
   if (this->tuName.size()) {
-    slang::Util::writeToFile(getOutFilename(".spanir.py"), ss.str());
+    slang::Util::writeToFile(getOutFilename(".spir.py"), ss.str());
   } else {
     SLANG_INFO("FILE_HAS_NO_FUNCTION: Hence no output spanir file.")
   }
@@ -425,6 +425,10 @@ void slang::SpirGen::slangInit(const TranslationUnitDecl *TU) {
   stu.bittu.set_tuname(stu.tuName);
   stu.bittu.set_abspath(fullPath);
   stu.bittu.set_origin("Clang AST " + clang::getClangFullVersion());
+
+  SLANG_DEBUG("Processing Translation Unit: " << stu.tuName);
+  SLANG_DEBUG("Translation Unit Directory: " << stu.tuDirectory);
+  SLANG_DEBUG("Translation Unit Full Path: " << fullPath);
 }
 
 // It is invoked once for each source translation unit function.
@@ -466,10 +470,9 @@ template <typename T>
 slang::SrcLoc slang::SpirGen::getSrcLocBit(const T *decl) {
   slang::SrcLoc loc;
 
-  loc.line =
-      Ctx->getSourceManager().getExpansionLineNumber(decl->getBeginLoc());
-  loc.col =
-      Ctx->getSourceManager().getExpansionColumnNumber(decl->getBeginLoc());
+  loc.line = Ctx->getSourceManager().getExpansionLineNumber(decl->getBeginLoc());
+  loc.col = Ctx->getSourceManager().getExpansionColumnNumber(decl->getBeginLoc());
+  loc.filename = Ctx->getSourceManager().getFilename(decl->getBeginLoc());
 
   return loc;
 } // getSrcLocBit()
@@ -5074,6 +5077,8 @@ public:
 
     // Initialize the generator: TU name, out file name etc.
     irgen->slangInit(Context.getTranslationUnitDecl());
+    irgen->checkEndOfTranslationUnit(Context.getTranslationUnitDecl());
+    return; //delit
 
     // Handle global variables and inits
     irgen->handleGlobalInits(Context.getTranslationUnitDecl());

@@ -26,6 +26,7 @@
 
 #include <fstream>        //for std::ofstream
 #include <iomanip>        //for std::fixed
+#include <llvm-19/llvm/ADT/StringRef.h>
 #include <sstream>        //for std::stringstream
 #include <string>         //for std::string
 #include <unordered_map>  //for std::unordered_map
@@ -72,6 +73,7 @@ enum SlangRecordKind { Struct = 0, Union = 1 };
 struct SrcLoc {
     uint32_t line;
     uint32_t col;
+    llvm::StringRef filename;
 };
 
 // MayValue is a struct that holds a value and an error code.

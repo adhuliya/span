@@ -16,7 +16,7 @@ option go_package = "./spir";
 // that can take on various values to indicate different kinds of entities.
 enum K_EK {
 	// Entity kinds which can be in an expression (4 bit values)
-	ENIL 				= 0;  // No entity.
+	ENIL 				= 0;  // It represents that the entity id is not present.
 	EVAR_GLBL			= 1;  // A global variable.
 	EVAR_LOCL			= 2;  // Local variables in a function body.
 	EVAR_LOCL_ARG		= 3;  // A function argument variable.
