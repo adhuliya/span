@@ -1,3 +1,4 @@
+// Test if conditions and one function arg.
 int main(int argc) {
     int a = 10;
     if (a > argc) {

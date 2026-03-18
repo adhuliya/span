@@ -389,6 +389,71 @@ public:
   }
 }; // class SwitchCtrlFlowLabels
 
+// holds info about the switch-cases
+class SwitchCtrlFlowLabelsBit {
+public:
+  int counter;
+  std::string switchStrId;       // id for the switch
+  std::string thisCaseCondLabel; // label for the current case
+  std::string thisBodyLabel;     // label for the current body
+  std::string nextCaseCondLabel; // label for the next case (when encountered)
+  std::string nextBodyLabel;     // label for the next body (case or default)
+  std::string switchStartLabel;  // switch start label
+  std::string switchExitLabel;   // switch exit label
+  std::string defaultCaseLabel;
+  std::string gotoLabel;       // a label
+  std::string gotoLabelLocStr; // a label
+  SlangBitExpr switchCond;
+  std::stringstream ss;
+  bool defaultExists;
+
+  SwitchCtrlFlowLabelsBit(std::string id) {
+    switchStrId = id;
+    counter = 0;
+    defaultExists = false;
+    switchStartLabel = switchStrId + "SwitchStart";
+    switchExitLabel = switchStrId + "SwitchExit";
+    defaultCaseLabel = switchStrId + "Default";
+    thisCaseCondLabel = ""; // initially no condition
+    thisBodyLabel = "";     // initially no body
+    auto count = getNextCounterStr();
+    nextCaseCondLabel = genLabel("CaseCond", count);
+    nextBodyLabel = genLabel("CaseBody", count);
+    gotoLabel = "";
+    gotoLabelLocStr = "";
+  }
+
+  void setupForThisCase() {
+    thisCaseCondLabel = nextCaseCondLabel;
+    thisBodyLabel = nextBodyLabel;
+    auto count = getNextCounterStr();
+    nextCaseCondLabel = genLabel("CaseCond", count);
+    nextBodyLabel = genLabel("CaseBody", count);
+  }
+
+  void setupForDefaultCase() {
+    defaultExists = true;
+    thisCaseCondLabel = defaultCaseLabel;
+    thisBodyLabel = nextBodyLabel;
+    auto count = getNextCounterStr();
+    // nextCaseCondLabel = genLabel("CaseCond", count); // deliberatly commented
+    nextBodyLabel = genLabel("CaseBody", count);
+  }
+
+  std::string getNextCounterStr() {
+    std::stringstream ss;
+    counter += 1;
+    ss << counter;
+    return ss.str();
+  }
+
+  std::string genLabel(std::string s, std::string count) {
+    std::stringstream ss;
+    ss << switchStrId << s << count;
+    return ss.str();
+  }
+}; // class SwitchCtrlFlowLabels
+
 // SlangTU is the translation unit currently being converted.
 class SlangTU {
 public:
@@ -421,8 +486,13 @@ public:
   // continue stmts.
   std::vector<std::pair<std::string, std::string>> entryExitLabels;
 
+  // vector of start and exit label of constructs which can contain break and
+  // continue stmts.
+  std::vector<std::pair<spir::BitEntity, spir::BitEntity>> entryExitLabelsBitVec;
+
   // to handle the conversion of switch statements
   SwitchCtrlFlowLabels *switchCfls;
+  SwitchCtrlFlowLabelsBit *switchCflsBit;
 
   // is static local var decl?
   bool isStaticLocal;
@@ -459,10 +529,29 @@ public:
     return entryExitLabels[entryExitLabels.size() - 1].second;
   }
 
+  std::pair<spir::BitEntity, spir::BitEntity> &peekLabelBit() {
+    return entryExitLabelsBitVec[entryExitLabelsBitVec.size() - 1];
+  }
+
+  void pushLabelsBit(spir::BitEntity entry, spir::BitEntity exit) {
+    auto labelPair = std::make_pair(entry, exit);
+    entryExitLabelsBitVec.push_back(labelPair);
+  }
+
+  void popLabelBit() { entryExitLabelsBitVec.pop_back(); }
+
+  spir::BitEntity peekEntryLabelBit() {
+    return entryExitLabelsBitVec[entryExitLabelsBitVec.size() - 1].first;
+  }
+
+  spir::BitEntity peekExitLabelBit() {
+    return entryExitLabelsBitVec[entryExitLabelsBitVec.size() - 1].second;
+  }
+
   SlangTU()
       : uniqIdCounter{1}, tuName{}, tuDirectory{}, bittu{}, globalInits{}, 
         currFunc{nullptr}, uniqRecordIdCounter{1}, varMap{}, varCountMap{}, funcMap{},
-        dirtyVars{}, switchCfls{nullptr}, isStaticLocal{false} {}
+        dirtyVars{}, switchCfls{nullptr}, switchCflsBit{nullptr}, isStaticLocal{false} {}
 
   // clear the buffer for the next function.
   void clearFunctionSpecificData() {
@@ -754,6 +843,7 @@ public:
     spir::K_VK getIntegerValueKind(uint64_t value, bool isSigned);
     SlangBitExpr convertLabelBit(const LabelStmt *labelStmt);
     SlangBitExpr convertIfStmtBit(const IfStmt *ifStmt);
+    SlangBitExpr convertConditionalOpBit(const ConditionalOperator *condOp);
     // ... Add all other bit-level methods similarly
 
     SlangBitExpr createSlangExprFromBitExpr(spir::BitExpr *bitExpr, QualType type, bool isTmp);
@@ -783,11 +873,20 @@ public:
     spir::BitEntity convertBitExprToBitEntity(spir::BitExpr *expr, bool freeExpr = false);
     spir::BitExpr *createBitExpr(spir::K_XK op, spir::BitEntity be1, spir::BitEntity be2, SrcLoc srcLoc);
     bool isBitExprCall(spir::BitExpr *be);
+    SlangBitExpr convertWhileStmtBit(const WhileStmt *whileStmt);
+    SlangBitExpr convertDoStmtBit(const DoStmt *doStmt);
+    SlangBitExpr convertForStmtBit(const ForStmt *forStmt);
+    SlangBitExpr convertSwitchStmtBit(const SwitchStmt *switchStmt);
+    SlangBitExpr convertCaseStmtBit(const CaseStmt *caseStmt);
+    SlangBitExpr convertDefaultCaseStmtBit(const DefaultStmt *defaultStmt);
+    SlangBitExpr convertBreakStmtBit(const BreakStmt *breakStmt);
+    SlangBitExpr convertContinueStmtBit(const ContinueStmt *continueStmt);
 
     // Add instruction emission methods
     void addAssignInstr(SlangExpr &lhs, SlangExpr rhs, std::string locStr);
     void addCondInstrBit(SlangBitExpr expr, spir::BitEntity trueLabel, spir::BitEntity falseLabel, SrcLoc srcLoc);
     void addAssignBitInstr(SlangBitExpr lhs, SlangBitExpr rhs);
+    void addNopBitInstr(const NullStmt *nullStmt);
     void addLabelInstr(const std::string &label);
     void addGotoInstr(const std::string &label);
     slang::SlangExpr addAndReturnSizeOfInstrExpr(SlangExpr tmpElementVarArr);
