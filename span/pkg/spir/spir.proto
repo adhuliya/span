@@ -6,6 +6,21 @@
 // protoc --cpp_out=slang/src --proto_path=span/pkg/spir span/pkg/spir/spir.proto
 // or run the Makefile target "gen-proto" from project root.
 
+// Entity names are compound names.
+// Simple names are names without any prefixes.
+// Compound names are formed from simple names with prefixes separated by a colon (':').
+// Some special prefixes are:
+//   v: local variable
+//   f: function
+//   g: global variable
+//   s: struct
+//   u: union
+// E.g. "v:main:x" represents the local variable "x" in the function "main".
+// E.g. "f:main" represents the function "main".
+// E.g. "g:arr" represents global variable "arr".
+// E.g. "s:node" represents struct "node".
+// E.g. "u:node" represents union "node".
+
 syntax = "proto3";
 package spir;
 
@@ -200,6 +215,7 @@ enum K_QK {
 
 // The type of an entity.
 // It is a recursive data type, capable of representing all types in C.
+// BitDataType with typeId 0 (zero) is reserved for the INT32 type.
 message BitDataType {
 	K_VK vkind						= 1;
 	// The id to the type present in BitTU.entityInfo map.
@@ -221,7 +237,7 @@ message BitDataType {
 	optional uint64 subTypeEid      = 7; // Entity id of the subtype
 
 	// Used to name the record or other special types
-	optional string typeName 		= 8;
+	optional string typeName 		= 8;  // Entity name of the type
 	optional bool anonymous			= 9;  // Whether the data type is anonymous (anonymous nested structures, anonymous function parameters, etc.)
 	optional bool funcPrototype     = 10; // Whether the type is a function prototype
 	optional bool variadic			= 11; // Whether the function is variadic
@@ -308,7 +324,7 @@ message BitInsn {
 
 // Functions in a Translation unit.
 // All global initializations are put in a special function:
-//   void 00_glbl_init() -- with id zero.
+//   void 00_glbl_init() -- with id 1.
 message BitFunc {
 	uint64 fid							= 1; // Function id (also an entity id)
 	string fname						= 2; // Function name
@@ -318,7 +334,7 @@ message BitFunc {
 	//   e.g. "cdecl", "stdcall", "fastcall", "thiscall", "vectorcall"
 	optional string calling_convention	= 4;
 
-	repeated BitInsn insns              = 5; // Instructions in the function
+	repeated BitInsn insns              = 5; // Instruction sequence of the function
 }
 
 // The Translation Unit.
@@ -329,7 +345,7 @@ message BitTU {
 	optional string origin					= 3; // Origin, e.g. "Clang AST", "SPAN IR (MEM)"
 
 	// Information about the entities
-	map<string, uint64> namesToIds			= 4; // name to entity id mapping
+	map<string, uint64> namesToIds			= 4; // entity name to entity id mapping
 	map<uint64, BitDataType> dataTypes		= 5; // Information about data types
 	map<uint64, BitEntityInfo> entityInfo	= 6; // Information about entities
 

@@ -1061,6 +1061,7 @@ slang::SlangBitExpr slang::SpirGen::convertStmtBit(const Stmt *stmt) {
   }
 
   SLANG_INFO("ConvertingStmt : " << stmt->getStmtClassName() << "\n")
+  SLANG_DEBUG_GUARD(stmt->dump(););
 
   switch (stmt->getStmtClass()) {
   case Stmt::PredefinedExprClass:
@@ -2528,6 +2529,8 @@ slang::SlangExpr slang::SpirGen::convertIntegerLiteral(const IntegerLiteral *il)
 slang::SlangBitExpr slang::SpirGen::convertIntegerLiteralBit(const IntegerLiteral *il) {
   bool isFloat = false;
 
+  SLANG_PRINT("convertIntegerLiteralBit: " << il->getValue().getLimitedValue());
+  SLANG_DEBUG_GUARD(il->dump(););
   // check if int is implicitly casted to floating
   const auto &parents = Ctx->getParents(*il);
   if (!parents.empty()) {
@@ -2550,8 +2553,9 @@ slang::SlangBitExpr slang::SpirGen::convertIntegerLiteralBit(const IntegerLitera
     }
   }
 
+  SLANG_PRINT("isFloat: " << isFloat);
   bool is_signed = il->getType()->isSignedIntegerType();
-  if (!isFloat) {
+  if (isFloat) {
     return createLiteralBitExpr_Floating(il->getValue().getLimitedValue(), getSrcLocBit(il));
   }
   return createLiteralBitExpr_Integer(il->getValue().getLimitedValue(), is_signed, getSrcLocBit(il));
@@ -3142,16 +3146,16 @@ slang::SlangBitExpr
 slang::SpirGen::createLiteralBitExpr_Integer(uint64_t value, bool isSigned,
                                              slang::SrcLoc srcLoc) {
   SlangBitExpr slangExpr;
+  uint64_t entityId = stu.nextUniqueId();
   // Create a BitEntityInfo object and set its value and source location
-  spir::BitEntityInfo *bitEntityInfo = new spir::BitEntityInfo();
-  bitEntityInfo->set_ekind(spir::K_EK::ELIT_NUM); // Numeric literal entity kind
-  bitEntityInfo->set_vkind(getIntegerValueKind(value, isSigned));
-  bitEntityInfo->set_lowval(value);
-  bitEntityInfo->set_loc_line(srcLoc.line);
-  bitEntityInfo->set_loc_col(srcLoc.col);
-
-  // Use the address of BitEntityInfo as entityId
-  uint64_t entityId = (uint64_t)bitEntityInfo;
+  spir::BitEntityInfo bitEntityInfo = spir::BitEntityInfo();
+  bitEntityInfo.set_eid(entityId);
+  bitEntityInfo.set_ekind(spir::K_EK::ELIT_NUM); // Numeric literal entity kind
+  bitEntityInfo.set_vkind(getIntegerValueKind(value, isSigned));
+  bitEntityInfo.set_lowval(value);  
+  bitEntityInfo.set_loc_line(srcLoc.line);
+  bitEntityInfo.set_loc_col(srcLoc.col);
+  stu.bittu.mutable_entityinfo()->insert({entityId, bitEntityInfo});
 
   // Create BitEntity from BitEntityInfo and entityId
   spir::BitEntity bitEntity;
@@ -3178,15 +3182,15 @@ slang::SlangBitExpr
 slang::SpirGen::createLiteralBitExpr_Floating(double value, slang::SrcLoc srcLoc) {
   SlangBitExpr slangExpr;
   // Create a BitEntityInfo object and set its value and source location
-  spir::BitEntityInfo *bitEntityInfo = new spir::BitEntityInfo();
-  bitEntityInfo->set_ekind(spir::K_EK::ELIT_NUM); // Numeric literal entity kind
-  bitEntityInfo->set_vkind(spir::K_VK::TFLOAT64);
-  bitEntityInfo->set_lowval(slang::Util::double_to_u64(value));
-  bitEntityInfo->set_loc_line(srcLoc.line);
-  bitEntityInfo->set_loc_col(srcLoc.col);
+  spir::BitEntityInfo bitEntityInfo;
+  bitEntityInfo.set_ekind(spir::K_EK::ELIT_NUM); // Numeric literal entity kind
+  bitEntityInfo.set_vkind(spir::K_VK::TFLOAT64);
+  bitEntityInfo.set_lowval(slang::Util::double_to_u64(value));
+  bitEntityInfo.set_loc_line(srcLoc.line);
+  bitEntityInfo.set_loc_col(srcLoc.col);
 
-  // Use the address of BitEntityInfo as entityId
-  uint64_t entityId = (uint64_t)bitEntityInfo;
+  uint64_t entityId = stu.nextUniqueId();
+  stu.bittu.mutable_entityinfo()->insert({entityId, bitEntityInfo});
 
   // Create BitEntity from BitEntityInfo and entityId
   spir::BitEntity bitEntity;
@@ -3205,7 +3209,7 @@ slang::SpirGen::createLiteralBitExpr_Floating(double value, slang::SrcLoc srcLoc
   slangExpr.bitExpr = bitExpr;
   slangExpr.compound = false;
   slangExpr.qualType = Ctx->FloatTy;
-  slangExpr.varId = (uint64_t)bitEntityInfo;
+  slangExpr.varId = entityId;
 
   return slangExpr;
 } // createLiteralBitExpr_Floating()

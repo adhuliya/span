@@ -46,3 +46,14 @@ go.work
 dev_build.tmplog
 docs/
 misc/.cache
+
+# Python related ignores
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+*.pyz
+*.pywz
+*.pyzw
+*.pyzwz
+__pycache__/

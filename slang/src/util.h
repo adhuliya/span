@@ -72,6 +72,10 @@
         XX;                                           \
     }
 
+#define SLANG_PRINT(XX)                                               \
+    llvm::errs() << "\nSlangPrint: " << __FILE__ << ":" << __func__   \
+        << "():" << __LINE__ << ": " << XX << "\n";
+
 #define SLANG_TRACE(XX)                                                            \
     if (slang::Util::LogLevel <= SLANG_TRACE_LEVEL) {                              \
         llvm::errs() << "\n  " << slang::Util::getDateTimeString() << ": TRACE: (" \

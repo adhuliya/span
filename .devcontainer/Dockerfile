@@ -42,7 +42,8 @@ RUN apt-get install -y \
     python3-widgetsnbextension \
     python3-graphviz \
     python3-matplotlib \
-    python3-pandas
+    python3-pandas \
+    python3-protobuf
 EXPOSE 8888
 
 # Enable Jupyter Notebook extensions

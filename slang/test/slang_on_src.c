@@ -15,12 +15,12 @@
 // DEFINE:    "file": "%{SRC}" \
 // DEFINE: }] > %T/compile_commands.json \
 // DEFINE: && %dslang -p %T/compile_commands.json %S/src/%{SRC} -bit-spir -out-dir %T \
-// DEFINE:    |& tee %T/%{SRC}.slang.output
+// DEFINE:    |& tee %T/%{SRC}.slang.output \
+// DEFINE: && %protoc --decode=spir.BitTU --proto_path %S/../../span/pkg/spir/ spir.proto < %T/%{SRC}.spir.pb 2>&1 \
+// DEFINE:   | tee %T/%{SRC}.spir.pb.txt
 
 // REDEFINE: %{SRC} = spanTest001.c
 // RUN: %{CMD}
-// RUN: %protoc --decode=spir.BitTU --proto_path %S/../../span/pkg/spir/ spir.proto < %T/%{SRC}.spir.pb 2>&1 \
-// RUN:   | tee %T/%{SRC}.spir.pb.txt
 
 // REDEFINE: %{SRC} = spanTest002.c
 // RUN: %{CMD}
