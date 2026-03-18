@@ -5,7 +5,6 @@ int main(int argc) {
     } else {
         a = 2;
     }
-    landhere:
     a = 3;
     return a;
 }

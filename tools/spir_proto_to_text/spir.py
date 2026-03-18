@@ -182,7 +182,7 @@ def print_instructions(func, bit_tu, out, indent=2):
     for insn in func.insns:
         line = " " * indent
         kinstr = spir_pb2.K_IK.Name(insn.ikind)
-        parts = [kinstr]
+        parts = [kinstr + ":"]
         # Print only the simple form for instructions
         if insn.HasField('expr1'):
             parts.append(display_expr(insn.expr1, bit_tu))
@@ -257,7 +257,8 @@ def display_expr(expr, bit_tu):
             eid2 = expr.oprnd2eid
             nm2 = find_entity_name_from_eid(bit_tu, eid2)
             nm2 = simple_name(nm2) if nm2 else f"id:{eid2}"
-        return f"{kxkind}({nm1} {nm2})" if nm1 or nm2 else "(imm?)"
+            nm2 = f" {nm2}" if nm2 else "" # prefix a space
+        return f"{kxkind}({nm1}{nm2})" if nm1 or nm2 else "(imm?)"
     elif expr.xkind in [
         spir_pb2.K_XK.XADD, spir_pb2.K_XK.XSUB, spir_pb2.K_XK.XMUL, spir_pb2.K_XK.XDIV,
         spir_pb2.K_XK.XMOD, spir_pb2.K_XK.XAND, spir_pb2.K_XK.XOR, spir_pb2.K_XK.XXOR,

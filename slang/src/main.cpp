@@ -452,6 +452,7 @@ void slang::SpirGen::handleFunctionDecl(FunctionDecl *D) {
   } else {
     SLANG_ERROR("Decl is not a Function")
   }
+  stu.clearFunctionSpecificData();
 } // handleFunctionDecl()
 
 // invoked when the whole translation unit has been processed
@@ -1129,8 +1130,8 @@ slang::SlangBitExpr slang::SpirGen::convertStmtBit(const Stmt *stmt) {
   //AD: case Stmt::SwitchStmtClass:
   //AD:   return convertSwitchStmtNew(cast<SwitchStmt>(stmt));
 
-  //AD: case Stmt::GotoStmtClass:
-  //AD:   return convertGotoStmtBit(cast<GotoStmt>(stmt));
+  case Stmt::GotoStmtClass:
+    return convertGotoStmtBit(cast<GotoStmt>(stmt));
 
   //AD: case Stmt::CStyleCastExprClass:
   //AD:   return convertCStyleCastExpr(cast<CStyleCastExpr>(stmt));
@@ -5108,7 +5109,7 @@ spir::BitEntity slang::SpirGen::createLabelBit(std::string name, SrcLoc srcLoc) 
   // Step 1: Create a new BitEntityInfo for the label.
   spir::BitEntityInfo labelInfo;
   // Generate a unique entity id for the label (using stu's unique id scheme).
-  uint64_t eid = stu.nextUniqueId();
+  uint64_t eid = stu.getLabelId(name);
   labelInfo.set_eid(eid);
   labelInfo.set_ekind(spir::K_EK::ELABEL);
   // Set the label's name as strVal, and source location.

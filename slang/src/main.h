@@ -427,6 +427,19 @@ public:
   // is static local var decl?
   bool isStaticLocal;
 
+  // Label name to its id mapping (per function - clear it as soon as function is processed)
+  std::unordered_map<std::string, uint64_t> labelNameToIdMap;
+
+  uint64_t getLabelId(std::string labelName) {
+    auto it = labelNameToIdMap.find(labelName);
+    if (it != labelNameToIdMap.end()) {
+      return it->second;
+    } else {
+      labelNameToIdMap[labelName] = nextUniqueId();
+      return labelNameToIdMap[labelName];
+    }
+  }
+
   void pushLabels(std::string entry, std::string exit) {
     auto labelPair = std::make_pair(entry, exit);
     entryExitLabels.push_back(labelPair);
@@ -452,11 +465,13 @@ public:
         dirtyVars{}, switchCfls{nullptr}, isStaticLocal{false} {}
 
   // clear the buffer for the next function.
-  void clear() {
+  void clearFunctionSpecificData() {
+    currFunc = nullptr;
     varMap.clear();
     dirtyVars.clear();
     varCountMap.clear();
-  } // clear()
+    labelNameToIdMap.clear();
+  } // clearFunctionSpecificData()
 
   uint32_t genNextLabelCount() {
     uniqLabelCounter += 1;
