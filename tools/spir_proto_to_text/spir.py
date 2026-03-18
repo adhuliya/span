@@ -247,11 +247,17 @@ def display_expr(expr, bit_tu):
     kxkind = spir_pb2.K_XK.Name(expr.xkind)
     if expr.xkind == spir_pb2.K_XK.XVAL:
         # Use oprnd1eid to look up entity info or literal
+        nm1 = nm2 = ""
+        eid1 = eid2 = 0
         if expr.HasField("oprnd1eid"):
-            eid = expr.oprnd1eid
-            nm = find_entity_name_from_eid(bit_tu, eid)
-            return simple_name(nm) if nm else f"id:{eid}"
-        return "(imm?)"
+            eid1 = expr.oprnd1eid
+            nm1 = find_entity_name_from_eid(bit_tu, eid1)
+            nm1 = simple_name(nm1) if nm1 else f"id:{eid1}"
+        if expr.HasField("oprnd2eid"):
+            eid2 = expr.oprnd2eid
+            nm2 = find_entity_name_from_eid(bit_tu, eid2)
+            nm2 = simple_name(nm2) if nm2 else f"id:{eid2}"
+        return f"{kxkind}({nm1} {nm2})" if nm1 or nm2 else "(imm?)"
     elif expr.xkind in [
         spir_pb2.K_XK.XADD, spir_pb2.K_XK.XSUB, spir_pb2.K_XK.XMUL, spir_pb2.K_XK.XDIV,
         spir_pb2.K_XK.XMOD, spir_pb2.K_XK.XAND, spir_pb2.K_XK.XOR, spir_pb2.K_XK.XXOR,

@@ -184,12 +184,12 @@ public:
   };
 
   SlangBitExpr(spir::BitExpr *be, QualType qt = QualType(),
-      uint64_t varId = 0, bool tmpVar = false, bool compound = false) {
+      uint64_t vid = 0, bool tmpVar = false, bool cmpd = false) {
     bitExpr = be;
-    qualType = QualType();
-    varId = 0;
+    qualType = qt;
+    varId = vid;
     nonTmpVar = !tmpVar;
-    compound = false;
+    compound = cmpd;
   };
 
   std::string toString() {
@@ -199,7 +199,7 @@ public:
     ss << "  ExprType : " << qualType.getAsString() << "\n";
     ss << "  NonTmpVar: " << (nonTmpVar ? "true" : "false") << "\n";
     ss << "  VarId    : " << varId << "\n";
-
+    ss << "  Compound : " << (compound ? "true" : "false") << "\n";
     return ss.str();
   }
 
@@ -225,6 +225,15 @@ public:
       srcLoc.col = bitExpr->loc_col();
     }
     return srcLoc;
+  }
+
+  bool setSrcLoc(SrcLoc srcLoc) {
+    if (bitExpr != nullptr) {
+      bitExpr->set_loc_line(srcLoc.line);
+      bitExpr->set_loc_col(srcLoc.col);
+      return true;
+    }
+    return false;
   }
 }; // class SlangBitExpr
 
@@ -728,6 +737,8 @@ public:
     SlangBitExpr convertUnaryIncDecOpBit(const UnaryOperator *unOp);
     QualType getIntegerValueQualType(uint64_t value, bool isSigned);
     spir::K_VK getIntegerValueKind(uint64_t value, bool isSigned);
+    SlangBitExpr convertLabelBit(const LabelStmt *labelStmt);
+    SlangBitExpr convertIfStmtBit(const IfStmt *ifStmt);
     // ... Add all other bit-level methods similarly
 
     SlangBitExpr createSlangExprFromBitExpr(spir::BitExpr *bitExpr, QualType type, bool isTmp);

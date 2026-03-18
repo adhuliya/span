@@ -1070,11 +1070,23 @@ slang::SlangBitExpr slang::SpirGen::convertStmtBit(const Stmt *stmt) {
   case Stmt::StmtExprClass:
     return convertStmtExprBit(cast<StmtExpr>(stmt));
 
-  // AD: case Stmt::LabelStmtClass:
-  // AD:   return convertLabelBit(cast<LabelStmt>(stmt));
+  case Stmt::LabelStmtClass:
+    return convertLabelBit(cast<LabelStmt>(stmt));
 
   case Stmt::UnaryOperatorClass:
     return convertUnaryOperatorBit(cast<UnaryOperator>(stmt));
+
+  case Stmt::IfStmtClass:
+    return convertIfStmtBit(cast<IfStmt>(stmt));
+
+  // case Stmt::WhileStmtClass:
+  //   return convertWhileStmt(cast<WhileStmt>(stmt));
+
+  // case Stmt::DoStmtClass:
+  //   return convertDoStmt(cast<DoStmt>(stmt));
+
+  // case Stmt::ForStmtClass:
+  //   return convertForStmt(cast<ForStmt>(stmt));
 
   case Stmt::CompoundAssignOperatorClass:
   case Stmt::BinaryOperatorClass:
@@ -1136,9 +1148,9 @@ slang::SlangBitExpr slang::SpirGen::convertStmtBit(const Stmt *stmt) {
   //AD: case Stmt::CallExprClass:
   //AD:   return convertCallExpr(cast<CallExpr>(stmt));
 
-    // case Stmt::CaseStmtClass:
-    //   // we manually handle case stmt when we handle switch stmt
-    //   break;
+  // case Stmt::CaseStmtClass:
+  //   // we manually handle case stmt when we handle switch stmt
+  //   break;
 
   case Stmt::NullStmtClass: // just a ";"
     stu.addStmt("instr.NopI(" + getLocationString(stmt) + ")");
@@ -2285,6 +2297,44 @@ slang::SlangExpr slang::SpirGen::convertIfStmt(const IfStmt *ifStmt) {
 
   return SlangExpr{}; // return empty expression
 } // convertIfStmt()
+
+slang::SlangBitExpr slang::SpirGen::convertIfStmtBit(const IfStmt *ifStmt) {
+  std::string id = stu.genNextLabelCountStr();
+  std::string ifTrueLabel = id + "IfTrue";
+  std::string ifFalseLabel = id + "IfFalse";
+  std::string ifExitLabel = id + "IfExit";
+  
+  spir::BitEntity ifTrueLabelBit = createLabelBit(ifTrueLabel, getSrcLocBit(ifStmt));
+  spir::BitEntity ifFalseLabelBit = createLabelBit(ifFalseLabel, getSrcLocBit(ifStmt));
+  spir::BitEntity ifExitLabelBit = createLabelBit(ifExitLabel, getSrcLocBit(ifStmt));
+
+  const Stmt *condition = ifStmt->getCond();
+  SlangBitExpr conditionExpr = convertStmtBit(condition);
+  conditionExpr = convertToIfTmpBit(conditionExpr);
+
+  SLANG_PRINT("here1: \n" << conditionExpr.toString());
+  addCondInstrBit(conditionExpr, ifTrueLabelBit, ifFalseLabelBit, getSrcLocBit(ifStmt));
+
+  SLANG_PRINT("here2");
+  addLabelInstrBit(ifTrueLabelBit, getSrcLocBit(ifStmt));
+
+  const Stmt *body = ifStmt->getThen();
+  if (body) {
+    convertStmtBit(body);
+  }
+
+  addGotoInstrBit(ifExitLabelBit, getSrcLocBit(ifStmt));
+  addLabelInstrBit(ifFalseLabelBit, getSrcLocBit(ifStmt));
+
+  const Stmt *elseBody = ifStmt->getElse();
+  if (elseBody) {
+    convertStmtBit(elseBody);
+  }
+
+  addLabelInstrBit(ifExitLabelBit, getSrcLocBit(ifStmt));
+
+  return SlangBitExpr{}; // return empty expression
+} // convertIfStmtBit()
 
 slang::SlangExpr slang::SpirGen::convertWhileStmt(const WhileStmt *whileStmt) {
   std::string id = stu.genNextLabelCountStr();
@@ -3839,6 +3889,7 @@ slang::SlangBitExpr slang::SpirGen::convertToIfTmpBit(SlangBitExpr expr, bool fo
     if (gc) {
       expr.deleteBitExpr();
     }
+    SLANG_PRINT("tmpExpr: \n" << tmpExpr.toString());
     return tmpExpr;
   } else {
     return expr;
@@ -4074,6 +4125,31 @@ slang::SlangExpr slang::SpirGen::convertLabel(const LabelStmt *labelStmt) {
 
   return slangExpr;
 } // convertLabel()
+
+slang::SlangBitExpr slang::SpirGen::convertLabelBit(const LabelStmt *labelStmt) {
+  SlangBitExpr slangExpr;
+
+  auto firstChild = *labelStmt->child_begin();
+  if (isa<CaseStmt>(firstChild) && stu.switchCfls) {
+    stu.switchCfls->gotoLabel = labelStmt->getName();
+    llvm::errs() << "ERROR:LABEL_BEFORE_CASE(CheckTheCFG): "
+                 << stu.switchCfls->gotoLabel << "\n";
+  } else {
+    auto labelBit = createLabelBit(labelStmt->getName(), getSrcLocBit(labelStmt));
+    slangExpr.bitExpr = createBitExpr(labelBit);
+    slangExpr.compound = false;
+    slangExpr.varId = labelBit.eid();
+    slangExpr.setSrcLoc(getSrcLocBit(labelStmt));
+
+    addLabelInstrBit(labelBit, getSrcLocBit(labelStmt));
+  }
+
+  for (auto it = labelStmt->child_begin(); it != labelStmt->child_end(); ++it) {
+    convertStmtBit(*it);
+  }
+
+  return slangExpr;
+} // convertLabelBit()
 
 // BOUND START: type_conversion_routines
 

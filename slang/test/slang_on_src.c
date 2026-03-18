@@ -24,3 +24,6 @@
 
 // REDEFINE: %{SRC} = spanTest002.c
 // RUN: %{CMD}
+
+// REDEFINE: %{SRC} = spanTest005.c
+// RUN: %{CMD}
