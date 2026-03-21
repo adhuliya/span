@@ -723,10 +723,12 @@ int slang::SpirGen::handleVarDecl(const VarDecl *varDecl, std::string funcName) 
     if (varDecl->isStaticLocal()) {
       slangVar.setLocalVarNameStatic(varName, funcName);
       bitEntityInfo.set_ekind(spir::K_EK::EVAR_LOCL_STATIC);
+      bitEntityInfo.set_parenteid(stu.currBitFunc->fid());
 
     } else if (varDecl->hasLocalStorage()) {
       slangVar.setLocalVarName(varName, funcName);
       bitEntityInfo.set_ekind(spir::K_EK::EVAR_LOCL);
+      bitEntityInfo.set_parenteid(stu.currBitFunc->fid());
       if (stu.varCountMap.find(slangVar.name) != stu.varCountMap.end()) {
         uint64_t newVarId = ++stu.varCountMap[slangVar.name];
         slangVar.setLocalVarName(std::to_string(newVarId) + "D" + varName,
@@ -738,6 +740,7 @@ int slang::SpirGen::handleVarDecl(const VarDecl *varDecl, std::string funcName) 
     } else if (varDecl->hasGlobalStorage()) {
       slangVar.setGlobalVarName(varName);
       bitEntityInfo.set_ekind(spir::K_EK::EVAR_GLBL);
+      bitEntityInfo.set_parenteid(K_00_GLBL_INIT_FUNC_ID);
 
     } else if (varDecl->hasExternalStorage()) {
       // Treat these as global storage by default
@@ -5309,6 +5312,7 @@ spir::BitEntity slang::SpirGen::genTmpBitEntity(
   // STEP 3: Add the variable to the TU.
   // FIXME: The var's 'id' here should be small enough to not interfere with
   // uint64_t addresses.
+  stu.bittu.mutable_namestoids()->emplace(ss.str(), bitEntityInfo.eid());
   stu.bittu.mutable_entityinfo()->emplace(bitEntityInfo.eid(), bitEntityInfo);
 
   return bitEntity;

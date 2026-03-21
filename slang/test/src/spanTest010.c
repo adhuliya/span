@@ -5,8 +5,11 @@ int main(int argc, char **argv) {
   switch(argc) {
     case 1:
       x = x + 1;
-    default:
+    case 2:
       x = x + 2;
+      break;
+    default:
+      x = x + x;
   }
   return x;
 }

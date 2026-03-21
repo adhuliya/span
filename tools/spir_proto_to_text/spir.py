@@ -50,18 +50,55 @@ def parse_args():
 def simple_name(name):
     return name.split(":")[-1] if ":" in name else name
 
-# Helper: Find entity name and BitEntityInfo from eid
-def find_entity_name_from_eid(bit_tu, eid):
-    for name, idval in bit_tu.namesToIds.items():
-        if idval == eid:
-            return name
-    return None
-
 def get_bit_entity_info(bit_tu, eid):
     return bit_tu.entityInfo.get(eid, None)
 
 def get_data_type(bit_tu, eid):
     return bit_tu.dataTypes.get(eid, None)
+
+def find_entity_name_from_eid(bit_tu, eid):
+    """
+    Finds and returns the entity name for a given entity id.
+    If the entity is a literal (ELIT_*), returns its literal representation.
+    """
+    if not eid:
+        return ""
+    einfo = bit_tu.entityInfo.get(eid, None)
+    # Check for literal entity kinds and use literal_to_string
+    if einfo is not None and hasattr(einfo, "ekind") and (
+        einfo.ekind in (
+            getattr(spir_pb2.K_EK, 'ELIT_NUM', -1),
+            getattr(spir_pb2.K_EK, 'ELIT_NUM_IMM', -1),
+            getattr(spir_pb2.K_EK, 'ELIT_STR', -1),
+            getattr(spir_pb2.K_EK, 'ELIT_BOOL', -1)
+        )
+    ):
+        return literal_to_string(einfo)
+    # Attempt to get a name from BitEntityInfo.strval if eid exists in entityInfo
+    if einfo is not None and hasattr(einfo, "strVal") and einfo.strVal:
+        # If strval is bytes, decode it.
+        value = einfo.strVal
+        if isinstance(value, bytes):
+            value = value.decode("utf-8")
+        return value
+    btd = get_data_type(bit_tu, eid)
+    if btd is not None and hasattr(btd, "typeName") and btd.typeName:
+        return btd.typeName
+    elif btd is not None:
+        # If all else fails, return the vkind as a string
+        btd_vkind = None
+        if hasattr(btd, "vkind"):
+            try:
+                # Try to get the enum name for vkind
+                btd_vkind = spir_pb2.K_VK.Name(btd.vkind)
+            except Exception:
+                btd_vkind = str(btd.vkind)
+        return btd_vkind or ""
+    # Otherwise, look up the name in namesToIds as fallback (legacy support)
+    for name, id_ in getattr(bit_tu, "namesToIds", {}).items():
+        if id_ == eid:
+            return name
+    return ""
 
 def print_globals(bit_tu, out):
     out.write("Globals:\n")
@@ -81,7 +118,7 @@ def format_type(bit_tu, dtype, depth=0):
     if dtype is None:
         return "<?>"
     spir = spir_pb2  # shorcut
-    vkind_name = spir_pb2.K_VK.Name(dtype.vkind) if dtype.HasField("vkind") else "Unknown"
+    vkind_name = spir_pb2.K_VK.Name(dtype.vkind)
     if dtype.vkind in (spir.K_VK.TINT32, spir.K_VK.TINT8, spir.K_VK.TINT16, spir.K_VK.TINT64,
                        spir.K_VK.TUINT32, spir.K_VK.TUINT8, spir.K_VK.TUINT16, spir.K_VK.TUINT64, 
                        spir.K_VK.TFLOAT32, spir.K_VK.TFLOAT64, spir.K_VK.TVOID):
@@ -164,13 +201,18 @@ def print_locals_vars_in_funcs(bit_tu, out):
         out.write(f"Locals in {fname}:\n")
         # Find locals by scanning entityInfo for locals with parentEid == func.fid
         for eid, einfo in bit_tu.entityInfo.items():
-            if einfo.ekind == spir_pb2.K_EK.EVAR_LOCL and getattr(einfo, "parentEid", None) == func.fid:
+            vname = vtype = statik = ""
+            if (einfo.ekind in (spir_pb2.K_EK.EVAR_LOCL, spir_pb2.K_EK.EVAR_LOCL_STATIC) 
+                and getattr(einfo, "parentEid", None) == func.fid):
                 vname = find_entity_name_from_eid(bit_tu, eid)
-                vtype = ""
                 if hasattr(einfo, "dataTypeEid"):
                     v_dt = get_data_type(bit_tu, einfo.dataTypeEid)
                     vtype = f": {format_type(bit_tu, v_dt)}" if v_dt else ""
-                out.write(f"  {vname}{vtype}\n")
+            if einfo.ekind == spir_pb2.K_EK.EVAR_LOCL_STATIC:
+                statik = "(static local)"
+            vstr = f"  {vname}{vtype} {statik}"
+            if vname and statik:
+                out.write(vstr + "\n")
         out.write("\n")
 
 def print_function_bodies(bit_tu, out):
@@ -216,30 +258,6 @@ def literal_to_string(einfo):
     if einfo.ekind == spir_pb2.K_EK.ELIT_BOOL:
         return "true" if getattr(einfo, "lowVal", 0) else "false"
     return "(unhandled-literal)"
-
-def find_entity_name_from_eid(bit_tu, eid):
-    """
-    Finds and returns the entity name for a given entity id.
-    If the entity is a literal (ELIT_*), returns its literal representation.
-    """
-    if not eid:
-        return ""
-    einfo = bit_tu.entityInfo.get(eid, None)
-    # Check for literal entity kinds and use literal_to_string
-    if einfo is not None and hasattr(einfo, "ekind") and (
-        einfo.ekind in (
-            getattr(spir_pb2.K_EK, 'ELIT_NUM', -1),
-            getattr(spir_pb2.K_EK, 'ELIT_NUM_IMM', -1),
-            getattr(spir_pb2.K_EK, 'ELIT_STR', -1),
-            getattr(spir_pb2.K_EK, 'ELIT_BOOL', -1)
-        )
-    ):
-        return literal_to_string(einfo)
-    # Otherwise, look up the name
-    for name, id_ in getattr(bit_tu, "namesToIds", {}).items():
-        if id_ == eid:
-            return name
-    return ""
 
 def display_expr(expr, bit_tu):
     """
