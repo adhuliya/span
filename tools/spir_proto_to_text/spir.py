@@ -132,8 +132,10 @@ def print_functions(bit_tu, out):
     out.write("Functions:\n")
     for func in bit_tu.functions:
         fname = func.fname
-        finfo = get_bit_entity_info(bit_tu, func.fid)
-        out.write(f"  {fname}(")
+        fid = func.fid
+        finfo = get_bit_entity_info(bit_tu, fid)
+        # Print function name with its ID in parentheses
+        out.write(f"  {fname}(id:{fid})(")
         # function parameters and their types
         params = []
         if finfo and hasattr(finfo, 'dataTypeEid'):

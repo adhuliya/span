@@ -844,6 +844,9 @@ public:
     SlangBitExpr convertLabelBit(const LabelStmt *labelStmt);
     SlangBitExpr convertIfStmtBit(const IfStmt *ifStmt);
     SlangBitExpr convertConditionalOpBit(const ConditionalOperator *condOp);
+    SlangBitExpr convertConstantExprBit(const ConstantExpr *constExpr);
+    SlangBitExpr convertCStyleCastExprBit(const CStyleCastExpr *cCast);
+    SlangBitExpr convertCastExprBit(const Stmt *expr, QualType qt, SrcLoc srcLoc);
     // ... Add all other bit-level methods similarly
 
     SlangBitExpr createSlangExprFromBitExpr(spir::BitExpr *bitExpr, QualType type, bool isTmp);

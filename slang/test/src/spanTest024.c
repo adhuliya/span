@@ -5,6 +5,6 @@ int main() {
   char * b ;
   b = a;
   *(b++) = 1;
-  return b; // a[] is 1, b points-to a
+  return (int)(b); // a[] is 1, b points-to a
 }
 

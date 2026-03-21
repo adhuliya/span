@@ -30,3 +30,22 @@
 
 // REDEFINE: %{SRC} = spanTest005.c
 // RUN: %{CMD}
+
+// REDEFINE: %{SRC} = spanTest010.c
+// RUN: %{CMD}
+
+// REDEFINE: %{SRC} = spanTest012.c
+// RUN: %{CMD}
+
+// REDEFINE: %{SRC} = spanTest013.c
+// RUN: %{CMD}
+
+// REDEFINE: %{SRC} = spanTest021.c
+// RUN: %{CMD}
+
+// FIXME-- handle array init-list expr later
+// REDEFINE- %{SRC} = spanTest022.c
+// RUN- %{CMD}
+
+// REDEFINE: %{SRC} = spanTest024.c
+// RUN: %{CMD}

@@ -138,11 +138,14 @@ void slang::SlangTU::addStmt(std::string spanStmt) {
 // assignments; in such cases the instruction must be added to the global
 // function.
 void slang::SlangTU::addStmtBit(spir::BitInsn *bitInsn) {
+  SLANG_DEBUG("addStmtBit: " << bitInsn->DebugString() << " isStaticLocal: " << isStaticLocal);
   if (isStaticLocal) {
-    // Function 1 is a special function that contains initialization of all globals.
-    bittu.mutable_functions(K_00_GLBL_INIT_FUNC_ID)->mutable_insns()->AddAllocated(bitInsn);
+    // Function with id 1 (at index 0) is a special function that contains initialization of all globals.
+    bittu.mutable_functions(0)->mutable_insns()->AddAllocated(bitInsn);
+    SLANG_DEBUG("addStmtBit: to global function id:" << bittu.mutable_functions(0)->fid());
   } else {
     currBitFunc->mutable_insns()->AddAllocated(bitInsn);
+    SLANG_DEBUG("addStmtBit: to function id:" << currBitFunc->fid());
   }
 }
 
@@ -683,6 +686,8 @@ int slang::SpirGen::handleVarDecl(const VarDecl *varDecl, std::string funcName) 
   uint64_t varAddr = (uint64_t)varDecl;
   std::string varName;
 
+  SLANG_DEBUG("handleVarDecl: " << varDecl->getNameAsString() << " " << varDecl->isStaticLocal());
+  SLANG_TRACE_GUARD(varDecl->dump());
   stu.isStaticLocal = varDecl->isStaticLocal();
 
   if (stu.isNewVar(varAddr)) {
@@ -1034,10 +1039,6 @@ slang::SlangExpr slang::SpirGen::convertStmt(const Stmt *stmt) {
   case Stmt::CallExprClass:
     return convertCallExpr(cast<CallExpr>(stmt));
 
-    // case Stmt::CaseStmtClass:
-    //   // we manually handle case stmt when we handle switch stmt
-    //   break;
-
   case Stmt::NullStmtClass: // just a ";"
     stu.addStmt("instr.NopI(" + getLocationString(stmt) + ")");
     break;
@@ -1088,6 +1089,9 @@ slang::SlangBitExpr slang::SpirGen::convertStmtBit(const Stmt *stmt) {
   case Stmt::UnaryOperatorClass:
     return convertUnaryOperatorBit(cast<UnaryOperator>(stmt));
 
+  case Stmt::ConditionalOperatorClass:
+    return convertConditionalOpBit(cast<ConditionalOperator>(stmt));
+
   case Stmt::IfStmtClass:
     return convertIfStmtBit(cast<IfStmt>(stmt));
 
@@ -1117,8 +1121,8 @@ slang::SlangBitExpr slang::SpirGen::convertStmtBit(const Stmt *stmt) {
   case Stmt::DeclRefExprClass:
     return convertDeclRefExprBit(cast<DeclRefExpr>(stmt));
 
-  // AD case Stmt::ConstantExprClass:
-  // AD   return convertConstantExprBit(cast<ConstantExpr>(stmt));
+  case Stmt::ConstantExprClass:
+    return convertConstantExprBit(cast<ConstantExpr>(stmt));
 
   case Stmt::IntegerLiteralClass:
     return convertIntegerLiteralBit(cast<IntegerLiteral>(stmt));
@@ -1144,8 +1148,8 @@ slang::SlangBitExpr slang::SpirGen::convertStmtBit(const Stmt *stmt) {
   case Stmt::GotoStmtClass:
     return convertGotoStmtBit(cast<GotoStmt>(stmt));
 
-  //AD: case Stmt::CStyleCastExprClass:
-  //AD:   return convertCStyleCastExpr(cast<CStyleCastExpr>(stmt));
+  case Stmt::CStyleCastExprClass:
+    return convertCStyleCastExprBit(cast<CStyleCastExpr>(stmt));
 
   //AD: case Stmt::MemberExprClass:
   //AD:   return convertMemberExpr(cast<MemberExpr>(stmt));
@@ -1159,10 +1163,6 @@ slang::SlangBitExpr slang::SpirGen::convertStmtBit(const Stmt *stmt) {
 
   //AD: case Stmt::CallExprClass:
   //AD:   return convertCallExpr(cast<CallExpr>(stmt));
-
-  // case Stmt::CaseStmtClass:
-  //   // we manually handle case stmt when we handle switch stmt
-  //   break;
 
   case Stmt::NullStmtClass: // just a ";"
     addNopBitInstr(cast<NullStmt>(stmt));
@@ -1844,6 +1844,13 @@ slang::SlangExpr slang::SpirGen::convertCStyleCastExpr(const CStyleCastExpr *cCa
   return convertCastExpr(*it, qt, getLocationString(cCast));
 } // convertCStyleCastExpr()
 
+slang::SlangBitExpr slang::SpirGen::convertCStyleCastExprBit(const CStyleCastExpr *cCast) {
+  auto it = cCast->child_begin();
+  QualType qt = cCast->getType();
+
+  return convertCastExprBit(*it, qt, getSrcLocBit(cCast));
+} // convertCStyleCastExprBit()
+
 slang::SlangExpr slang::SpirGen::convertGotoStmt(const GotoStmt *gotoStmt) {
   std::string label = gotoStmt->getLabel()->getNameAsString();
   addGotoInstr(label);
@@ -2007,10 +2014,11 @@ slang::SlangBitExpr slang::SpirGen::convertCaseStmtBit(const CaseStmt *caseStmt)
   auto thisCaseCondLabelBit = createLabelBit(stu.switchCflsBit->thisCaseCondLabel, getSrcLocBit(caseStmt));
   addLabelInstrBit(thisCaseCondLabelBit, getSrcLocBit(caseStmt)); // condition label
   // add the actual condition
-  SlangBitExpr eqExpr = createBinaryBitExpr(stu.switchCflsBit->switchCond, spir::K_XK::XEQ, caseCond,
-                       getSrcLocBit(caseStmt), Ctx->UnsignedIntTy);
+  SlangBitExpr eqExpr = convertToTmpBitExpr(createBinaryBitExpr(stu.switchCflsBit->switchCond, spir::K_XK::XEQ, caseCond,
+                       getSrcLocBit(caseStmt), Ctx->UnsignedIntTy), false, true);
+  auto thisBodyLabelBit = createLabelBit(stu.switchCflsBit->thisBodyLabel, getSrcLocBit(caseStmt));
   auto nextCaseCondLabelBit = createLabelBit(stu.switchCflsBit->nextCaseCondLabel, getSrcLocBit(caseStmt));
-  addCondInstrBit(eqExpr, thisCaseCondLabelBit, nextCaseCondLabelBit, getSrcLocBit(caseStmt));
+  addCondInstrBit(eqExpr, thisBodyLabelBit, nextCaseCondLabelBit, getSrcLocBit(caseStmt));
 
   // case body
   if (stu.switchCflsBit->gotoLabel != "") {
@@ -2019,7 +2027,6 @@ slang::SlangBitExpr slang::SpirGen::convertCaseStmtBit(const CaseStmt *caseStmt)
     addLabelInstrBit(gotoLabelBit, getSrcLocBit(caseStmt));
     stu.switchCflsBit->gotoLabel = stu.switchCflsBit->gotoLabelLocStr = "";
   }
-  auto thisBodyLabelBit = createLabelBit(stu.switchCflsBit->thisBodyLabel, getSrcLocBit(caseStmt));
   addLabelInstrBit(thisBodyLabelBit, getSrcLocBit(caseStmt));
   for (auto it = caseStmt->child_begin(); it != caseStmt->child_end(); ++it) {
     convertStmtBit(*it);
@@ -2390,10 +2397,8 @@ slang::SpirGen::convertConditionalOp(const ConditionalOperator *condOp) {
 slang::SlangBitExpr
 slang::SpirGen::convertConditionalOpBit(const ConditionalOperator *condOp) {
   SlangBitExpr cond = convertToTmpBitExpr(convertStmtBit(condOp->getCond()), false, true);
-  SlangBitExpr trueExpr = convertToTmpBitExpr(convertStmtBit(condOp->getTrueExpr()), false, true);
-  SlangBitExpr falseExpr = convertToTmpBitExpr(convertStmtBit(condOp->getFalseExpr()), false, true);
   SlangBitExpr tmpVar = SlangBitExpr(createBitExpr(
-    genTmpBitEntity(spir::K_VK::TNIL, "t", getSrcLocBit(condOp), trueExpr.qualType)));
+    genTmpBitEntity(spir::K_VK::TNIL, "t", getSrcLocBit(condOp), condOp->getType())));
 
   std::string id = stu.genNextLabelCountStr();
   std::string ifTrueLabel = id + "CondOpTrue";
@@ -2406,12 +2411,15 @@ slang::SpirGen::convertConditionalOpBit(const ConditionalOperator *condOp) {
 
   addCondInstrBit(cond, ifTrueLabelBit, ifFalseLabelBit, getSrcLocBit(condOp));
 
+  // true expression
   addLabelInstrBit(ifTrueLabelBit, getSrcLocBit(condOp));
+  SlangBitExpr trueExpr = convertToTmpBitExpr(convertStmtBit(condOp->getTrueExpr()), false, true);
   addAssignBitInstr(tmpVar, trueExpr);
-
   addGotoInstrBit(ifExitLabelBit, getSrcLocBit(condOp));
-  addLabelInstrBit(ifFalseLabelBit, getSrcLocBit(condOp));
 
+  // false expression
+  addLabelInstrBit(ifFalseLabelBit, getSrcLocBit(condOp));
+  SlangBitExpr falseExpr = convertToTmpBitExpr(convertStmtBit(condOp->getFalseExpr()), false, true);
   addAssignBitInstr(tmpVar, falseExpr);
 
   addLabelInstrBit(ifExitLabelBit, getSrcLocBit(condOp));
@@ -2743,6 +2751,32 @@ slang::SlangExpr slang::SpirGen::convertCastExpr(const Stmt *expr, QualType qt,
   return castExpr;
 } // convertCastExpr()
 
+slang::SlangBitExpr slang::SpirGen::convertCastExprBit(const Stmt *expr, QualType qt, SrcLoc) {
+  // Generates CastE() expression.
+  SlangBitExpr castExpr;
+  SlangBitExpr exprArg = convertToTmpBitExpr(convertStmtBit(expr));
+  auto typePtr = qt.getTypePtr();
+  if (typePtr->isVoidType()) {
+    // A VOID cast shouldn't be used anywhere.
+    SLANG_ERROR("ERROR:Unknown VOID Cast");
+    SLANG_ERROR_GUARD(expr->dump());
+    return SlangBitExpr(); // return an empty expression
+  }
+  MayValue dtid = convertClangTypeBit(qt);
+  if (dtid.errorCode) {
+    SLANG_ERROR("ERROR:Unknown VOID Cast");
+    SLANG_ERROR_GUARD(expr->dump());
+    return SlangBitExpr();
+  }
+
+  spir::BitEntity dtbe = createBitEntity(dtid.value, getSrcLocBit(expr));
+  addBitExprOperand2(exprArg.bitExpr, dtbe);
+  exprArg.bitExpr->set_xkind(spir::K_XK::XCAST);
+  exprArg.compound = true;
+  exprArg.qualType = qt;
+  return exprArg;
+} // convertCastExprBit()
+
 slang::SlangExpr
 slang::SpirGen::convertImplicitCastExpr(const ImplicitCastExpr *iCast) {
   // only one child is expected
@@ -2800,6 +2834,11 @@ slang::SlangExpr slang::SpirGen::convertConstantExpr(const ConstantExpr *constEx
   // a ConstantExpr contains a literal expression
   return convertStmt(constExpr->getSubExpr());
 } // convertConstantExpr()
+
+slang::SlangBitExpr slang::SpirGen::convertConstantExprBit(const ConstantExpr *constExpr) {
+  // a ConstantExpr contains a literal expression
+  return convertStmtBit(constExpr->getSubExpr());
+} // convertConstantExprBit()
 
 slang::SlangExpr slang::SpirGen::convertIntegerLiteral(const IntegerLiteral *il) {
   std::stringstream ss;
@@ -3478,24 +3517,21 @@ slang::SpirGen::createLiteralBitExpr_Integer(uint64_t value, bool isSigned,
   bitEntityInfo.set_loc_col(srcLoc.col);
   stu.bittu.mutable_entityinfo()->insert({entityId, bitEntityInfo});
 
-  // Create BitEntity from BitEntityInfo and entityId
+  // Create BitEntity for the literal value
   spir::BitEntity bitEntity;
   bitEntity.set_eid(entityId);
   bitEntity.set_line(srcLoc.line);
   bitEntity.set_col(srcLoc.col);
 
   // Create BitExpr from the BitEntity with VAL operator type
-  spir::BitExpr *bitExpr = new spir::BitExpr();
-  bitExpr->set_xkind(spir::K_XK::XVAL);
-  addBitExprOperand1(bitExpr,bitEntity);
-  bitExpr->set_loc_line(srcLoc.line);
-  bitExpr->set_loc_col(srcLoc.col);
+  auto bitExpr = createBitExpr(bitEntity);
 
   // Initialize the SlangBitExpr and assign the BitExpr
   slangExpr.bitExpr = bitExpr;
   slangExpr.compound = false;
   slangExpr.qualType = getIntegerValueQualType(value, isSigned);
 
+  SLANG_PRINT("createLiteralBitExpr_Integer: " << slangExpr.toString());
   return slangExpr;
 } // createLiteralBitExpr_Integer()
 
