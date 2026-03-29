@@ -42,7 +42,7 @@ const TopBitMask64 uint64 = 0x8000_0000_0000_0000 // Mask to get/set the top bit
 const TopBitShift64 uint8 = 63                    // Shift to get/set the top bit
 
 func (xk ExprKind) IsCall() bool {
-	return xk == K_XK_XCALL || xk == K_XK_XCALL_0
+	return xk == K_XK_XCALL
 }
 
 // IsSingleOpr returns true if the expression kind is a single operand expression.
@@ -80,8 +80,11 @@ func placeXK(exprKind ExprKind) uint64 {
 }
 
 func placeCallSiteId(siteId CallSiteId) uint64 {
-	sid := uint32(siteId) & CallSiteIdMask32 // zero out most significant 3 bits
-	return uint64(sid) << CallSiteIdShift64
+	return placeExprOpr1(EntityId((uint32(siteId) & CallSiteIdMask32)))
+}
+
+func placeCallee(callee EntityId) uint64 {
+	return placeExprOpr2(callee)
 }
 
 // BLOCK START: API to create expressions
@@ -95,26 +98,20 @@ func UnaryX(xk ExprKind, opr EntityId) Expr {
 	return Expr(placeXK(xk) | placeExprOpr1(opr))
 }
 
-func CallX(zeroArgs bool, callSiteId CallSiteId, callee EntityId) Expr {
-	var expr uint64
-	if zeroArgs {
-		expr = placeXK(K_XK_XCALL_0)
-	} else {
-		expr = placeXK(K_XK_XCALL)
-	}
-	return Expr(expr | placeCallSiteId(callSiteId) | placeExprOpr1(callee))
+func CallX(callSiteId CallSiteId, callee EntityId) Expr {
+	return Expr(placeXK(K_XK_XCALL) | placeCallSiteId(callSiteId) | placeExprOpr1(callee))
 }
 
 // Creates a 64 bit expression from two operands and an expression kind.
 func BinX(exprKind ExprKind, opr1 EntityId, opr2 EntityId) Expr {
 	expr := placeXK(exprKind)
-	if exprKind.IsSingleOprnd() {
-		return Expr(expr | placeExprOpr1(opr1))
+	if opr1 != NIL_ID { // if exprKind.IsSingleOprnd() {
+		expr = expr | placeExprOpr1(opr1)
 	}
-	if exprKind.IsTwoOprnd() {
-		return Expr(expr | placeExprOpr1(opr1) | placeExprOpr2(opr2))
+	if opr2 != NIL_ID {
+		expr = expr | placeExprOpr2(opr2)
 	}
-	panic(fmt.Sprintf("Invalid expression kind: %s", exprKind))
+	return Expr(expr)
 }
 
 // BLOCK END: API to create expressions
@@ -138,23 +135,13 @@ func (expr Expr) IsSimple() bool {
 }
 
 func (expr Expr) IsCall() bool {
-	return expr.GetXK() == K_XK_XCALL || expr.GetXK() == K_XK_XCALL_0
-}
-
-func (expr Expr) IsCall0() bool {
-	return expr.GetXK() == K_XK_XCALL_0
+	return expr.GetXK() == K_XK_XCALL
 }
 
 // Returns one or two operands.
 // For expression with only one operand, the second operand is a NULL_ID.
 func (expr Expr) GetOperands() (EntityId, EntityId) {
-	exprKind := expr.GetXK()
-	if exprKind.IsSingleOprnd() {
-		return expr.GetOpr1(), NIL_ID
-	} else if exprKind.IsTwoOprnd() {
-		return expr.GetOpr1(), expr.GetOpr2()
-	}
-	panic(fmt.Sprintf("Invalid expression kind: %s", exprKind))
+	return expr.GetOpr1(), expr.GetOpr2()
 }
 
 func (expr Expr) GetOpr1() EntityId {
@@ -218,15 +205,13 @@ func (xk K_XK) OperatorString() string {
 		return "<"
 	case K_XK_XGE:
 		return ">="
-	case K_XK_XARRAY_INDEX:
+	case K_XK_XARR_INDX:
 		return "[]"
-	case K_XK_XMEMBER_PTR_ACCESS:
+	case K_XK_XMEMBER_ACCESS:
 		return "->"
-	case K_XK_XMEMBER_PTR_ADDROF:
+	case K_XK_XMEMBER_ADDROF:
 		return "&"
 	case K_XK_XCALL:
-		return "()"
-	case K_XK_XCALL_0:
 		return "()"
 	case K_XK_XCAST:
 		return "("
@@ -255,9 +240,17 @@ func (xk K_XK) OperatorString() string {
 func (expr Expr) String() string {
 	xk := expr.GetXK()
 	if xk.IsSingleOprnd() {
-		return fmt.Sprintf("((X) %s%s)", xk.OperatorString(), expr.GetOpr1())
+		opStr := xk.OperatorString()
+		if opStr == "" {
+			opStr = fmt.Sprintf("%s", xk)
+		}
+		return fmt.Sprintf("((X) %s%s)", opStr, expr.GetOpr1())
 	} else if xk.IsTwoOprnd() {
-		return fmt.Sprintf("((X) %s %s %s)", xk.OperatorString(), expr.GetOpr1(), expr.GetOpr2())
+		opStr := xk.OperatorString()
+		if opStr == "" {
+			opStr = fmt.Sprintf("%s", xk)
+		}
+		return fmt.Sprintf("((X) %s %s %s)", opStr, expr.GetOpr1(), expr.GetOpr2())
 	}
 	return ""
 }

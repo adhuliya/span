@@ -633,7 +633,6 @@ slang::SpirGen::handleFuncNameAndTypeBit(const FunctionDecl *funcDecl, bool forc
     bdType.set_loc_line(getSrcLocBit(funcDecl).line);
     bdType.set_loc_col(getSrcLocBit(funcDecl).col);
     bdType.set_typename_(slangFunc.fullName);
-    stu.bittu.mutable_datatypes()->insert({(uint64_t)funcDecl, std::move(bdType)});
 
     // STEP 1.2: Get function parameters.
     // if (funcDecl->doesThisDeclarationHaveABody())  //&
@@ -665,6 +664,7 @@ slang::SpirGen::handleFuncNameAndTypeBit(const FunctionDecl *funcDecl, bool forc
         return nullptr;
       }
       bdType.set_vkind(stu.bittu.datatypes().at(result.value).vkind());
+      beInfo.set_vkind(stu.bittu.datatypes().at(result.value).vkind());
       bdType.set_subtypeeid(result.value);
     } else {
       slangFunc.retType = convertClangType(funcDecl->getReturnType());
@@ -712,6 +712,10 @@ int slang::SpirGen::handleVarDecl(const VarDecl *varDecl, std::string funcName) 
     spir::BitEntityInfo bitEntityInfo;
     bitEntityInfo.set_eid(varAddr);
     bitEntityInfo.set_datatypeeid(result.value);
+    // Set the vkind in entity info from the data type of the variable
+    if (stu.bittu.datatypes().find(result.value) != stu.bittu.datatypes().end()) {
+      bitEntityInfo.set_vkind(stu.bittu.datatypes().at(result.value).vkind());
+    }
 
     SLANG_DEBUG("NEW_VAR: " << slangVar.convertToString())
 
@@ -4728,6 +4732,8 @@ slang::MayValue slang::SpirGen::convertClangBuiltinTypeBit(QualType qt,
     return slang::MayValue(ERR(104));
   }
 
+  dt.set_len((uint32_t)Ctx->getTypeInfo(qt).Width);
+  dt.set_align((uint8_t)Ctx->getTypeInfo(qt).Align);
   stu.bittu.mutable_datatypes()->emplace(typeKey, dt);
   return slang::MayValue(OK, typeKey);
 } // convertClangBuiltinTypeBit()
@@ -5097,6 +5103,9 @@ slang::MayValue slang::SpirGen::convertFunctionPrototypeBit(QualType qt,
     // STEP 1: Convert the return type.
     auto retTypeResult = convertClangTypeBit(funcProtoType->getReturnType());
     if (retTypeResult.errorCode) {
+      SLANG_ERROR("ERROR: Failed to convert function return type: "
+                  << funcProtoType->getReturnType().getAsString()
+                  << " Error code: " << retTypeResult.errorCode)
       return retTypeResult;
     }
     dt.set_subtypeeid(retTypeResult.value);

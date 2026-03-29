@@ -8,8 +8,6 @@ import (
 )
 
 func initialize() *cobra.Command {
-	logger.Get().Info(">>>>>>> SPAN started !!!")
-
 	rootCmd = processCmdLine(os.Args[1:])
 
 	// other initialization code can go here
@@ -24,6 +22,8 @@ func finish() {
 func main() {
 	rootCmd := initialize()
 	defer finish()
+
+	logger.Get().Info(">>>>>>> SPAN started !!!")
 
 	// Execute the root command
 	if err := rootCmd.Execute(); err != nil {

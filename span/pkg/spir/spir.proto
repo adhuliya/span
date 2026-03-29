@@ -219,7 +219,7 @@ enum K_QK {
 message BitDataType {
 	K_VK vkind						= 1;
 	// The id to the type present in BitTU.entityInfo map.
-	optional uint64 typeId			= 2; // also an entity id
+	uint64 typeId					= 2; // also an entity id
 
 	// Colon separated attributes of the type (e.g. "packed:aligned(8)", etc.)
 	// These are extra attributes not present in qtype
@@ -252,10 +252,13 @@ message BitDataType {
 	optional uint32 loc_col         = 15; // Column number of the type definition
 }
 
+// Information about an entity.
+// The ekind and vkind are necessary for all entities.
 message BitEntityInfo {
 	uint64 eid					= 1; // Entity id
 	K_EK ekind					= 2;
-	optional K_VK vkind			= 3; // Sufficient for basic types
+	K_VK vkind					= 3; // Sufficient for basic types
+
 	// Whether this record, or record field is anonymous
 	optional bool anonymous		= 4;
 
@@ -264,7 +267,12 @@ message BitEntityInfo {
 
 	optional uint32 qtype		= 6; // Bitwise OR of one or more K_QK values
 
-	// Id of the parent if this entity is a record field or a function parameter
+	// Id of the parent if this entity is a record field, a local varaible etc.
+	// The parent is:
+	//   1. A record id if entity is field.
+	//   2. A function id if entity is a local variable.
+	//   3. A function id if entity is a static local variable.
+	//   4. A global function id (i.e. 1) if entity is a global variable.
 	optional uint64 parentEid	= 7;
 	optional uint64 dataTypeEid	= 8; // Entity id of the type
 
@@ -329,12 +337,13 @@ message BitFunc {
 	uint64 fid							= 1; // Function id (also an entity id)
 	string fname						= 2; // Function name
 	bool is_variadic					= 3; // Whether the function is variadic
+	uint64 typeEid						= 4; // Entity id of the function type
 
     // Calling convention of the function,
 	//   e.g. "cdecl", "stdcall", "fastcall", "thiscall", "vectorcall"
-	optional string calling_convention	= 4;
+	optional string calling_convention	= 5;
 
-	repeated BitInsn insns              = 5; // Instruction sequence of the function
+	repeated BitInsn insns              = 6; // Instruction sequence of the function
 }
 
 // The Translation Unit.

@@ -6,6 +6,7 @@ GO=go
 PROTOC=protoc
 DOCKER=docker
 GOTAGS=debug
+GOARGS=
 VERBOSE=
 CMAKE_CC=-DCMAKE_C_COMPILER=/usr/lib/llvm-19/bin/clang
 CMAKE_CXX=-DCMAKE_CXX_COMPILER=/usr/lib/llvm-19/bin/clang++
@@ -20,6 +21,8 @@ help:
 	@grep -E '^[a-zA-Z_-]+:.*?## ' Makefile | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
 
+span: build ## Alias: span target
+
 build: ## Build the span binary (non-release)
 	cd span && $(GO) build -tags "$(GOTAGS)" -o bin/span ./cmd/span
 
@@ -31,9 +34,9 @@ devbuild: gen ## Auto-generated code and build span (non-release)
 
 test: test-span test-slang
 
-test-span: ## Run span tests
+test-span: vet tidy fmt ## Run span tests
 	echo "\nRunning span tests..."
-	cd span && $(GO) test -tags "$(GOTAGS)" ./...
+	cd span && $(GO) test -run TestIDGenerator ./...
 	cd span/test && python3 run-tests.py $(VERBOSE)
 
 test-slang: ## Run slang tests

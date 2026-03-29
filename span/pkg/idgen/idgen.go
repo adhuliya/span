@@ -110,11 +110,12 @@ func encodePoolId(prefix uint16, seqIdBitLen uint8) poolId_t {
 
 func validateAndEncodePoolId(prefix uint16, seqIdBitLen uint8) poolId_t {
 	if seqIdBitLen >= 32 || seqIdBitLen <= 16 {
-		return invalidPoolId // There will be no bits left for prefix after shifting
+		panic(fmt.Sprintf("Invalid sequence ID bit length: %d", seqIdBitLen))
 	}
 	tmp := uint32(prefix) << seqIdBitLen
 	if (tmp >> seqIdBitLen) != uint32(prefix) {
-		return invalidPoolId // Prefix bits are getting dropped during the shift
+		panic(fmt.Sprintf("Prefix bits are getting dropped during the shift: %d, prefix: %d, seqIdBitLen: %d",
+			tmp, prefix, seqIdBitLen))
 	}
 	return encodePoolId(prefix, seqIdBitLen)
 }

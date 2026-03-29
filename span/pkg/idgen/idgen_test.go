@@ -7,7 +7,7 @@ import (
 
 func TestIDGenerator_AllocateID(t *testing.T) {
 	gen := NewIDGenerator()
-	gen.idPools = make(map[poolId_t]*idPool) // Initialize the map
+	gen.idPools = make(map[poolId_t]*freeIdPool) // Initialize the map
 
 	// Test case 1: Allocate a valid ID
 	id1 := gen.AllocateID(1, 20)
@@ -55,7 +55,7 @@ func TestIDGenerator_AllocateID(t *testing.T) {
 
 func TestIDGenerator_FreeID(t *testing.T) {
 	gen := NewIDGenerator()
-	gen.idPools = make(map[poolId_t]*idPool) // Initialize the map
+	gen.idPools = make(map[poolId_t]*freeIdPool) // Initialize the map
 
 	// Allocate an ID to free
 	prefix := uint16(1)
@@ -97,7 +97,7 @@ func TestIDGenerator_FreeID(t *testing.T) {
 
 func TestIDGenerator_AllocateAndFree(t *testing.T) {
 	gen := NewIDGenerator()
-	gen.idPools = make(map[poolId_t]*idPool) // Initialize the map
+	gen.idPools = make(map[poolId_t]*freeIdPool) // Initialize the map
 	prefix := uint16(1)
 	seqIdBitLength := uint8(20)
 
@@ -127,7 +127,7 @@ func TestIDGenerator_AllocateAndFree(t *testing.T) {
 
 func TestIDGenerator_MergePools(t *testing.T) {
 	gen := NewIDGenerator()
-	gen.idPools = make(map[poolId_t]*idPool) // Initialize the map
+	gen.idPools = make(map[poolId_t]*freeIdPool) // Initialize the map
 	prefix := uint16(1)
 	seqIdBitLength := uint8(20)
 

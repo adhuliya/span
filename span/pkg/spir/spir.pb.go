@@ -652,7 +652,7 @@ type BitDataType struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Vkind K_VK                   `protobuf:"varint,1,opt,name=vkind,proto3,enum=spir.K_VK" json:"vkind,omitempty"`
 	// The id to the type present in BitTU.entityInfo map.
-	TypeId *uint64 `protobuf:"varint,2,opt,name=typeId,proto3,oneof" json:"typeId,omitempty"` // also an entity id
+	TypeId uint64 `protobuf:"varint,2,opt,name=typeId,proto3" json:"typeId,omitempty"` // also an entity id
 	// Colon separated attributes of the type (e.g. "packed:aligned(8)", etc.)
 	// These are extra attributes not present in qtype
 	Attributes *string `protobuf:"bytes,4,opt,name=attributes,proto3,oneof" json:"attributes,omitempty"`
@@ -719,8 +719,8 @@ func (x *BitDataType) GetVkind() K_VK {
 }
 
 func (x *BitDataType) GetTypeId() uint64 {
-	if x != nil && x.TypeId != nil {
-		return *x.TypeId
+	if x != nil {
+		return x.TypeId
 	}
 	return 0
 }
@@ -809,17 +809,24 @@ func (x *BitDataType) GetLocCol() uint32 {
 	return 0
 }
 
+// Information about an entity.
+// The ekind and vkind are necessary for all entities.
 type BitEntityInfo struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Eid   uint64                 `protobuf:"varint,1,opt,name=eid,proto3" json:"eid,omitempty"` // Entity id
 	Ekind K_EK                   `protobuf:"varint,2,opt,name=ekind,proto3,enum=spir.K_EK" json:"ekind,omitempty"`
-	Vkind *K_VK                  `protobuf:"varint,3,opt,name=vkind,proto3,enum=spir.K_VK,oneof" json:"vkind,omitempty"` // Sufficient for basic types
+	Vkind K_VK                   `protobuf:"varint,3,opt,name=vkind,proto3,enum=spir.K_VK" json:"vkind,omitempty"` // Sufficient for basic types
 	// Whether this record, or record field is anonymous
 	Anonymous *bool `protobuf:"varint,4,opt,name=anonymous,proto3,oneof" json:"anonymous,omitempty"`
 	// If this entity represents a member access 'x.y.z' (no use of `->`)
 	MemberAccess *bool   `protobuf:"varint,5,opt,name=member_access,json=memberAccess,proto3,oneof" json:"member_access,omitempty"`
 	Qtype        *uint32 `protobuf:"varint,6,opt,name=qtype,proto3,oneof" json:"qtype,omitempty"` // Bitwise OR of one or more K_QK values
-	// Id of the parent if this entity is a record field or a function parameter
+	// Id of the parent if this entity is a record field, a local varaible etc.
+	// The parent is:
+	//  1. A record id if entity is field.
+	//  2. A function id if entity is a local variable.
+	//  3. A function id if entity is a static local variable.
+	//  4. A global function id (i.e. 1) if entity is a global variable.
 	ParentEid   *uint64 `protobuf:"varint,7,opt,name=parentEid,proto3,oneof" json:"parentEid,omitempty"`
 	DataTypeEid *uint64 `protobuf:"varint,8,opt,name=dataTypeEid,proto3,oneof" json:"dataTypeEid,omitempty"` // Entity id of the type
 	// Store value if entity is a constant value.
@@ -877,8 +884,8 @@ func (x *BitEntityInfo) GetEkind() K_EK {
 }
 
 func (x *BitEntityInfo) GetVkind() K_VK {
-	if x != nil && x.Vkind != nil {
-		return *x.Vkind
+	if x != nil {
+		return x.Vkind
 	}
 	return K_VK_TNIL
 }
@@ -1290,11 +1297,12 @@ type BitFunc struct {
 	Fid        uint64                 `protobuf:"varint,1,opt,name=fid,proto3" json:"fid,omitempty"`                                 // Function id (also an entity id)
 	Fname      string                 `protobuf:"bytes,2,opt,name=fname,proto3" json:"fname,omitempty"`                              // Function name
 	IsVariadic bool                   `protobuf:"varint,3,opt,name=is_variadic,json=isVariadic,proto3" json:"is_variadic,omitempty"` // Whether the function is variadic
+	TypeEid    uint64                 `protobuf:"varint,4,opt,name=typeEid,proto3" json:"typeEid,omitempty"`                         // Entity id of the function type
 	// Calling convention of the function,
 	//
 	//	e.g. "cdecl", "stdcall", "fastcall", "thiscall", "vectorcall"
-	CallingConvention *string    `protobuf:"bytes,4,opt,name=calling_convention,json=callingConvention,proto3,oneof" json:"calling_convention,omitempty"`
-	Insns             []*BitInsn `protobuf:"bytes,5,rep,name=insns,proto3" json:"insns,omitempty"` // Instruction sequence of the function
+	CallingConvention *string    `protobuf:"bytes,5,opt,name=calling_convention,json=callingConvention,proto3,oneof" json:"calling_convention,omitempty"`
+	Insns             []*BitInsn `protobuf:"bytes,6,rep,name=insns,proto3" json:"insns,omitempty"` // Instruction sequence of the function
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -1348,6 +1356,13 @@ func (x *BitFunc) GetIsVariadic() bool {
 		return x.IsVariadic
 	}
 	return false
+}
+
+func (x *BitFunc) GetTypeEid() uint64 {
+	if x != nil {
+		return x.TypeEid
+	}
+	return 0
 }
 
 func (x *BitFunc) GetCallingConvention() string {
@@ -1464,30 +1479,28 @@ var File_span_pkg_spir_spir_proto protoreflect.FileDescriptor
 
 const file_span_pkg_spir_spir_proto_rawDesc = "" +
 	"\n" +
-	"\x18span/pkg/spir/spir.proto\x12\x04spir\"\xde\x04\n" +
+	"\x18span/pkg/spir/spir.proto\x12\x04spir\"\xce\x04\n" +
 	"\vBitDataType\x12 \n" +
 	"\x05vkind\x18\x01 \x01(\x0e2\n" +
-	".spir.K_VKR\x05vkind\x12\x1b\n" +
-	"\x06typeId\x18\x02 \x01(\x04H\x00R\x06typeId\x88\x01\x01\x12#\n" +
+	".spir.K_VKR\x05vkind\x12\x16\n" +
+	"\x06typeId\x18\x02 \x01(\x04R\x06typeId\x12#\n" +
 	"\n" +
-	"attributes\x18\x04 \x01(\tH\x01R\n" +
+	"attributes\x18\x04 \x01(\tH\x00R\n" +
 	"attributes\x88\x01\x01\x12\x15\n" +
-	"\x03len\x18\x05 \x01(\rH\x02R\x03len\x88\x01\x01\x12\x19\n" +
-	"\x05align\x18\x06 \x01(\rH\x03R\x05align\x88\x01\x01\x12#\n" +
+	"\x03len\x18\x05 \x01(\rH\x01R\x03len\x88\x01\x01\x12\x19\n" +
+	"\x05align\x18\x06 \x01(\rH\x02R\x05align\x88\x01\x01\x12#\n" +
 	"\n" +
-	"subTypeEid\x18\a \x01(\x04H\x04R\n" +
+	"subTypeEid\x18\a \x01(\x04H\x03R\n" +
 	"subTypeEid\x88\x01\x01\x12\x1f\n" +
-	"\btypeName\x18\b \x01(\tH\x05R\btypeName\x88\x01\x01\x12!\n" +
-	"\tanonymous\x18\t \x01(\bH\x06R\tanonymous\x88\x01\x01\x12)\n" +
+	"\btypeName\x18\b \x01(\tH\x04R\btypeName\x88\x01\x01\x12!\n" +
+	"\tanonymous\x18\t \x01(\bH\x05R\tanonymous\x88\x01\x01\x12)\n" +
 	"\rfuncPrototype\x18\n" +
-	" \x01(\bH\aR\rfuncPrototype\x88\x01\x01\x12\x1f\n" +
-	"\bvariadic\x18\v \x01(\bH\bR\bvariadic\x88\x01\x01\x12\x16\n" +
+	" \x01(\bH\x06R\rfuncPrototype\x88\x01\x01\x12\x1f\n" +
+	"\bvariadic\x18\v \x01(\bH\aR\bvariadic\x88\x01\x01\x12\x16\n" +
 	"\x06fopIds\x18\f \x03(\x04R\x06fopIds\x12 \n" +
 	"\vfopTypeEids\x18\r \x03(\x04R\vfopTypeEids\x12\x1e\n" +
-	"\bloc_line\x18\x0e \x01(\rH\tR\alocLine\x88\x01\x01\x12\x1c\n" +
-	"\aloc_col\x18\x0f \x01(\rH\n" +
-	"R\x06locCol\x88\x01\x01B\t\n" +
-	"\a_typeIdB\r\n" +
+	"\bloc_line\x18\x0e \x01(\rH\bR\alocLine\x88\x01\x01\x12\x1c\n" +
+	"\aloc_col\x18\x0f \x01(\rH\tR\x06locCol\x88\x01\x01B\r\n" +
 	"\v_attributesB\x06\n" +
 	"\x04_lenB\b\n" +
 	"\x06_alignB\r\n" +
@@ -1499,26 +1512,24 @@ const file_span_pkg_spir_spir_proto_rawDesc = "" +
 	"\t_variadicB\v\n" +
 	"\t_loc_lineB\n" +
 	"\n" +
-	"\b_loc_col\"\xc0\x04\n" +
+	"\b_loc_col\"\xb1\x04\n" +
 	"\rBitEntityInfo\x12\x10\n" +
 	"\x03eid\x18\x01 \x01(\x04R\x03eid\x12 \n" +
 	"\x05ekind\x18\x02 \x01(\x0e2\n" +
-	".spir.K_EKR\x05ekind\x12%\n" +
+	".spir.K_EKR\x05ekind\x12 \n" +
 	"\x05vkind\x18\x03 \x01(\x0e2\n" +
-	".spir.K_VKH\x00R\x05vkind\x88\x01\x01\x12!\n" +
-	"\tanonymous\x18\x04 \x01(\bH\x01R\tanonymous\x88\x01\x01\x12(\n" +
-	"\rmember_access\x18\x05 \x01(\bH\x02R\fmemberAccess\x88\x01\x01\x12\x19\n" +
-	"\x05qtype\x18\x06 \x01(\rH\x03R\x05qtype\x88\x01\x01\x12!\n" +
-	"\tparentEid\x18\a \x01(\x04H\x04R\tparentEid\x88\x01\x01\x12%\n" +
-	"\vdataTypeEid\x18\b \x01(\x04H\x05R\vdataTypeEid\x88\x01\x01\x12\x1b\n" +
-	"\x06lowVal\x18\t \x01(\x04H\x06R\x06lowVal\x88\x01\x01\x12\x1d\n" +
+	".spir.K_VKR\x05vkind\x12!\n" +
+	"\tanonymous\x18\x04 \x01(\bH\x00R\tanonymous\x88\x01\x01\x12(\n" +
+	"\rmember_access\x18\x05 \x01(\bH\x01R\fmemberAccess\x88\x01\x01\x12\x19\n" +
+	"\x05qtype\x18\x06 \x01(\rH\x02R\x05qtype\x88\x01\x01\x12!\n" +
+	"\tparentEid\x18\a \x01(\x04H\x03R\tparentEid\x88\x01\x01\x12%\n" +
+	"\vdataTypeEid\x18\b \x01(\x04H\x04R\vdataTypeEid\x88\x01\x01\x12\x1b\n" +
+	"\x06lowVal\x18\t \x01(\x04H\x05R\x06lowVal\x88\x01\x01\x12\x1d\n" +
 	"\ahighVal\x18\n" +
-	" \x01(\x04H\aR\ahighVal\x88\x01\x01\x12\x1b\n" +
-	"\x06strVal\x18\v \x01(\tH\bR\x06strVal\x88\x01\x01\x12\x1e\n" +
-	"\bloc_line\x18\f \x01(\rH\tR\alocLine\x88\x01\x01\x12\x1c\n" +
-	"\aloc_col\x18\r \x01(\rH\n" +
-	"R\x06locCol\x88\x01\x01B\b\n" +
-	"\x06_vkindB\f\n" +
+	" \x01(\x04H\x06R\ahighVal\x88\x01\x01\x12\x1b\n" +
+	"\x06strVal\x18\v \x01(\tH\aR\x06strVal\x88\x01\x01\x12\x1e\n" +
+	"\bloc_line\x18\f \x01(\rH\bR\alocLine\x88\x01\x01\x12\x1c\n" +
+	"\aloc_col\x18\r \x01(\rH\tR\x06locCol\x88\x01\x01B\f\n" +
 	"\n" +
 	"_anonymousB\x10\n" +
 	"\x0e_member_accessB\b\n" +
@@ -1583,14 +1594,15 @@ const file_span_pkg_spir_spir_proto_rawDesc = "" +
 	"\x06_expr2B\v\n" +
 	"\t_loc_lineB\n" +
 	"\n" +
-	"\b_loc_col\"\xc2\x01\n" +
+	"\b_loc_col\"\xdc\x01\n" +
 	"\aBitFunc\x12\x10\n" +
 	"\x03fid\x18\x01 \x01(\x04R\x03fid\x12\x14\n" +
 	"\x05fname\x18\x02 \x01(\tR\x05fname\x12\x1f\n" +
 	"\vis_variadic\x18\x03 \x01(\bR\n" +
-	"isVariadic\x122\n" +
-	"\x12calling_convention\x18\x04 \x01(\tH\x00R\x11callingConvention\x88\x01\x01\x12#\n" +
-	"\x05insns\x18\x05 \x03(\v2\r.spir.BitInsnR\x05insnsB\x15\n" +
+	"isVariadic\x12\x18\n" +
+	"\atypeEid\x18\x04 \x01(\x04R\atypeEid\x122\n" +
+	"\x12calling_convention\x18\x05 \x01(\tH\x00R\x11callingConvention\x88\x01\x01\x12#\n" +
+	"\x05insns\x18\x06 \x03(\v2\r.spir.BitInsnR\x05insnsB\x15\n" +
 	"\x13_calling_convention\"\xb7\x04\n" +
 	"\x05BitTU\x12\x16\n" +
 	"\x06tuName\x18\x01 \x01(\tR\x06tuName\x12\x1d\n" +

@@ -121,21 +121,21 @@ func NilI() Insn {
 
 func NopI() Insn {
 	insn := Insn{}
-	insn.firstHalf |= K_EK_EINSN.place64() | K_IK_INOP.place64()
+	insn.firstHalf |= K_EK_EINSN0.place64() | K_IK_INOP.place64()
 	return insn
 }
 
 func BarrierI() Insn {
 	insn := Insn{}
-	insn.firstHalf |= K_EK_EINSN.place64() | K_IK_IBARRIER.place64()
+	insn.firstHalf |= K_EK_EINSN0.place64() | K_IK_IBARRIER.place64()
 	return insn
 }
 
 // A return instruction always has a simple value with no operators.
 func ReturnI(expr Expr) Insn {
-	util.Assert(!expr.IsSimple(), "Expr must have no operator")
+	util.Assert(expr.IsSimple(), fmt.Sprintf("Expr must have no operator: %s", expr))
 	insn := Insn{}
-	insn.firstHalf |= K_EK_EINSN.place64() | K_IK_IRETURN.place64()
+	insn.firstHalf |= K_EK_EINSN0.place64() | K_IK_IRETURN.place64()
 	insn.firstHalf |= uint64(expr) & FirstHalfExprMask64
 	return insn
 }
@@ -144,7 +144,7 @@ func ReturnI(expr Expr) Insn {
 func AssignI(lhs Expr, rhs Expr) Insn {
 	util.Assert(lhs.IsSimple() || rhs.IsSimple(), "At least one of the expressions must be simple")
 	insn, ik := Insn{}, K_IK_IASGN_SIMPLE
-	insn.firstHalf |= K_EK_EINSN.place64()
+	insn.firstHalf |= K_EK_EINSN0.place64()
 
 	lhsSimple, rhsSimple := lhs.IsSimple(), rhs.IsSimple()
 	if lhsSimple {
@@ -176,6 +176,8 @@ func AssignI(lhs Expr, rhs Expr) Insn {
 		insn.secondHalf = uint64(rhs)
 	}
 
+	insn.firstHalf |= ik.place64()
+
 	return insn
 }
 
@@ -185,38 +187,40 @@ func PhiI(lhs Expr) Insn {
 	// FIXME: incomplete
 	util.Assert(lhs.IsSimple(), "LHS must be simple")
 	insn := Insn{}
-	insn.firstHalf |= K_EK_EINSN.place64() | K_IK_IASGN_PHI.place64()
+	insn.firstHalf |= K_EK_EINSN0.place64() | K_IK_IASGN_PHI.place64()
 	insn.firstHalf |= uint64(lhs) & FirstHalfExprMask64
 	return insn
 }
 
-func CallI(zeroArgs bool, callSiteId CallSiteId, callee EntityId) Insn {
+func CallI(expr Expr) Insn {
+	util.Assert(expr.IsCall(), "Expression must be a call expression")
 	insn := Insn{}
-	insn.firstHalf |= K_EK_EINSN.place64() | K_IK_ICALL.place64()
-	insn.secondHalf = uint64(CallX(zeroArgs, callSiteId, callee))
+	insn.firstHalf |= K_EK_EINSN0.place64() | K_IK_ICALL.place64()
+	insn.secondHalf = uint64(expr)
 	return insn
 }
 
-func LabelI(label LabelId) Insn {
+func LabelI(expr Expr) Insn {
+	util.Assert(expr.GetOpr1().Kind().IsLabel(), "Expr must be a label entity")
 	insn := Insn{}
-	insn.firstHalf |= K_EK_EINSN.place64() | K_IK_ILABEL.place64()
-	insn.firstHalf |= uint64(label) & FirstHalfExprMask64
+	insn.firstHalf |= K_EK_EINSN0.place64() | K_IK_ILABEL.place64()
+	insn.firstHalf |= uint64(expr) & FirstHalfExprMask64
 	return insn
 }
 
-func GotoI(target LabelId) Insn {
+func GotoI(expr Expr) Insn {
+	util.Assert(expr.GetOpr1().Kind().IsLabel(), "Expr must be a label entity")
 	insn := Insn{}
-	insn.firstHalf |= K_EK_EINSN.place64() | K_IK_IGOTO.place64()
-	insn.firstHalf |= uint64(target) & FirstHalfExprMask64
+	insn.firstHalf |= K_EK_EINSN0.place64() | K_IK_IGOTO.place64()
+	insn.firstHalf |= uint64(expr) & FirstHalfExprMask64
 	return insn
 }
 
-func IfI(cond Expr, thenLabel LabelId, elseLabel LabelId) Insn {
+func IfI(cond Expr, trueFalseLabels Expr) Insn {
 	insn := Insn{}
-	insn.firstHalf |= K_EK_EINSN.place64() | K_IK_ICOND.place64()
+	insn.firstHalf |= K_EK_EINSN0.place64() | K_IK_ICOND.place64()
 	insn.firstHalf |= uint64(cond) & FirstHalfExprMask64
-	insn.secondHalf = uint64(thenLabel) << TrueLabelShift64
-	insn.secondHalf |= uint64(elseLabel) << FalseLabelShift64
+	insn.secondHalf = uint64(trueFalseLabels)
 	return insn
 }
 

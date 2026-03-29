@@ -35,8 +35,9 @@ func NewSrcFilesInfo() *SrcFilesInfo {
 
 // SrcLoc structure holds the source location information.
 type SrcLoc struct {
-	line uint32 // The line number in the source file
-	col  uint32 // The column number in the source file
+	line   uint32 // The line number in the source file
+	col    uint32 // The column number in the source file
+	fileId FileId // The file ID of the source file
 }
 
 func NewSrcLoc(line uint32, col uint32) SrcLoc {

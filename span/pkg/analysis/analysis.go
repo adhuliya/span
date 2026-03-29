@@ -77,32 +77,30 @@ type Analysis interface {
 	SetInstanceId(instanceId InstanceId)
 	Name() string
 	VisitingOrder() GraphVisitingOrder
-	BoundaryFact(graph spir.Graph, context *spir.Context) lattice.Pair
+	BoundaryFact(graph spir.Graph, ctx *spir.Context) lattice.Pair
 	AnalyzeInsn(insn spir.Insn, inOut lattice.Pair,
-		context *spir.Context) (lattice.Pair, lattice.FactChanged)
+		ctx *spir.Context) (lattice.Pair, lattice.FactChanged)
 	AnalyzeBB(bb *spir.BasicBlock, inOut lattice.Pair,
-		context *spir.Context) (lattice.Pair, lattice.FactChanged)
+		ctx *spir.Context) (lattice.Pair, lattice.FactChanged)
 }
 
 type SpanAnalysis interface {
 	Analysis
 	StmtView(insn spir.Insn, inOut lattice.Pair,
-		viewTypeRequested StmtViewType, context *spir.Context) (StmtViewType, []spir.Insn)
+		viewTypeRequested StmtViewType, ctx *spir.Context) (StmtViewType, []spir.Insn)
 	Policy(insn spir.Insn, viewType StmtViewType, view []spir.Insn,
-		context *spir.Context) []spir.Insn
+		ctx *spir.Context) []spir.Insn
 }
 
 type LernersAnalysis interface {
 	Analysis
-	StmtGraph(insn spir.Insn, inOut lattice.Pair,
-		context *spir.Context) spir.Graph
+	StmtGraph(insn spir.Insn, inOut lattice.Pair, ctx *spir.Context) spir.Graph
 }
 
 // Analysis transformation pair for cascading analysis.
 type CascadingATPair interface {
 	Analysis
-	Transform(graph spir.Graph, factMap AnalysisFactMap,
-		context *spir.Context) spir.Graph
+	Transform(graph spir.Graph, factMap AnalysisFactMap, ctx *spir.Context) spir.Graph
 }
 
 type AnalysisClient struct {
@@ -127,13 +125,13 @@ func (ac *AnalysisClient) VisitingOrder() GraphVisitingOrder {
 }
 
 // A default (Bot, Top) initialization at entry and exit boundaries.
-func (ac *AnalysisClient) BoundaryFact(graph spir.Graph, context *spir.Context) lattice.Pair {
+func (ac *AnalysisClient) BoundaryFact(graph spir.Graph, ctx *spir.Context) lattice.Pair {
 	return lattice.NewPair(&lattice.TopBotLatticeBot, &lattice.TopBotLatticeTop)
 }
 
 // (Default) Just propagate the IN data flow value to the OUT fact.
 func (ac *AnalysisClient) AnalyzeInsn(instruction spir.Insn,
-	inOut lattice.Pair, context *spir.Context) (lattice.Pair, lattice.FactChanged) {
+	inOut lattice.Pair, ctx *spir.Context) (lattice.Pair, lattice.FactChanged) {
 	factChange := lattice.NoChange
 	if !lattice.Equals(inOut.L1(), inOut.L2()) {
 		factChange = lattice.OnlyOutChanged
@@ -144,6 +142,6 @@ func (ac *AnalysisClient) AnalyzeInsn(instruction spir.Insn,
 
 // (Default) Not implemented.
 func (ac *AnalysisClient) AnalyzeBB(bb *spir.BasicBlock,
-	inOut lattice.Pair, context *spir.Context) (lattice.Pair, lattice.FactChanged) {
+	inOut lattice.Pair, ctx *spir.Context) (lattice.Pair, lattice.FactChanged) {
 	return inOut, lattice.NotImplemented
 }

@@ -210,7 +210,7 @@ func extractComment(group *ast.CommentGroup) string {
 }
 
 func printAPI(api *ProjectAPI) {
-	fmt.Println("=== SPAN Project API Documentation ===\n")
+	fmt.Print("=== SPAN Project API Documentation ===\n\n")
 
 	// Print commands
 	if len(api.Commands) > 0 {
@@ -263,4 +263,4 @@ func groupByType(apis []APIInfo) map[string][]APIInfo {
 		grouped[api.Type] = append(grouped[api.Type], api)
 	}
 	return grouped
-} 
+}

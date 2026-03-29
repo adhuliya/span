@@ -16,13 +16,13 @@ package spir
 func NewExampleTU_A() *TU {
 	tu := NewTU()
 
-	main := tu.NewFunction("main", &Int32VT, nil, nil)
+	main := tu.NewFunction("main", NewQualVT(&Int32VT, K_QK_QNIL), nil, nil)
 
-	x := tu.NewVar("x", K_EK_EVAR_LOCL, &Int32VT, main.fid)
-	y := tu.NewVar("y", K_EK_EVAR_LOCL, &Int32VT, main.fid)
-	c10 := tu.NewConst(10, &Int32VT)
+	x := tu.NewVar("x", K_EK_EVAR_LOCL, NIL_ID, main.Id(), NewQualVT(&Int32VT, K_QK_QNIL))
+	y := tu.NewVar("y", K_EK_EVAR_LOCL, NIL_ID, main.Id(), NewQualVT(&Int32VT, K_QK_QNIL))
+	c10 := tu.NewConst(10, NewQualVT(&Int32VT, K_QK_QNIL))
 
-	bb := NewBasicBlock(tu.GetUniqueBBId(), 0, main.fid, 2)
+	bb := NewBasicBlock(tu.GetUniqueBBId(), 0, main.Id(), 2)
 	tu.AddInsn(bb, AssignI(ValX(x), BinX(K_XK_XADD, y, c10)), nil)
 	tu.AddInsn(bb, ReturnI(ValX(x)), nil)
 	main.body = bb // a single basic block is a Graph
@@ -45,23 +45,23 @@ func NewExampleTU_A() *TU {
 func NewExampleTU_B_0() *TU {
 	tu := NewTU()
 
-	main := tu.NewFunction("main", &Int32VT, nil, nil)
+	main := tu.NewFunction("main", NewQualVT(&Int32VT, K_QK_QNIL), nil, nil)
 
-	argc := tu.NewVar("argc", K_EK_EVAR_LOCL, &Int32VT, main.fid)
-	t1 := tu.NewVar("t1", K_EK_EVAR_LOCL_TMP, &Int32VT, main.fid)
-	c0 := tu.NewConst(0, &Int32VT)
-	c1 := tu.NewConst(1, &Int32VT)
-	label1 := tu.GetUniqueLabelId()
-	label2 := tu.GetUniqueLabelId()
+	argc := tu.NewVar("argc", K_EK_EVAR_LOCL, NIL_ID, main.Id(), NewQualVT(&Int32VT, K_QK_QNIL))
+	t1 := tu.NewVar("t1", K_EK_EVAR_LOCL_TMP, NIL_ID, main.Id(), NewQualVT(&Int32VT, K_QK_QNIL))
+	c0 := tu.NewConst(0, NewQualVT(&Int32VT, K_QK_QNIL))
+	c1 := tu.NewConst(1, NewQualVT(&Int32VT, K_QK_QNIL))
+	label1 := EntityId(tu.GetUniqueLabelId())
+	label2 := EntityId(tu.GetUniqueLabelId())
 
 	// A block with all instructions.
 	// It needs to be split into three basic blocks.
-	bb := NewBasicBlock(tu.GetUniqueBBId(), 0, main.fid, 2)
+	bb := NewBasicBlock(tu.GetUniqueBBId(), 0, main.Id(), 2)
 	tu.AddInsn(bb, AssignI(ValX(t1), BinX(K_XK_XLT, c0, argc)), nil)
-	tu.AddInsn(bb, IfI(ValX(t1), label1, label2), nil)
-	tu.AddInsn(bb, LabelI(label1), nil)
+	tu.AddInsn(bb, IfI(ValX(t1), BinX(K_XK_XVAL, label1, label2)), nil)
+	tu.AddInsn(bb, LabelI(ValX(label1)), nil)
 	tu.AddInsn(bb, ReturnI(ValX(c0)), nil)
-	tu.AddInsn(bb, LabelI(label2), nil)
+	tu.AddInsn(bb, LabelI(ValX(label2)), nil)
 	tu.AddInsn(bb, ReturnI(ValX(c1)), nil)
 	main.body = bb // a single basic block is a Graph
 
@@ -74,12 +74,12 @@ func NewExampleTU_B_0() *TU {
 func NewExampleTU_B_1() *TU {
 	tu := NewTU()
 
-	main := tu.NewFunction("main", &Int32VT, nil, nil)
+	main := tu.NewFunction("main", NewQualVT(&Int32VT, K_QK_QNIL), nil, nil)
 
-	argc := tu.NewVar("argc", K_EK_EVAR_LOCL, &Int32VT, main.fid)
-	t1 := tu.NewVar("t1", K_EK_EVAR_LOCL_TMP, &Int32VT, main.fid)
-	c0 := tu.NewConst(0, &Int32VT)
-	c1 := tu.NewConst(1, &Int32VT)
+	argc := tu.NewVar("argc", K_EK_EVAR_LOCL, NIL_ID, main.Id(), NewQualVT(&Int32VT, K_QK_QNIL))
+	t1 := tu.NewVar("t1", K_EK_EVAR_LOCL_TMP, NIL_ID, main.Id(), NewQualVT(&Int32VT, K_QK_QNIL))
+	c0 := tu.NewConst(0, NewQualVT(&Int32VT, K_QK_QNIL))
+	c1 := tu.NewConst(1, NewQualVT(&Int32VT, K_QK_QNIL))
 
 	// A block with all instructions.
 	// It needs to be split into four basic blocks.
@@ -99,7 +99,7 @@ func NewExampleTU_B_1() *TU {
 	exit.addPred(r0bb).addPred(r1bb)
 
 	tu.AddInsn(ifbb, AssignI(ValX(t1), BinX(K_XK_XLT, c0, argc)), nil)
-	tu.AddInsn(ifbb, IfI(ValX(t1), NIL_LABEL_ID, NIL_LABEL_ID), nil)
+	tu.AddInsn(ifbb, IfI(ValX(t1), BinX(K_XK_XVAL, EId(NIL_LABEL_ID), EId(NIL_LABEL_ID))), nil)
 	tu.AddInsn(r0bb, ReturnI(ValX(c0)), nil)
 	tu.AddInsn(r1bb, ReturnI(ValX(c1)), nil)
 	tu.AddInsn(exit, NopI(), nil)
