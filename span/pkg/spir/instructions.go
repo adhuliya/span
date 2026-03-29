@@ -37,9 +37,9 @@ const InsnIdPrefixShift64 uint8 = 52                       // Shift to get the p
 // This expression is always a simple Value expression with no operators
 const FirstHalfExprMask64 uint64 = 0x0000_0000_1FFF_FFFF
 
-const TrueLabelPosMask64 uint64 = 0x0000_0000_FFFF_FFFF // Mask to get the true label
+const TrueLabelPosMask64 uint64 = 0x0000_0000_1FFF_FFFF // Mask to get the true label
 const TrueLabelShift64 uint64 = 0
-const FalseLabelPosMask64 uint64 = 0xFFFF_FFFF_0000_0000 // Mask to get the false label
+const FalseLabelPosMask64 uint64 = 0x8FFF_FFFC_0000_0000 // Mask to get the false label
 const FalseLabelShift64 uint64 = 32
 
 // InstructionKind is in bits 24..20 (5 bits)
@@ -98,15 +98,15 @@ func (i Insn) String() string {
 		return fmt.Sprintf("%s", expr)
 	case K_IK_ICOND:
 		cond := i.GetFirstHalfExpr()
-		trueLabel := LabelId(i.secondHalf & TrueLabelPosMask64)
-		falseLabel := LabelId((i.secondHalf & FalseLabelPosMask64) >> FalseLabelShift64)
-		return fmt.Sprintf("if (%s) T:L%d F:L%d", cond, trueLabel, falseLabel)
+		trueLabel := Expr(i.secondHalf).GetOpr1()
+		falseLabel := Expr(i.secondHalf).GetOpr2()
+		return fmt.Sprintf("if (%s) T:%s F:%s", cond, trueLabel, falseLabel)
 	case K_IK_IGOTO:
-		label := LabelId(i.secondHalf & FirstHalfExprMask64)
-		return fmt.Sprintf("goto L%d", label)
+		label := Expr(i.secondHalf).GetOpr1()
+		return fmt.Sprintf("goto %s", label)
 	case K_IK_ILABEL:
-		label := LabelId(i.GetFirstHalfExpr())
-		return fmt.Sprintf("L%d:", label)
+		label := i.GetFirstHalfExpr()
+		return fmt.Sprintf("%s:", label)
 	default:
 		return fmt.Sprintf("unknown(%s)", kind)
 	}
@@ -266,6 +266,10 @@ func (i Insn) GetFirstHalfExpr() Expr {
 	return ValX(i.GetFirstHalfEntityId())
 }
 
+func (i Insn) GetSecondHalfExpr() Expr {
+	return Expr(i.secondHalf)
+}
+
 func (i Insn) GetFirstHalfEntityId() EntityId {
 	return EntityId(i.firstHalf & FirstHalfExprMask64)
 }
@@ -308,11 +312,11 @@ func (i *Insn) IsLocalJump() bool {
 
 func (i *Insn) GetLabels() (LabelId, LabelId) {
 	if i.IsIf() {
-		return LabelId(i.secondHalf & TrueLabelPosMask64), LabelId(i.secondHalf & FalseLabelPosMask64)
+		return LabelId(i.GetSecondHalfExpr().GetOpr1()), LabelId(i.GetSecondHalfExpr().GetOpr2())
 	} else if i.IsLabel() {
-		return LabelId(i.firstHalf & FirstHalfExprMask64), NIL_LABEL_ID
+		return LabelId(i.GetFirstHalfExpr().GetOpr1()), NIL_LABEL_ID
 	} else if i.IsGoto() {
-		return LabelId(i.secondHalf & FirstHalfExprMask64), NIL_LABEL_ID
+		return LabelId(i.GetFirstHalfExpr().GetOpr1()), NIL_LABEL_ID
 	}
 
 	return NIL_LABEL_ID, NIL_LABEL_ID

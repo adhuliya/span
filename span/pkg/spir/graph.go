@@ -30,6 +30,7 @@ type BasicBlock struct {
 	id           BasicBlockId
 	scope        ScopeId  // A scope this BB is part of (sub-blocks in a function)
 	fid          EntityId // The function this BB is part of.
+	labels       []LabelId
 	insns        []Insn
 	insnBitMap   uint64 // 0/1 bit map of which instructions are valid in insns[]
 	predecessors []*BasicBlock

@@ -633,6 +633,7 @@ slang::SpirGen::handleFuncNameAndTypeBit(const FunctionDecl *funcDecl, bool forc
     bdType.set_loc_line(getSrcLocBit(funcDecl).line);
     bdType.set_loc_col(getSrcLocBit(funcDecl).col);
     bdType.set_typename_(slangFunc.fullName);
+    stu.bittu.mutable_datatypes()->insert({(uint64_t)funcDecl, std::move(bdType)});
 
     // STEP 1.2: Get function parameters.
     // if (funcDecl->doesThisDeclarationHaveABody())  //&

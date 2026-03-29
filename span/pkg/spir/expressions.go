@@ -155,13 +155,7 @@ func (expr Expr) GetOpr1() EntityId {
 }
 
 func (expr Expr) GetOpr2() EntityId {
-	exprKind := expr.GetXK()
-	if exprKind.IsSingleOprnd() {
-		return NIL_ID
-	} else if exprKind.IsTwoOprnd() {
-		return EntityId((uint64(expr) & BinXOpr2Mask64) >> BinXOpr2Shift64)
-	}
-	panic(fmt.Sprintf("Invalid expression kind: %s", exprKind))
+	return EntityId((uint64(expr) & BinXOpr2Mask64) >> BinXOpr2Shift64)
 }
 
 func (expr *Expr) SetTopBit() {

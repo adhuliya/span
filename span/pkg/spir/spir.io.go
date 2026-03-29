@@ -9,6 +9,7 @@
 package spir
 
 import (
+	"fmt"
 	"io"
 	"os"
 
@@ -184,7 +185,7 @@ func PopulateTypesFromBitTU(tu *TU, bitTU *BitTU) {
 		}
 	}
 
-	for eid, _ := range bitTU.DataTypes {
+	for eid := range bitTU.DataTypes {
 		internalEid := tu.GetInternalEntityId(eid)
 		tu.qualTypes[internalEid] = CreateQualTypeFromBitDataType(tu, bitTU, eid)
 	}
@@ -375,8 +376,35 @@ func PopulateLiterals(tu *TU, bitTU *BitTU) {
 			literal := CreateLiteralFromBitEntityInfo(tu, bitTU, eid)
 			tu.literals[tu.GetInternalEntityId(eid)] = literal
 			tu.idsToName[tu.GetInternalEntityId(eid)] = literal.ValueString()
+		} else if entityInfo.Ekind.IsLabel() {
+			label := CreateLabelFromBitEntityInfo(tu, bitTU, eid)
+			tu.labels[LabelId(tu.GetInternalEntityId(eid))] = label
+			logger.Get().Info("created label", "label", label, "entity ID", eid, "internal entity ID", tu.GetInternalEntityId(eid))
+			tu.idsToName[tu.GetInternalEntityId(eid)] = label
 		}
 	}
+}
+
+func CreateLabelFromBitEntityInfo(tu *TU, bitTU *BitTU, eid uint64) string {
+	logger.Get().Info("creating label from bit entity info", "entity ID", eid)
+	internalEid := tu.GetInternalEntityId(eid)
+	labelId := LabelId(internalEid)
+	if _, ok := tu.labels[labelId]; ok {
+		return tu.labels[labelId]
+	}
+
+	beInfo, ok := bitTU.EntityInfo[eid]
+	if !ok {
+		logger.Get().Error("entity info not found", "entity ID", eid)
+		return fmt.Sprintf("error:label_%d", eid)
+	}
+
+	if beInfo.StrVal == nil {
+		logger.Get().Error("label name not found", "entity ID", eid)
+		return fmt.Sprintf("label_%d", eid)
+	}
+
+	return *beInfo.StrVal
 }
 
 func CreateLiteralFromBitEntityInfo(tu *TU, bitTU *BitTU, eid uint64) *LiteralInfo {

@@ -426,15 +426,16 @@ func (tu *TU) InsnString(insn Insn) string {
 		return fmt.Sprintf("%s", tu.ExprString(expr))
 	case K_IK_ICOND:
 		cond := insn.GetFirstHalfExpr()
-		trueLabel := LabelId(insn.secondHalf & TrueLabelPosMask64)
-		falseLabel := LabelId((insn.secondHalf & FalseLabelPosMask64) >> FalseLabelShift64)
-		return fmt.Sprintf("if (%s) T:L%d F:L%d", tu.ExprString(cond), trueLabel, falseLabel)
+		trueLabel := Expr(insn.secondHalf).GetOpr1()
+		falseLabel := Expr(insn.secondHalf).GetOpr2()
+		return fmt.Sprintf("if (%s) T:%s F:%s", tu.ExprString(cond),
+			tu.NameOfEntityId(trueLabel), tu.NameOfEntityId(falseLabel))
 	case K_IK_IGOTO:
-		label := LabelId(insn.secondHalf & FirstHalfExprMask64)
+		label := LabelId(insn.firstHalf & FirstHalfExprMask64)
 		return fmt.Sprintf("goto %s", tu.NameOfEntityId(EntityId(label)))
 	case K_IK_ILABEL:
-		label := LabelId(insn.GetFirstHalfExpr())
-		return fmt.Sprintf("%s:", tu.NameOfEntityId(EntityId(label)))
+		eid := insn.GetFirstHalfEntityId()
+		return fmt.Sprintf("%s:", tu.NameOfEntityId(eid))
 	default:
 		return fmt.Sprintf("0UNi(%s)", kind)
 	}
@@ -455,7 +456,7 @@ func (tu *TU) NameOfEntityId(eid EntityId) string {
 	if name, ok := tu.idsToName[eid]; ok {
 		return name
 	}
-	return "0UNe" // UNNAMED entity
+	return fmt.Sprintf("0UNe(%s)", eid) // UNNAMED entity
 }
 
 func (tu *TU) Dump() {
@@ -479,6 +480,8 @@ func (tu *TU) Dump() {
 	dumpDataTypes(tu)
 	fmt.Println("--------------------------------")
 	dumpLiterals(tu)
+	fmt.Println("--------------------------------")
+	dumpLabels(tu)
 	fmt.Println("--------------------------------")
 	dumpVariables(tu)
 	fmt.Println("--------------------------------")
@@ -509,5 +512,13 @@ func dumpVariables(tu *TU) {
 func dumpFunctions(tu *TU) {
 	for eid, function := range tu.functions {
 		fmt.Println("Function: ", eid, "->", function)
+		cfg := ConstructCFG(function.insns)
+		fmt.Println("CFG:\n ", GenerateDotGraphForCFG(tu, cfg))
+	}
+}
+
+func dumpLabels(tu *TU) {
+	for labelId, label := range tu.labels {
+		fmt.Println("Label: ", EntityId(labelId), "->", label)
 	}
 }
