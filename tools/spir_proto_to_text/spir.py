@@ -294,8 +294,9 @@ def display_expr(expr, bit_tu):
         op2 = operand_to_str(expr.oprnd2eid) if expr.HasField("oprnd2eid") else ""
         return f"{kxkind}({op1}, {op2})"
     elif expr.xkind == spir_pb2.K_XK.XCALL:
+        callee = simple_name(find_entity_name_from_eid(bit_tu, expr.oprnd1eid))
         args = [simple_name(find_entity_name_from_eid(bit_tu, eid)) for eid in expr.oprnds]
-        return f"call({', '.join(args)})"
+        return f"{callee}({', '.join(args)})"
     else:
         ops = []
         if expr.HasField("oprnd1eid"):

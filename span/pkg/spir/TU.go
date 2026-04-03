@@ -123,7 +123,7 @@ func (fun *Function) String() string {
 		var sb strings.Builder
 		sb.WriteString("\n    Instructions:\n")
 		for _, insn := range fun.insns {
-			fmt.Fprintf(&sb, "        %s\n", fun.owningTU.InsnString(insn))
+			fmt.Fprintf(&sb, "        %s\n", fun.owningTU.InsnString(insn, false))
 		}
 		insnsStr += sb.String()
 	} else {
@@ -219,7 +219,7 @@ func (tu *TU) NewCallSiteId() CallSiteId {
 func (tu *TU) AddInsn(bb *BasicBlock, insn Insn, srcLoc *SrcLoc) {
 	insnId := InsnId(tu.idGen.AllocateID(insn.GetInsnPrefix16(),
 		K_EK_EINSN0.SeqIdBitLen()))
-	tu.entityInfo[EntityId(insnId)] = &InsnInfo{bbId: bb.id, srcLoc: srcLoc}
+	tu.entityInfo[EntityId(insnId)] = &InsnInfo{bbId: bb.id, SrcLoc: *srcLoc}
 	bb.insns = append(bb.insns, insn)
 }
 
@@ -389,7 +389,16 @@ func (tu *TU) InternalEntityIdExists(eid uint64) bool {
 	return ok
 }
 
-func (tu *TU) InsnString(insn Insn) string {
+func (tu *TU) InsnString(insn Insn, short bool) string {
+	exprStr := tu.ExprString
+	entityName := tu.NameOfEntityId
+	if short {
+		exprStr = tu.ExprStringShort
+		entityName = func(eid EntityId) string {
+			return SimpleName(tu.NameOfEntityId(eid))
+		}
+	}
+
 	kind := insn.InsnKind()
 	switch kind {
 	case K_IK_INIL:
@@ -400,42 +409,42 @@ func (tu *TU) InsnString(insn Insn) string {
 		return "I(barrier)"
 	case K_IK_IRETURN:
 		expr := insn.GetFirstHalfExpr()
-		return fmt.Sprintf("return %s", tu.ExprString(expr))
+		return fmt.Sprintf("return %s", exprStr(expr))
 	case K_IK_IASGN_SIMPLE:
 		lhs := insn.GetFirstHalfExpr()
 		rhs := Expr(insn.secondHalf)
-		return fmt.Sprintf("%s = %s", tu.ExprString(lhs), tu.ExprString(rhs))
+		return fmt.Sprintf("%s = %s", exprStr(lhs), exprStr(rhs))
 	case K_IK_IASGN_CALL:
 		lhs := insn.GetFirstHalfExpr()
 		rhs := Expr(insn.secondHalf)
-		return fmt.Sprintf("%s = %s", tu.ExprString(lhs), tu.ExprString(rhs))
+		return fmt.Sprintf("%s = %s", exprStr(lhs), exprStr(rhs))
 	case K_IK_IASGN_RHS_OP:
 		lhs := insn.GetFirstHalfExpr()
 		rhs := Expr(insn.secondHalf)
-		return fmt.Sprintf("%s = %s", tu.ExprString(lhs), tu.ExprString(rhs))
+		return fmt.Sprintf("%s = %s", exprStr(lhs), exprStr(rhs))
 	case K_IK_IASGN_LHS_OP:
 		rhs := insn.GetFirstHalfExpr()
 		lhs := Expr(insn.secondHalf)
-		return fmt.Sprintf("%s = %s", tu.ExprString(lhs), tu.ExprString(rhs))
+		return fmt.Sprintf("%s = %s", exprStr(lhs), exprStr(rhs))
 	case K_IK_IASGN_PHI:
 		lhs := insn.GetFirstHalfExpr()
 		rhs := Expr(insn.secondHalf)
-		return fmt.Sprintf("%s = φ(%s)", tu.ExprString(lhs), tu.ExprString(rhs))
+		return fmt.Sprintf("%s = φ(%s)", exprStr(lhs), exprStr(rhs))
 	case K_IK_ICALL:
 		expr := Expr(insn.secondHalf)
-		return fmt.Sprintf("%s", tu.ExprString(expr))
+		return fmt.Sprintf("%s", exprStr(expr))
 	case K_IK_ICOND:
 		cond := insn.GetFirstHalfExpr()
 		trueLabel := Expr(insn.secondHalf).GetOpr1()
 		falseLabel := Expr(insn.secondHalf).GetOpr2()
-		return fmt.Sprintf("if (%s) T:%s F:%s", tu.ExprString(cond),
-			tu.NameOfEntityId(trueLabel), tu.NameOfEntityId(falseLabel))
+		return fmt.Sprintf("if (%s) T:%s F:%s", exprStr(cond),
+			entityName(trueLabel), entityName(falseLabel))
 	case K_IK_IGOTO:
 		label := LabelId(insn.firstHalf & FirstHalfExprMask64)
-		return fmt.Sprintf("goto %s", tu.NameOfEntityId(EntityId(label)))
+		return fmt.Sprintf("goto %s", entityName(EntityId(label)))
 	case K_IK_ILABEL:
 		eid := insn.GetFirstHalfEntityId()
-		return fmt.Sprintf("%s:", tu.NameOfEntityId(eid))
+		return fmt.Sprintf("%s:", entityName(eid))
 	default:
 		return fmt.Sprintf("0UNi(%s)", kind)
 	}
@@ -450,6 +459,18 @@ func (tu *TU) ExprString(expr Expr) string {
 		return fmt.Sprintf("((X) %s %s %s)", xk.OperatorString(), tu.NameOfEntityId(opr1), tu.NameOfEntityId(opr2))
 	}
 	return expr.String()
+}
+
+func (tu *TU) ExprStringShort(expr Expr) string {
+	xk := expr.GetXK()
+	opr1, opr2 := expr.GetOperands()
+	if opr1 != NIL_ID && opr2 == NIL_ID {
+		return fmt.Sprintf("%s%s", xk.OperatorString(), SimpleName(tu.NameOfEntityId(opr1)))
+	} else if opr1 != NIL_ID && opr2 != NIL_ID {
+		return fmt.Sprintf("%s %s %s", SimpleName(tu.NameOfEntityId(opr1)),
+			xk.OperatorString(), SimpleName(tu.NameOfEntityId(opr2)))
+	}
+	return expr.String() // return a raw expression string (with numeric ids...)
 }
 
 func (tu *TU) NameOfEntityId(eid EntityId) string {

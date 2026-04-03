@@ -49,3 +49,72 @@
 
 // REDEFINE: %{SRC} = spanTest024.c
 // RUN: %{CMD}
+
+// REDEFINE: %{SRC} = spanTest025.c
+// RUN: %{CMD}
+
+// REDEFINE: %{SRC} = spanTest027.c
+// RUN: %{CMD}
+
+// REDEFINE: %{SRC} = spanTest052.c
+// RUN: %{CMD}
+
+// REDEFINE: %{SRC} = spanTest102.c
+// RUN: %{CMD}
+
+// REDEFINE: %{SRC} = spanTest113.c
+// RUN: %{CMD}
+
+// REDEFINE: %{SRC} = spanTest160.c
+// RUN: %{CMD}
+
+// REDEFINE: %{SRC} = spanTest161.c
+// RUN: %{CMD}
+
+// REDEFINE: %{SRC} = spanTest162.c
+// RUN: %{CMD}
+
+// REDEFINE: %{SRC} = spanTest165.c
+// RUN: %{CMD}
+
+// REDEFINE: %{SRC} = spanTest166.c
+// RUN: %{CMD}
+
+// REDEFINE: %{SRC} = spanTest167.c
+// RUN: %{CMD}
+
+// REDEFINE: %{SRC} = spanTest168.c
+// RUN: %{CMD}
+
+// REDEFINE: %{SRC} = spanTest169.c
+// RUN: %{CMD}
+
+// REDEFINE: %{SRC} = spanTest170.c
+// RUN: %{CMD}
+
+// REDEFINE: %{SRC} = spanTest171.c
+// RUN: %{CMD}
+
+// REDEFINE: %{SRC} = spanTest172.c
+// RUN: %{CMD}
+
+// REDEFINE: %{SRC} = spanTest173.c
+// RUN: %{CMD}
+
+// REDEFINE: %{SRC} = spanTest174.c
+// RUN: %{CMD}
+
+// REDEFINE: %{SRC} = spanTest203.c
+// RUN: %{CMD}
+
+// REDEFINE: %{SRC} = spanTest204.c
+// RUN: %{CMD}
+
+// REDEFINE: %{SRC} = spanTest205.c
+// RUN: %{CMD}
+
+// REDEFINE: %{SRC} = spanTest206.c
+// RUN: %{CMD}
+
+// REDEFINE: %{SRC} = spanTest207.c
+// RUN: %{CMD}

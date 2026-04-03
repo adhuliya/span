@@ -60,6 +60,7 @@ RUN jupyter nbextension enable --py --sys-prefix matplotlib || true
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 RUN go install golang.org/x/tools/cmd/stringer@latest
 RUN go install github.com/protocolbuffers/protoscope/cmd/protoscope@latest
+RUN go install github.com/go-delve/delve/cmd/dlv@latest
 
 # Clean up
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*

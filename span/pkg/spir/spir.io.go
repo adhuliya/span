@@ -227,6 +227,12 @@ func CreateQualTypeFromBitEntityId(tu *TU, bitTU *BitTU, eid uint64) QualType {
 		return CreateQualTypeFromBitDataType(tu, bitTU, eid)
 	}
 
+	if eid == 0 {
+		qt := NewQualVT(NewBasicVT(K_VK_TINT32), QualBits(0))
+		tu.qualTypes[internalEid] = qt
+		return qt
+	}
+
 	// If we reach here, then the entity id is not found in the EntityInfo or DataTypes maps.
 	logger.Get().Error("entity id not found in EntityInfo or DataTypes maps", "entity ID", eid)
 	return nil

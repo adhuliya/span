@@ -21,11 +21,13 @@ func TestIDGenerator_AllocateID(t *testing.T) {
 		t.Errorf("AllocateID failed to allocate a unique ID")
 	}
 
-	// Test case 3: Allocate an ID with invalid prefix
-	id3 := gen.AllocateID(0xFFFF, 20)
-	if id3 != 0 {
-		t.Errorf("AllocateID should return 0 for invalid prefix")
-	}
+	// Test case 3: Allocate an ID with invalid prefix should panic
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("AllocateID should panic for invalid prefix")
+		}
+	}()
+	gen.AllocateID(0xFFFF, 20)
 
 	// Test case 4: Allocate an ID with invalid seqIdBitLength
 	id4 := gen.AllocateID(1, 32)
@@ -75,10 +77,12 @@ func TestIDGenerator_FreeID(t *testing.T) {
 	}
 
 	// Test case 3: Free an ID with invalid seqIdBitLength
-	freed3 := gen.FreeID(1, 32)
-	if freed3 {
-		t.Errorf("FreeID should return false for invalid seqIdBitLength")
-	}
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("FreeID should panic for invalid seqIdBitLength")
+		}
+	}()
+	_ = gen.FreeID(1, 32)
 
 	// Test case 4: Free an ID that was already freed
 	freed4 := gen.FreeID(idToFree, seqIdBitLength)

@@ -1,4 +1,4 @@
-.PHONY: all clean build release devbuild test test-span test-slang vtest vet fmt \
+.PHONY: all clean span span-rel span-dbg span-dev test test-span test-slang vtest vet fmt \
         proto docker tidy gen gen-go gen-proto slang slang-rel slang-dbg clean-slang \
         clean-span clean-proto clean-all
 
@@ -12,25 +12,30 @@ CMAKE_CC=-DCMAKE_C_COMPILER=/usr/lib/llvm-19/bin/clang
 CMAKE_CXX=-DCMAKE_CXX_COMPILER=/usr/lib/llvm-19/bin/clang++
 CMAKE_CLANG=$(CMAKE_CC) $(CMAKE_CXX)
 
-all: tidy vet fmt build
+all: tidy vet fmt slang span
 
 help:
-	@echo "Usage: make <target> [GOTAGS=comma,separated,tags,without,spaces]..."
+	@echo "Usage: make <target> [GOTAGS=comma,separated,tags,without,spaces] [GOARGS='additional go build/test/run args']..."
+	@echo ""
+	@echo "Optional variables:"
+	@echo "  GOTAGS    Set Go build tags. E.g., GOTAGS=debug"
+	@echo "  GOARGS    Additional arguments to pass to 'go build', 'go test', etc. E.g., GOARGS='-v'"
 	@echo ""
 	@echo "Targets:"
 	@grep -E '^[a-zA-Z_-]+:.*?## ' Makefile | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
 
-span: build ## Alias: span target
+span: span-rel
 
-build: ## Build the span binary (non-release)
-	cd span && $(GO) build -tags "$(GOTAGS)" -o bin/span ./cmd/span
+span-rel: ## Build the span binary -- use this for release builds
+	cd span && $(GO) build -tags release $(GOARGS) -o bin/span ./cmd/span
 
-release: ## Build the span binary -- use this for release builds
-	cd span && $(GO) build -tags release -o bin/span ./cmd/span
+span-dev: gen ## Auto-generated code and build span (non-release)
+	cd span && $(GO) build -tags "$(GOTAGS)" $(GOARGS) -o bin/span ./cmd/span
 
-devbuild: gen ## Auto-generated code and build span (non-release)
-	cd span && $(GO) build -tags "$(GOTAGS)" -o bin/span ./cmd/span
+span-dbg: gen ## Auto-generated code and build span (debug)
+	# -N disables optimization and -l disables inlining. This helps with debugging.
+	cd span && $(GO) build -tags "$(GOTAGS)" $(GOARGS) -gcflags="all=-N -l" -o bin/span ./cmd/span
 
 test: test-span test-slang
 
@@ -70,15 +75,29 @@ gen-go: ## Generate auto-generated code
 gen: gen-go gen-proto ## Generate auto-generated code and proto files
 	echo "Generating auto-generated code..."
 
-slang: slang-rel slang-dbg
+slang: slang-rel
 
 slang-rel: ## Release build of slang
-	cd slang && mkdir -p built/rel && cd built/rel && cmake $(CMAKE_CLANG) ../.. && make -j 4
-	ln -sf slang/built/rel/compile_commands.json slang/built/compile_commands.json
+	@# Detect if built/slang exists and is not a release binary, and if so, clean first
+	@if [ -f slang/built/slang ]; then \
+		if objdump -h slang/built/slang | grep -q ' \.debug_'; then \
+			echo "Previous build appears to be a debug build (contains .debug_* sections). Cleaning..."; \
+			rm -rf slang/built/; \
+		fi; \
+	fi
+	mkdir -p slang/built
+	cd slang/built && cmake $(CMAKE_CLANG) .. && make -j 4
 
 slang-dbg: ## Debug build of slang
-	cd slang && mkdir -p built/dbg && cd built/dbg && cmake $(CMAKE_CLANG) ../.. -DCMAKE_BUILD_TYPE=Debug && make -j 4
-	ln -sf slang/built/dbg/compile_commands.json slang/built/compile_commands.json
+	@# Detect if built/slang exists and is not a debug binary, and if so, clean first
+	@if [ -f slang/built/slang ]; then \
+		if ! objdump -h slang/built/slang | grep -q ' \.debug_'; then \
+			echo "Previous build is NOT a debug build (missing .debug_* sections). Cleaning..."; \
+			rm -rf slang/built/; \
+		fi; \
+	fi
+	mkdir -p slang/built
+	cd slang/built && cmake $(CMAKE_CLANG) .. -DCMAKE_BUILD_TYPE=Debug && make -j 4
 
 clean: clean-slang clean-span ## Clean up binaries
 clean-all: clean clean-proto ## Clean up all binaries and proto files

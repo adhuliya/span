@@ -114,6 +114,12 @@ func (i Insn) String() string {
 
 // BLOCK START: API to create instructions
 
+func (i *Insn) SetInsnId(id InsnId) {
+	oprnd := uint64(id) & FirstHalfExprMask64
+	i.firstHalf = (uint64(id) & InsnIdMask32) << InsnIdShift64
+	i.firstHalf |= oprnd
+}
+
 func NilI() Insn {
 	insn := Insn{}
 	return insn // No instruction -- all zeros
@@ -228,15 +234,18 @@ func IfI(cond Expr, trueFalseLabels Expr) Insn {
 
 // Extra assosicated info with the instruction.
 type InsnInfo struct {
-	bbId   BasicBlockId // The basic block to which the instruction belongs
-	srcLoc *SrcLoc      // The source location of the instruction
+	SrcLoc
+	bbId BasicBlockId // The basic block to which the instruction belongs
 }
 
-func NewInsnInfo(bbId BasicBlockId, srcLoc *SrcLoc) InsnInfo {
-	return InsnInfo{
-		bbId:   bbId,
-		srcLoc: srcLoc,
+// NewInsnInfo creates a new InsnInfo struct, initializing its fields.
+// If srcLoc is not nil, its contents are copied into the SrcLoc field.
+func NewInsnInfo(bbId BasicBlockId, srcLoc SrcLoc) InsnInfo {
+	info := InsnInfo{
+		bbId: bbId,
 	}
+	info.SrcLoc = srcLoc
+	return info
 }
 
 func (i InsnInfo) BBId() BasicBlockId {

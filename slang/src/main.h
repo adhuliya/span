@@ -556,7 +556,7 @@ public:
   // clear the buffer for the next function.
   void clearFunctionSpecificData() {
     currFunc = nullptr;
-    varMap.clear();
+    //varMap.clear();
     dirtyVars.clear();
     varCountMap.clear();
     labelNameToIdMap.clear();
@@ -834,7 +834,7 @@ public:
     SlangBitExpr convertImplicitValueInitExprBit(SlangBitExpr &lhs, const ImplicitValueInitExpr *initListExpr);
     SlangBitExpr genInitLhsBitExpr(SlangBitExpr lhs, QualType initExprListQt, int index);
     SlangBitExpr convertReturnStmtBit(const ReturnStmt *returnStmt);
-    SlangBitExpr genMemberAccessBitExpr(SlangBitExpr of, int index, uint64_t recordEid, QualType qt, SrcLoc srcLoc);
+    SlangBitExpr genMemberAccessBitExpr2(SlangBitExpr of, int index, uint64_t recordEid, QualType qt, SrcLoc srcLoc);
     SlangBitExpr convertMemberExprBit(const MemberExpr *memberExpr);
     SlangBitExpr genMemberAccessBitExpr(SlangBitExpr of, const MemberExpr *memberExpr, uint64_t recordEid, QualType qt, SrcLoc srcLoc);
     SlangBitExpr convertLogicalOpBit(const BinaryOperator *binOp);
@@ -847,6 +847,9 @@ public:
     SlangBitExpr convertConstantExprBit(const ConstantExpr *constExpr);
     SlangBitExpr convertCStyleCastExprBit(const CStyleCastExpr *cCast);
     SlangBitExpr convertCastExprBit(const Stmt *expr, QualType qt, SrcLoc srcLoc);
+    SlangBitExpr convertCallExprBit(const CallExpr *callExpr);
+    SlangBitExpr convertArraySubscriptExprBit(const ArraySubscriptExpr *arrayExpr);
+    SlangBitExpr convertUnaryExprOrTypeTraitExprBit(const UnaryExprOrTypeTraitExpr *stmt);
     // ... Add all other bit-level methods similarly
 
     SlangBitExpr createSlangExprFromBitExpr(spir::BitExpr *bitExpr, QualType type, bool isTmp);

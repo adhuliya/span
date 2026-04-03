@@ -17,6 +17,9 @@ build-*
 *.o
 *.out
 
+# proto related
+*.pb
+
 # temporary lit test files
 .test_output
 

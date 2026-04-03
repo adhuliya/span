@@ -9,8 +9,7 @@ import "fmt"
 // A binary operand format:      <one bit>-<29 bits Opr2  >-<5 bits XK       >-<29 bits Opr1>
 // A unary operand expr format:  <one bit>-<29 bits unused>-<5 bits XK       >-<29 bits Opr>
 // A value expr format: 		 <one bit>-<29 bits unused>-<5 bits K_XK_VAL >-<29 bits Opr> (for constants, variables, etc.)
-// A call expression format: 	 <one bit>-<29 bits SiteId>-<5 bits XK_CALL_0>-<29 bits callee> (for functions with zero arguments)
-// A call expression format: 	 <one bit>-<29 bits SiteId>-<5 bits XK_CALL  >-<29 bits callee> (for functions with non-zero arguments)
+// A call expression format: 	 <one bit>-<29 bits callee>-<5 bits XK_CALL  >-<29 bits SiteId> (for functions with non-zero arguments)
 // For non-zero arguments, the arguments are stored in a map in the Translation Unit separately.
 // Hence the CallSiteId is required to uniquely identify the call site with its arguments.
 type Expr uint64
@@ -27,16 +26,9 @@ const UnaryOprMask64 uint64 = 0x0000_0000_1FFF_FFFF // Mask to get the operand i
 const BinXOpr1Mask64 uint64 = 0x0000_0000_1FFF_FFFF // Mask to get the first operand in a binary expression
 const BinXOpr1Shift64 uint8 = 0                     // Shift to get the first operand in a binary expression
 const BinXOpr2Mask64 uint64 = 0x7FFF_FFFC_0000_0000 // Mask to get the second operand in a binary expression
-const BinXOpr2Shift64 uint8 = 5 + 29                // Shift to get the second operand in a binary expression
+const BinXOpr2Shift64 uint8 = 29 + 5                // Shift to get the second operand in a binary expression
 
 type CallSiteId uint32 // A 29 bit unsigned integer, uniquely identifying a call site
-
-const CalleeIdMask64 uint64 = 0x0000_0000_1FFF_FFFF // Mask to get the callee in a call expression
-const CalleeIdShift64 uint8 = 0
-const CallSiteIdMask32 uint32 = 0x1FFF_FFFF // Mask to get the call site id in a call expression
-const CallSiteIdShift32 uint8 = 0
-const CallSiteIdPosMask64 uint64 = 0x7FFF_FFFC_0000_0000 // Mask to get the call site id in a call expression
-const CallSiteIdShift64 uint8 = 5 + 29
 
 const TopBitMask64 uint64 = 0x8000_0000_0000_0000 // Mask to get/set the top bit
 const TopBitShift64 uint8 = 63                    // Shift to get/set the top bit
@@ -80,7 +72,7 @@ func placeXK(exprKind ExprKind) uint64 {
 }
 
 func placeCallSiteId(siteId CallSiteId) uint64 {
-	return placeExprOpr1(EntityId((uint32(siteId) & CallSiteIdMask32)))
+	return placeExprOpr1(EntityId(siteId))
 }
 
 func placeCallee(callee EntityId) uint64 {
@@ -98,8 +90,8 @@ func UnaryX(xk ExprKind, opr EntityId) Expr {
 	return Expr(placeXK(xk) | placeExprOpr1(opr))
 }
 
-func CallX(callSiteId CallSiteId, callee EntityId) Expr {
-	return Expr(placeXK(K_XK_XCALL) | placeCallSiteId(callSiteId) | placeExprOpr1(callee))
+func CallX(callee EntityId, callSiteId CallSiteId) Expr {
+	return Expr(placeXK(K_XK_XCALL) | placeExprOpr2(callee) | placeCallSiteId(callSiteId))
 }
 
 // Creates a 64 bit expression from two operands and an expression kind.
@@ -122,11 +114,11 @@ func (expr Expr) GetXK() ExprKind {
 }
 
 func (expr Expr) GetCallSiteId() CallSiteId {
-	return CallSiteId((uint64(expr) & CallSiteIdPosMask64) >> CallSiteIdShift64)
+	return CallSiteId(expr.GetOpr1())
 }
 
 func (expr Expr) GetCallee() EntityId {
-	return EntityId((uint64(expr) & CalleeIdMask64) >> CalleeIdShift64)
+	return expr.GetOpr2()
 }
 
 // A simple expression has no operator.

@@ -305,7 +305,7 @@ func GenerateDotGraphForCFG(tu *TU, cfg *ControlFlowGraph) string {
 				continue
 			}
 			labelSb.WriteString("\\n")
-			labelSb.WriteString(tu.InsnString(insn))
+			labelSb.WriteString(tu.InsnString(insn, true))
 		}
 
 		// Apply node attributes
@@ -358,4 +358,13 @@ func GenerateDotGraphForCFG(tu *TU, cfg *ControlFlowGraph) string {
 func SkipInsn(insn Insn) bool {
 	ik := insn.InsnKind()
 	return ik == K_IK_ILABEL || ik == K_IK_IGOTO
+}
+
+// SimpleName returns the string after the last ':' character in the given name.
+func SimpleName(name string) string {
+	if name == "" {
+		return "0name"
+	}
+	parts := strings.Split(name, ":")
+	return parts[len(parts)-1]
 }

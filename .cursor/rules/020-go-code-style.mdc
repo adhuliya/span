@@ -4,13 +4,13 @@ globs: *.go
 alwaysApply: false
 ---
 
-# When generating Go code adhere to the following list of rules
+# When generating Go code adhere to the following list of guidelines
 
 - Use SOLID software design principles.
-- Use interfaces werever possible. Try to use minimal interface definitions.
-- Create small and simple functions or components.
-- When writing new code or refactoring an old code, try to use existing functionality and compose it to achieve the results.
+- Use interfaces werever possible, with minimal functions to fulfil the requirement.
+- Create small and simple functions or components with concise comments explaining what it does, what is the input and the output.
+- When writing new code or refactoring an old code, always try to use existing functionality before creating new functions.
+- Compose functions with well-defined usage to build a larger solution.
 - Add short and simple documentation comments wherever possible, unless explicitly asked to expand.
 - Always, explain the generated code.
-
 - Try to define all the string constants in a dedicated go file `util/strings.go` in a package util. There can be some exception to this when you think that the constant will not be used in more than one place, for example format strings and log messages. Ask if you are in doubt.
