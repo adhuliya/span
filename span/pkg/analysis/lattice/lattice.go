@@ -19,7 +19,8 @@ type Lattice interface {
 	// bool indicates if the value changed during the join operation
 	Join(other Lattice) (Lattice, bool)
 
-	// Widening operator to allow termination of the analysis
+	// Widening operator to allow termination of the analyses with infinite domain.
+	// If the domain is finite, the widening is same as Meet().
 	Widen(other Lattice) (Lattice, bool)
 
 	Equals(other Lattice) bool

@@ -5089,7 +5089,6 @@ slang::MayValue slang::SpirGen::convertClangRecordTypeBit(const RecordDecl *reco
 
     dt.mutable_fopids()->Add(fieldKey);
     dt.mutable_foptypeeids()->Add(fieldDtEid.value);
-    SLANG_PRINT("adding fieldKey XXXX: " << fieldKey);
   } // for loop
 
   // Place the record type with complete fields information in the

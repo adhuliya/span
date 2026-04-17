@@ -5,6 +5,6 @@ alwaysApply: false
 ---
 When generating or refactoring proto file adhere to the following rules
 
-- Always add simple and useful comments where possible.
+- Always add short and useful comments for every message and field.
 - Ensure that comment at the top of the file is present to show how to compile the proto file to generate files for Go and C++.
-- Ensure that the Makefile (at the project root) handles proto conversion properly.
+- Ensure that the [Makefile](mdc:Makefile) (at the project root) handles proto conversion properly.

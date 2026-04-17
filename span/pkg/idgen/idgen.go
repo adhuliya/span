@@ -1,6 +1,9 @@
 package idgen
 
-import "fmt"
+import (
+	"fmt"
+	"slices"
+)
 
 // This file defines the ID generation structure and functions.
 
@@ -37,6 +40,12 @@ func GetNextIdC() uint32 {
 // It maintains a linked list of pool ids that are available for allocation.
 type IDGenerator struct {
 	idPools map[poolId_t]*freeIdPool // generic pool for arbirary bit IDs
+
+	// A list of free ids for each pool. This is a temporary provision,
+	// to store the freed ids in a sequential order.
+	// This is an optimization to not modify idPools every time an id is freed.
+	// These free ids are supposed to be put back in the id pool at some point.
+	freeIds map[poolId_t][]uint32 // free IDs for each pool
 }
 
 // A pool of free IDs available for allocation which points to the next pool of free IDs.
@@ -48,6 +57,8 @@ type freeIdPool struct {
 	to   uint32
 	next *freeIdPool
 }
+
+const MaxFreeIdsSeqLen = 1024
 
 // A 32 bit pool id is used to identify the pool of IDs.
 // The upper 16 bits are the prefix, and the lower 5 bits are the number of bits in the sequence ID.
@@ -174,7 +185,7 @@ func (gen *IDGenerator) AllocateID(prefix uint16, seqIdBitLen uint8) uint32 {
 	return constructFullId(poolId, seqId)
 }
 
-// FreeID puts an id back to the pool.
+// FreeID puts an id back to the free id sequence or the id pool.
 // It returns true if the ID is successfully freed.
 func (gen *IDGenerator) FreeID(fullId uint32, seqIdBitLen uint8) bool {
 	poolId := validateAndEncodePoolId(getPrefixFromFullId(fullId, seqIdBitLen), seqIdBitLen)
@@ -190,6 +201,31 @@ func (gen *IDGenerator) FreeID(fullId uint32, seqIdBitLen uint8) bool {
 	if seqId == 0 || seqId > maxSeqIdValue(seqIdBitLen) {
 		return false // Invalid ID
 	}
+
+	if gen.freeIds[poolId] == nil {
+		gen.freeIds[poolId] = make([]uint32, 0, MaxFreeIdsSeqLen)
+	}
+	gen.freeIds[poolId] = append(gen.freeIds[poolId], fullId)
+
+	success := true
+	if len(gen.freeIds[poolId]) >= MaxFreeIdsSeqLen {
+		// First, sort the freeIds slice for the current poolId, so IDs are returned to the pool in order.
+		ids := gen.freeIds[poolId]
+		slices.Sort(ids)
+		for i := range ids {
+			success = success && gen.freeID(ids[i], poolId)
+		}
+		// After freeing, reset the freeIds slice for this poolId.
+		gen.freeIds[poolId] = ids[:0]
+	}
+	return success
+}
+
+// freeID puts an id back to the pool.
+// It returns true if the ID is successfully freed.
+func (gen *IDGenerator) freeID(fullId uint32, poolId poolId_t) bool {
+	pool := gen.idPools[poolId]
+	seqId := fullId & ((1 << poolId.SeqIdBitLen()) - 1)
 
 	freed := false
 	var prevTo uint32 = 0

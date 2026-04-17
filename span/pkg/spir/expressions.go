@@ -121,9 +121,9 @@ func (expr Expr) GetCallee() EntityId {
 	return expr.GetOpr2()
 }
 
-// A simple expression has no operator.
+// A simple expression has no operator (including nil expressions).
 func (expr Expr) IsSimple() bool {
-	return expr.GetXK() == K_XK_XVAL
+	return expr.GetXK() == K_XK_XVAL || expr.GetXK() == K_XK_XNIL
 }
 
 func (expr Expr) IsCall() bool {
@@ -140,7 +140,7 @@ func (expr Expr) GetOpr1() EntityId {
 	exprKind := expr.GetXK()
 	if exprKind.IsSingleOprnd() {
 		return EntityId(uint64(expr) & UnaryOprMask64)
-	} else if exprKind.IsTwoOprnd() {
+	} else if exprKind.IsTwoOprnd() || exprKind.IsCall() {
 		return EntityId((uint64(expr) & BinXOpr1Mask64) >> BinXOpr1Shift64)
 	}
 	panic(fmt.Sprintf("Invalid expression kind: %s", exprKind))

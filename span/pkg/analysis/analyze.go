@@ -82,7 +82,7 @@ type IntraPAN struct {
 	factMap AnalysisFactMap
 	// Skip processing statements with call expression
 	skipCallsKnob bool
-	// Skip processing statements with call expression
+	// Apply meet operation at basic block boundary
 	meetAtBasicBlock bool
 }
 
@@ -106,7 +106,7 @@ func (intraPAN *IntraPAN) AnalyzeGraph() {
 
 	logger.Get().Info("Analyzing graph in any direction",
 		"CtxId", intraPAN.ctxId, "AnalysisName", intraPAN.analysis.Name())
-	tmp, _ := intraPAN.context.GetInfo(intraPAN.ctxId)
+	tmp, _ := intraPAN.context.GetInfo(uint64(intraPAN.ctxId))
 	factMap := tmp.(AnalysisFactMap)
 
 	AnalyzeInsn, context := intraPAN.analysis.AnalyzeInsn, intraPAN.context
@@ -130,7 +130,7 @@ func (intraPAN *IntraPAN) AnalyzeGraph() {
 }
 
 func (intraPAN *IntraPAN) initializeContext() {
-	if _, ok := intraPAN.context.GetInfo(intraPAN.ctxId); ok {
+	if _, ok := intraPAN.context.GetInfo(uint64(intraPAN.ctxId)); ok {
 		return
 	} else {
 		factMap := make(AnalysisFactMap)
@@ -138,7 +138,7 @@ func (intraPAN *IntraPAN) initializeContext() {
 		boundaryFact := intraPAN.analysis.BoundaryFact(intraPAN.graph, intraPAN.context)
 		factMap[intraPAN.graph.EntryBlock().EntryInsn().Id()] = lattice.NewPair(boundaryFact.L1(), nil)
 		factMap[intraPAN.graph.ExitBlock().ExitInsn().Id()] = lattice.NewPair(nil, boundaryFact.L2())
-		intraPAN.context.SetInfo(intraPAN.ctxId, factMap)
+		intraPAN.context.SetInfo(uint64(intraPAN.ctxId), factMap)
 	}
 }
 

@@ -14,22 +14,22 @@ func GetNextContextId() ContextId {
 }
 
 type Context struct {
-	translationUnit *TU
-	info            map[ContextId]any
+	tu   *TU
+	info map[uint64]any // key is the instance id / context id
 }
 
 func NewContext(tu *TU) *Context {
 	return &Context{
-		translationUnit: tu,
-		info:            make(map[ContextId]any),
+		tu:   tu,
+		info: make(map[uint64]any),
 	}
 }
 
 func (c *Context) TU() *TU {
-	return c.translationUnit
+	return c.tu
 }
 
-func (c *Context) SetInfo(key ContextId, value any) bool {
+func (c *Context) SetInfo(key uint64, value any) bool {
 	if _, ok := c.info[key]; ok {
 		return false
 	}
@@ -38,12 +38,12 @@ func (c *Context) SetInfo(key ContextId, value any) bool {
 	return true
 }
 
-func (c *Context) GetInfo(key ContextId) (any, bool) {
+func (c *Context) GetInfo(key uint64) (any, bool) {
 	value, ok := c.info[key]
 	return value, ok
 }
 
-func (c *Context) RemoveInfo(key ContextId) bool {
+func (c *Context) RemoveInfo(key uint64) bool {
 	if _, ok := c.info[key]; !ok {
 		return false
 	}
