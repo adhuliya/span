@@ -36,6 +36,8 @@ const InsnIdPrefixShift64 uint8 = 52                       // Shift to get the p
 // Mask to get the expression part from first half of the instruction
 // This expression is always a simple Value expression with no operators
 const FirstHalfExprMask64 uint64 = 0x0000_0000_1FFF_FFFF
+const FirstHalf2BitMask64 uint64 = 0x0000_0000_C000_0000
+const FirstHalf2BitShift64 uint64 = 30
 
 const TrueLabelPosMask64 uint64 = 0x0000_0000_1FFF_FFFF // Mask to get the true label
 const TrueLabelShift64 uint64 = 0
@@ -115,9 +117,7 @@ func (i Insn) String() string {
 // BLOCK START: API to create instructions
 
 func (i *Insn) SetInsnId(id InsnId) {
-	oprnd := uint64(id) & FirstHalfExprMask64
 	i.firstHalf = (uint64(id) & InsnIdMask32) << InsnIdShift64
-	i.firstHalf |= oprnd
 }
 
 func NilI() Insn {
@@ -146,7 +146,7 @@ func ReturnI(expr Expr) Insn {
 	return insn
 }
 
-// Creates Assign instruction except PHI assignment.
+// Creates Assign instruction except Self Assignment and PHI assignment.
 func AssignI(lhs Expr, rhs Expr) Insn {
 	util.Assert(lhs.IsSimple() || rhs.IsSimple(), "At least one of the expressions must be simple")
 	insn, ik := Insn{}, K_IK_IASGN_SIMPLE
@@ -187,6 +187,17 @@ func AssignI(lhs Expr, rhs Expr) Insn {
 	return insn
 }
 
+func SelfAssignI(eids []EntityId) Insn {
+	if len(eids) == 0 || len(eids) > 3 {
+		panic(fmt.Sprintf("SelfAssignI: invalid number of entities: %d", len(eids)))
+	}
+	insn := Insn{}
+	insn.firstHalf |= K_EK_EINSN0.place64() | K_IK_IASGN_SELF.place64()
+	insn.SetFirstHalfOprnd(eids[0])
+	insn.secondHalf = uint64(ValX2(eids[1], eids[2]))
+	return insn
+}
+
 // Create PHI assignment instruction.
 // TODO: Add support for multiple PHI assignments in RHS.
 func PhiI(lhs Expr) Insn {
@@ -210,7 +221,7 @@ func LabelI(expr Expr) Insn {
 	util.Assert(expr.GetOpr1().Kind().IsLabel(), "Expr must be a label entity")
 	insn := Insn{}
 	insn.firstHalf |= K_EK_EINSN0.place64() | K_IK_ILABEL.place64()
-	insn.firstHalf |= uint64(expr) & FirstHalfExprMask64
+	insn.SetFirstHalfOprnd(expr.GetOpr1())
 	return insn
 }
 
@@ -218,14 +229,14 @@ func GotoI(expr Expr) Insn {
 	util.Assert(expr.GetOpr1().Kind().IsLabel(), "Expr must be a label entity")
 	insn := Insn{}
 	insn.firstHalf |= K_EK_EINSN0.place64() | K_IK_IGOTO.place64()
-	insn.firstHalf |= uint64(expr) & FirstHalfExprMask64
+	insn.SetFirstHalfOprnd(expr.GetOpr1())
 	return insn
 }
 
 func IfI(cond Expr, trueFalseLabels Expr) Insn {
 	insn := Insn{}
 	insn.firstHalf |= K_EK_EINSN0.place64() | K_IK_ICOND.place64()
-	insn.firstHalf |= uint64(cond) & FirstHalfExprMask64
+	insn.SetFirstHalfOprnd(cond.GetOpr1())
 	insn.secondHalf = uint64(trueFalseLabels)
 	return insn
 }
@@ -260,8 +271,34 @@ func (i Insn) InsnKind() InsnKind {
 	return InsnKind((i.firstHalf >> IKShift64) & uint64(IKMask5))
 }
 
+// HasProperPrefix returns true if the instruction's Id has a valid kind + (if needed) subkind prefix.
+// This checks the entity encoding used for InsnId.
+func (i Insn) HasProperPrefix() bool {
+	return EntityId(i.Id()).HasProperPrefix()
+}
+
+// HasProperId returns true if the instruction has a nonzero, valid instruction Id (i.e., was given a proper allocation).
+// This means the prefix is proper and the "sequence" part isn't zero.
+func (i Insn) HasProperId() bool {
+	return EntityId(i.Id()).IsProper()
+}
+
 func (i *Insn) IsAssign() bool {
-	return i.InsnKind() >= K_IK_IASGN_SIMPLE && i.InsnKind() <= K_IK_IASGN_PHI
+	return i.InsnKind() >= K_IK_IASGN_SELF && i.InsnKind() <= K_IK_IASGN_PHI
+}
+
+// Get2Bits returns the value of the 2 bits (bits 30..29) from the instruction's first half.
+func (i *Insn) Get2Bits() uint8 {
+	return uint8((i.firstHalf & FirstHalf2BitMask64) >> FirstHalf2BitShift64)
+}
+
+// Set2Bits sets the value of the 2 bits (bits 30..29) in the instruction's first half.
+// Only the lowest 2 bits of 'val' are used.
+func (i *Insn) Set2Bits(val uint8) {
+	// Clear existing 3 bits
+	i.firstHalf &= ^FirstHalf2BitMask64
+	// Set the new 3 bits
+	i.firstHalf |= (uint64(val) & 0x3) << FirstHalf2BitShift64
 }
 
 func (i Insn) GetCallExpr() Expr {
@@ -275,12 +312,30 @@ func (i Insn) GetFirstHalfExpr() Expr {
 	return ValX(i.GetFirstHalfEntityId())
 }
 
+func (i *Insn) SetFirstHalfExpr(expr Expr) {
+	i.firstHalf |= uint64(expr) & FirstHalfExprMask64
+}
+
+func (i *Insn) SetFirstHalfOprnd(eid EntityId) {
+	i.firstHalf |= uint64(eid) & FirstHalfExprMask64
+}
+
 func (i Insn) GetSecondHalfExpr() Expr {
 	return Expr(i.secondHalf)
 }
 
 func (i Insn) GetFirstHalfEntityId() EntityId {
 	return EntityId(i.firstHalf & FirstHalfExprMask64)
+}
+
+func (i *Insn) GetSelfAssignInsnOprnds() []EntityId {
+	if i.InsnKind() != K_IK_IASGN_SELF {
+		panic(fmt.Sprintf("GetSelfAssignInsnOprnds: invalid instruction kind: %s", i.InsnKind()))
+	}
+	oprnd1 := i.GetFirstHalfEntityId()
+	oprnd2 := Expr(i.secondHalf).GetOpr1()
+	oprnd3 := Expr(i.secondHalf).GetOpr2()
+	return []EntityId{oprnd1, oprnd2, oprnd3}
 }
 
 func (i *Insn) IsGoto() bool {
@@ -317,6 +372,40 @@ func (i *Insn) IsReturn() bool {
 
 func (i *Insn) IsLocalJump() bool {
 	return i.IsGoto() || i.IsIf()
+}
+
+func (i *Insn) GetTrueFalseLabelsExpr() Expr {
+	return i.GetSecondHalfExpr()
+}
+
+// LhsX returns the left-hand side expression of an assignment instruction.
+// For simple assignments and assignments involving call/LHS ops, the LHS is in the firstHalf.
+// For RHS op assignments, the roles are reversed; the first half expression is the LHS.
+// For unsupported instructions, returns NIL_X.
+func (i *Insn) LhsX() Expr {
+	switch i.InsnKind() {
+	case K_IK_IASGN_SIMPLE, K_IK_IASGN_CALL, K_IK_IASGN_RHS_OP:
+		return i.GetFirstHalfExpr()
+	case K_IK_IASGN_LHS_OP:
+		return i.GetSecondHalfExpr()
+	default:
+		return NIL_X
+	}
+}
+
+// RhsX returns the right-hand side expression of an assignment instruction.
+// For simple assignments and assignments involving call/RHS ops, the RHS is in the secondHalf.
+// For lhs op assignments, the roles are reversed, the first half expression is the RHS.
+// For unsupported instructions, returns NIL_X.
+func (i *Insn) RhsX() Expr {
+	switch i.InsnKind() {
+	case K_IK_IASGN_SIMPLE, K_IK_IASGN_RHS_OP, K_IK_IASGN_CALL:
+		return i.GetSecondHalfExpr()
+	case K_IK_IASGN_LHS_OP:
+		return i.GetFirstHalfExpr()
+	default:
+		return NIL_X
+	}
 }
 
 func (i *Insn) GetLabels() (LabelId, LabelId) {

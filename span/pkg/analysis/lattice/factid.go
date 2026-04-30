@@ -2,56 +2,68 @@ package lattice
 
 // FactId uniquely identifies a data flow fact and its history of values.
 // The 64 bits are encoded as follows:
-//   - 3  bits : For future use
+//   - 2  bits : For future use
 //   - 12 bits : Analysis id
-//   - 34 bits : Unique id (split like (2 fact kind bits, 32 instr/BB id bits))
+//   - 35 bits : Unique Bits (UB = EntityId + FactPoint)
 //       * 32 bits : Id of the instruction / BB / function
-//       * 2  bits : Fact at IN, OUT, IN & OUT of the instruction, BB or function
+//       * 3  bits : Fact at IN, OUT, IN & OUT of the instruction, BB or function
 //   - 15 bits : Version of the fact (increments per update)
 //
 // The FactId can be used as key by dropping the 'version' part.
 
 type FactId uint64
 
+const NIL_FACT_ID FactId = 0
+
 // NEW BIT LAYOUT (little-endian/LSB to MSB):
 // [0-14]   15b Version
-// [15-48]  34b Unique ID (InstrId + FactKind)
-//            - [15-16] FactKind (2b)
-//            - [17-48] InstrId (32b)
-// [49-60]  12b AnalysisId
-// [61-63]  3b Reserved
+// [15-49]  35b Unique Bits (UB = EntityId + FactPoint)
+//            - [15-17] FactPoint (3b)
+//            - [18-49] InstrId (32b)
+// [50-61]  12b AnalysisId
+// [62-63]  2b Reserved
 
 // Bit sizes
 const (
-	FactIdVersionBits  = 15
-	FactIdUniqueBits   = 34
-	FactIdAnalysisBits = 12
-	FactIdReservedBits = 3
+	FactIdVersionBits = 15
 
-	FactIdFactKindBits = 2
-	FactIdInstrIdBits  = 32
+	FactIdUB_PointBits    = 3
+	FactIdUB_EntityIdBits = 32
+	FactIdUB_BitCount     = FactIdUB_PointBits + FactIdUB_EntityIdBits
+
+	FactIdAnalysisBits = 12
+	FactIdReservedBits = 2
 )
 
 // Bit shifts for each field
 const (
 	FactIdVersionShift  = 0
-	FactIdUniqueShift   = FactIdVersionShift + FactIdVersionBits   // 15
-	FactIdAnalysisShift = FactIdUniqueShift + FactIdUniqueBits     // 49
-	FactIdReservedShift = FactIdAnalysisShift + FactIdAnalysisBits // 61
+	FactIdUniqueShift   = FactIdVersionShift + FactIdVersionBits
+	FactIdAnalysisShift = FactIdUniqueShift + FactIdUB_BitCount
+	FactIdReservedShift = FactIdAnalysisShift + FactIdAnalysisBits
 
-	FactIdFactKindShift = FactIdUniqueShift                        // 15
-	FactIdInstrIdShift  = FactIdFactKindShift + FactIdFactKindBits // 17
+	FactIdUB_PointShift    = FactIdUniqueShift
+	FactIdUB_EntityIdShift = FactIdUB_PointShift + FactIdUB_PointBits
 )
 
 // Masks for each field (before shifting)
 const (
 	FactIdVersionMask  = (1 << FactIdVersionBits) - 1
-	FactIdUniqueMask   = (1 << FactIdUniqueBits) - 1
+	FactIdUB_Mask      = (1 << FactIdUB_BitCount) - 1
 	FactIdAnalysisMask = (1 << FactIdAnalysisBits) - 1
 	FactIdReservedMask = (1 << FactIdReservedBits) - 1
 
-	FactIdFactKindMask = (1 << FactIdFactKindBits) - 1
-	FactIdInstrIdMask  = (1 << FactIdInstrIdBits) - 1
+	FactIdUB_PointMask    = (1 << FactIdUB_PointBits) - 1
+	FactIdUB_EntityIdMask = (1 << FactIdUB_EntityIdBits) - 1
+)
+
+const (
+	FactIdUB_Point_NONE     = 0
+	FactIdUB_Point_IN       = 1
+	FactIdUB_Point_OUT      = 2
+	FactIdUB_Point_INOUT    = 3
+	FactIdUB_Point_TRUEOUT  = 4
+	FactIdUB_Point_FALSEOUT = 5
 )
 
 // Getters
@@ -60,15 +72,15 @@ func (f FactId) Version() uint64 {
 }
 
 func (f FactId) UniqueId() uint64 {
-	return (uint64(f) >> FactIdUniqueShift) & FactIdUniqueMask
+	return (uint64(f) >> FactIdUniqueShift) & FactIdUB_Mask
 }
 
-func (f FactId) FactKind() uint64 {
-	return (uint64(f) >> FactIdFactKindShift) & FactIdFactKindMask
+func (f FactId) FactPoint() uint64 {
+	return (uint64(f) >> FactIdUB_PointShift) & FactIdUB_PointMask
 }
 
 func (f FactId) InstrId() uint64 {
-	return (uint64(f) >> FactIdInstrIdShift) & FactIdInstrIdMask
+	return (uint64(f) >> FactIdUB_EntityIdShift) & FactIdUB_EntityIdMask
 }
 
 func (f FactId) AnalysisId() uint64 {
@@ -82,8 +94,11 @@ func (f FactId) Reserved() uint64 {
 // IncVersion returns a new FactId with the version part incremented by 1,
 // wrapping around to 0 if it exceeds the maximum value for the version bits.
 func (f FactId) IncVersion() FactId {
-	curVersion := f.Version()
-	newVersion := (curVersion + 1) & FactIdVersionMask
+	incVersion := f.Version() + 1
+	newVersion := incVersion & FactIdVersionMask
+	if newVersion == 0 {
+		panic("version overflow")
+	}
 	return f.WithVersion(newVersion)
 }
 
@@ -94,6 +109,12 @@ func (f FactId) ZeroVersion() FactId {
 	return f.WithVersion(0)
 }
 
+// AsKey returns f with the version cleared to zero. It matches ZeroVersion and
+// is intended as the map key type when entries should not distinguish versions.
+func (f FactId) AsKey() FactId {
+	return f.ZeroVersion()
+}
+
 // Setters (returns new FactId; immutable style)
 
 // WithVersion sets the version bits (does not alter other data)
@@ -102,28 +123,28 @@ func (f FactId) WithVersion(version uint64) FactId {
 	return FactId(v)
 }
 
-// WithInstrId sets the InstrId bits (does not alter FactKind etc)
+// WithInstrId sets the InstrId bits (does not alter FactPoint etc)
 func (f FactId) WithInstrId(instrId uint64) FactId {
 	// Clear the instr id region and set
 	v := uint64(f)
-	v &^= (FactIdInstrIdMask << FactIdInstrIdShift)
-	v |= (instrId & FactIdInstrIdMask) << FactIdInstrIdShift
+	v &^= (FactIdUB_EntityIdMask << FactIdUB_EntityIdShift)
+	v |= (instrId & FactIdUB_EntityIdMask) << FactIdUB_EntityIdShift
 	return FactId(v)
 }
 
-// WithFactKind sets the fact kind bits (does not alter InstrId etc)
-func (f FactId) WithFactKind(factKind uint64) FactId {
+// WithFactPoint sets the fact point bits (does not alter EntityId etc)
+func (f FactId) WithFactPoint(factPoint uint64) FactId {
 	v := uint64(f)
-	v &^= (FactIdFactKindMask << FactIdFactKindShift)
-	v |= (factKind & FactIdFactKindMask) << FactIdFactKindShift
+	v &^= (FactIdUB_PointMask << FactIdUB_PointShift)
+	v |= (factPoint & FactIdUB_PointMask) << FactIdUB_PointShift
 	return FactId(v)
 }
 
-// WithUniqueId sets the full UniqueId field (InstrId + FactKind)
-func (f FactId) WithUniqueId(unique uint64) FactId {
+// WithUB sets the full UB field (EntityId + FactPoint)
+func (f FactId) WithUB(ub uint64) FactId {
 	v := uint64(f)
-	v &^= (FactIdUniqueMask << FactIdUniqueShift)
-	v |= (unique & FactIdUniqueMask) << FactIdUniqueShift
+	v &^= FactIdUB_Mask << FactIdUniqueShift
+	v |= (ub & FactIdUB_Mask) << FactIdUniqueShift
 	return FactId(v)
 }
 

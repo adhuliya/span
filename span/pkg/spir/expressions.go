@@ -72,11 +72,11 @@ func placeXK(exprKind ExprKind) uint64 {
 }
 
 func placeCallSiteId(siteId CallSiteId) uint64 {
-	return placeExprOpr1(EntityId(siteId))
+	return placeExprOpr2(EntityId(siteId))
 }
 
 func placeCallee(callee EntityId) uint64 {
-	return placeExprOpr2(callee)
+	return placeExprOpr1(callee)
 }
 
 // BLOCK START: API to create expressions
@@ -86,12 +86,17 @@ func ValX(value EntityId) Expr {
 	return UnaryX(K_XK_XVAL, value)
 }
 
+// ValX2 places two entities together.
+func ValX2(value1 EntityId, value2 EntityId) Expr {
+	return BinX(K_XK_XVAL, value1, value2)
+}
+
 func UnaryX(xk ExprKind, opr EntityId) Expr {
 	return Expr(placeXK(xk) | placeExprOpr1(opr))
 }
 
 func CallX(callee EntityId, callSiteId CallSiteId) Expr {
-	return Expr(placeXK(K_XK_XCALL) | placeExprOpr2(callee) | placeCallSiteId(callSiteId))
+	return Expr(placeXK(K_XK_XCALL) | placeCallee(callee) | placeCallSiteId(callSiteId))
 }
 
 // Creates a 64 bit expression from two operands and an expression kind.
@@ -130,8 +135,50 @@ func (expr Expr) IsCall() bool {
 	return expr.GetXK() == K_XK_XCALL
 }
 
+// HasDeref returns true if the expression has a dereference operator.
+// Any expression with implicit or explicit use of the '*' operator.
+// For example, '*x', 'a[i]', 'a->b', 'p()', etc.
+// `p()` is a special case where 'p' is a pointer to a function.
+func (expr Expr) HasDeref() bool {
+	xk := expr.GetXK()
+	switch xk {
+	case K_XK_XDEREF:
+		return true
+	case K_XK_XARR_INDX, K_XK_XARR_INDX_ADDROF:
+		return ValKind(expr.GetOpr2().SubKind()).IsPointer()
+	case K_XK_XMEMBER_ACCESS, K_XK_XMEMBER_ADDROF:
+		return ValKind(expr.GetOpr2().SubKind()).IsPointer()
+	case K_XK_XCALL:
+		return ValKind(expr.GetCallee().SubKind()).IsPointer()
+	}
+	return false
+}
+
+// HasAddrof returns true if the expression has an address operator.
+// Any expression with implicit or explicit use of the '&' operator.
+// For the cases: '&x', '&a[i]', '&a->b', and use of f in an assignment.
+// Use of f in assignment (like `x = f`) is a special case where 'f' is a function;
+// here x is assigned the value &f.
+func (expr Expr) HasAddrof() bool {
+	xk := expr.GetXK()
+	check := xk == K_XK_XADDROF || xk == K_XK_XARR_INDX_ADDROF || xk == K_XK_XMEMBER_ADDROF
+	if check {
+		return true
+	}
+	if xk == K_XK_XVAL {
+		return expr.GetOpr1().Kind() == K_EK_EFUNC
+	}
+	return false
+}
+
+// HasArrIdx returns true if the expression has an array index operator.
+func (expr Expr) HasArrIdx() bool {
+	xk := expr.GetXK()
+	return xk == K_XK_XARR_INDX || xk == K_XK_XARR_INDX_ADDROF
+}
+
 // Returns one or two operands.
-// For expression with only one operand, the second operand is a NULL_ID.
+// For expression with only one operand, the second operand is a NIL_ID.
 func (expr Expr) GetOperands() (EntityId, EntityId) {
 	return expr.GetOpr1(), expr.GetOpr2()
 }
@@ -156,6 +203,38 @@ func (expr *Expr) SetTopBit() {
 
 func (expr *Expr) ClearTopBit() {
 	*expr &= Expr(^TopBitMask64)
+}
+
+// ReplaceWithPointee replaces the pointer operand in the expression with the given pointee EntityId,
+// for expressions representing array dereference, member access by pointer, direct dereference (*ptr),
+// or function pointer call. If expr is not such a dereference/pointer usage, returns expr unmodified.
+func (expr Expr) ReplaceWithPointee(pointee EntityId) Expr {
+	xk := expr.GetXK()
+	if !expr.GetOpr1().ValKind().IsPointer() {
+		panic(fmt.Sprintf("Invalid expression (must have a pointer operand): %v", expr))
+	}
+	switch xk {
+	case K_XK_XARR_INDX:
+		// a[i]: replace a with pointee, keep index as is
+		return BinX(K_XK_XARR_INDX, pointee, expr.GetOpr2())
+	case K_XK_XMEMBER_ACCESS:
+		// a->b: replace base pointer (a) with pointee, keep field id as is
+		return BinX(K_XK_XMEMBER_ACCESS, pointee, expr.GetOpr2())
+	case K_XK_XDEREF:
+		// *ptr: replace deref target with pointee
+		return ValX(pointee)
+	case K_XK_XCALL:
+		// f(args...): For function pointer call, replace f with pointee
+		return CallX(pointee, expr.GetCallSiteId())
+	case K_XK_XARR_INDX_ADDROF:
+		// &a[i]: replace a with pointee, keep index as is
+		return BinX(K_XK_XARR_INDX_ADDROF, pointee, expr.GetOpr2())
+	case K_XK_XMEMBER_ADDROF:
+		// &a->b: replace a with pointee, keep field id as is
+		return BinX(K_XK_XMEMBER_ADDROF, pointee, expr.GetOpr2())
+	default:
+		panic(fmt.Sprintf("Invalid expression kind: %s", expr.GetXK()))
+	}
 }
 
 // Converts expressions kind to the operator symbol string

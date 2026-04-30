@@ -3,15 +3,17 @@ package lattice
 import "fmt"
 
 type Pair struct {
-	lats [2]Lattice
+	factId FactId
+	lats   [2]Lattice
 }
 
 func (l *Pair) String() string {
-	return fmt.Sprintf("LatticePair(%s, %s)", Stringify(l.lats[0]), Stringify(l.lats[1]))
+	return fmt.Sprintf("LatticePair(%s, %s)", String(l.lats[0]), String(l.lats[1]))
 }
 
 func NewPair(l1, l2 Lattice) Pair {
 	pair := Pair{}
+	pair.factId = FactId(0)
 	pair.lats[0] = l1
 	pair.lats[1] = l2
 	return pair
@@ -39,53 +41,74 @@ func (l Pair) Lats(idx int) Lattice {
 }
 
 func (l Pair) IsTop() bool {
-	return l.lats[0].IsTop() && l.lats[1].IsTop()
+	return IsTop(l.lats[0]) && IsTop(l.lats[1])
 }
 
 func (l Pair) IsBot() bool {
-	return l.lats[0].IsBot() && l.lats[1].IsBot()
+	return IsBot(l.lats[0]) && IsBot(l.lats[1])
+}
+
+func (l *Pair) WeakerThan(other Lattice) bool {
+	if oth := other.(*Pair); oth != nil {
+		return WeakerThan(l.lats[0], oth.lats[0]) && WeakerThan(l.lats[1], oth.lats[1])
+	}
+	return false
 }
 
 func (l *Pair) Equals(other Lattice) bool {
 	if oth := other.(*Pair); oth != nil {
-		return l.lats[0].Equals(oth.lats[0]) && l.lats[1].Equals(oth.lats[1])
+		return Equals(l.lats[0], oth.lats[0]) && Equals(l.lats[1], oth.lats[1])
 	}
 	return false
 }
 
 func (l *Pair) Join(other Lattice) (Lattice, bool) {
+	changed := false
 	if oth := other.(*Pair); oth != nil {
 		change1, change2 := false, false
-		l.lats[0], change1 = l.lats[0].Join(oth.L1())
-		l.lats[1], change2 = l.lats[1].Join(oth.L2())
-		return l, change1 || change2
+		l.lats[0], change1 = Join(l.lats[0], oth.L1())
+		l.lats[1], change2 = Join(l.lats[1], oth.L2())
+		changed = change1 || change2
 	}
-	return l, false
+	if changed {
+		l.incVersion()
+	}
+	return l, changed
 }
 
 func (l *Pair) Meet(other Lattice) (Lattice, bool) {
+	changed := false
 	if oth := other.(*Pair); oth != nil {
 		change1, change2 := false, false
-		l.lats[0], change1 = l.lats[0].Meet(oth.L1())
-		l.lats[1], change2 = l.lats[1].Meet(oth.L2())
-		return l, change1 || change2
+		l.lats[0], change1 = Meet(l.lats[0], oth.L1())
+		l.lats[1], change2 = Meet(l.lats[1], oth.L2())
+		changed = change1 || change2
 	}
-	return l, false
-}
-
-func (l *Pair) WeakerThan(other Lattice) bool {
-	if oth := other.(*Pair); oth != nil {
-		return l.lats[0].WeakerThan(oth.lats[0]) && l.lats[1].WeakerThan(oth.lats[1])
+	if changed {
+		l.incVersion()
 	}
-	return false
+	return l, changed
 }
 
 func (l *Pair) Widen(other Lattice) (Lattice, bool) {
+	changed := false
 	if oth := other.(*Pair); oth != nil {
 		change1, change2 := false, false
-		l.lats[0], change1 = l.lats[0].Widen(oth.L1())
-		l.lats[1], change2 = l.lats[1].Widen(oth.L2())
-		return l, change1 || change2
+		l.lats[0], change1 = Widen(l.lats[0], oth.L1())
+		l.lats[1], change2 = Widen(l.lats[1], oth.L2())
+		changed = change1 || change2
 	}
-	return l, false
+	if changed {
+		l.incVersion()
+	}
+	return l, changed
+}
+
+func (l *Pair) FactId() FactId {
+	return l.factId
+}
+
+func (l *Pair) incVersion() FactId {
+	l.factId = l.factId.IncVersion()
+	return l.factId
 }

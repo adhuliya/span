@@ -136,6 +136,10 @@ func (entityId EntityId) SubKind() uint8 {
 	}
 }
 
+func (entityId EntityId) ValKind() ValKind {
+	return ValKind(entityId.SubKind())
+}
+
 // KindAndSubKind16 returns the EntityKind and its sub-kind (if present) as a 16 bit prefix.
 func (entityId EntityId) KindAndSubKind16() uint16 {
 	return GenKindPrefix16(entityId.Kind(), entityId.SubKind())
@@ -149,6 +153,27 @@ func (entityId EntityId) SeqId() uint32 {
 // SeqIdBitLen returns the number of bits in the sequence ID part of the EntityId.
 func (entityId EntityId) SeqIdBitLen() uint8 {
 	return entityId.Kind().SeqIdBitLen()
+}
+
+// HasProperPrefix checks whether the EntityId encodes a non-zero kind (and subkind if present).
+// Returns true if the kind is non-zero, and if applicable, subkind is also non-zero.
+func (entityId EntityId) HasProperPrefix() bool {
+	kind := entityId.Kind()
+	// Kind must not be zero
+	if kind == 0 {
+		return false
+	}
+	// If Kind has a sub-kind, sub-kind must also be non-zero
+	if kind.HasSubKind() && entityId.SubKind() == 0 {
+		return false
+	}
+	return true
+}
+
+// IsProper returns true if the EntityId has a proper prefix (valid kind and subkind)
+// and the sequence ID is not zero. Otherwise, returns false.
+func (entityId EntityId) IsProper() bool {
+	return entityId.HasProperPrefix() && entityId.SeqId() != 0
 }
 
 // BLOCK END: API to extract EntityId components and properties

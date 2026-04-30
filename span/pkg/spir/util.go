@@ -6,6 +6,8 @@ package spir
 import (
 	"fmt"
 	"strings"
+
+	"github.com/adhuliya/span/pkg/idgen"
 )
 
 // IsBitSet returns true if bit at position n is 1 in the given value.
@@ -367,4 +369,64 @@ func SimpleName(name string) string {
 	}
 	parts := strings.Split(name, ":")
 	return parts[len(parts)-1]
+}
+
+// AllocateInsnId assigns a new instruction ID to the given Insn using the provided IDGenerator.
+// The `insn` must already have a proper kind + (if applicable) subkind prefix encoded
+// in its current ID. If the instruction already has a proper id and `force` is false,
+// the allocation is skipped. If `force` is true, a new id is always allocated,
+// replacing any prior id (the caller is responsible for freeing the previous id, if required).
+// The function uses idgen.AllocateID to obtain a new full InsnId (32-bit entity id).
+// Panics if the prefix is not proper or if insn/idgen is nil.
+func AllocateInsnId(insn *Insn, gen *idgen.IDGenerator, force bool) {
+	if insn == nil || gen == nil {
+		panic("AllocateInsnId: insn or idgen is nil")
+	}
+	// Must have a proper prefix (valid kind and subkind).
+	if !insn.HasProperPrefix() {
+		panic(fmt.Sprintf("AllocateInsnId: instruction does not have a proper kind+subkind prefix; insn = %+v", insn))
+	}
+	// If a valid id is already present and force is not set, skip allocation.
+	if !force && insn.HasProperId() {
+		return
+	}
+	// Extract the prefix (upper bits containing kind and subkind).
+	prefix := insn.GetInsnPrefix16()
+
+	// Allocate a new InsnId from gen; the caller must free any previous id if needed.
+	insnId := gen.AllocateID(prefix, EntityId(insn.Id()).SeqIdBitLen())
+
+	// Set the InsnId for this Insn.
+	insn.SetInsnId(InsnId(insnId))
+}
+
+// AllocateInsnIdsForGraph allocates instruction Ids for every instruction in every basic block in the graph.
+// - It iterates over all basic blocks in the provided graph.
+// - For each instruction in a basic block, it calls AllocateInsnId with the given id generator and force flag.
+// - It skips instructions which do not require an instruction ID allocation as per SkipInsn.
+//
+// This is useful when constructing the CFG, to ensure all (non-label/goto) instructions have unique IDs.
+func AllocateInsnIdsForGraph(
+	graph Graph,
+	idGen *idgen.IDGenerator,
+	force bool,
+) {
+	if graph == nil || idGen == nil {
+		panic("AllocateInsnIdsForGraph: graph or idGen is nil")
+	}
+	// We use reverse post order for deterministic allocation order, but plain order is also valid.
+	order := ReversePostOrder(graph, false)
+	for _, bbId := range order {
+		bb := graph.BasicBlock(bbId)
+		if bb == nil {
+			continue
+		}
+		for i := 0; i < bb.InsnCount(); i++ {
+			insn := &bb.insns[i]
+			if SkipInsn(*insn) {
+				continue
+			}
+			AllocateInsnId(insn, idGen, force)
+		}
+	}
 }

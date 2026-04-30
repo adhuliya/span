@@ -2,7 +2,6 @@ package idgen
 
 import (
 	"fmt"
-	"slices"
 )
 
 // This file defines the ID generation structure and functions.
@@ -40,12 +39,6 @@ func GetNextIdC() uint32 {
 // It maintains a linked list of pool ids that are available for allocation.
 type IDGenerator struct {
 	idPools map[poolId_t]*freeIdPool // generic pool for arbirary bit IDs
-
-	// A list of free ids for each pool. This is a temporary provision,
-	// to store the freed ids in a sequential order.
-	// This is an optimization to not modify idPools every time an id is freed.
-	// These free ids are supposed to be put back in the id pool at some point.
-	freeIds map[poolId_t][]uint32 // free IDs for each pool
 }
 
 // A pool of free IDs available for allocation which points to the next pool of free IDs.
@@ -57,8 +50,6 @@ type freeIdPool struct {
 	to   uint32
 	next *freeIdPool
 }
-
-const MaxFreeIdsSeqLen = 1024
 
 // A 32 bit pool id is used to identify the pool of IDs.
 // The upper 16 bits are the prefix, and the lower 5 bits are the number of bits in the sequence ID.
@@ -112,7 +103,8 @@ func emptyIDPool(pool *freeIdPool) {
 }
 
 func getPrefixFromFullId(fullId uint32, seqIdBitLen uint8) uint16 {
-	return uint16((fullId & prefixPosMask32) >> uint32(seqIdBitLen))
+	// Inverse of constructFullId: sequence id occupies the low seqIdBitLen bits.
+	return uint16(fullId >> seqIdBitLen)
 }
 
 func encodePoolId(prefix uint16, seqIdBitLen uint8) poolId_t {
@@ -152,7 +144,7 @@ func (gen *IDGenerator) getOrCreatePool(poolId poolId_t) *freeIdPool {
 // It returns 0 if no ID is available in the defined range, or the arguments are invalid.
 // The prefix is the upper 16 bits of the pool id.
 // The seqIdBitLen is the number of bits in the sequence ID.
-// The seqIdBitLen must be between 1 and 31.
+// The seqIdBitLen must be between 17 and 31 (inclusive); smaller values are invalid and panic during validation.
 func (gen *IDGenerator) AllocateID(prefix uint16, seqIdBitLen uint8) uint32 {
 	poolId := validateAndEncodePoolId(prefix, seqIdBitLen)
 	if poolId == invalidPoolId {
@@ -202,23 +194,7 @@ func (gen *IDGenerator) FreeID(fullId uint32, seqIdBitLen uint8) bool {
 		return false // Invalid ID
 	}
 
-	if gen.freeIds[poolId] == nil {
-		gen.freeIds[poolId] = make([]uint32, 0, MaxFreeIdsSeqLen)
-	}
-	gen.freeIds[poolId] = append(gen.freeIds[poolId], fullId)
-
-	success := true
-	if len(gen.freeIds[poolId]) >= MaxFreeIdsSeqLen {
-		// First, sort the freeIds slice for the current poolId, so IDs are returned to the pool in order.
-		ids := gen.freeIds[poolId]
-		slices.Sort(ids)
-		for i := range ids {
-			success = success && gen.freeID(ids[i], poolId)
-		}
-		// After freeing, reset the freeIds slice for this poolId.
-		gen.freeIds[poolId] = ids[:0]
-	}
-	return success
+	return gen.freeID(fullId, poolId)
 }
 
 // freeID puts an id back to the pool.
@@ -279,8 +255,6 @@ func (gen *IDGenerator) freeID(fullId uint32, poolId poolId_t) bool {
 
 // ReserveID reserves an id from the pool (removes it from the free pool).
 // It returns true if the ID was free and is now reserved (i.e., successfully removed from the free pool).
-// When using this function for multiple IDs in succession,
-// the caller must invoke
 func (gen *IDGenerator) ReserveID(fullId uint32, seqIdBitLen uint8) bool {
 	poolId := validateAndEncodePoolId(getPrefixFromFullId(fullId, seqIdBitLen), seqIdBitLen)
 	if poolId == invalidPoolId {

@@ -1,6 +1,6 @@
 package lattice
 
-// This pacakage defines a range lattice.
+// This package defines a range lattice.
 
 import (
 	"fmt"
@@ -9,25 +9,31 @@ import (
 	"github.com/adhuliya/span/pkg/spir"
 )
 
-// The uint64 values store signed and unsigned intergers,
+// The uint64 values store signed and unsigned integers,
 // and float and double values as IEEE 754 floating point numbers.
 // The range is inclusive of the min and max values.
-type RangeLT struct {
+// The fact id is not used for RangeLattice.
+type RangeLattice struct {
+	ConstLattice
 	typ spir.ValKind
 	min uint64 // Encoded as for typ
 	max uint64 // Encoded as for typ
 }
 
+func (l *RangeLattice) IsConstLattice() bool {
+	return true
+}
+
 // NewRangeLT constructs a new RangeLT with the given type and endpoints.
-func NewRangeLT(typ spir.ValKind, min, max uint64) *RangeLT {
-	return &RangeLT{
+func NewRangeLT(typ spir.ValKind, min, max uint64) *RangeLattice {
+	return &RangeLattice{
 		typ: typ,
 		min: min,
 		max: max,
 	}
 }
 
-func (l *RangeLT) String() string {
+func (l *RangeLattice) String() string {
 	switch l.typ {
 	case spir.K_VK_TFLOAT:
 		return fmt.Sprintf("RangeLT(float, %.6g, %.6g)", float32frombits(l.min), float32frombits(l.max))
@@ -56,40 +62,52 @@ func (l *RangeLT) String() string {
 
 // IsTop returns true if the RangeLT represents the top element (empty range: max < min is interpreted
 // in the value domain according to type).
-func (l *RangeLT) IsTop() bool {
+func (l *RangeLattice) IsTop() bool {
 	return rangeIsTop(l.typ, l.min, l.max)
 }
 
 // IsBot returns true if the RangeLT represents the bottom element (full range).
-func (l *RangeLT) IsBot() bool {
+func (l *RangeLattice) IsBot() bool {
 	fmin, fmax := fullRangeForKind(l.typ)
 	return l.min == fmin && l.max == fmax
 }
 
 // WeakerThan returns true if l contains other's range (less precise).
-func (l *RangeLT) WeakerThan(other Lattice) bool {
-	ol, ok := other.(*RangeLT)
+func (l *RangeLattice) WeakerThan(other Lattice) bool {
+	ol, ok := other.(*RangeLattice)
 	if !ok || l.typ != ol.typ {
 		return false
 	}
 	return compareMin(l.typ, l.min, ol.min) <= 0 && compareMax(l.typ, l.max, ol.max) >= 0
 }
 
+// Equals checks if two RangeLTs represent the same range and type.
+func (l *RangeLattice) Equals(other Lattice) bool {
+	ol, ok := other.(*RangeLattice)
+	if !ok {
+		return false
+	}
+	if l.typ != ol.typ {
+		return false
+	}
+	return l.min == ol.min && l.max == ol.max
+}
+
 // Meet computes the meet (GLB: wider union) of two RangeLTs.
-func (l *RangeLT) Meet(other Lattice) (Lattice, bool) {
-	ol, ok := other.(*RangeLT)
+func (l *RangeLattice) Meet(other Lattice) (Lattice, bool) {
+	ol, ok := other.(*RangeLattice)
 	if !ok || l.typ != ol.typ {
 		return l, false
 	}
 	newMin := meetMin(l.typ, l.min, ol.min)
 	newMax := meetMax(l.typ, l.max, ol.max)
 	changed := newMin != l.min || newMax != l.max
-	return &RangeLT{typ: l.typ, min: newMin, max: newMax}, changed
+	return &RangeLattice{typ: l.typ, min: newMin, max: newMax}, changed
 }
 
 // Join computes the join (LUB: intersection, tighter interval) of two RangeLTs.
-func (l *RangeLT) Join(other Lattice) (Lattice, bool) {
-	ol, ok := other.(*RangeLT)
+func (l *RangeLattice) Join(other Lattice) (Lattice, bool) {
+	ol, ok := other.(*RangeLattice)
 	if !ok || l.typ != ol.typ {
 		return l, false
 	}
@@ -100,33 +118,21 @@ func (l *RangeLT) Join(other Lattice) (Lattice, bool) {
 	if compareMin(l.typ, newMin, newMax) > 0 {
 		// This is an empty range (top)
 	}
-	return &RangeLT{typ: l.typ, min: newMin, max: newMax}, changed
+	return &RangeLattice{typ: l.typ, min: newMin, max: newMax}, changed
 }
 
 // Widen expands to full (bot) range if other is weaker, otherwise behaves as meet.
-func (l *RangeLT) Widen(other Lattice) (Lattice, bool) {
-	ol, ok := other.(*RangeLT)
+func (l *RangeLattice) Widen(other Lattice) (Lattice, bool) {
+	ol, ok := other.(*RangeLattice)
 	if !ok || l.typ != ol.typ {
 		return l, false
 	}
 	if ol.WeakerThan(l) {
 		fullMin, fullMax := fullRangeForKind(l.typ)
 		changed := l.min != fullMin || l.max != fullMax
-		return &RangeLT{typ: l.typ, min: fullMin, max: fullMax}, changed
+		return &RangeLattice{typ: l.typ, min: fullMin, max: fullMax}, changed
 	}
 	return l.Meet(other)
-}
-
-// Equals checks if two RangeLTs represent the same range and type.
-func (l *RangeLT) Equals(other Lattice) bool {
-	ol, ok := other.(*RangeLT)
-	if !ok {
-		return false
-	}
-	if l.typ != ol.typ {
-		return false
-	}
-	return l.min == ol.min && l.max == ol.max
 }
 
 // Convert uint64 bit patterns to value, then compare.
@@ -244,6 +250,14 @@ func rangeIsTop(typ spir.ValKind, min, max uint64) bool {
 // Returns the min/max representable value for the given type in encoded uint64 form.
 func fullRangeForKind(kind spir.ValKind) (uint64, uint64) {
 	switch kind {
+	case spir.K_VK_TINT8:
+		return ToUint64(spir.K_VK_TINT8, int8(-128)), ToUint64(spir.K_VK_TINT8, int8(127))
+	case spir.K_VK_TUINT8:
+		return ToUint64(spir.K_VK_TUINT8, uint8(0)), ToUint64(spir.K_VK_TUINT8, uint8(math.MaxUint8))
+	case spir.K_VK_TINT16:
+		return ToUint64(spir.K_VK_TINT16, int16(math.MinInt16)), ToUint64(spir.K_VK_TINT16, int16(math.MaxInt16))
+	case spir.K_VK_TUINT16:
+		return ToUint64(spir.K_VK_TUINT16, uint16(0)), ToUint64(spir.K_VK_TUINT16, uint16(math.MaxUint16))
 	case spir.K_VK_TINT32:
 		return ToUint64(spir.K_VK_TINT32, int32(math.MinInt32)), ToUint64(spir.K_VK_TINT32, int32(math.MaxInt32))
 	case spir.K_VK_TUINT32:
@@ -253,7 +267,7 @@ func fullRangeForKind(kind spir.ValKind) (uint64, uint64) {
 	case spir.K_VK_TUINT64:
 		return ToUint64(spir.K_VK_TUINT64, uint64(0)), ToUint64(spir.K_VK_TUINT64, uint64(math.MaxUint64))
 	case spir.K_VK_TFLOAT:
-		return ToUint64(spir.K_VK_TFLOAT, float32(-math.MaxFloat32)), ToUint64(spir.K_VK_TFLOAT, math.MaxFloat32)
+		return ToUint64(spir.K_VK_TFLOAT, float32(-math.MaxFloat32)), ToUint64(spir.K_VK_TFLOAT, float32(math.MaxFloat32))
 	case spir.K_VK_TDOUBLE:
 		return ToUint64(spir.K_VK_TDOUBLE, float64(-math.MaxFloat64)), ToUint64(spir.K_VK_TDOUBLE, math.MaxFloat64)
 	default:
@@ -271,6 +285,30 @@ func fullRangeForKind(kind spir.ValKind) (uint64, uint64) {
 // Returns the encoded value. Panics if the type is mismatched.
 func ToUint64(typ spir.ValKind, val interface{}) uint64 {
 	switch typ {
+	case spir.K_VK_TINT8:
+		v, ok := val.(int8)
+		if !ok {
+			panic("ToUint64: Expected int8 value")
+		}
+		return uint64(uint8(v))
+	case spir.K_VK_TUINT8:
+		v, ok := val.(uint8)
+		if !ok {
+			panic("ToUint64: Expected uint8 value")
+		}
+		return uint64(v)
+	case spir.K_VK_TINT16:
+		v, ok := val.(int16)
+		if !ok {
+			panic("ToUint64: Expected int16 value")
+		}
+		return uint64(uint16(v))
+	case spir.K_VK_TUINT16:
+		v, ok := val.(uint16)
+		if !ok {
+			panic("ToUint64: Expected uint16 value")
+		}
+		return uint64(v)
 	case spir.K_VK_TINT32:
 		v, ok := val.(int32)
 		if !ok {

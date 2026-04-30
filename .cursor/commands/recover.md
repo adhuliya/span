@@ -1,0 +1,1 @@
+This command is invoked when the agent is visibly stuck in reading or searching for files or some other operation. This command forces the agent to recover itself from the current activity in the best possible manner to complete the task at hand.

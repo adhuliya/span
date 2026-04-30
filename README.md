@@ -56,3 +56,20 @@ Suggestions and contributions are welcome.
 No matter how small or big the suggestions are,
 we shall be happy to hear from you! :)
 
+
+# Ollama -- running local models
+https://www.ollama.com
+https://www.ollama.com/search -- the models
+
+ollama run qwen3.6:35b-a3b-coding-nvfp4
+ollama pull gemma3:12b
+ollama run gemma3:12b
+
+// Server the ollama 
+export OLLAMA_ORIGINS=*
+ollama serve
+
+ngrok.com (signed up using github account)
+brew install ngrok
+ngrok config add-authtoken C3WWDNMXnuKNJLq7VBBfpCDaJ1e_4ftYWtYcsEc1q1xM2edLt
+ngrok http 11434 --host-header="localhost:11434" // assuming ollama is running on port 11434

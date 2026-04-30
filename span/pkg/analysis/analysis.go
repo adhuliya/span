@@ -10,30 +10,6 @@ import (
 )
 
 type GraphVisitingOrder uint8
-type StmtViewType uint32
-
-const (
-	// No view generated -- i.e. analysis does not generate a view for the given instruction
-	NoView StmtViewType = 0
-
-	// Nil view (a barrier) -- represents a disconnection in graph
-	NilView StmtViewType = 1
-
-	// A view from x = RHS to x = Top
-	DeadAssignView StmtViewType = 2
-
-	// A view from *x = RHS to {a = RHS, b = RHS, ...}
-	// or 			x = *y  to {x = a, x = b, ...}
-	DerefView    StmtViewType = 3
-	DerefViewLhs StmtViewType = 4
-	DerefViewRhs StmtViewType = 5
-
-	// A view from x = y to {x = 10, x = 11, ...} -- a literal value
-	LiteralView StmtViewType = 6
-
-	// A view from if(x) to {if(true)} or {if(false)}
-	ConditionView StmtViewType = 7
-)
 
 const (
 	ReversePostOrder GraphVisitingOrder = 0 // For forward flow.
@@ -76,31 +52,14 @@ type Analysis interface {
 	InstanceId() InstanceId
 	SetInstanceId(instanceId InstanceId)
 	Name() string
+
 	VisitingOrder() GraphVisitingOrder
 	BoundaryFact(graph spir.Graph, ctx *spir.Context) lattice.Pair
+
 	AnalyzeInsn(insn spir.Insn, inOut lattice.Pair,
 		ctx *spir.Context) (lattice.Pair, lattice.FactChanged)
 	AnalyzeBB(bb *spir.BasicBlock, inOut lattice.Pair,
 		ctx *spir.Context) (lattice.Pair, lattice.FactChanged)
-}
-
-type SpanAnalysis interface {
-	Analysis
-	StmtView(insn spir.Insn, inOut lattice.Pair,
-		viewTypeRequested StmtViewType, ctx *spir.Context) (StmtViewType, []spir.Insn)
-	Policy(insn spir.Insn, viewType StmtViewType, view []spir.Insn,
-		ctx *spir.Context) []spir.Insn
-}
-
-type LernersAnalysis interface {
-	Analysis
-	StmtGraph(insn spir.Insn, inOut lattice.Pair, ctx *spir.Context) spir.Graph
-}
-
-// Analysis transformation pair for cascading analysis.
-type CascadingATPair interface {
-	Analysis
-	Transform(graph spir.Graph, factMap AnalysisFactMap, ctx *spir.Context) spir.Graph
 }
 
 type AnalysisClient struct {
@@ -134,7 +93,7 @@ func (ac *AnalysisClient) AnalyzeInsn(instruction spir.Insn,
 	inOut lattice.Pair, ctx *spir.Context) (lattice.Pair, lattice.FactChanged) {
 	factChange := lattice.NoChange
 	if !lattice.Equals(inOut.L1(), inOut.L2()) {
-		factChange = lattice.OnlyOutChanged
+		factChange = lattice.OutChanged
 	}
 	inOut = lattice.NewPair(inOut.L1(), inOut.L1())
 	return inOut, factChange

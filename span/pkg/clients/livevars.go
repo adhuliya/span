@@ -19,10 +19,14 @@ type LiveVarsAn struct {
 // The variables marked live at the program point are in gen,
 // and the variables marked dead at a program point are in kill.
 type LiveVarsLT struct {
-	gen    lattice.EidSet
-	kill   lattice.EidSet
-	parent *LiveVarsLT
-	islive bool
+	factId         lattice.FactId
+	scopeId        spir.EntityId
+	parent         *LiveVarsLT
+	parentFactId   lattice.FactId
+	gen            spir.EidSet
+	kill           spir.EidSet
+	maxEntityCount int
+	islive         bool
 }
 
 func NewLiveVarsLT(parent *LiveVarsLT) *LiveVarsLT {
@@ -100,9 +104,9 @@ func (lvfs *LiveVarsLT) WeakerThan(other lattice.Lattice) bool {
 	}
 
 	// LiveVars is a powerset lattice, so superset is weaker
-	lvSet := lattice.NewEidSet()
+	lvSet := spir.NewEidSet()
 	lvfs.LiveSet(lvSet)
-	otherSet := lattice.NewEidSet()
+	otherSet := spir.NewEidSet()
 	otherLV.LiveSet(otherSet)
 	return otherSet.IsSubsetEq(*lvSet)
 }
@@ -121,7 +125,7 @@ func (lvfs *LiveVarsLT) Meet(other lattice.Lattice) (lattice.Lattice, bool) {
 			lvfs.String(), otherLV.String()))
 	}
 
-	lvSet, otherSet := lattice.NewEidSet(), lattice.NewEidSet()
+	lvSet, otherSet := spir.NewEidSet(), spir.NewEidSet()
 	joinedSet, _ := lvfs.LiveSet(lvSet).Union(*otherLV.LiveSet(otherSet))
 	newLV := NewLiveVarsLT(nil)
 	for _, id := range joinedSet.Values() {
@@ -139,7 +143,7 @@ func (lvfs *LiveVarsLT) Join(other lattice.Lattice) (lattice.Lattice, bool) {
 		return lvfs, false
 	}
 	// Compute intersection of live variable sets
-	lvSet, otherSet := lattice.NewEidSet(), lattice.NewEidSet()
+	lvSet, otherSet := spir.NewEidSet(), spir.NewEidSet()
 	meetedSet, _ := lvfs.LiveSet(lvSet).Intersection(*otherLV.LiveSet(otherSet))
 	// Make a new LiveVarsLT with this info (for simplicity, ignore parent/islive here)
 	newLV := NewLiveVarsLT(nil)
@@ -170,13 +174,13 @@ func (lvfs *LiveVarsLT) Equals(other lattice.Lattice) bool {
 
 // String returns a string representation of the lattice element.
 func (lvfs *LiveVarsLT) String() string {
-	lvSet := lattice.NewEidSet()
+	lvSet := spir.NewEidSet()
 	lvfs.LiveSet(lvSet)
 	return fmt.Sprintf("LiveVarsLT{%s}", lvSet.String())
 }
 
-// LiveSet returns the set of variables live at this program point, as a lattice.EidSet (accumulating from parents).
-func (lvfs *LiveVarsLT) LiveSet(lvSet *lattice.EidSet) *lattice.EidSet {
+// LiveSet returns the set of variables live at this program point, as a spir.EidSet (accumulating from parents).
+func (lvfs *LiveVarsLT) LiveSet(lvSet *spir.EidSet) *spir.EidSet {
 	if lvfs.parent != nil {
 		lvfs.parent.LiveSet(lvSet)
 	}
@@ -191,7 +195,7 @@ func (lvfs *LiveVarsLT) Flatten(self bool) (lattice.Lattice, bool) {
 	if lvfs.parent == nil {
 		return lvfs, false
 	}
-	lvSet := lattice.NewEidSet()
+	lvSet := spir.NewEidSet()
 	lvfs.LiveSet(lvSet) // Get all the live variables at this program point
 	if self {
 		lvfs.gen = *lvSet

@@ -44,7 +44,7 @@ func (c *BackwardBotBotClient) Analyze(instruction spir.Insn,
 	inOut lattice.Pair, context *spir.Context) (lattice.Pair, lattice.FactChanged) {
 	factChange := lattice.NoChange
 	if !lattice.Equals(inOut.L1(), inOut.L2()) {
-		factChange = lattice.OnlyInChanged // could also be NopInChanged
+		factChange = lattice.InChanged // could also be NopInChanged
 	}
 	inOut = lattice.NewPair(inOut.L2(), inOut.L2())
 	return inOut, factChange

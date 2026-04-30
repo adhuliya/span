@@ -1,4 +1,4 @@
-package lattice
+package spir
 
 /* Defines a set and its operations
 1. EidSet
@@ -8,14 +8,29 @@ import (
 	"fmt"
 	"slices"
 	"strings"
-
-	"github.com/adhuliya/span/pkg/spir"
 )
 
 // EidSet is a set of uint32 values that always maintains its slice sorted.
 // All operations are performed assuming the sorted invariant.
 type EidSet struct {
-	data []spir.EntityId
+	fixed bool
+	data  []EntityId
+}
+
+// Iterator allows external code to "yield" each EntityId, emulating generator semantics.
+// The yield callback should return true to continue, false to stop iteration early.
+// Usage example:
+//
+//	set.Iterator(func(index int, id EntityId) bool {
+//	    fmt.Println(index, id)
+//	    return true // return false to stop early
+//	})
+func (s *EidSet) Iterator(yield func(index int, id EntityId) bool) {
+	for i := 0; i < len(s.data); i++ {
+		if !yield(i, s.data[i]) {
+			return
+		}
+	}
 }
 
 // IsEmpty returns true if the set has no elements.
@@ -23,14 +38,31 @@ func (s *EidSet) IsEmpty() bool {
 	return len(s.data) == 0
 }
 
+// IsFixed returns true if the set is fixed.
+// A fixed set is one that cannot be modified after creation.
+// This is useful for creating sets that are used as constants.
+func (s *EidSet) IsFixed() bool {
+	return s.fixed
+}
+
+func (s *EidSet) MakeFixed() {
+	s.sortAndUnique() // ensure the set is sorted and unique
+	s.fixed = true
+}
+
+// Len returns the number of elements in the set.
+func (s *EidSet) Len() int {
+	return len(s.data)
+}
+
 // NewEidSet creates a new EidSet from the given elements.
 // It allocates a minimum size of 4 elements.
-func NewEidSet(elems ...spir.EntityId) *EidSet {
-	set, size := &EidSet{}, 4
-	if len(elems) > size {
-		size = len(elems)
-	}
-	set.data = make([]spir.EntityId, size)
+func NewEidSet(fixed bool, elems ...EntityId) *EidSet {
+	set := &EidSet{fixed: fixed}
+	capSize := max(4, len(elems))
+	// Keep the logical length equal to provided elements to avoid
+	// introducing zero-valued EntityIds.
+	set.data = make([]EntityId, len(elems), capSize)
 	copy(set.data, elems)
 	// Remove duplicates and sort
 	set.sortAndUnique()
@@ -39,6 +71,9 @@ func NewEidSet(elems ...spir.EntityId) *EidSet {
 
 // Clear removes all elements from the set, making it empty.
 func (s *EidSet) Clear() {
+	if s.fixed {
+		panic("cannot clear a fixed EidSet")
+	}
 	// Release the underlying array memory as well.
 	s.data = nil
 }
@@ -75,13 +110,16 @@ func (s *EidSet) IsSortedAndUnique() bool {
 }
 
 // Contains returns true if x is in the set.
-func (s *EidSet) Contains(x spir.EntityId) bool {
+func (s *EidSet) Contains(x EntityId) bool {
 	_, found := slices.BinarySearch(s.data, x)
 	return found
 }
 
 // Add inserts x into the set (if not already present).
-func (s *EidSet) Add(x spir.EntityId) bool {
+func (s *EidSet) Add(x EntityId) bool {
+	if s.fixed {
+		panic("cannot add to a fixed EidSet")
+	}
 	i, found := slices.BinarySearch(s.data, x)
 	if found {
 		return false // no change
@@ -94,7 +132,10 @@ func (s *EidSet) Add(x spir.EntityId) bool {
 }
 
 // Remove deletes x from the set if it exists.
-func (s *EidSet) Remove(x spir.EntityId) bool {
+func (s *EidSet) Remove(x EntityId) bool {
+	if s.fixed {
+		panic("cannot remove from a fixed EidSet")
+	}
 	i, found := slices.BinarySearch(s.data, x)
 	if !found {
 		return false // no change
@@ -106,6 +147,9 @@ func (s *EidSet) Remove(x spir.EntityId) bool {
 
 // UnionWith unions this set with another set b (in place).
 func (s *EidSet) UnionWith(b EidSet) bool {
+	if s.fixed {
+		panic("cannot union with a fixed EidSet. Use Union instead.")
+	}
 	if len(b.data) == 0 {
 		return false // no change
 	}
@@ -149,17 +193,17 @@ func (s *EidSet) UnionWith(b EidSet) bool {
 func (s EidSet) Union(b EidSet) (*EidSet, bool) {
 	// Handle empty set cases.
 	if len(s.data) == 0 && len(b.data) == 0 {
-		return &EidSet{data: []spir.EntityId{}}, false
+		return &EidSet{data: []EntityId{}}, false
 	}
 	if len(s.data) == 0 {
-		return &EidSet{data: append([]spir.EntityId(nil), b.data...)}, true
+		return &EidSet{data: append([]EntityId(nil), b.data...)}, true
 	}
 	if len(b.data) == 0 {
-		return &EidSet{data: append([]spir.EntityId(nil), s.data...)}, false
+		return &EidSet{data: append([]EntityId(nil), s.data...)}, false
 	}
 
 	// Merge the two sets, but do not mutate sources.
-	merged := make([]spir.EntityId, 0, len(s.data)+len(b.data))
+	merged := make([]EntityId, 0, len(s.data)+len(b.data))
 	i, j := 0, 0
 	for i < len(s.data) && j < len(b.data) {
 		aVal, bVal := s.data[i], b.data[j]
@@ -187,7 +231,7 @@ func (s EidSet) Union(b EidSet) (*EidSet, bool) {
 
 // Intersection returns a new EidSet that is the intersection of this set and b.
 func (s EidSet) Intersection(b EidSet) (*EidSet, bool) {
-	intersection := make([]spir.EntityId, 0, min(len(s.data), len(b.data)))
+	intersection := make([]EntityId, 0, min(len(s.data), len(b.data)))
 	i, j := 0, 0
 	for i < len(s.data) && j < len(b.data) {
 		aVal, bVal := s.data[i], b.data[j]
@@ -210,6 +254,9 @@ func (s EidSet) Intersection(b EidSet) (*EidSet, bool) {
 // Returns true if s.data changed, false otherwise.
 // Calls the Intersection method internally.
 func (s *EidSet) IntersectionWith(b EidSet) bool {
+	if s.fixed {
+		panic("cannot modify a fixed EidSet with IntersectionWith. Use Intersection instead.")
+	}
 	result, changed := s.Intersection(b)
 	if changed {
 		s.data = result.data
@@ -220,7 +267,7 @@ func (s *EidSet) IntersectionWith(b EidSet) bool {
 // Subtract returns a new EidSet containing elements in s that are not in b.
 // Also returns a bool indicating if the result differs from s.data.
 func (s EidSet) Subtract(b EidSet) (*EidSet, bool) {
-	diff := make([]spir.EntityId, 0, len(s.data))
+	diff := make([]EntityId, 0, len(s.data))
 	i, j := 0, 0
 	for i < len(s.data) && j < len(b.data) {
 		aVal, bVal := s.data[i], b.data[j]
@@ -245,7 +292,10 @@ func (s EidSet) Subtract(b EidSet) (*EidSet, bool) {
 // SubtractWith removes from s all elements that are present in b, mutating s in-place.
 // Returns true if s.data changed, false otherwise.
 func (s *EidSet) SubtractWith(b EidSet) bool {
-	out := make([]spir.EntityId, 0, len(s.data))
+	if s.fixed {
+		panic("cannot modify a fixed EidSet with SubtractWith. Use Subtract instead.")
+	}
+	out := make([]EntityId, 0, len(s.data))
 	i, j := 0, 0
 	for i < len(s.data) && j < len(b.data) {
 		aVal, bVal := s.data[i], b.data[j]
@@ -328,14 +378,17 @@ func (s EidSet) Equals(b EidSet) bool {
 }
 
 // Duplicate returns a new copy of the set.
-func (s EidSet) Duplicate() *EidSet {
-	dup := make([]spir.EntityId, len(s.data))
+func (s EidSet) Duplicate(fixed bool) *EidSet {
+	dup := make([]EntityId, len(s.data))
 	copy(dup, s.data)
-	return &EidSet{data: dup}
+	return &EidSet{data: dup, fixed: fixed}
 }
 
 // Values returns the backing slice (sorted, do not mutate).
-func (s EidSet) Values() []spir.EntityId {
+func (s EidSet) Values() []EntityId {
+	if s.fixed {
+		panic("cannot get values from a fixed EidSet")
+	}
 	return s.data
 }
 

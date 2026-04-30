@@ -31,7 +31,6 @@
             "ms-vscode.cmake-tools",
             "ms-vscode.cmake",
             "ms-azuretools.vscode-docker",
-            "twxs.cmake",
             "joaompinto.vscode-graphviz",
             "ms-toolsai.jupyter"
           ]
