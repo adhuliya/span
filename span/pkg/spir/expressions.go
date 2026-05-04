@@ -86,7 +86,7 @@ func ValX(value EntityId) Expr {
 	return UnaryX(K_XK_XVAL, value)
 }
 
-// ValX2 places two entities together.
+// ValX2: two values. It places two entities together.
 func ValX2(value1 EntityId, value2 EntityId) Expr {
 	return BinX(K_XK_XVAL, value1, value2)
 }

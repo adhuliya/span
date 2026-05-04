@@ -155,6 +155,12 @@ func (entityId EntityId) SeqIdBitLen() uint8 {
 	return entityId.Kind().SeqIdBitLen()
 }
 
+// AsVarGroupIdentifier returns the EntityId as a variable group identifier.
+// A variable group identifier's subkind represents all the variables with the basic type of the subkind.
+func (entityId EntityId) AsVarGroupIdentifier() EntityId {
+	return EntityId(GenKindPrefix32(K_EK_EVAR_LOCL_OTHER, entityId.SubKind()))
+}
+
 // HasProperPrefix checks whether the EntityId encodes a non-zero kind (and subkind if present).
 // Returns true if the kind is non-zero, and if applicable, subkind is also non-zero.
 func (entityId EntityId) HasProperPrefix() bool {
@@ -174,6 +180,14 @@ func (entityId EntityId) HasProperPrefix() bool {
 // and the sequence ID is not zero. Otherwise, returns false.
 func (entityId EntityId) IsProper() bool {
 	return entityId.HasProperPrefix() && entityId.SeqId() != 0
+}
+
+// IsVarGroupIdentifier returns true if the EntityId is a variable group identifier.
+// A variable group identifier's subkind represents all the variables with the basic type of the subkind.
+func (entityId EntityId) IsVarGroupIdentifier() bool {
+	isGroup := entityId.Kind() == K_EK_EVAR_LOCL_OTHER && entityId.HasProperPrefix()
+	isGroup = isGroup && entityId.SeqId() == 0
+	return isGroup
 }
 
 // BLOCK END: API to extract EntityId components and properties
@@ -207,6 +221,7 @@ func GenKindPrefix32(eKind EntityKind, eSubKind uint8) uint32 {
 
 // Does the entity kind have a sub-kind?
 // A sub-kind uses another 5 bits to represent the sub type of the entity.
+// As a special case, a zero entity kind is considered to have a sub-kind.
 func (eKind EntityKind) HasSubKind() bool {
 	if (eKind >= K_EK_EBB && eKind <= K_EK_ESRC_FILE) ||
 		eKind == K_EK_ELABEL {

@@ -31,23 +31,47 @@ type EntityIdMapKVLattice struct {
 	scopeEid       spir.EntityId
 	maxEntityCount int
 	kv             map[spir.EntityId]ConstLattice
+	defaultValue   ConstLattice
 }
 
 // NewKVLatticeImpl creates a new KVLattice with the specified parent lattice.
-func NewKVLatticeImpl(parent KVLattice, maxEntityCount int) *EntityIdMapKVLattice {
+func NewKVLatticeImpl(parent KVLattice, factId FactId, maxEntityCount int) *EntityIdMapKVLattice {
 	if maxEntityCount <= 0 {
 		panic("maxEntityCount must be greater than 0")
 	}
+	parentFactId := NIL_FACT_ID
+	if parent != nil {
+		parentFactId = parent.ParentFactId()
+	}
 	return &EntityIdMapKVLattice{
 		parent:         parent,
+		parentFactId:   parentFactId,
+		factId:         factId,
 		maxEntityCount: maxEntityCount,
 		kv:             make(map[spir.EntityId]ConstLattice),
+		defaultValue:   nil,
 	}
+}
+
+func (kv *EntityIdMapKVLattice) HasDefaultValue() bool {
+	return true
+}
+
+func (kv *EntityIdMapKVLattice) DefaultValue() ConstLattice {
+	return kv.defaultValue
+}
+
+func (kv *EntityIdMapKVLattice) FactId() FactId {
+	return kv.factId
 }
 
 // Parent returns the parent lattice.
 func (kv *EntityIdMapKVLattice) Parent() LatticeWithFactId {
 	return kv.parent
+}
+
+func (kv *EntityIdMapKVLattice) ParentFactId() FactId {
+	return kv.parentFactId
 }
 
 func (kv *EntityIdMapKVLattice) isFlat() bool {
@@ -64,16 +88,16 @@ func (kv *EntityIdMapKVLattice) GetFactId() FactId {
 	return kv.factId
 }
 
-func (kv *EntityIdMapKVLattice) ParentFactId() FactId {
-	return kv.parentFactId
-}
-
-func (kv *EntityIdMapKVLattice) GetScopeEid() spir.EntityId {
+func (kv *EntityIdMapKVLattice) ScopeEid() spir.EntityId {
 	return kv.scopeEid
 }
 
-func (kv *EntityIdMapKVLattice) SetScopeEid(scopeEid spir.EntityId) {
+func (kv *EntityIdMapKVLattice) SetScopeEid(scopeEid spir.EntityId) bool {
+	if kv.scopeEid == scopeEid {
+		return false
+	}
 	kv.scopeEid = scopeEid
+	return true
 }
 
 func (kv *EntityIdMapKVLattice) SetActiveEids(eids *spir.EidSet) {
@@ -94,6 +118,17 @@ func (kv *EntityIdMapKVLattice) Get(key spir.EntityId) (ConstLattice, bool) {
 		return kv.parent.Get(key)
 	}
 	return nil, false
+}
+
+// AllKeysPresent adds all the keys present in the lattice to the given set.
+// If the lattice is not flat, it recursively adds the keys from all the parents.
+func (kv *EntityIdMapKVLattice) AllKeysPresent(allKeys *spir.EidSet) {
+	for id := range kv.kv {
+		allKeys.Add(id)
+	}
+	if kv.parent != nil {
+		kv.parent.(*EntityIdMapKVLattice).AllKeysPresent(allKeys)
+	}
 }
 
 // Set assigns or merges the value with the existing lattice for the key.
@@ -155,8 +190,6 @@ func (kv *EntityIdMapKVLattice) Flatten(self bool) (LatticeWithFactId, bool) {
 		switch t := parent.(type) {
 		case KVLattice:
 			p = t
-		case *EntityIdMapKVLattice:
-			p = t
 		default:
 			p = nil
 		}
@@ -183,43 +216,44 @@ func (kv *EntityIdMapKVLattice) Flatten(self bool) (LatticeWithFactId, bool) {
 }
 
 func (kv *EntityIdMapKVLattice) IsTop() bool {
-	kv.requireFlat("IsTop")
-	for _, v := range kv.kv {
-		if !IsTop(v) {
-			return false
-		}
-	}
-	return true
+	return len(kv.kv) == 0 && IsParentTop(kv) /*all entities are top, since no entities are present*/
 }
 
-// Fixme: add an entity count to check all entities are bot.
+// IsBot returns true iff all the elements are present and all the values are bot.
 func (kv *EntityIdMapKVLattice) IsBot() bool {
-	kv.requireFlat("IsBot")
-	for _, v := range kv.kv {
-		if !IsBot(v) {
-			return false
-		}
+	allEntitiesPresent := len(kv.kv) == kv.maxEntityCount
+	if !allEntitiesPresent && IsTop(kv.defaultValue) {
+		return false /* Not a bottom, since some entities have top values by default. */
 	}
-	return true
+	if allEntitiesPresent {
+		for _, v := range kv.kv {
+			if !IsBot(v) {
+				return false
+			}
+		}
+		return true
+	}
+	return allEntitiesPresent
 }
 
 func (kv *EntityIdMapKVLattice) WeakerThan(other Lattice) bool {
-	kv.requireFlat("WeakerThan")
-	oth, ok := flatKVLattice(other)
+	oth, ok := other.(*EntityIdMapKVLattice)
 	if !ok {
+		return false
+	}
+	if !SameParent(kv, oth) {
 		return false
 	}
 
 	for id, value := range kv.kv {
-		if !WeakerThan(value, oth.kv[id]) {
+		othValue, _ := oth.Get(id)
+		if !WeakerThan(value, othValue) {
 			return false
 		}
 	}
 	for id, value := range oth.kv {
-		if _, present := kv.kv[id]; present {
-			continue
-		}
-		if !WeakerThan(nil, value) {
+		kvValue, _ := kv.Get(id)
+		if !WeakerThan(kvValue, value) {
 			return false
 		}
 	}
@@ -227,22 +261,23 @@ func (kv *EntityIdMapKVLattice) WeakerThan(other Lattice) bool {
 }
 
 func (kv *EntityIdMapKVLattice) Equals(other Lattice) bool {
-	kv.requireFlat("Equals")
-	oth, ok := flatKVLattice(other)
+	oth, ok := other.(*EntityIdMapKVLattice)
 	if !ok {
-		return other == nil && kv.IsTop()
+		return false
+	}
+	if !SameParent(kv, oth) {
+		return false
 	}
 
 	for id, value := range kv.kv {
-		if !Equals(value, oth.kv[id]) {
+		othValue, _ := oth.Get(id)
+		if !Equals(value, othValue) {
 			return false
 		}
 	}
 	for id, value := range oth.kv {
-		if _, present := kv.kv[id]; present {
-			continue
-		}
-		if !Equals(nil, value) {
+		kvValue, _ := kv.Get(id)
+		if !Equals(kvValue, value) {
 			return false
 		}
 	}
@@ -250,17 +285,22 @@ func (kv *EntityIdMapKVLattice) Equals(other Lattice) bool {
 }
 
 func (kv *EntityIdMapKVLattice) Meet(other Lattice) (Lattice, bool) {
-	kv.requireFlat("Meet")
-	oth, ok := flatKVLattice(other)
+	oth, ok := other.(*EntityIdMapKVLattice)
 	if !ok {
-		return kv, false
+		panic(fmt.Sprintf("EntityIdMapKVLattice.Meet: other is not a EntityIdMapKVLattice: %T", other))
 	}
 
+	// Get all the keys present in the other lattice.
+	// The keys not present are Top, hence they are ignored for Meet operation.
+	allKeys := spir.NewEidSet(false, false)
+	oth.AllKeysPresent(allKeys)
 	changed := false
-	for id, otherValue := range oth.kv {
-		newValue, change := ConstMeet(kv.kv[id], otherValue)
+	for _, eid := range allKeys.Iterator {
+		kvValue, _ := kv.Get(eid)
+		othValue, _ := oth.Get(eid)
+		newValue, change := ConstMeet(kvValue, othValue)
 		if change {
-			kv.setOrDeleteTop(id, newValue)
+			kv.setOrDeleteTop(eid, newValue)
 			changed = true
 		}
 	}
@@ -268,17 +308,22 @@ func (kv *EntityIdMapKVLattice) Meet(other Lattice) (Lattice, bool) {
 }
 
 func (kv *EntityIdMapKVLattice) Join(other Lattice) (Lattice, bool) {
-	kv.requireFlat("Join")
-	oth, ok := flatKVLattice(other)
+	oth, ok := other.(*EntityIdMapKVLattice)
 	if !ok {
-		return kv, false
+		panic(fmt.Sprintf("EntityIdMapKVLattice.Join: other is not a EntityIdMapKVLattice: %T", other))
 	}
 
+	// Get all the keys present in the current lattice.
+	// The keys not present are Top, hence they are ignored for Join operation.
+	allKeys := spir.NewEidSet(false, false)
+	kv.AllKeysPresent(allKeys)
 	changed := false
-	for id, value := range kv.kv {
-		newValue, change := ConstJoin(value, oth.kv[id])
+	for _, eid := range allKeys.Iterator {
+		kvValue, _ := kv.Get(eid)
+		othValue, _ := oth.Get(eid)
+		newValue, change := ConstJoin(kvValue, othValue)
 		if change {
-			kv.setOrDeleteTop(id, newValue)
+			kv.setOrDeleteTop(eid, newValue)
 			changed = true
 		}
 	}
@@ -286,17 +331,22 @@ func (kv *EntityIdMapKVLattice) Join(other Lattice) (Lattice, bool) {
 }
 
 func (kv *EntityIdMapKVLattice) Widen(other Lattice) (Lattice, bool) {
-	kv.requireFlat("Widen")
-	oth, ok := flatKVLattice(other)
+	oth, ok := other.(*EntityIdMapKVLattice)
 	if !ok {
-		return kv, false
+		panic(fmt.Sprintf("EntityIdMapKVLattice.Widen: other is not a EntityIdMapKVLattice: %T", other))
 	}
 
+	// Get all the keys present in the other lattice.
+	// The keys not present are Top, hence they are ignored for Widen operation.
+	allKeys := spir.NewEidSet(false, false)
+	oth.AllKeysPresent(allKeys)
 	changed := false
-	for id, otherValue := range oth.kv {
-		newValue, change := ConstWiden(kv.kv[id], otherValue)
+	for _, eid := range allKeys.Iterator {
+		kvValue, _ := kv.Get(eid)
+		othValue, _ := oth.Get(eid)
+		newValue, change := ConstWiden(kvValue, othValue)
 		if change {
-			kv.setOrDeleteTop(id, newValue)
+			kv.setOrDeleteTop(eid, newValue)
 			changed = true
 		}
 	}
@@ -315,27 +365,9 @@ func (kv *EntityIdMapKVLattice) String() string {
 
 	parts := make([]string, 0, len(keys))
 	for _, id := range keys {
-		parts = append(parts, fmt.Sprintf("%s: %s", id, Stringify(kv.kv[id])))
+		parts = append(parts, fmt.Sprintf("%s: %s", id, String(kv.kv[id])))
 	}
 	return fmt.Sprintf("KVLattice{%s}", strings.Join(parts, ", "))
-}
-
-func flatKVLattice(l Lattice) (*EntityIdMapKVLattice, bool) {
-	if l == nil {
-		return nil, false
-	}
-
-	kv, ok := l.(*EntityIdMapKVLattice)
-	if !ok {
-		return nil, false
-	}
-	if kv.isFlat() {
-		return kv, true
-	}
-
-	flat, _ := kv.Flatten(false)
-	flatKV, ok := flat.(*EntityIdMapKVLattice)
-	return flatKV, ok
 }
 
 func (kv *EntityIdMapKVLattice) setOrDeleteTop(id spir.EntityId, value Lattice) {

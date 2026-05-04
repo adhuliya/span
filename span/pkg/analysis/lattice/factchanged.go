@@ -49,3 +49,46 @@ func (fc FactChanged) HasChangedOut() bool {
 	}
 	return false
 }
+
+func GetInOutChanged(inChanged, outChanged bool) FactChanged {
+	if inChanged && outChanged {
+		return InOutChanged
+	} else if inChanged {
+		return InChanged
+	} else if outChanged {
+		return OutChanged
+	}
+	return NoChange
+}
+
+func (fc FactChanged) String() string {
+	switch fc {
+	case NoChange:
+		return "NoChange"
+	case Changed:
+		return "Changed"
+	case InChanged:
+		return "InChanged"
+	case OutChanged:
+		return "OutChanged"
+	case InOutChanged:
+		return "InOutChanged"
+	case TrueOutChanged:
+		return "TrueOutChanged"
+	case FalseOutChanged:
+		return "FalseOutChanged"
+	case NopNoChange:
+		return "NopNoChange"
+	case NopInChanged:
+		return "NopInChanged"
+	case NopOutChanged:
+		return "NopOutChanged"
+	case NopInOutChanged:
+		return "NopInOutChanged"
+	case NoChangeInfo:
+		return "NoChangeInfo"
+	case NotImplemented:
+		return "NotImplemented"
+	}
+	return "UnknownFactChange"
+}

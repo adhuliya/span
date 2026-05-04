@@ -1,6 +1,10 @@
 package lattice
 
-import "github.com/adhuliya/span/pkg/spir"
+import (
+	"fmt"
+
+	"github.com/adhuliya/span/pkg/spir"
+)
 
 // MaySetLattice is a ConstLattice for may-sets of spir.EntityId values.
 // Smaller sets are more precise: top is the empty set, meet is union,
@@ -30,12 +34,12 @@ func (l *MaySetLattice) IsConstLattice() bool {
 }
 
 func (l *MaySetLattice) IsTop() bool {
-	return l.maySet.IsEmpty()
+	return l.maySet.IsEmpty() && !l.isBot
 }
 
 // IsBot is false because this lattice does not carry a universe of all EntityIds.
 func (l *MaySetLattice) IsBot() bool {
-	return false
+	return l.isBot
 }
 
 func (l *MaySetLattice) WeakerThan(other Lattice) bool {
@@ -81,9 +85,9 @@ func (l *MaySetLattice) Join(other Lattice) (Lattice, bool) {
 }
 
 func (l *MaySetLattice) Widen(other Lattice) (Lattice, bool) {
-	return l.Meet(other)
+	return ConstMeet(l, other.(ConstLattice))
 }
 
 func (l *MaySetLattice) String() string {
-	return "MaySetLattice" + l.maySet.String()
+	return fmt.Sprintf("MaySetLattice{%s, isBot: %t}", l.maySet.String(), l.isBot)
 }

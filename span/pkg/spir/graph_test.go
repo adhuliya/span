@@ -43,6 +43,11 @@ type mockGraph struct {
 	mockBlocks     map[BasicBlockId]*mockBasicBlock
 }
 
+// BBCount implements [Graph].
+func (mg *mockGraph) BBCount() int {
+	panic("unimplemented")
+}
+
 func newMockGraph(entry, exit BasicBlockId) *mockGraph {
 	return &mockGraph{
 		mockEntryBlock: entry,
@@ -238,7 +243,7 @@ func TestReversePostOrder(t *testing.T) {
 			graph := tc.graphSetup()
 
 			// Test PostOrder (reverse = false)
-			postOrder := ReversePostOrder(graph, false)
+			postOrder := GetBBWorklist(graph, ReversePostOrder)
 			// Note: Due to map iteration non-determinism in DFS successor processing,
 			// multiple valid PostOrders might exist. We compare against one possibility.
 			// A more robust test might check properties (e.g., exit node first, entry node last)
@@ -249,7 +254,7 @@ func TestReversePostOrder(t *testing.T) {
 			}
 
 			// Test Reverse PostOrder (reverse = true)
-			reverseOrder := ReversePostOrder(graph, true)
+			reverseOrder := GetBBWorklist(graph, PostOrder)
 			if !reflect.DeepEqual(reverseOrder, tc.expectedReverse) {
 				t.Errorf("ReversePostOrder mismatch:\ngot:  %v\nwant: %v", reverseOrder, tc.expectedReverse)
 			}
@@ -260,11 +265,11 @@ func TestReversePostOrder(t *testing.T) {
 		graph := newMockGraph(BasicBlockId(99), BasicBlockId(1)) // Entry 99 doesn't exist
 		graph.addBlock(b1)                                       // Add some block so graph isn't totally empty
 
-		postOrder := ReversePostOrder(graph, false)
+		postOrder := GetBBWorklist(graph, ReversePostOrder)
 		if len(postOrder) != 0 {
 			t.Errorf("Expected empty order when entry block is nil, got %v", postOrder)
 		}
-		reverseOrder := ReversePostOrder(graph, true)
+		reverseOrder := GetBBWorklist(graph, PostOrder)
 		if len(reverseOrder) != 0 {
 			t.Errorf("Expected empty order when entry block is nil, got %v", reverseOrder)
 		}

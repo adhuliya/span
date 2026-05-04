@@ -10,6 +10,7 @@ type CFGId EntityId
 type Graph interface {
 	Scope() ScopeId
 	FuncId() EntityId
+	BBCount() int
 	EntryBlock() *BasicBlock
 	ExitBlock() *BasicBlock
 	BasicBlock(id BasicBlockId) *BasicBlock
@@ -21,6 +22,14 @@ const (
 	TrueEdge   EdgeLabel = 1
 	FalseEdge  EdgeLabel = 2
 	BackEdge   EdgeLabel = 3
+)
+
+type GraphVisitingOrder uint8
+
+const (
+	NoOrder          GraphVisitingOrder = 0 // No order.
+	ReversePostOrder GraphVisitingOrder = 1 // For forward flow.
+	PostOrder        GraphVisitingOrder = 2 // For backward flow.
 )
 
 // A BasicBlock represents a liner code with only one entry and one eixt.
@@ -58,6 +67,10 @@ func NewBasicBlock(id BasicBlockId, scope ScopeId, fid EntityId,
 		bb.insns = make([]Insn, 0, insnCount)
 	}
 	return bb
+}
+
+func (bb *BasicBlock) BBCount() int {
+	return 1
 }
 
 func (bb *BasicBlock) Scope() ScopeId {
@@ -207,6 +220,10 @@ func NewControlFlowGraph(tu *TU, scope ScopeId, fid EntityId) *ControlFlowGraph 
 	return cfg
 }
 
+func (cfg *ControlFlowGraph) BBCount() int {
+	return len(cfg.basicBlocks)
+}
+
 func (cfg *ControlFlowGraph) AddBB(bb *BasicBlock) *ControlFlowGraph {
 	cfg.basicBlocks = append(cfg.basicBlocks, bb)
 	return cfg
@@ -284,10 +301,12 @@ func (cfg *ControlFlowGraph) IsValid() bool {
 }
 
 // This function takes a Graph and returns ReversePostOrder of the graph.
-func ReversePostOrder(graph Graph, reverse bool) []BasicBlockId {
-	visited := make(map[BasicBlockId]bool)
-	var order []BasicBlockId
+// The assumption is that the BBIds at higher indices are visited (or popped) first.
+func GetBBWorklist(graph Graph, visitingOrder GraphVisitingOrder) []BasicBlockId {
+	visited := make(map[BasicBlockId]bool, graph.BBCount())
+	orderedBBs := make([]BasicBlockId, 0, graph.BBCount())
 
+	// Default to a forward flow traversal (ReversePostOrder)
 	var dfs func(blockId BasicBlockId)
 	dfs = func(blockId BasicBlockId) {
 		if visited[blockId] {
@@ -298,7 +317,7 @@ func ReversePostOrder(graph Graph, reverse bool) []BasicBlockId {
 		for _, succ := range block.successors {
 			dfs(succ.Id())
 		}
-		order = append(order, blockId)
+		orderedBBs = append(orderedBBs, blockId)
 	}
 
 	entryBlock := graph.EntryBlock()
@@ -306,12 +325,12 @@ func ReversePostOrder(graph Graph, reverse bool) []BasicBlockId {
 		dfs(entryBlock.id)
 	}
 
-	// Reverse the order if needed
-	if reverse {
-		for i, j := 0, len(order)-1; i < j; i, j = i+1, j-1 {
-			order[i], order[j] = order[j], order[i]
+	// Reverse the order if visiting order is PostOrder
+	if visitingOrder == PostOrder {
+		for i, j := 0, len(orderedBBs)-1; i < j; i, j = i+1, j-1 {
+			orderedBBs[i], orderedBBs[j] = orderedBBs[j], orderedBBs[i]
 		}
 	}
 
-	return order
+	return orderedBBs
 }

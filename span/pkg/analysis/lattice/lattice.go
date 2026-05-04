@@ -180,6 +180,28 @@ type ChainedLattice interface {
 	Flatten(self bool) (LatticeWithFactId, bool)
 }
 
+func IsParentTop(l ChainedLattice) bool {
+	return IsTop(l.Parent())
+}
+
+func IsParentBot(l ChainedLattice) bool {
+	return IsBot(l.Parent())
+}
+
+func SameParent(l1, l2 ChainedLattice) bool {
+	// Parent of nil is nil.
+	if l1 == nil && l2 == nil {
+		return true
+	}
+	if l1 == nil {
+		return l2.Parent() == nil
+	}
+	if l2 == nil {
+		return l1.Parent() == nil
+	}
+	return l1.Parent() == l2.Parent()
+}
+
 // ScopedLattice is a lattice that is specific to a scope (function, basic block, or CFG).
 // It is used to track the data flow for the entities in the scope.
 // The interface is used at call-sites where the data flow fact from the caller,
@@ -187,9 +209,11 @@ type ChainedLattice interface {
 // by removing caller's variables and adding callee's variables to the lattice.
 type ScopedLattice interface {
 	ChainedLattice
-	// This could be a function or a basic block or a specific scope (CFG).
-	GetScopeEid() spir.EntityId
-	SetScopeEid(scopeEid spir.EntityId) // FIXME: Remove this method. It may not be needed.
+	// Return the scope eid of the lattice. It could be a function or a basic block or a specific scope (CFG).
+	ScopeEid() spir.EntityId
+	// Set the scope eid of the lattice.
+	// The boolean return value indicates if the scope eid was changed.
+	SetScopeEid(scopeEid spir.EntityId) bool
 	// Set the active eids, e.g. local variables in the functions to the lattice.
 	SetActiveEids(eids *spir.EidSet)
 	// Get the maximum number of entities that can be tracked by the lattice.
@@ -206,3 +230,83 @@ type DefaultValueLattice interface {
 	// The default value is only used internally by the lattice implementation.
 	HasDefaultValue() bool
 }
+
+// BLOCK BEGIN: Partial structures for lattices.
+
+type FactIdBase struct {
+	factId FactId
+}
+
+func (f *FactIdBase) FactId() FactId {
+	return f.factId
+}
+
+func (f *FactIdBase) SetFactId(factId FactId) {
+	f.factId = factId
+}
+
+type ChainedLatticeBase struct {
+	FactIdBase
+	parent       LatticeWithFactId
+	parentFactId FactId
+}
+
+func (c *ChainedLatticeBase) Parent() LatticeWithFactId {
+	return c.parent
+}
+
+func (c *ChainedLatticeBase) SetParent(parent LatticeWithFactId) {
+	c.parent = parent
+}
+
+func (c *ChainedLatticeBase) ParentFactId() FactId {
+	return c.parentFactId
+}
+
+func (c *ChainedLatticeBase) SetParentFactId(parentFactId FactId) {
+	c.parentFactId = parentFactId
+}
+
+type ScopedLatticeBase struct {
+	ChainedLatticeBase
+	scopeEid       spir.EntityId
+	maxEntityCount int
+}
+
+func (s *ScopedLatticeBase) ScopeEid() spir.EntityId {
+	return s.scopeEid
+}
+
+func (s *ScopedLatticeBase) SetScopeEid(scopeEid spir.EntityId) bool {
+	if s.scopeEid == scopeEid {
+		return false
+	}
+	s.scopeEid = scopeEid
+	return true
+}
+
+func (s *ScopedLatticeBase) SetActiveEids(eids *spir.EidSet) {
+	s.maxEntityCount = eids.Len()
+}
+
+func (s *ScopedLatticeBase) MaxEntityCount() int {
+	return s.maxEntityCount
+}
+
+func (s *ScopedLatticeBase) SetMaxEntityCount(maxEntityCount int) {
+	s.maxEntityCount = maxEntityCount
+}
+
+type DefaultValueLatticeBase struct {
+	defaultValue Lattice
+}
+
+func (d *DefaultValueLatticeBase) HasDefaultValue() bool {
+	return true
+}
+
+func (d *DefaultValueLatticeBase) DefaultValue() Lattice {
+	return d.defaultValue
+}
+
+// BLOCK END: Partial structures for lattices.

@@ -14,8 +14,9 @@ func GetNextContextId() ContextId {
 }
 
 type Context struct {
-	tu   *TU
-	info map[uint64]any // key is the instance id / context id
+	tu              *TU
+	info            map[uint64]any // key is the instance id / context id
+	currentScopeEid EntityId
 }
 
 func NewContext(tu *TU) *Context {
@@ -49,4 +50,16 @@ func (c *Context) RemoveInfo(key uint64) bool {
 	}
 	delete(c.info, key)
 	return true
+}
+
+func (c *Context) CurrentScopeEid() EntityId {
+	return c.currentScopeEid
+}
+
+func (c *Context) SetCurrentScopeEid(scopeEid EntityId) {
+	c.currentScopeEid = scopeEid
+}
+
+func (c *Context) IsCurrFuncMain() bool {
+	return c.currentScopeEid == c.tu.MainFuncId()
 }

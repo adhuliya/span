@@ -3,25 +3,31 @@ package lattice
 import "fmt"
 
 type Pair struct {
-	factId FactId
-	lats   [2]Lattice
+	FactIdBase
+	lats [2]Lattice
 }
 
 func (l *Pair) String() string {
 	return fmt.Sprintf("LatticePair(%s, %s)", String(l.lats[0]), String(l.lats[1]))
 }
 
-func NewPair(l1, l2 Lattice) Pair {
+func NewPair(l1, l2 Lattice, factId FactId) Pair {
 	pair := Pair{}
-	pair.factId = FactId(0)
+	pair.SetFactId(factId)
 	pair.lats[0] = l1
 	pair.lats[1] = l2
 	return pair
 }
 
-func (l *Pair) SetLats(l1, l2 Lattice) {
+// SetLats assigns new lattice values to the pair and increments the FactId's version if changed.
+func (l *Pair) SetLats(l1, l2 Lattice) FactChanged {
+	changed1 := l.lats[0] != l1
+	changed2 := l.lats[1] != l2
+	changed := changed1 || changed2
 	l.lats[0] = l1
 	l.lats[1] = l2
+	l.SetFactId(l.FactId().CondIncVersion(changed))
+	return GetInOutChanged(changed1, changed2)
 }
 
 func (l Pair) L1() Lattice {
@@ -30,6 +36,30 @@ func (l Pair) L1() Lattice {
 
 func (l Pair) L2() Lattice {
 	return l.lats[1]
+}
+
+// Returns the lattice value that changed according to the given change.
+func (l Pair) ChangedOne(change FactChanged) Lattice {
+	if change.HasChangedIn() {
+		return l.L1()
+	} else if change.HasChangedOut() {
+		return l.L2()
+	}
+	return nil
+}
+
+// UpdateOther updates the lattice value that changed in predecessor or successor.
+// The other lattice value is the one that changed in the predecessor or successor.
+// The change indicates the fact that changed in the predecessor or successor.
+func (l *Pair) UpdateOther(change FactChanged, other Lattice) Pair {
+	if change.HasChangedIn() {
+		// IN of pred becomes OUT of succ
+		l.lats[1] = other
+	} else if change.HasChangedOut() {
+		// Out of pred becomes IN of succ
+		l.lats[0] = other
+	}
+	return *l
 }
 
 func (l Pair) Lats(idx int) Lattice {
@@ -70,9 +100,7 @@ func (l *Pair) Join(other Lattice) (Lattice, bool) {
 		l.lats[1], change2 = Join(l.lats[1], oth.L2())
 		changed = change1 || change2
 	}
-	if changed {
-		l.incVersion()
-	}
+	l.SetFactId(l.FactId().CondIncVersion(changed))
 	return l, changed
 }
 
@@ -84,9 +112,7 @@ func (l *Pair) Meet(other Lattice) (Lattice, bool) {
 		l.lats[1], change2 = Meet(l.lats[1], oth.L2())
 		changed = change1 || change2
 	}
-	if changed {
-		l.incVersion()
-	}
+	l.SetFactId(l.FactId().CondIncVersion(changed))
 	return l, changed
 }
 
@@ -98,17 +124,6 @@ func (l *Pair) Widen(other Lattice) (Lattice, bool) {
 		l.lats[1], change2 = Widen(l.lats[1], oth.L2())
 		changed = change1 || change2
 	}
-	if changed {
-		l.incVersion()
-	}
+	l.SetFactId(l.FactId().CondIncVersion(changed))
 	return l, changed
-}
-
-func (l *Pair) FactId() FactId {
-	return l.factId
-}
-
-func (l *Pair) incVersion() FactId {
-	l.factId = l.factId.IncVersion()
-	return l.factId
 }

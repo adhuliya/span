@@ -137,6 +137,14 @@ func BarrierI() Insn {
 	return insn
 }
 
+func UseI(eid1, eid2, eid3 EntityId) Insn {
+	insn := Insn{}
+	insn.firstHalf |= K_EK_EINSN0.place64() | K_IK_IUSE.place64()
+	insn.SetFirstHalfOprnd(eid1)
+	insn.SetCompoundExpr(ValX2(eid2, eid3))
+	return insn
+}
+
 // A return instruction always has a simple value with no operators.
 func ReturnI(expr Expr) Insn {
 	util.Assert(expr.IsSimple(), fmt.Sprintf("Expr must have no operator: %s", expr))
@@ -320,12 +328,26 @@ func (i *Insn) SetFirstHalfOprnd(eid EntityId) {
 	i.firstHalf |= uint64(eid) & FirstHalfExprMask64
 }
 
+func (i *Insn) SetCompoundExpr(expr Expr) {
+	i.secondHalf = uint64(expr)
+}
+
+func (i Insn) GetCompoundExpr() Expr {
+	return Expr(i.secondHalf)
+}
+
 func (i Insn) GetSecondHalfExpr() Expr {
 	return Expr(i.secondHalf)
 }
 
 func (i Insn) GetFirstHalfEntityId() EntityId {
 	return EntityId(i.firstHalf & FirstHalfExprMask64)
+}
+
+func (i Insn) GetOperands() (EntityId, EntityId, EntityId) {
+	eid1 := i.GetFirstHalfEntityId()
+	eid2, eid3 := i.GetCompoundExpr().GetOperands()
+	return eid1, eid2, eid3
 }
 
 func (i *Insn) GetSelfAssignInsnOprnds() []EntityId {

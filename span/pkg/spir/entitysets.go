@@ -13,8 +13,9 @@ import (
 // EidSet is a set of uint32 values that always maintains its slice sorted.
 // All operations are performed assuming the sorted invariant.
 type EidSet struct {
-	fixed bool
-	data  []EntityId
+	fixed        bool
+	universalSet bool // If true, the set is the universe of all EntityIds.
+	data         []EntityId
 }
 
 // Iterator allows external code to "yield" each EntityId, emulating generator semantics.
@@ -50,6 +51,24 @@ func (s *EidSet) MakeFixed() {
 	s.fixed = true
 }
 
+func (s *EidSet) MakeUniversal() bool {
+	if s.fixed {
+		panic("cannot make a fixed EidSet universal")
+	}
+	changed := false
+	if !s.universalSet {
+		s.universalSet = true
+		s.data = nil   // the data is not required for a universal set, so we can clear it
+		s.fixed = true // a universal set is fixed and cannot be modified after creation
+		changed = true
+	}
+	return changed
+}
+
+func (s *EidSet) IsUniversal() bool {
+	return s.universalSet
+}
+
 // Len returns the number of elements in the set.
 func (s *EidSet) Len() int {
 	return len(s.data)
@@ -57,25 +76,29 @@ func (s *EidSet) Len() int {
 
 // NewEidSet creates a new EidSet from the given elements.
 // It allocates a minimum size of 4 elements.
-func NewEidSet(fixed bool, elems ...EntityId) *EidSet {
-	set := &EidSet{fixed: fixed}
-	capSize := max(4, len(elems))
+func NewEidSet(fixed bool, universalSet bool, elems ...EntityId) *EidSet {
+	fixed = fixed || universalSet
+	set := &EidSet{fixed: fixed, universalSet: universalSet}
 	// Keep the logical length equal to provided elements to avoid
 	// introducing zero-valued EntityIds.
-	set.data = make([]EntityId, len(elems), capSize)
-	copy(set.data, elems)
+	set.data = make([]EntityId, 0, len(elems))
+	set.data = append(set.data, elems...)
 	// Remove duplicates and sort
 	set.sortAndUnique()
 	return set
 }
 
 // Clear removes all elements from the set, making it empty.
-func (s *EidSet) Clear() {
+func (s *EidSet) Clear() bool {
 	if s.fixed {
 		panic("cannot clear a fixed EidSet")
 	}
 	// Release the underlying array memory as well.
-	s.data = nil
+	changed := len(s.data) > 0
+	if changed {
+		s.data = s.data[:0]
+	}
+	return changed
 }
 
 // sortAndUnique sorts the data and removes duplicates in-place.
@@ -111,6 +134,9 @@ func (s *EidSet) IsSortedAndUnique() bool {
 
 // Contains returns true if x is in the set.
 func (s *EidSet) Contains(x EntityId) bool {
+	if s.universalSet {
+		return true
+	}
 	_, found := slices.BinarySearch(s.data, x)
 	return found
 }
@@ -190,7 +216,15 @@ func (s *EidSet) UnionWith(b EidSet) bool {
 
 // Union returns a new EidSet that is the union of this set and another set b.
 // The original sets are not modified.
+// The boolean returned indicates if the result differs from s.
 func (s EidSet) Union(b EidSet) (*EidSet, bool) {
+	switch {
+	case s.universalSet:
+		return &EidSet{universalSet: true}, false /*no change*/
+	case b.universalSet:
+		return &EidSet{universalSet: true}, true /*changed*/
+	}
+
 	// Handle empty set cases.
 	if len(s.data) == 0 && len(b.data) == 0 {
 		return &EidSet{data: []EntityId{}}, false
@@ -231,6 +265,12 @@ func (s EidSet) Union(b EidSet) (*EidSet, bool) {
 
 // Intersection returns a new EidSet that is the intersection of this set and b.
 func (s EidSet) Intersection(b EidSet) (*EidSet, bool) {
+	switch {
+	case s.universalSet:
+		return b.Duplicate(false), false /*no change*/
+	case b.universalSet:
+		return s.Duplicate(false), true /*changed*/
+	}
 	intersection := make([]EntityId, 0, min(len(s.data), len(b.data)))
 	i, j := 0, 0
 	for i < len(s.data) && j < len(b.data) {
@@ -379,9 +419,7 @@ func (s EidSet) Equals(b EidSet) bool {
 
 // Duplicate returns a new copy of the set.
 func (s EidSet) Duplicate(fixed bool) *EidSet {
-	dup := make([]EntityId, len(s.data))
-	copy(dup, s.data)
-	return &EidSet{data: dup, fixed: fixed}
+	return NewEidSet(fixed, s.universalSet, s.data...)
 }
 
 // Values returns the backing slice (sorted, do not mutate).

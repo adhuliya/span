@@ -14,5 +14,5 @@ type LernersAnalysis interface {
 }
 
 type LernersAnalysisClient struct {
-	AnalysisClient
+	AnalysisClientBase
 }

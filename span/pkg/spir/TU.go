@@ -165,6 +165,9 @@ type TU struct {
 	// 5. Temporary Information
 	// This map is used to map a bit entity id to an internal entity id.
 	entityIdMap map[uint64]EntityId
+
+	// 6. Cached information
+	globalVars *EidSet
 }
 
 func NewTU() *TU {
@@ -235,6 +238,10 @@ func (tu *TU) GetEntityId(name string) EntityId {
 		return id
 	}
 	panic(fmt.Sprintf("EntityId for %s not found", name))
+}
+
+func (tu *TU) MainFuncId() EntityId {
+	return tu.GetEntityId(K_MAIN_FUNC_NAME)
 }
 
 // NewVar creates a new value in the translation unit.
@@ -332,6 +339,23 @@ func (tu *TU) GetFunction(name string) *Function {
 		}
 	}
 	return nil
+}
+
+func (tu *TU) GlobalVars() EidSet {
+	if tu.globalVars != nil {
+		return *tu.globalVars
+	}
+
+	globals := &EidSet{}
+	// FIXME: Check the logic. This is not correct. The global variables are not always the ones with parentId == NIL_ID.
+	for eid, variable := range tu.variables {
+		if variable.parentId == NIL_ID {
+			globals.Add(eid)
+		}
+	}
+	globals.MakeFixed()     // the set is now fixed and cannot be modified after creation
+	tu.globalVars = globals // cache the result
+	return *globals
 }
 
 func (tu *TU) AddSrcFile(fullPath string) FileId {

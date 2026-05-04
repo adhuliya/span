@@ -11,12 +11,12 @@ import (
 // which simply propagates the bot value from IN to OUT and OUT to IN respectively.
 
 type ForwardBotBotClient struct {
-	analysis.AnalysisClient
+	analysis.AnalysisClientBase
 }
 
 // Explicitly overrides (though not necessary -- good for demo)
 func (c *ForwardBotBotClient) BoundaryFact(graph spir.Graph, context *spir.Context) lattice.Pair {
-	return lattice.NewPair(&lattice.TopBotLatticeBot, &lattice.TopBotLatticeTop)
+	return lattice.NewPair(&lattice.TopBotLatticeBot, &lattice.TopBotLatticeTop, lattice.NIL_FACT_ID)
 }
 
 // Just propagate the IN data flow value to the OUT fact.
@@ -26,17 +26,17 @@ func (c *ForwardBotBotClient) Analyze(instruction spir.Insn,
 	if !lattice.Equals(inOut.L1(), inOut.L2()) {
 		factChange = lattice.NopOutChanged // can also be OutChanged
 	}
-	inOut = lattice.NewPair(inOut.L1(), inOut.L1())
+	inOut = lattice.NewPair(inOut.L1(), inOut.L1(), lattice.NIL_FACT_ID)
 	return inOut, factChange
 }
 
 type BackwardBotBotClient struct {
-	analysis.AnalysisClient
+	analysis.AnalysisClientBase
 }
 
 // Explicitly overrides (though not necessary -- good for demo)
 func (c *BackwardBotBotClient) BoundaryFact(graph spir.Graph, context *spir.Context) lattice.Pair {
-	return lattice.NewPair(&lattice.TopBotLatticeTop, &lattice.TopBotLatticeBot)
+	return lattice.NewPair(&lattice.TopBotLatticeTop, &lattice.TopBotLatticeBot, lattice.NIL_FACT_ID)
 }
 
 // Just propagate the OUT data flow value to the IN fact.
@@ -46,6 +46,6 @@ func (c *BackwardBotBotClient) Analyze(instruction spir.Insn,
 	if !lattice.Equals(inOut.L1(), inOut.L2()) {
 		factChange = lattice.InChanged // could also be NopInChanged
 	}
-	inOut = lattice.NewPair(inOut.L2(), inOut.L2())
+	inOut = lattice.NewPair(inOut.L2(), inOut.L2(), lattice.NIL_FACT_ID)
 	return inOut, factChange
 }

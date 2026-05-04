@@ -1,9 +1,11 @@
 package lattice
 
+import "github.com/adhuliya/span/pkg/spir"
+
 // FactId uniquely identifies a data flow fact and its history of values.
 // The 64 bits are encoded as follows:
 //   - 2  bits : For future use
-//   - 12 bits : Analysis id
+//   - 12 bits : lattice.AnalysisId
 //   - 35 bits : Unique Bits (UB = EntityId + FactPoint)
 //       * 32 bits : Id of the instruction / BB / function
 //       * 3  bits : Fact at IN, OUT, IN & OUT of the instruction, BB or function
@@ -13,14 +15,21 @@ package lattice
 
 type FactId uint64
 
+// NIL_FACT_ID is the fact id for a nil fact.
 const NIL_FACT_ID FactId = 0
+
+// AnalysisId is a unique 12 bit unsigned integer identifier for an analysis.
+type AnalysisId uint16
+
+// NIL_ANALYSIS_ID is the analysis id for a nil fact.
+const NIL_ANALYSIS_ID AnalysisId = 0
 
 // NEW BIT LAYOUT (little-endian/LSB to MSB):
 // [0-14]   15b Version
 // [15-49]  35b Unique Bits (UB = EntityId + FactPoint)
 //            - [15-17] FactPoint (3b)
 //            - [18-49] InstrId (32b)
-// [50-61]  12b AnalysisId
+// [50-61]  12b lattice.AnalysisId
 // [62-63]  2b Reserved
 
 // Bit sizes
@@ -83,8 +92,8 @@ func (f FactId) InstrId() uint64 {
 	return (uint64(f) >> FactIdUB_EntityIdShift) & FactIdUB_EntityIdMask
 }
 
-func (f FactId) AnalysisId() uint64 {
-	return (uint64(f) >> FactIdAnalysisShift) & FactIdAnalysisMask
+func (f FactId) AnalysisId() AnalysisId {
+	return AnalysisId((uint64(f) >> FactIdAnalysisShift) & FactIdAnalysisMask)
 }
 
 func (f FactId) Reserved() uint64 {
@@ -100,6 +109,15 @@ func (f FactId) IncVersion() FactId {
 		panic("version overflow")
 	}
 	return f.WithVersion(newVersion)
+}
+
+// CondIncVersion returns a new FactId with the version part incremented by 1 if inc is true,
+// otherwise returns the original FactId.
+func (f FactId) CondIncVersion(inc bool) FactId {
+	if inc {
+		return f.IncVersion()
+	}
+	return f
 }
 
 // ZeroVersion returns a new FactId with the version part set to 0,
@@ -124,11 +142,11 @@ func (f FactId) WithVersion(version uint64) FactId {
 }
 
 // WithInstrId sets the InstrId bits (does not alter FactPoint etc)
-func (f FactId) WithInstrId(instrId uint64) FactId {
-	// Clear the instr id region and set
+func (f FactId) WithUBEntityId(entityId spir.EntityId) FactId {
+	// Clear the entity id region and set the new entity id bits
 	v := uint64(f)
 	v &^= (FactIdUB_EntityIdMask << FactIdUB_EntityIdShift)
-	v |= (instrId & FactIdUB_EntityIdMask) << FactIdUB_EntityIdShift
+	v |= (uint64(entityId) & FactIdUB_EntityIdMask) << FactIdUB_EntityIdShift
 	return FactId(v)
 }
 
@@ -149,10 +167,10 @@ func (f FactId) WithUB(ub uint64) FactId {
 }
 
 // WithAnalysisId sets the analysis id field
-func (f FactId) WithAnalysisId(aid uint64) FactId {
+func (f FactId) WithAnalysisId(aid AnalysisId) FactId {
 	v := uint64(f)
 	v &^= (FactIdAnalysisMask << FactIdAnalysisShift)
-	v |= (aid & FactIdAnalysisMask) << FactIdAnalysisShift
+	v |= (uint64(aid) & FactIdAnalysisMask) << FactIdAnalysisShift
 	return FactId(v)
 }
 
