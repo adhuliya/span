@@ -4,7 +4,7 @@ package analysis
 1. A worklist of basic blocks to be analyzed.
 2. Iterate over the worklist and analyze each basic block.
 3. Propagate the facts forward/backward through the control flow graph.
-4. Combine the facts at the boundaries of the analysis.
+4. Merge the facts at merge points in the control flow graph.
 5. Update the worklist with the new basic blocks to be analyzed.
 6. Keep analyzing until the worklist is empty.
 */
@@ -25,13 +25,13 @@ type Analyzer interface {
 	GetAnalysis() Analysis
 	GetContextId() spir.ContextId
 	Context() *spir.Context
-	FactMap() *InsnFactMap
 	// Set the value of the fact map for the given instruction id.
-	// This is used by inter-procedural analyses to set the fact map value for a call site.
 	SetFactMapValue(insnId spir.InsnId, fact lattice.Pair)
 	// Get the fact map value for the given instruction id.
-	// This is used by inter-procedural analyses to get the fact map value for a call site.
 	GetFactMapValue(insnId spir.InsnId) lattice.Pair
+	// Set/Get the value of the fact map for the given basic block id.
+	SetBBFactMapValue(bbId spir.BasicBlockId, fact lattice.Pair)
+	GetBBFactMapValue(bbId spir.BasicBlockId) lattice.Pair
 }
 
 // This file defines the intra-procedural analysis for the SPAN program analysis engine.
@@ -48,7 +48,8 @@ type IntraPAN struct {
 	// The graph object to perform the analysis on.
 	graph spir.Graph
 	// The fact map of the analysis.
-	factMap InsnFactMap
+	factMap   InsnFactMap
+	bbFactMap BBFactMap
 	// The fact map of the call sites (co-updated by Intra and Inter-procedural analyses)
 	// Holds instruction id of the call instruction to the pair fact map.
 	callSiteFactMap InsnFactMap
@@ -60,19 +61,22 @@ type IntraPAN struct {
 	// Default is false; i.e. an intra-procedural analysis.
 	skipCallsKnob bool
 	// Apply meet operation at basic block boundary
-	meetAtBasicBlock bool
+	meetAtBB bool
+	// Use instruction fact map along with basic block fact map.
+	useInstFactMap bool
 }
 
 func NewIntraPAN(ctxId spir.ContextId, analysis Analysis,
 	graph spir.Graph, context *spir.Context,
-	skipCallsKnob bool, meetAtBasicBlock bool) Analyzer {
+	skipCallsKnob bool, meetAtBasicBlock bool, useInstFactMap bool) Analyzer {
 	intra := &IntraPAN{
-		ctxId:            ctxId,
-		context:          context,
-		analysis:         analysis,
-		graph:            graph,
-		skipCallsKnob:    skipCallsKnob,
-		meetAtBasicBlock: meetAtBasicBlock,
+		ctxId:          ctxId,
+		context:        context,
+		analysis:       analysis,
+		graph:          graph,
+		skipCallsKnob:  skipCallsKnob,
+		meetAtBB:       meetAtBasicBlock,
+		useInstFactMap: useInstFactMap,
 	}
 	intra.initialize() // Initialize the fact map.
 	return Analyzer(intra)
@@ -85,30 +89,41 @@ func (intra *IntraPAN) initialize() {
 
 	// 1. Initialize the fact map.
 	intra.factMap = make(InsnFactMap)
+	intra.bbFactMap = make(BBFactMap)
 	factId := lattice.NIL_FACT_ID.WithFactPoint(lattice.FactIdUB_Point_INOUT).
 		WithAnalysisId(intra.analysis.InstanceId().AnalysisId())
 	//entryBBId, exitBBId := intra.graph.EntryBlock(), intra.graph.ExitBlock()
 	boundaryFact := intra.analysis.BoundaryFact(intra.graph, intra.context)
 	entryInsnId := intra.graph.EntryBlock().EntryInsn().Id()
 	exitInsnId := intra.graph.ExitBlock().ExitInsn().Id()
-	if entryInsnId == exitInsnId {
-		intra.factMap[entryInsnId] = lattice.NewPair(boundaryFact.L1(), boundaryFact.L2(),
-			factId.WithUBEntityId(spir.EntityId(entryInsnId)))
+	if intra.graph.EntryBlock() == intra.graph.ExitBlock() {
+		if intra.useInstFactMap {
+			intra.factMap[entryInsnId] = lattice.NewPair(boundaryFact.L1(), boundaryFact.L2(),
+				factId.WithUBEntityId(spir.EntityId(entryInsnId)))
+		}
+		intra.bbFactMap[intra.graph.EntryBlock().Id()] = lattice.NewPair(boundaryFact.L1(), boundaryFact.L2(),
+			factId.WithUBEntityId(spir.EntityId(intra.graph.EntryBlock().Id())))
 	} else {
-		intra.factMap[entryInsnId] = lattice.NewPair(boundaryFact.L1(), nil,
-			factId.WithUBEntityId(spir.EntityId(entryInsnId)))
-		intra.factMap[exitInsnId] = lattice.NewPair(nil, boundaryFact.L2(),
-			factId.WithUBEntityId(spir.EntityId(exitInsnId)))
+		if intra.useInstFactMap {
+			intra.factMap[entryInsnId] = lattice.NewPair(boundaryFact.L1(), nil,
+				factId.WithUBEntityId(spir.EntityId(entryInsnId)))
+			intra.factMap[exitInsnId] = lattice.NewPair(nil, boundaryFact.L2(),
+				factId.WithUBEntityId(spir.EntityId(exitInsnId)))
+		}
+		intra.bbFactMap[intra.graph.EntryBlock().Id()] = lattice.NewPair(boundaryFact.L1(), nil,
+			factId.WithUBEntityId(spir.EntityId(intra.graph.EntryBlock().Id())))
+		intra.bbFactMap[intra.graph.ExitBlock().Id()] = lattice.NewPair(nil, boundaryFact.L2(),
+			factId.WithUBEntityId(spir.EntityId(intra.graph.ExitBlock().Id())))
 	}
 	intra.context.SetInfo(uint64(intra.ctxId), intra.factMap)
 
-	// 2. Initialize the analysis handles basic blocks flag.
-	_, change := intra.analysis.AnalyzeBB(nil, lattice.NewPair(nil, nil, lattice.NIL_FACT_ID), intra.context)
-	if change == lattice.NotImplemented {
-		intra.analysisHandlesBB = false
-	} else {
-		intra.analysisHandlesBB = true
-	}
+	// 2. Check if the analysis handles basic blocks explicitly, and set the flag accordingly.
+	intra.analysisHandlesBB = CanAnalysisHandleBBs(intra.analysis, intra.context)
+}
+
+func CanAnalysisHandleBBs(analysis Analysis, context *spir.Context) bool {
+	_, change := analysis.AnalyzeBB(nil, lattice.NewPair(nil, nil, lattice.NIL_FACT_ID), context)
+	return change != lattice.NotImplemented
 }
 
 func (intra *IntraPAN) Context() *spir.Context {
@@ -143,6 +158,20 @@ func (intra *IntraPAN) GetFactMapValue(insnId spir.InsnId) lattice.Pair {
 				WithUBEntityId(spir.EntityId(insnId)))
 	}
 	return intra.factMap[insnId]
+}
+
+func (intra *IntraPAN) SetBBFactMapValue(bbId spir.BasicBlockId, fact lattice.Pair) {
+	intra.bbFactMap[bbId] = fact
+}
+
+func (intra *IntraPAN) GetBBFactMapValue(bbId spir.BasicBlockId) lattice.Pair {
+	if _, ok := intra.bbFactMap[bbId]; !ok {
+		intra.bbFactMap[bbId] = lattice.NewPair(nil, nil,
+			lattice.NIL_FACT_ID.WithFactPoint(lattice.FactIdUB_Point_INOUT).
+				WithAnalysisId(intra.analysis.InstanceId().AnalysisId()).
+				WithUBEntityId(spir.EntityId(bbId)))
+	}
+	return intra.bbFactMap[bbId]
 }
 
 func (intra *IntraPAN) SetCallSiteFactMapValue(callSiteId spir.InsnId, fact lattice.Pair) {
@@ -197,13 +226,14 @@ func (intra *IntraPAN) AnalyzeGraph() lattice.FactChanged {
 func (intra *IntraPAN) AnalyzeBB(bb *spir.BasicBlock) (lattice.Pair, lattice.FactChanged) {
 	// Visit each instruction in the basic block and propagate the facts.
 	// Use the analysis's AnalyzeBB method if it handles basic blocks explicitly.
+	bbInOut := intra.GetBBFactMapValue(bb.Id())
 	if intra.analysisHandlesBB {
-		bbInOut := intra.GetBBFact(bb)
 		return intra.analysis.AnalyzeBB(bb, bbInOut, intra.context)
 	}
 
 	// Otherwise, visit each instruction in the basic block and propagate the facts.
 	reverse := intra.analysis.VisitingOrder() == spir.PostOrder
+	prevInOut := bbInOut
 	firstIndx, lastIndx := 0, bb.InsnCount()-1
 	bbInChanged, bbOutChanged := false, false
 	var inout lattice.Pair
@@ -214,7 +244,8 @@ func (intra *IntraPAN) AnalyzeBB(bb *spir.BasicBlock) (lattice.Pair, lattice.Fac
 		insn := bb.Insn(i)
 
 		logger.Get().Debug("Before analysis:", "Insn", insn, "InFact", intra.GetFactMapValue(insn.Id()).L1())
-		inout, change = intra.analysis.AnalyzeInsn(insn, intra.GetFactMapValue(insn.Id()), intra.context)
+		oldInOut := intra.GetCurrentFactMapValue(insn.Id(), i, bb.InsnCount(), bbInOut, prevInOut, reverse)
+		inout, change = intra.analysis.AnalyzeInsn(insn, oldInOut, intra.context)
 		logger.Get().Debug("After  analysis:", "Insn", insn, "OutFact", inout.L2(), "change", change)
 
 		// Record changes at the boundaries of the basic block.
@@ -234,8 +265,48 @@ func (intra *IntraPAN) AnalyzeBB(bb *spir.BasicBlock) (lattice.Pair, lattice.Fac
 			intra.SetFactMapValue(nextInsnId,
 				nextInsnInOut.UpdateOther(change, inout.ChangedOne(change))) // Propagate
 		}
+		prevInOut = inout
 	}
 	return intra.GetBBFact(bb), lattice.GetInOutChanged(bbInChanged, bbOutChanged)
+}
+
+func (intra *IntraPAN) GetCurrentFactMapValue(insnId spir.InsnId, index int, insnCount int,
+	bbInOut, prevInsnInOut lattice.Pair, reverse bool) lattice.Pair {
+	first, last := index == 0, index == insnCount-1
+	var oldInOut lattice.Pair
+
+	// Fact for each instruction is stored in the instruction fact map.
+	// Fetch the fact from the instruction fact map, and modify it based on the flow direction.
+	if intra.useInstFactMap {
+		oldInOut = intra.GetFactMapValue(insnId)
+		if first && !reverse /*forward flow*/ {
+			oldInOut.SetLats(bbInOut.L1(), oldInOut.L2())
+		} else if last && reverse /*backward flow*/ {
+			oldInOut.SetLats(oldInOut.L1(), bbInOut.L2())
+		} else if !reverse /*forward flow*/ {
+			oldInOut.SetLats(prevInsnInOut.L2(), oldInOut.L2())
+		} else /*if reverse; i.e. backward flow*/ {
+			oldInOut.SetLats(oldInOut.L1(), prevInsnInOut.L1())
+		}
+		return oldInOut
+	}
+
+	// Facts for instructions are not stored in the instruction fact map.
+	// Generate the lattice pair for the instructions.
+	factId := lattice.NIL_FACT_ID.WithFactPoint(lattice.FactIdUB_Point_INOUT).
+		WithAnalysisId(intra.analysis.InstanceId().AnalysisId()).
+		WithUBEntityId(spir.EntityId(insnId))
+	if first && !reverse /*forward flow*/ {
+		oldInOut = lattice.NewPair(bbInOut.L1(), nil, factId)
+	} else if last && reverse /*backward flow*/ {
+		oldInOut = lattice.NewPair(nil, bbInOut.L2(), factId)
+	} else if !reverse /*forward flow*/ {
+		oldInOut = lattice.NewPair(prevInsnInOut.L2(), nil, factId)
+	} else /*if reverse; i.e. backward flow*/ {
+		oldInOut = lattice.NewPair(nil, prevInsnInOut.L1(), factId)
+	}
+
+	return oldInOut
 }
 
 // Returns the index of the instruction in the basic block.
@@ -258,9 +329,19 @@ func InsnIndex(i int, lastIndx int, reverse bool) int {
 func (intra *IntraPAN) propagateFacts(change lattice.FactChanged,
 	bb *spir.BasicBlock, inout lattice.Pair) {
 	if change.HasChangedIn() {
+		// If the L1 lattice is a Chained lattice, flatten it before propagating.
+		if chained, ok := inout.L1().(lattice.ChainedLattice); ok {
+			_, changed := chained.Flatten(true)
+			inout.FactId().CondIncVersion(changed)
+		}
 		intra.propagateFactsBackward(bb, inout)
 	}
 	if change.HasChangedOut() {
+		// If the L2 lattice is a Chained lattice, flatten it before propagating.
+		if chained, ok := inout.L2().(lattice.ChainedLattice); ok {
+			_, changed := chained.Flatten(true)
+			inout.FactId().CondIncVersion(changed)
+		}
 		intra.propagateFactsForward(bb, inout)
 	}
 }
@@ -270,15 +351,15 @@ func (intra *IntraPAN) propagateFactsBackward(bb *spir.BasicBlock, inout lattice
 
 	for i := range bb.PredCount() {
 		predBB := bb.Pred(i)
-		predInsnId := predBB.ExitInsnId()
 		thisBBSuccPos := predBB.SuccPos(bb)
-		val, chg := GetPredOutFact(predBB, intra.GetFactMapValue(predInsnId), thisBBSuccPos), true
+		val, chg := GetPredBBOutFact(predBB, intra.GetBBFactMapValue(predBB.Id()), thisBBSuccPos), true
 
-		if intra.meetAtBasicBlock {
+		if intra.meetAtBB {
 			val, chg = lattice.Meet(val, inout.L1())
 		}
 
-		intra.SetFactMapValue(predInsnId, SetPredOutFact(predBB, intra.GetFactMapValue(predInsnId), thisBBSuccPos, val))
+		intra.SetBBFactMapValue(predBB.Id(),
+			SetPredBBOutFact(predBB, intra.GetBBFactMapValue(predBB.Id()), thisBBSuccPos, val))
 
 		if chg {
 			intra.analysis.WorkList().Push(predBB.Id())
@@ -286,7 +367,7 @@ func (intra *IntraPAN) propagateFactsBackward(bb *spir.BasicBlock, inout lattice
 	}
 }
 
-func GetPredOutFact(predBB *spir.BasicBlock, inout lattice.Pair,
+func GetPredBBOutFact(predBB *spir.BasicBlock, inout lattice.Pair,
 	succIdx int) lattice.Lattice {
 	val := inout.L2()
 	if predBB.SuccCount() > 1 {
@@ -299,7 +380,7 @@ func GetPredOutFact(predBB *spir.BasicBlock, inout lattice.Pair,
 	return val
 }
 
-func SetPredOutFact(predBB *spir.BasicBlock, inout lattice.Pair,
+func SetPredBBOutFact(predBB *spir.BasicBlock, inout lattice.Pair,
 	succIdx int, val lattice.Lattice) lattice.Pair {
 	if predBB.SuccCount() == 1 {
 		return lattice.NewPair(inout.L1(), val, inout.FactId())
@@ -321,34 +402,32 @@ func (intra *IntraPAN) propagateFactsForward(
 
 	// This condition is taken only if there are two successors.
 	if fbb := bb.FalseSucc(); fbb != nil {
-		// STEP: Extract the lattice pair
+		// Extract the lattice pair, then propagate the fact.
 		trueFalseOutFact, ok := trueFact.(*lattice.Pair)
 		errs.Assert(ok, "Out fact is not a lattice pair")
 		trueFact, falseFact = trueFalseOutFact.L1(), trueFalseOutFact.L2()
 
-		// STEP: Propagete fact
-		nextInOut := intra.GetFactMapValue(fbb.EntryInsnId())
+		nextInOut := intra.GetBBFactMapValue(fbb.Id())
 		val, chg := falseFact, true
-		if intra.meetAtBasicBlock {
+		if intra.meetAtBB {
 			val, chg = lattice.Meet(nextInOut.L1(), falseFact)
 		}
-		intra.SetFactMapValue(fbb.EntryInsnId(), lattice.NewPair(val, nextInOut.L2(), nextInOut.FactId()))
+		intra.SetBBFactMapValue(fbb.Id(), lattice.NewPair(val, nextInOut.L2(), nextInOut.FactId()))
 		if chg {
-			intra.analysis.WorkList().Push(fbb.Id())
+			intra.analysis.WorkList().PushFeasible(fbb.Id(), true)
 		}
 	}
 
-	// Here, the trueFact is either the OUT or the true part of the OUT lattice pair.
+	// Here, the trueFact is either the OUT or the true part of the lattice pair in OUT.
 	if tbb := bb.TrueSucc(); tbb != nil {
-		// STEP: Propagete fact
-		nextInOut := intra.GetFactMapValue(tbb.EntryInsnId())
+		nextInOut := intra.GetBBFactMapValue(tbb.Id())
 		val, chg := trueFact, true
-		if tbb.PredCount() > 1 || intra.meetAtBasicBlock {
+		if tbb.PredCount() > 1 || intra.meetAtBB {
 			val, chg = lattice.Meet(nextInOut.L1(), trueFact)
 		}
-		intra.SetFactMapValue(tbb.EntryInsnId(), lattice.NewPair(val, nextInOut.L2(), nextInOut.FactId()))
+		intra.SetBBFactMapValue(tbb.Id(), lattice.NewPair(val, nextInOut.L2(), nextInOut.FactId()))
 		if chg {
-			intra.analysis.WorkList().Push(tbb.Id())
+			intra.analysis.WorkList().PushFeasible(tbb.Id(), true)
 		}
 	}
 }
