@@ -415,9 +415,9 @@ func AllocateInsnIdsForGraph(
 		panic("AllocateInsnIdsForGraph: graph or idGen is nil")
 	}
 	// We use reverse post order for deterministic allocation order, but plain order is also valid.
-	order := ReversePostOrder(graph, false)
-	for _, bbId := range order {
-		bb := graph.BasicBlock(bbId)
+	order := GetBBWorklist(graph, ReversePostOrder, true)
+	for _, record := range order {
+		bb := graph.BasicBlock(record.BBId())
 		if bb == nil {
 			continue
 		}

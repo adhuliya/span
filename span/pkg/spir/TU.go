@@ -79,13 +79,15 @@ func (vi *ValueInfo) String() string {
 		vi.name, vi.eid, vi.parentId, vi.qualType)
 }
 
+type FuncId EntityId // The function ID
+
 // Function represents a function in the SPAN IR.
 // A special global initialization function is used to initialize global variables.
 type Function struct {
-	fid      EntityId // The function ID
-	fName    string   // The function name
-	originTU *TU      // The TU that the function was originally from
-	owningTU *TU      // The TU that the function belongs to
+	fid      FuncId // The function ID
+	fName    string // The function name
+	originTU *TU    // The TU that the function was originally from
+	owningTU *TU    // The TU that the function belongs to
 	funcType QualType
 	paramIds []EntityId
 
@@ -148,10 +150,10 @@ type TU struct {
 	qualTypes  map[EntityId]QualType   // Holds complete value type information
 	variables  map[EntityId]*ValueInfo // Holds information about variables
 	literals   map[EntityId]*LiteralInfo
-	functions  map[EntityId]*Function
+	functions  map[FuncId]*Function
 	callSites  map[CallSiteId][]EntityId // Arguments for a call site
 	labels     map[LabelId]string
-	globalInit EntityId // A special function with one basic block with all the initialization of global variables.
+	globalInit FuncId // A special function with one basic block with all the initialization of global variables.
 
 	// 4. Meta information about the TU
 	namesToId    map[string]EntityId // Necessary for name lookup during linking
@@ -178,9 +180,9 @@ func NewTU() *TU {
 		origin:       "",
 		mergedTUs:    make(map[EntityId]*TU),
 		parentTU:     nil,
-		globalInit:   NIL_ID,
+		globalInit:   FuncId(NIL_ID),
 		entityInfo:   make(map[EntityId]any),
-		functions:    make(map[EntityId]*Function),
+		functions:    make(map[FuncId]*Function),
 		literals:     make(map[EntityId]*LiteralInfo),
 		qualTypes:    make(map[EntityId]QualType),
 		insnInfo:     make(map[InsnId]InsnInfo),
@@ -289,7 +291,7 @@ func (tu *TU) NewFunction(name string, funcType QualType,
 		K_EK_EFUNC.SeqIdBitLen()))
 
 	fun := &Function{
-		fid:      id,
+		fid:      FuncId(id),
 		fName:    name,
 		funcType: funcType,
 		paramIds: paramIds,
@@ -297,7 +299,7 @@ func (tu *TU) NewFunction(name string, funcType QualType,
 		insns:    nil,
 	}
 
-	tu.functions[id] = fun
+	tu.functions[FuncId(id)] = fun
 	tu.namesToId[name] = EntityId(id)
 	tu.entityInfo[EntityId(id)] = fun
 
@@ -308,7 +310,7 @@ func (fun *Function) SetBody(tu *TU, insnSeq []Insn) {
 	fun.body = ConstructCFG(insnSeq)
 }
 
-func (fun *Function) Id() EntityId {
+func (fun *Function) Id() FuncId {
 	return fun.fid
 }
 
@@ -328,13 +330,13 @@ func (fun *Function) Body() Graph {
 	return fun.body
 }
 
-func (tu *TU) GlobalInitFuncId() EntityId {
+func (tu *TU) GlobalInitFuncId() FuncId {
 	return tu.globalInit
 }
 
 func (tu *TU) GetFunction(name string) *Function {
 	if id, ok := tu.namesToId[name]; ok {
-		if fun, ok := tu.functions[EntityId(id)]; ok {
+		if fun, ok := tu.functions[FuncId(id)]; ok {
 			return fun
 		}
 	}
@@ -387,7 +389,7 @@ func (tu *TU) GetSrcFileId(fullPath string) FileId {
 	return FileId(NIL_ID)
 }
 
-func (tu *TU) GetFunctionById(id EntityId) *Function {
+func (tu *TU) GetFunctionById(id FuncId) *Function {
 	if fun, ok := tu.functions[id]; ok {
 		return fun
 	}
@@ -555,8 +557,8 @@ func dumpVariables(tu *TU) {
 }
 
 func dumpFunctions(tu *TU) {
-	for eid, function := range tu.functions {
-		fmt.Println("Function: ", eid, "->", function)
+	for fid, function := range tu.functions {
+		fmt.Println("Function: ", fid, "->", function)
 		cfg := ConstructCFG(function.insns)
 		fmt.Println("CFG:\n ", GenerateDotGraphForCFG(tu, cfg))
 	}

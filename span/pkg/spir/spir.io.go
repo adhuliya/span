@@ -545,10 +545,10 @@ func CreateFunctionFromBitFunc(tu *TU, bitTU *BitTU, bitFunc *BitFunc) *Function
 	if bitFunc.Fid == K_00_GLBL_INIT_FUNC_ID {
 		function.fid = tu.GlobalInitFuncId()
 	} else {
-		function.fid = tu.GetInternalEntityId(bitFunc.Fid)
+		function.fid = FuncId(tu.GetInternalEntityId(bitFunc.Fid))
 	}
 	function.fName = bitFunc.Fname
-	tu.idsToName[function.fid] = function.fName
+	tu.idsToName[EntityId(function.fid)] = function.fName
 	function.originTU, function.owningTU = tu, tu
 	function.funcType = CreateQualTypeFromBitEntityId(tu, bitTU, bitFunc.TypeEid)
 

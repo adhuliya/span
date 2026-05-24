@@ -2,6 +2,36 @@
 
 A program analysis engine and bug finder tool with its foundation in Abstract Interpretation and Data Flow Analysis.
 
+Below is a simple Mermaid diagram illustrating a program's Control Flow Graph (CFG):
+
+```mermaid
+flowchart TD
+    Start([Start])
+    A["Entry Block
+    ---
+    This is the block where the program begins execution."]
+    B[Condition?]
+    C[True Branch]
+    D[False Branch]
+    E[Join Point]
+    F[Exit Block]
+    
+    Start --> A
+    A --> B
+    B -- Yes --> C
+    B -- No --> D
+    C --> E
+    D --> E
+    E --> F
+```
+
+This example depicts the control flow of a program with a conditional branch. 
+- The program starts at the "Entry Block".
+- Encounters a condition ("Condition?").
+- Depending on the condition, it takes either the "True Branch" or "False Branch".
+- Both branches join at the "Join Point" before reaching the exit.
+You can edit this diagram to reflect your own program's CFG structure using the [Mermaid syntax](https://mermaid.js.org/syntax/flowchart.html).
+
 
 ## The platform
 

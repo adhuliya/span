@@ -1,7 +1,11 @@
 package spir
 
+import "fmt"
+
 type BasicBlockId EntityId
 type EdgeLabel uint8
+
+const NIL_BB_ID = BasicBlockId(0)
 
 // A scope controls the visibility of the variables.
 type ScopeId EntityId
@@ -138,6 +142,13 @@ func (bb *BasicBlock) SuccCount() int {
 
 func (bb *BasicBlock) Succ(idx int) *BasicBlock {
 	return bb.successors[idx]
+}
+
+func (bb *BasicBlock) OnlySucc() *BasicBlock {
+	if bb.SuccCount() == 1 {
+		return bb.successors[0]
+	}
+	return nil
 }
 
 func (bb *BasicBlock) TrueSucc() *BasicBlock {
@@ -300,33 +311,186 @@ func (cfg *ControlFlowGraph) IsValid() bool {
 	return true
 }
 
-// This function takes a Graph and returns ReversePostOrder of the graph.
-// The assumption is that the BBIds at higher indices are visited (or popped) first.
-func GetBBWorklist(graph Graph, visitingOrder GraphVisitingOrder) []BasicBlockId {
-	visited := make(map[BasicBlockId]bool, graph.BBCount())
-	orderedBBs := make([]BasicBlockId, 0, graph.BBCount())
+// WorkList is a sequence of basic blocks to be analyzed.
+// It maintains a sequence of basic blocks to be analyzed in the order of the visiting order.
+// It maintains a correponding boolean list to track which basic block to visit next.
+type BBWorklistRecord struct {
+	bbId        BasicBlockId
+	shouldVisit bool // Whether the BB is marked for visiting?
+	feasible    bool // Whether the basic block is feasible to visit (like, not a dead code)
+}
 
-	// Default to a forward flow traversal (ReversePostOrder)
-	var dfs func(blockId BasicBlockId)
-	dfs = func(blockId BasicBlockId) {
+func (r *BBWorklistRecord) BBId() BasicBlockId {
+	return r.bbId
+}
+
+func (r *BBWorklistRecord) IsFeasible() bool {
+	return r.feasible
+}
+
+func (r *BBWorklistRecord) ShouldVisit() bool {
+	return r.shouldVisit
+}
+
+// Visit a BB only if it is feasible and needs visiting.
+func (r *BBWorklistRecord) CanVisit() bool {
+	return r.feasible && r.shouldVisit
+}
+
+func (r *BBWorklistRecord) SetFeasible(feasible bool) {
+	r.feasible = feasible
+}
+
+func (r *BBWorklistRecord) SetShouldVisit(shouldVisit bool) {
+	r.shouldVisit = shouldVisit
+}
+
+type BBWorklist struct {
+	graph         Graph
+	visitOrder    GraphVisitingOrder
+	bbOrderedList []BBWorklistRecord
+	nextIndex     int // The index of the next basic block to visit.
+}
+
+func NewBBWorklist(graph Graph, visitOrder GraphVisitingOrder) *BBWorklist {
+	wl := GetBBWorklist(graph, visitOrder, true)
+	bbwl := &BBWorklist{
+		graph:         graph,
+		visitOrder:    visitOrder,
+		bbOrderedList: wl,
+		nextIndex:     0,
+	}
+
+	for i := range wl {
+		bbwl.bbOrderedList[i].SetShouldVisit(true)
+	}
+	return bbwl
+}
+
+func (wl *BBWorklist) IsEmpty() bool {
+	return wl.nextIndex == len(wl.bbOrderedList)
+}
+
+func (wl *BBWorklist) Pop() BasicBlockId {
+	for i := wl.nextIndex; i < len(wl.bbOrderedList); i++ {
+		if !wl.bbOrderedList[i].CanVisit() {
+			continue
+		}
+		wl.bbOrderedList[i].SetShouldVisit(false)
+		wl.nextIndex = len(wl.bbOrderedList)
+		for j := i + 1; j < len(wl.bbOrderedList); j++ {
+			if wl.bbOrderedList[j].CanVisit() {
+				wl.nextIndex = j
+				break
+			}
+		}
+		return wl.bbOrderedList[i].BBId()
+	}
+	wl.nextIndex = len(wl.bbOrderedList)
+	return BasicBlockId(0)
+}
+
+// Push a BB into the worklist.
+// If the BB is already in the worklist, it will be marked for visiting.
+// The feasibility of the BB remains unchanged.
+// The return value is true if the worklist is modified.
+func (wl *BBWorklist) Push(bbId BasicBlockId) bool {
+	for i := range wl.bbOrderedList {
+		record := &wl.bbOrderedList[i]
+		if record.BBId() == bbId {
+			if !record.ShouldVisit() {
+				record.SetShouldVisit(true)
+				if record.CanVisit() && i < wl.nextIndex {
+					wl.nextIndex = i
+				}
+				return true // BB is marked for visiting
+			}
+			// Already marked for visiting
+			return false
+		}
+	}
+	// bbId not found in the worklist
+	return false
+}
+
+// PushFeasible marks the given bbId as feasible and recursively marks its successor chain as feasible.
+// It stops at a BB with zero or two successors.
+// The visit parameter is used to mark only the given bbId for visiting.
+// The return value is true if the worklist is modified.
+func (wl *BBWorklist) PushFeasible(bbId BasicBlockId, visit bool) bool {
+	changed := false
+	// Find the index of bbId in the worklist records
+	index := -1
+	for i, record := range wl.bbOrderedList {
+		if record.BBId() == bbId {
+			index = i
+			break
+		}
+	}
+	if index == -1 {
+		// bbId not found
+		return false
+	}
+
+	record := &wl.bbOrderedList[index]
+	// Mark as feasible and set shouldVisit if requested
+	if !record.IsFeasible() {
+		changed = true
+		record.SetFeasible(true)
+	}
+
+	if visit && !record.ShouldVisit() {
+		changed = true
+		record.SetShouldVisit(true)
+	}
+
+	if record.CanVisit() && index < wl.nextIndex {
+		wl.nextIndex = index
+	}
+
+	// Fetch the BasicBlock from the graph
+	bb := wl.graph.BasicBlock(bbId)
+	if bb == nil {
+		panic(fmt.Sprintf("BasicBlock not found for bbId=%v", bbId))
+	}
+	// Stop recursion if the block has zero or two successors.
+	if bb.SuccCount() == 0 || bb.SuccCount() == 2 {
+		return changed // No need to push further
+	}
+	// Recursively push feasible successor BB (should only be 1 successor)
+	if succ := bb.OnlySucc(); succ != nil {
+		changed = wl.PushFeasible(succ.Id(), false) || changed
+	}
+	return changed
+}
+
+// This function takes a Graph and returns ReversePostOrder of the graph.
+// The assumption is that the BBIds at lower indices are visited (or popped) first.
+func GetBBWorklist(graph Graph, visitingOrder GraphVisitingOrder, feasible bool) []BBWorklistRecord {
+	visited := make(map[BasicBlockId]bool, graph.BBCount())
+	orderedBBs := make([]BBWorklistRecord, 0, graph.BBCount())
+
+	// Default to a backward flow traversal (PostOrder)
+	var dfs func(blockId BasicBlockId, feasible bool)
+	dfs = func(blockId BasicBlockId, feasible bool) {
 		if visited[blockId] {
 			return
 		}
 		visited[blockId] = true
 		block := graph.BasicBlock(blockId)
 		for _, succ := range block.successors {
-			dfs(succ.Id())
+			dfs(succ.Id(), feasible && block.SuccCount() == 1)
 		}
-		orderedBBs = append(orderedBBs, blockId)
+		orderedBBs = append(orderedBBs, BBWorklistRecord{bbId: blockId, shouldVisit: true, feasible: feasible})
 	}
 
 	entryBlock := graph.EntryBlock()
 	if entryBlock != nil {
-		dfs(entryBlock.id)
+		dfs(entryBlock.id, feasible)
 	}
 
-	// Reverse the order if visiting order is PostOrder
-	if visitingOrder == PostOrder {
+	// Reverse the order if visiting order is ReversePostOrder
+	if visitingOrder == ReversePostOrder {
 		for i, j := 0, len(orderedBBs)-1; i < j; i, j = i+1, j-1 {
 			orderedBBs[i], orderedBBs[j] = orderedBBs[j], orderedBBs[i]
 		}

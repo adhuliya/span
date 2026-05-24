@@ -11,5 +11,5 @@ import (
 
 type CascadingATPair interface {
 	Analysis
-	Transform(graph spir.Graph, factMap AnalysisFactMap, ctx *spir.Context) spir.Graph
+	Transform(graph spir.Graph, factMap InsnFactMap, ctx *spir.Context) spir.Graph
 }

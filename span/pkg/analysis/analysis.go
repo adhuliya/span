@@ -10,7 +10,8 @@ import (
 )
 
 // A pair of facts associated with each instruction (in a graph).
-type AnalysisFactMap map[spir.InsnId]lattice.Pair
+type InsnFactMap map[spir.InsnId]lattice.Pair
+type BBFactMap map[spir.BasicBlockId]lattice.Pair
 
 // High 32 bits are the function entity id.
 // Low 32 bits are the analysis' instance id (on the function)
@@ -49,6 +50,7 @@ type Analysis interface {
 	Name() string
 
 	VisitingOrder() spir.GraphVisitingOrder
+	WorkList() *spir.BBWorklist
 	BoundaryFact(graph spir.Graph, ctx *spir.Context) lattice.Pair
 	NewNonNilTopLattice(factId lattice.FactId) lattice.Lattice
 
@@ -62,6 +64,19 @@ type AnalysisClientBase struct {
 	instanceId    InstanceId
 	name          string
 	visitingOrder spir.GraphVisitingOrder
+	wl            *spir.BBWorklist
+	graph         spir.Graph
+}
+
+func (ac *AnalysisClientBase) WorkList() *spir.BBWorklist {
+	if ac.wl == nil {
+		ac.wl = spir.NewBBWorklist(ac.graph, ac.visitingOrder)
+	}
+	return ac.wl
+}
+
+func (ac *AnalysisClientBase) SetWorkList(wl *spir.BBWorklist) {
+	ac.wl = wl
 }
 
 func (ac *AnalysisClientBase) Name() string {

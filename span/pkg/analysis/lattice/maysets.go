@@ -18,7 +18,7 @@ var _ ConstLattice = (*MaySetLattice)(nil)
 
 // NewMaySetLattice creates a MaySetLattice containing the given EntityIds.
 func NewMaySetLattice(eids spir.EidSet, isBot bool) *MaySetLattice {
-	eidSet := *spir.NewEidSet(false)
+	eidSet := *spir.NewEidSet(false, false)
 	for _, id := range eids.Iterator {
 		eidSet.Add(id)
 	}

@@ -16,7 +16,7 @@ func GetNextContextId() ContextId {
 type Context struct {
 	tu              *TU
 	info            map[uint64]any // key is the instance id / context id
-	currentScopeEid EntityId
+	currentScopeEid EntityId       // Generally id of the current function.
 }
 
 func NewContext(tu *TU) *Context {

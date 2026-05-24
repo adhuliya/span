@@ -6,7 +6,7 @@ Generate the test file for the given go module. Take the following steps.
 2. Read and analyze the go file that needs testing. Identify the functions that can be tested.
 3. Read the test file if it already exists and determine the updates needed to the tests. Always ensure that edge cases are properly covered and updated as per the current go file contents.
 5. Fix obvious bugs in the go file that you find during test generation.
-6. Run the generated tests on the span project. If possible use `Makefile` to build and test.
+6. Run the generated tests on the span project. Only run focused tests as we do not want to fix all the test files unless explicitly asked by the user. If possible use `Makefile` to build and test.
 7. Fix any bugs found in this process and repeat step 3 until all tests pass with good coverage.
 
 If required add additional functionality to the original go file to help test the feature completely.

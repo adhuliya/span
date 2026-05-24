@@ -20,7 +20,7 @@ func eids(xs ...uint32) []EntityId {
 // TestNewEidSet_sortsDedupesAndCapacity covers basic construction guarantees for EidSet.
 func TestNewEidSet_sortsDedupesAndCapacity(t *testing.T) {
 	t.Parallel()
-	s := NewEidSet(false, eids(3, 1, 2, 1, 3)...)
+	s := NewEidSet(false, false, eids(3, 1, 2, 1, 3)...)
 	if !slices.Equal(s.Values(), eids(1, 2, 3)) {
 		t.Fatalf("Values: got %v", s.Values())
 	}
@@ -32,7 +32,7 @@ func TestNewEidSet_sortsDedupesAndCapacity(t *testing.T) {
 // TestNewEidSet_empty checks construction of an empty EidSet.
 func TestNewEidSet_empty(t *testing.T) {
 	t.Parallel()
-	s := NewEidSet(false)
+	s := NewEidSet(false, false)
 	if !s.IsEmpty() {
 		t.Fatal("expected empty")
 	}
@@ -44,7 +44,7 @@ func TestNewEidSet_empty(t *testing.T) {
 // TestEidSet_IsEmpty_Clear checks IsEmpty and Clear.
 func TestEidSet_IsEmpty_Clear(t *testing.T) {
 	t.Parallel()
-	s := NewEidSet(false, eids(1)...)
+	s := NewEidSet(false, false, eids(1)...)
 	if s.IsEmpty() {
 		t.Fatal("not empty")
 	}
@@ -60,13 +60,13 @@ func TestEidSet_IsEmpty_Clear(t *testing.T) {
 // TestEidSet_IsSortedAndUnique checks that the sorted and unique invariant holds.
 func TestEidSet_IsSortedAndUnique(t *testing.T) {
 	t.Parallel()
-	if !NewEidSet(false).IsSortedAndUnique() {
+	if !NewEidSet(false, false).IsSortedAndUnique() {
 		t.Fatal("empty")
 	}
-	if !NewEidSet(false, eids(7)...).IsSortedAndUnique() {
+	if !NewEidSet(false, false, eids(7)...).IsSortedAndUnique() {
 		t.Fatal("single")
 	}
-	s := NewEidSet(false, eids(1, 2, 3)...)
+	s := NewEidSet(false, false, eids(1, 2, 3)...)
 	if !s.IsSortedAndUnique() {
 		t.Fatal("valid")
 	}
@@ -75,7 +75,7 @@ func TestEidSet_IsSortedAndUnique(t *testing.T) {
 // TestEidSet_Contains_Add_Remove covers containership, as well as addition/removal of elements.
 func TestEidSet_Contains_Add_Remove(t *testing.T) {
 	t.Parallel()
-	s := NewEidSet(false, eids(2, 4)...)
+	s := NewEidSet(false, false, eids(2, 4)...)
 	if !s.Contains(2) || s.Contains(3) {
 		t.Fatalf("Contains: %+v", s.Values())
 	}
@@ -96,8 +96,8 @@ func TestEidSet_Contains_Add_Remove(t *testing.T) {
 // TestEidSet_Union tests creation of new set via union.
 func TestEidSet_Union(t *testing.T) {
 	t.Parallel()
-	a := *NewEidSet(false, eids(1, 3)...)
-	b := *NewEidSet(false, eids(2, 3)...)
+	a := *NewEidSet(false, false, eids(1, 3)...)
+	b := *NewEidSet(false, false, eids(2, 3)...)
 	u, ch := a.Union(b)
 	if !slices.Equal(u.Values(), eids(1, 2, 3)) {
 		t.Fatalf("union values: %v", u.Values())
@@ -105,16 +105,16 @@ func TestEidSet_Union(t *testing.T) {
 	if !ch {
 		t.Fatal("changed should be true when merged length != len(a)")
 	}
-	empty := *NewEidSet(false)
+	empty := *NewEidSet(false, false)
 	u2, ch2 := empty.Union(empty)
 	if !u2.IsEmpty() || ch2 {
 		t.Fatalf("two empties: empty=%v ch=%v", u2.IsEmpty(), ch2)
 	}
-	u3, ch3 := empty.Union(*NewEidSet(false, eids(1)...))
+	u3, ch3 := empty.Union(*NewEidSet(false, false, eids(1)...))
 	if !slices.Equal(u3.Values(), eids(1)) || !ch3 {
 		t.Fatalf("left empty: %v %v", u3.Values(), ch3)
 	}
-	u4p, ch4b := NewEidSet(false, eids(1)...).Union(empty)
+	u4p, ch4b := NewEidSet(false, false, eids(1)...).Union(empty)
 	if !slices.Equal(u4p.Values(), eids(1)) || ch4b {
 		t.Fatalf("right empty: %v ch=%v", u4p.Values(), ch4b)
 	}
@@ -123,11 +123,11 @@ func TestEidSet_Union(t *testing.T) {
 // TestEidSet_UnionWith tests in-place union.
 func TestEidSet_UnionWith(t *testing.T) {
 	t.Parallel()
-	s := NewEidSet(false, eids(1, 5)...)
-	if s.UnionWith(*NewEidSet(false)) {
+	s := NewEidSet(false, false, eids(1, 5)...)
+	if s.UnionWith(*NewEidSet(false, false)) {
 		t.Fatal("union empty should not change")
 	}
-	if !s.UnionWith(*NewEidSet(false, eids(2, 5, 7)...)) {
+	if !s.UnionWith(*NewEidSet(false, false, eids(2, 5, 7)...)) {
 		t.Fatal("expected change")
 	}
 	if !slices.Equal(s.Values(), eids(1, 2, 5, 7)) {
@@ -141,8 +141,8 @@ func TestEidSet_UnionWith(t *testing.T) {
 // TestEidSet_Intersection tests creation of intersection set.
 func TestEidSet_Intersection(t *testing.T) {
 	t.Parallel()
-	a := *NewEidSet(false, eids(1, 2, 4)...)
-	b := *NewEidSet(false, eids(2, 3, 4)...)
+	a := *NewEidSet(false, false, eids(1, 2, 4)...)
+	b := *NewEidSet(false, false, eids(2, 3, 4)...)
 	in, ch := a.Intersection(b)
 	if !slices.Equal(in.Values(), eids(2, 4)) {
 		t.Fatalf("got %v", in.Values())
@@ -150,7 +150,7 @@ func TestEidSet_Intersection(t *testing.T) {
 	if !ch {
 		t.Fatal("intersection shorter than a")
 	}
-	in2, _ := a.Intersection(*NewEidSet(false))
+	in2, _ := a.Intersection(*NewEidSet(false, false))
 	if !in2.IsEmpty() {
 		t.Fatal("no overlap")
 	}
@@ -159,15 +159,15 @@ func TestEidSet_Intersection(t *testing.T) {
 // TestEidSet_IntersectionWith tests in-place intersection operation.
 func TestEidSet_IntersectionWith(t *testing.T) {
 	t.Parallel()
-	s := NewEidSet(false, eids(1, 2, 3)...)
-	if !s.IntersectionWith(*NewEidSet(false, eids(2, 4)...)) {
+	s := NewEidSet(false, false, eids(1, 2, 3)...)
+	if !s.IntersectionWith(*NewEidSet(false, false, eids(2, 4)...)) {
 		t.Fatal("expected change")
 	}
 	if !slices.Equal(s.Values(), eids(2)) {
 		t.Fatalf("got %v", s.Values())
 	}
-	s2 := NewEidSet(false, eids(1)...)
-	if s2.IntersectionWith(*NewEidSet(false, eids(1)...)) {
+	s2 := NewEidSet(false, false, eids(1)...)
+	if s2.IntersectionWith(*NewEidSet(false, false, eids(1)...)) {
 		t.Fatal("same set should not report change")
 	}
 }
@@ -175,8 +175,8 @@ func TestEidSet_IntersectionWith(t *testing.T) {
 // TestEidSet_Subtract tests set subtraction.
 func TestEidSet_Subtract(t *testing.T) {
 	t.Parallel()
-	a := *NewEidSet(false, eids(1, 2, 3)...)
-	b := *NewEidSet(false, eids(2, 4)...)
+	a := *NewEidSet(false, false, eids(1, 2, 3)...)
+	b := *NewEidSet(false, false, eids(2, 4)...)
 	d, ch := a.Subtract(b)
 	if !slices.Equal(d.Values(), eids(1, 3)) || !ch {
 		t.Fatalf("Subtract: %v ch=%v", d.Values(), ch)
@@ -186,8 +186,8 @@ func TestEidSet_Subtract(t *testing.T) {
 // TestEidSet_SubtractWith tests in-place subtraction.
 func TestEidSet_SubtractWith(t *testing.T) {
 	t.Parallel()
-	s := NewEidSet(false, eids(1, 2, 3)...)
-	if !s.SubtractWith(*NewEidSet(false, eids(2)...)) {
+	s := NewEidSet(false, false, eids(1, 2, 3)...)
+	if !s.SubtractWith(*NewEidSet(false, false, eids(2)...)) {
 		t.Fatal("expected change")
 	}
 	if !slices.Equal(s.Values(), eids(1, 3)) {
@@ -198,18 +198,18 @@ func TestEidSet_SubtractWith(t *testing.T) {
 // TestEidSet_IsSubset_IsSubsetEq tests IsSubset and IsSubsetEq behavior.
 func TestEidSet_IsSubset_IsSubsetEq(t *testing.T) {
 	t.Parallel()
-	small := *NewEidSet(false, eids(1, 2)...)
-	big := *NewEidSet(false, eids(0, 1, 2, 3)...)
+	small := *NewEidSet(false, false, eids(1, 2)...)
+	big := *NewEidSet(false, false, eids(0, 1, 2, 3)...)
 	if !small.IsSubsetEq(big) || !small.IsSubset(big) {
 		t.Fatal("small in big")
 	}
 	if big.IsSubset(small) {
 		t.Fatal("big not proper subset of small")
 	}
-	if !(*NewEidSet(false)).IsSubsetEq(*NewEidSet(false, eids(1)...)) {
+	if !(*NewEidSet(false, false)).IsSubsetEq(*NewEidSet(false, false, eids(1)...)) {
 		t.Fatal("empty subseteq nonempty")
 	}
-	if (*NewEidSet(false)).IsSubset(*NewEidSet(false)) {
+	if (*NewEidSet(false, false)).IsSubset(*NewEidSet(false, false)) {
 		t.Fatal("empty not proper subset of empty")
 	}
 	if !small.IsSubsetEq(small) || small.IsSubset(small) {
@@ -220,9 +220,9 @@ func TestEidSet_IsSubset_IsSubsetEq(t *testing.T) {
 // TestEidSet_Equals_Duplicate_String tests equality, duplication, and string representation.
 func TestEidSet_Equals_Duplicate_String(t *testing.T) {
 	t.Parallel()
-	a := *NewEidSet(false, eids(1, 2)...)
-	b := *NewEidSet(false, eids(1, 2)...)
-	if !a.Equals(b) || a.Equals(*NewEidSet(false, eids(2)...)) {
+	a := *NewEidSet(false, false, eids(1, 2)...)
+	b := *NewEidSet(false, false, eids(1, 2)...)
+	if !a.Equals(b) || a.Equals(*NewEidSet(false, false, eids(2)...)) {
 		t.Fatal("Equals")
 	}
 	d := a.Duplicate(false)
@@ -234,8 +234,8 @@ func TestEidSet_Equals_Duplicate_String(t *testing.T) {
 	if !strings.HasPrefix(got, "{") || !strings.HasSuffix(got, "}") || strings.Count(got, ",") != 1 {
 		t.Fatalf("String (two sorted elements): %q", got)
 	}
-	if NewEidSet(false).String() != "{}" {
-		t.Fatalf("empty string: %q", NewEidSet(false).String())
+	if NewEidSet(false, false).String() != "{}" {
+		t.Fatalf("empty string: %q", NewEidSet(false, false).String())
 	}
 }
 
@@ -260,8 +260,8 @@ func TestEidSet_LargeRandomized(t *testing.T) {
 	// Generate two large random slices, with overlap.
 	sliceA := randomSlice(setSize)
 	sliceB := randomSlice(setSize)
-	setA := NewEidSet(false, eids(sliceA...)...)
-	setB := NewEidSet(false, eids(sliceB...)...)
+	setA := NewEidSet(false, false, eids(sliceA...)...)
+	setB := NewEidSet(false, false, eids(sliceB...)...)
 
 	// 1. Test invariants.
 	if !setA.IsSortedAndUnique() || !setB.IsSortedAndUnique() {

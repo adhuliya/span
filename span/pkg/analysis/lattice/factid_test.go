@@ -66,7 +66,7 @@ func TestFactId_WithVersion(t *testing.T) {
 
 func TestFactId_WithInstrId(t *testing.T) {
 	base := mkFactId(1, 2, 0x111, 0x222, 1)
-	got := base.WithInstrId(0xfeedface)
+	got := base.WithUBEntityId(0xfeedface)
 	if got.InstrId() != 0xfeedface {
 		t.Errorf("InstrId = %#x", got.InstrId())
 	}
@@ -74,7 +74,7 @@ func TestFactId_WithInstrId(t *testing.T) {
 		got.AnalysisId() != base.AnalysisId() || got.Reserved() != base.Reserved() {
 		t.Errorf("WithInstrId changed other fields")
 	}
-	masked := base.WithInstrId(0xffffffffffffffff)
+	masked := base.WithUBEntityId(0xfffffff)
 	if masked.InstrId() != FactIdUB_EntityIdMask {
 		t.Errorf("WithInstrId mask: got %#x", masked.InstrId())
 	}
@@ -116,7 +116,7 @@ func TestFactId_WithAnalysisId(t *testing.T) {
 	if got.Version() != base.Version() {
 		t.Errorf("version changed")
 	}
-	overflow := base.WithAnalysisId(0xfffff)
+	overflow := base.WithAnalysisId(AnalysisId(0xffff))
 	if overflow.AnalysisId() != FactIdAnalysisMask {
 		t.Errorf("analysis mask: got %#x", overflow.AnalysisId())
 	}
@@ -201,7 +201,7 @@ type factFields struct {
 }
 
 func fieldSnapshot(f FactId) factFields {
-	return factFields{f.Version(), f.FactPoint(), f.InstrId(), f.AnalysisId(), f.Reserved()}
+	return factFields{f.Version(), f.FactPoint(), f.InstrId(), uint64(f.AnalysisId()), f.Reserved()}
 }
 
 func TestFactId_const_layout(t *testing.T) {
